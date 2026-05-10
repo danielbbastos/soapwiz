@@ -12,7 +12,8 @@ import SwiftData
 struct SoapWizApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Ingredient.self,
+            IngredientBatch.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +26,7 @@ struct SoapWizApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            IngredientListView()
         }
         .modelContainer(sharedModelContainer)
     }
