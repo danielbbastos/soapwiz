@@ -4,7 +4,7 @@ import SwiftData
 @Model
 final class Ingredient {
     var name: String
-    var category: String
+    var category: IngredientCategory?
     var unit: String
 
     @Relationship(deleteRule: .cascade, inverse: \IngredientBatch.ingredient)
@@ -14,7 +14,7 @@ final class Ingredient {
         batches.reduce(0) { $0 + $1.remainingAmount }
     }
 
-    init(name: String, category: String, unit: String) {
+    init(name: String, category: IngredientCategory? = nil, unit: String) {
         self.name = name
         self.category = category
         self.unit = unit

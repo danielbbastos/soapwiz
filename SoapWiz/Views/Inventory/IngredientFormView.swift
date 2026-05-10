@@ -7,8 +7,10 @@ struct IngredientFormView: View {
 
     var ingredient: Ingredient? = nil
 
+    @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
+
     @State private var name = ""
-    @State private var category = ""
+    @State private var selectedCategory: IngredientCategory? = nil
     @State private var unit = ""
 
     private var isEditing: Bool { ingredient != nil }
@@ -22,7 +24,12 @@ struct IngredientFormView: View {
             Form {
                 Section("Details") {
                     TextField("Name", text: $name)
-                    TextField("Category", text: $category)
+                    Picker("Category", selection: $selectedCategory) {
+                        Text("None").tag(Optional<IngredientCategory>.none)
+                        ForEach(categories) { category in
+                            Text(category.name).tag(Optional(category))
+                        }
+                    }
                     TextField("Unit (e.g. g, ml, oz)", text: $unit)
                 }
             }
@@ -44,7 +51,7 @@ struct IngredientFormView: View {
         .onAppear {
             if let ingredient {
                 name = ingredient.name
-                category = ingredient.category
+                selectedCategory = ingredient.category
                 unit = ingredient.unit
             }
         }
@@ -52,15 +59,14 @@ struct IngredientFormView: View {
 
     private func save() {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
-        let trimmedCategory = category.trimmingCharacters(in: .whitespaces)
         let trimmedUnit = unit.trimmingCharacters(in: .whitespaces)
 
         if let ingredient {
             ingredient.name = trimmedName
-            ingredient.category = trimmedCategory
+            ingredient.category = selectedCategory
             ingredient.unit = trimmedUnit
         } else {
-            modelContext.insert(Ingredient(name: trimmedName, category: trimmedCategory, unit: trimmedUnit))
+            modelContext.insert(Ingredient(name: trimmedName, category: selectedCategory, unit: trimmedUnit))
         }
     }
 }
