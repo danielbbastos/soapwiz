@@ -8,8 +8,8 @@ struct IngredientRowView: View {
             Text(ingredient.name)
                 .font(.headline)
             HStack {
-                if !ingredient.category.isEmpty {
-                    Text(ingredient.category)
+                if let categoryName = ingredient.category?.name {
+                    Text(categoryName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

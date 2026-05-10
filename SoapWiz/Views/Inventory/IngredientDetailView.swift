@@ -16,8 +16,8 @@ struct IngredientDetailView: View {
         ZStack(alignment: .bottomTrailing) {
             List {
                 Section("Summary") {
-                    if !ingredient.category.isEmpty {
-                        LabeledContent("Category", value: ingredient.category)
+                    if let categoryName = ingredient.category?.name {
+                        LabeledContent("Category", value: categoryName)
                     }
                     LabeledContent("Unit", value: ingredient.unit)
                     LabeledContent("Total Remaining") {
@@ -49,19 +49,7 @@ struct IngredientDetailView: View {
                 }
             }
 
-            Button {
-                showingAddBatch = true
-            } label: {
-                Image(systemName: "plus")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 56, height: 56)
-                    .background(Color.accentColor)
-                    .clipShape(Circle())
-                    .shadow(radius: 4, y: 2)
-            }
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
+            FloatingActionButton { showingAddBatch = true }
         }
         .sheet(isPresented: $showingAddBatch) {
             BatchFormView(ingredient: ingredient)

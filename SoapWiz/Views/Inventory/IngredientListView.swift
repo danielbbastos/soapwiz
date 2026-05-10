@@ -47,22 +47,15 @@ struct IngredientListView: View {
                                 .environment(\.editMode, $editMode)
                         }
                     }
+                    ToolbarItem(placement: .topBarTrailing) {
+                        NavigationLink(destination: CategoryListView()) {
+                            Image(systemName: "tag")
+                        }
+                    }
                 }
 
                 if editMode == .inactive {
-                    Button {
-                        showingAddIngredient = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.title2.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .frame(width: 56, height: 56)
-                            .background(Color.accentColor)
-                            .clipShape(Circle())
-                            .shadow(radius: 4, y: 2)
-                    }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 20)
+                    FloatingActionButton { showingAddIngredient = true }
                 }
             }
         }
