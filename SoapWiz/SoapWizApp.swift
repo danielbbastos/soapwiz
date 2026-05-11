@@ -10,6 +10,10 @@ import SwiftData
 
 @main
 struct SoapWizApp: App {
+    init() {
+        UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
+    }
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Ingredient.self,

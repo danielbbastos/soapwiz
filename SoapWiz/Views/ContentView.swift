@@ -11,5 +11,6 @@ struct ContentView: View {
             }
         }
         .tabViewStyle(.tabBarOnly)
+        .environment(\.horizontalSizeClass, .compact)
     }
 }
