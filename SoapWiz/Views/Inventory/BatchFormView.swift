@@ -8,7 +8,8 @@ struct BatchFormView: View {
     let ingredient: Ingredient
     var batch: IngredientBatch?
 
-    @State private var provider = ""
+    @Query(sort: \Provider.name) private var providers: [Provider]
+    @State private var selectedProvider: Provider?
     @State private var dateOfPurchase = Date()
     @State private var quantityText = ""
     @State private var totalPriceText = ""
@@ -34,7 +35,12 @@ struct BatchFormView: View {
         NavigationStack {
             Form {
                 Section("Purchase") {
-                    TextField("Provider", text: $provider)
+                    Picker("Provider", selection: $selectedProvider) {
+                        Text("None").tag(Optional<Provider>.none)
+                        ForEach(providers) { provider in
+                            Text(provider.name).tag(Optional(provider))
+                        }
+                    }
                     DatePicker("Date of Purchase", selection: $dateOfPurchase, displayedComponents: .date)
                     HStack {
                         Text("Quantity (\(ingredient.unit))")
@@ -102,7 +108,7 @@ struct BatchFormView: View {
         }
         .onAppear {
             guard let batch else { return }
-            provider = batch.provider
+            selectedProvider = batch.provider
             dateOfPurchase = batch.dateOfPurchase
             quantityText = batch.quantity.formatted(.number.precision(.fractionLength(0...2)))
             totalPriceText = batch.totalPrice.formatted(.number.precision(.fractionLength(0...2)))
@@ -122,7 +128,7 @@ struct BatchFormView: View {
 
     private func save() {
         if let batch {
-            batch.provider = provider
+            batch.provider = selectedProvider
             batch.dateOfPurchase = dateOfPurchase
             batch.quantity = quantity
             batch.totalPrice = totalPrice
@@ -133,7 +139,7 @@ struct BatchFormView: View {
             batch.storageLocation = selectedLocation
         } else {
             let newBatch = IngredientBatch(
-                provider: provider,
+                provider: selectedProvider,
                 dateOfPurchase: dateOfPurchase,
                 quantity: quantity,
                 totalPrice: totalPrice,

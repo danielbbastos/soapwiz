@@ -4,6 +4,7 @@ import SwiftData
 struct SettingsView: View {
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
+    @Query private var providers: [Provider]
 
     var body: some View {
         NavigationStack {
@@ -14,6 +15,9 @@ struct SettingsView: View {
                     }
                     NavigationLink(destination: StorageLocationListView()) {
                         LabeledContent("Storage Locations", value: "\(locations.count)")
+                    }
+                    NavigationLink(destination: ProviderListView()) {
+                        LabeledContent("Providers", value: "\(providers.count)")
                     }
                 }
             }
