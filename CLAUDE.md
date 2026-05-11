@@ -107,6 +107,22 @@ SoapWiz/                        ← source root (auto-synced by Xcode)
 - Feature branches: `feature/short-description`
 - Commit messages: imperative, lowercase, no period
 
+## Simulator Testing
+
+Available simulator: **iPad (A16)** — ID `34E90319-8EDC-4B0F-BA5F-81650ED7AAE3`  
+Available simulator: **iPhone 15 Pro** — use for `xcodebuild test`
+
+**⚠️ Always uninstall before reinstalling when the SwiftData schema has changed.** Reinstalling over an existing app with an incompatible schema causes a crash on launch. The correct sequence is:
+
+```bash
+xcrun simctl terminate <id> pt.daphnia.SoapWiz
+xcrun simctl uninstall <id> pt.daphnia.SoapWiz
+xcrun simctl install <id> <path-to.app>
+xcrun simctl launch <id> pt.daphnia.SoapWiz
+```
+
+Build output path: `~/Library/Developer/Xcode/DerivedData/SoapWiz-*/Build/Products/Debug-iphonesimulator/SoapWiz.app`
+
 ## ⚠️ Common Mistakes
 
 - **Forgetting the cascade delete rule** on `Ingredient.batches` — orphaned batches accumulate silently.

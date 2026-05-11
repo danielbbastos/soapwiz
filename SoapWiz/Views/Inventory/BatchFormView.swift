@@ -6,7 +6,7 @@ struct BatchFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     let ingredient: Ingredient
-    var batch: IngredientBatch? = nil
+    var batch: IngredientBatch?
 
     @State private var provider = ""
     @State private var dateOfPurchase = Date()
@@ -18,7 +18,8 @@ struct BatchFormView: View {
     @State private var expiryDate = Date()
     @State private var hasOpeningDate = false
     @State private var openingDate = Date()
-    @State private var storageLocation = ""
+    @Query(sort: \StorageLocation.name) private var storageLocations: [StorageLocation]
+    @State private var selectedLocation: StorageLocation?
 
     private var isEditing: Bool { batch != nil }
     private var quantity: Double { Double(quantityText) ?? 0 }
@@ -76,7 +77,12 @@ struct BatchFormView: View {
                 }
 
                 Section("Storage") {
-                    TextField("Storage Location", text: $storageLocation)
+                    Picker("Location", selection: $selectedLocation) {
+                        Text("None").tag(Optional<StorageLocation>.none)
+                        ForEach(storageLocations) { location in
+                            Text(location.name).tag(Optional(location))
+                        }
+                    }
                 }
             }
             .navigationTitle(isEditing ? "Edit Batch" : "New Batch")
@@ -110,7 +116,7 @@ struct BatchFormView: View {
                 hasOpeningDate = true
                 openingDate = opening
             }
-            storageLocation = batch.storageLocation
+            selectedLocation = batch.storageLocation
         }
     }
 
@@ -124,7 +130,7 @@ struct BatchFormView: View {
             batch.journalCode = journalCode
             batch.expiryDate = hasExpiryDate ? expiryDate : nil
             batch.openingDate = hasOpeningDate ? openingDate : nil
-            batch.storageLocation = storageLocation
+            batch.storageLocation = selectedLocation
         } else {
             let newBatch = IngredientBatch(
                 provider: provider,
@@ -135,7 +141,7 @@ struct BatchFormView: View {
                 journalCode: journalCode,
                 expiryDate: hasExpiryDate ? expiryDate : nil,
                 openingDate: hasOpeningDate ? openingDate : nil,
-                storageLocation: storageLocation
+                storageLocation: selectedLocation
             )
             modelContext.insert(newBatch)
             ingredient.batches.append(newBatch)

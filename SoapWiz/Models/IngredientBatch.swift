@@ -13,7 +13,7 @@ final class IngredientBatch {
     var expiryDate: Date?
     var openingDate: Date?
     var remainingAmount: Double
-    var storageLocation: String
+    var storageLocation: StorageLocation?
 
     var pricePerUnit: Double {
         guard quantity > 0 else { return 0 }
@@ -29,7 +29,7 @@ final class IngredientBatch {
         journalCode: String,
         expiryDate: Date?,
         openingDate: Date?,
-        storageLocation: String
+        storageLocation: StorageLocation? = nil
     ) {
         self.provider = provider
         self.dateOfPurchase = dateOfPurchase
