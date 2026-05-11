@@ -5,9 +5,7 @@ struct CategoryListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
 
-    @State private var showingAddCategory = false
-    @State private var categoryToEdit: IngredientCategory? = nil
-    @State private var deleteBlockedCategory: IngredientCategory? = nil
+    @State private var model = CategoryListViewModel()
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -22,7 +20,7 @@ struct CategoryListView: View {
                     List {
                         ForEach(categories) { category in
                             Button {
-                                categoryToEdit = category
+                                model.categoryToEdit = category
                             } label: {
                                 HStack {
                                     Text(category.name)
@@ -34,44 +32,33 @@ struct CategoryListView: View {
                                 }
                             }
                         }
-                        .onDelete(perform: deleteCategories)
+                        .onDelete { model.delete(at: $0, in: categories, context: modelContext) }
                     }
                 }
             }
             .navigationTitle("Categories")
             .navigationBarTitleDisplayMode(.large)
 
-            FloatingActionButton { showingAddCategory = true }
+            FloatingActionButton { model.showingAddCategory = true }
         }
-        .sheet(isPresented: $showingAddCategory) {
+        .sheet(isPresented: $model.showingAddCategory) {
             CategoryFormView()
         }
-        .sheet(item: $categoryToEdit) { category in
+        .sheet(item: $model.categoryToEdit) { category in
             CategoryFormView(category: category)
         }
         .alert(
             "Cannot Delete Category",
             isPresented: Binding(
-                get: { deleteBlockedCategory != nil },
-                set: { if !$0 { deleteBlockedCategory = nil } }
+                get: { model.deleteBlockedCategory != nil },
+                set: { if !$0 { model.deleteBlockedCategory = nil } }
             ),
-            presenting: deleteBlockedCategory
+            presenting: model.deleteBlockedCategory
         ) { _ in
-            Button("OK", role: .cancel) { deleteBlockedCategory = nil }
+            Button("OK", role: .cancel) { model.deleteBlockedCategory = nil }
         } message: { category in
             let count = category.ingredients.count
             Text("\"\(category.name)\" is assigned to \(count) ingredient\(count == 1 ? "" : "s"). Remove the category from those ingredients first.")
-        }
-    }
-
-    private func deleteCategories(at offsets: IndexSet) {
-        for index in offsets {
-            let category = categories[index]
-            if category.ingredients.isEmpty {
-                modelContext.delete(category)
-            } else {
-                deleteBlockedCategory = category
-            }
         }
     }
 }

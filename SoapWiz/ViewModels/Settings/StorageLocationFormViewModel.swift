@@ -1,0 +1,41 @@
+import Foundation
+import SwiftData
+
+@MainActor
+@Observable
+final class StorageLocationFormViewModel {
+    var name: String = ""
+    var locationDescription: String = ""
+
+    let location: StorageLocation?
+
+    init(location: StorageLocation? = nil) {
+        self.location = location
+        if let location {
+            name = location.name
+            locationDescription = location.locationDescription
+        }
+    }
+
+    var isEditing: Bool { location != nil }
+    var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
+    var trimmedDescription: String { locationDescription.trimmingCharacters(in: .whitespaces) }
+
+    func isDuplicate(among locations: [StorageLocation]) -> Bool {
+        guard !trimmedName.isEmpty else { return false }
+        return locations.contains { $0.name.lowercased() == trimmedName.lowercased() && $0 != location }
+    }
+
+    func isValid(among locations: [StorageLocation]) -> Bool {
+        !trimmedName.isEmpty && !isDuplicate(among: locations)
+    }
+
+    func save(context: ModelContext) {
+        if let location {
+            location.name = trimmedName
+            location.locationDescription = trimmedDescription
+        } else {
+            context.insert(StorageLocation(name: trimmedName, locationDescription: trimmedDescription))
+        }
+    }
+}

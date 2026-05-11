@@ -5,9 +5,7 @@ struct IngredientListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Ingredient.name) private var ingredients: [Ingredient]
 
-    @State private var showingAddIngredient = false
-    @State private var editMode: EditMode = .inactive
-    @State private var selection: Set<PersistentIdentifier> = []
+    @State private var model = IngredientListViewModel()
 
     var body: some View {
         NavigationStack {
@@ -20,59 +18,42 @@ struct IngredientListView: View {
                             description: Text("Tap + to add your first ingredient.")
                         )
                     } else {
-                        List(selection: $selection) {
+                        List(selection: $model.selection) {
                             ForEach(ingredients) { ingredient in
                                 NavigationLink(destination: IngredientDetailView(ingredient: ingredient)) {
                                     IngredientRowView(ingredient: ingredient)
                                 }
                             }
-                            .onDelete(perform: deleteIngredients)
+                            .onDelete { model.delete(at: $0, in: ingredients, context: modelContext) }
                         }
-                        .environment(\.editMode, $editMode)
+                        .environment(\.editMode, $model.editMode)
                     }
                 }
                 .navigationTitle("Inventory")
                 .toolbar {
                     if !ingredients.isEmpty {
                         ToolbarItem(placement: .topBarLeading) {
-                            if editMode == .active {
+                            if model.editMode == .active {
                                 Button("Delete", role: .destructive) {
-                                    deleteSelected()
+                                    model.deleteSelected(in: ingredients, context: modelContext)
                                 }
-                                .disabled(selection.isEmpty)
+                                .disabled(model.selection.isEmpty)
                             }
                         }
                         ToolbarItem(placement: .topBarTrailing) {
                             EditButton()
-                                .environment(\.editMode, $editMode)
+                                .environment(\.editMode, $model.editMode)
                         }
                     }
-
                 }
 
-                if editMode == .inactive {
-                    FloatingActionButton { showingAddIngredient = true }
+                if model.editMode == .inactive {
+                    FloatingActionButton { model.showingAddIngredient = true }
                 }
             }
         }
-        .sheet(isPresented: $showingAddIngredient) {
+        .sheet(isPresented: $model.showingAddIngredient) {
             IngredientFormView()
         }
-    }
-
-    private func deleteIngredients(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(ingredients[index])
-        }
-    }
-
-    private func deleteSelected() {
-        for id in selection {
-            if let match = ingredients.first(where: { $0.persistentModelID == id }) {
-                modelContext.delete(match)
-            }
-        }
-        selection.removeAll()
-        editMode = .inactive
     }
 }

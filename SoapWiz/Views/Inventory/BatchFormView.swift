@@ -5,47 +5,30 @@ struct BatchFormView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    let ingredient: Ingredient
-    var batch: IngredientBatch?
-
     @Query(sort: \Provider.name) private var providers: [Provider]
-    @State private var selectedProvider: Provider?
-    @State private var dateOfPurchase = Date()
-    @State private var quantityText = ""
-    @State private var totalPriceText = ""
-    @State private var badge = ""
-    @State private var journalCode = ""
-    @State private var hasExpiryDate = false
-    @State private var expiryDate = Date()
-    @State private var hasOpeningDate = false
-    @State private var openingDate = Date()
     @Query(sort: \StorageLocation.name) private var storageLocations: [StorageLocation]
-    @State private var selectedLocation: StorageLocation?
 
-    private var isEditing: Bool { batch != nil }
-    private var quantity: Double { Double(quantityText) ?? 0 }
-    private var totalPrice: Double { Double(totalPriceText) ?? 0 }
-    private var pricePerUnit: Double {
-        guard quantity > 0 else { return 0 }
-        return totalPrice / quantity
+    @State private var model: BatchFormViewModel
+
+    init(ingredient: Ingredient, batch: IngredientBatch? = nil) {
+        _model = State(initialValue: BatchFormViewModel(ingredient: ingredient, batch: batch))
     }
-    private var isValid: Bool { quantity > 0 }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Purchase") {
-                    Picker("Provider", selection: $selectedProvider) {
+                    Picker("Provider", selection: $model.selectedProvider) {
                         Text("None").tag(Optional<Provider>.none)
                         ForEach(providers) { provider in
                             Text(provider.name).tag(Optional(provider))
                         }
                     }
-                    DatePicker("Date of Purchase", selection: $dateOfPurchase, displayedComponents: .date)
+                    DatePicker("Date of Purchase", selection: $model.dateOfPurchase, displayedComponents: .date)
                     HStack {
-                        Text("Quantity (\(ingredient.unit))")
+                        Text("Quantity (\(model.ingredient.unit))")
                         Spacer()
-                        TextField("0", text: $quantityText)
+                        TextField("0", text: $model.quantityText)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
@@ -53,37 +36,37 @@ struct BatchFormView: View {
                     HStack {
                         Text("Total Price")
                         Spacer()
-                        TextField("0.00", text: $totalPriceText)
+                        TextField("0.00", text: $model.totalPriceText)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
                     }
-                    if quantity > 0 && totalPrice > 0 {
-                        LabeledContent("Price / \(ingredient.unit)") {
-                            Text(pricePerUnit.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
+                    if model.quantity > 0 && model.totalPrice > 0 {
+                        LabeledContent("Price / \(model.ingredient.unit)") {
+                            Text(model.pricePerUnit.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
                                 .foregroundStyle(.secondary)
                         }
                     }
                 }
 
                 Section("Identification") {
-                    TextField("Badge / Lot Number", text: $badge)
-                    TextField("Journal Code", text: $journalCode)
+                    TextField("Badge / Lot Number", text: $model.badge)
+                    TextField("Journal Code", text: $model.journalCode)
                 }
 
                 Section("Dates") {
-                    Toggle("Has Expiry Date", isOn: $hasExpiryDate)
-                    if hasExpiryDate {
-                        DatePicker("Expiry Date", selection: $expiryDate, displayedComponents: .date)
+                    Toggle("Has Expiry Date", isOn: $model.hasExpiryDate)
+                    if model.hasExpiryDate {
+                        DatePicker("Expiry Date", selection: $model.expiryDate, displayedComponents: .date)
                     }
-                    Toggle("Has Opening Date", isOn: $hasOpeningDate)
-                    if hasOpeningDate {
-                        DatePicker("Opening Date", selection: $openingDate, displayedComponents: .date)
+                    Toggle("Has Opening Date", isOn: $model.hasOpeningDate)
+                    if model.hasOpeningDate {
+                        DatePicker("Opening Date", selection: $model.openingDate, displayedComponents: .date)
                     }
                 }
 
                 Section("Storage") {
-                    Picker("Location", selection: $selectedLocation) {
+                    Picker("Location", selection: $model.selectedLocation) {
                         Text("None").tag(Optional<StorageLocation>.none)
                         ForEach(storageLocations) { location in
                             Text(location.name).tag(Optional(location))
@@ -91,66 +74,20 @@ struct BatchFormView: View {
                     }
                 }
             }
-            .navigationTitle(isEditing ? "Edit Batch" : "New Batch")
+            .navigationTitle(model.isEditing ? "Edit Batch" : "New Batch")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isEditing ? "Save" : "Add") {
-                        save()
+                    Button(model.isEditing ? "Save" : "Add") {
+                        model.save(context: modelContext)
                         dismiss()
                     }
-                    .disabled(!isValid)
+                    .disabled(!model.isValid)
                 }
             }
-        }
-        .onAppear {
-            guard let batch else { return }
-            selectedProvider = batch.provider
-            dateOfPurchase = batch.dateOfPurchase
-            quantityText = batch.quantity.formatted(.number.precision(.fractionLength(0...2)))
-            totalPriceText = batch.totalPrice.formatted(.number.precision(.fractionLength(0...2)))
-            badge = batch.badge
-            journalCode = batch.journalCode
-            if let expiry = batch.expiryDate {
-                hasExpiryDate = true
-                expiryDate = expiry
-            }
-            if let opening = batch.openingDate {
-                hasOpeningDate = true
-                openingDate = opening
-            }
-            selectedLocation = batch.storageLocation
-        }
-    }
-
-    private func save() {
-        if let batch {
-            batch.provider = selectedProvider
-            batch.dateOfPurchase = dateOfPurchase
-            batch.quantity = quantity
-            batch.totalPrice = totalPrice
-            batch.badge = badge
-            batch.journalCode = journalCode
-            batch.expiryDate = hasExpiryDate ? expiryDate : nil
-            batch.openingDate = hasOpeningDate ? openingDate : nil
-            batch.storageLocation = selectedLocation
-        } else {
-            let newBatch = IngredientBatch(
-                provider: selectedProvider,
-                dateOfPurchase: dateOfPurchase,
-                quantity: quantity,
-                totalPrice: totalPrice,
-                badge: badge,
-                journalCode: journalCode,
-                expiryDate: hasExpiryDate ? expiryDate : nil,
-                openingDate: hasOpeningDate ? openingDate : nil,
-                storageLocation: selectedLocation
-            )
-            modelContext.insert(newBatch)
-            ingredient.batches.append(newBatch)
         }
     }
 }
