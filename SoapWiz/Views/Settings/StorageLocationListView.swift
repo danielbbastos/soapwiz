@@ -5,9 +5,7 @@ struct StorageLocationListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \StorageLocation.name) private var locations: [StorageLocation]
 
-    @State private var showingAddLocation = false
-    @State private var locationToEdit: StorageLocation?
-    @State private var deleteBlockedLocation: StorageLocation?
+    @State private var model = StorageLocationListViewModel()
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -22,7 +20,7 @@ struct StorageLocationListView: View {
                     List {
                         ForEach(locations) { location in
                             Button {
-                                locationToEdit = location
+                                model.locationToEdit = location
                             } label: {
                                 VStack(alignment: .leading, spacing: 2) {
                                     HStack {
@@ -41,47 +39,36 @@ struct StorageLocationListView: View {
                                 }
                             }
                         }
-                        .onDelete(perform: deleteLocations)
+                        .onDelete { model.delete(at: $0, in: locations, context: modelContext) }
                     }
                 }
             }
             .navigationTitle("Storage Locations")
             .navigationBarTitleDisplayMode(.large)
 
-            FloatingActionButton { showingAddLocation = true }
+            FloatingActionButton { model.showingAddLocation = true }
         }
-        .sheet(isPresented: $showingAddLocation) {
+        .sheet(isPresented: $model.showingAddLocation) {
             StorageLocationFormView()
         }
-        .sheet(item: $locationToEdit) { location in
+        .sheet(item: $model.locationToEdit) { location in
             StorageLocationFormView(location: location)
         }
         .alert(
             "Cannot Delete Location",
             isPresented: Binding(
-                get: { deleteBlockedLocation != nil },
-                set: { if !$0 { deleteBlockedLocation = nil } }
+                get: { model.deleteBlockedLocation != nil },
+                set: { if !$0 { model.deleteBlockedLocation = nil } }
             ),
-            presenting: deleteBlockedLocation
+            presenting: model.deleteBlockedLocation
         ) { _ in
-            Button("OK", role: .cancel) { deleteBlockedLocation = nil }
+            Button("OK", role: .cancel) { model.deleteBlockedLocation = nil }
         } message: { location in
             let count = location.batches.count
             Text(
                 "\"\(location.name)\" is assigned to \(count) batch\(count == 1 ? "" : "es"). " +
                 "Remove the location from those batches first."
             )
-        }
-    }
-
-    private func deleteLocations(at offsets: IndexSet) {
-        for index in offsets {
-            let location = locations[index]
-            if location.batches.isEmpty {
-                modelContext.delete(location)
-            } else {
-                deleteBlockedLocation = location
-            }
         }
     }
 }

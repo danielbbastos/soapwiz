@@ -7,68 +7,43 @@ struct StorageLocationFormView: View {
 
     @Query(sort: \StorageLocation.name) private var allLocations: [StorageLocation]
 
-    var location: StorageLocation?
-
-    @State private var name: String
-    @State private var locationDescription: String
+    @State private var model: StorageLocationFormViewModel
 
     init(location: StorageLocation? = nil) {
-        self.location = location
-        _name = State(initialValue: location?.name ?? "")
-        _locationDescription = State(initialValue: location?.locationDescription ?? "")
+        _model = State(initialValue: StorageLocationFormViewModel(location: location))
     }
-
-    private var isEditing: Bool { location != nil }
-    private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
-    private var trimmedDescription: String { locationDescription.trimmingCharacters(in: .whitespaces) }
-
-    private var isDuplicate: Bool {
-        guard !trimmedName.isEmpty else { return false }
-        return allLocations.contains { $0.name.lowercased() == trimmedName.lowercased() && $0 != location }
-    }
-
-    private var isValid: Bool { !trimmedName.isEmpty && !isDuplicate }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $name)
+                    TextField("Name", text: $model.name)
                 } footer: {
-                    if isDuplicate {
+                    if model.isDuplicate(among: allLocations) {
                         Text("A location with this name already exists.")
                             .foregroundStyle(.red)
                     }
                 }
 
                 Section("Description") {
-                    TextField("Optional (e.g. temperature-controlled)", text: $locationDescription, axis: .vertical)
+                    TextField("Optional (e.g. temperature-controlled)", text: $model.locationDescription, axis: .vertical)
                         .lineLimit(3...6)
                 }
             }
-            .navigationTitle(isEditing ? "Edit Location" : "New Location")
+            .navigationTitle(model.isEditing ? "Edit Location" : "New Location")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isEditing ? "Save" : "Add") {
-                        save()
+                    Button(model.isEditing ? "Save" : "Add") {
+                        model.save(context: modelContext)
                         dismiss()
                     }
-                    .disabled(!isValid)
+                    .disabled(!model.isValid(among: allLocations))
                 }
             }
-        }
-    }
-
-    private func save() {
-        if let location {
-            location.name = trimmedName
-            location.locationDescription = trimmedDescription
-        } else {
-            modelContext.insert(StorageLocation(name: trimmedName, locationDescription: trimmedDescription))
         }
     }
 }

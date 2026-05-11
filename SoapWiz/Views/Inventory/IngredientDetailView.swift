@@ -3,65 +3,57 @@ import SwiftData
 
 struct IngredientDetailView: View {
     @Environment(\.modelContext) private var modelContext
-    let ingredient: Ingredient
 
-    @State private var showingAddBatch = false
-    @State private var showingEditIngredient = false
+    @State private var model: IngredientDetailViewModel
 
-    private var sortedBatches: [IngredientBatch] {
-        ingredient.batches.sorted { $0.dateOfPurchase > $1.dateOfPurchase }
+    init(ingredient: Ingredient) {
+        _model = State(initialValue: IngredientDetailViewModel(ingredient: ingredient))
     }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             List {
                 Section("Summary") {
-                    if let categoryName = ingredient.category?.name {
+                    if let categoryName = model.ingredient.category?.name {
                         LabeledContent("Category", value: categoryName)
                     }
-                    LabeledContent("Unit", value: ingredient.unit)
+                    LabeledContent("Unit", value: model.ingredient.unit)
                     LabeledContent("Total Remaining") {
-                        Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
-                            .foregroundStyle(ingredient.totalRemaining > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
+                        Text("\(model.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(model.ingredient.unit)")
+                            .foregroundStyle(model.totalRemaining > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
                     }
-                    LabeledContent("Batches", value: "\(ingredient.batches.count)")
+                    LabeledContent("Batches", value: "\(model.ingredient.batches.count)")
                 }
 
                 Section("Batches") {
-                    if sortedBatches.isEmpty {
+                    if model.sortedBatches.isEmpty {
                         Text("No batches yet. Tap + to add one.")
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(sortedBatches) { batch in
+                        ForEach(model.sortedBatches) { batch in
                             NavigationLink(destination: BatchDetailView(batch: batch)) {
-                                BatchRowView(batch: batch, unit: ingredient.unit)
+                                BatchRowView(batch: batch, unit: model.ingredient.unit)
                             }
                         }
-                        .onDelete(perform: deleteBatches)
+                        .onDelete { model.delete(at: $0, context: modelContext) }
                     }
                 }
             }
-            .navigationTitle(ingredient.name)
+            .navigationTitle(model.ingredient.name)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Edit") { showingEditIngredient = true }
+                    Button("Edit") { model.showingEditIngredient = true }
                 }
             }
 
-            FloatingActionButton { showingAddBatch = true }
+            FloatingActionButton { model.showingAddBatch = true }
         }
-        .sheet(isPresented: $showingAddBatch) {
-            BatchFormView(ingredient: ingredient)
+        .sheet(isPresented: $model.showingAddBatch) {
+            BatchFormView(ingredient: model.ingredient)
         }
-        .sheet(isPresented: $showingEditIngredient) {
-            IngredientFormView(ingredient: ingredient)
-        }
-    }
-
-    private func deleteBatches(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(sortedBatches[index])
+        .sheet(isPresented: $model.showingEditIngredient) {
+            IngredientFormView(ingredient: model.ingredient)
         }
     }
 }

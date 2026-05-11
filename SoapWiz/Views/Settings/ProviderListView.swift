@@ -5,9 +5,7 @@ struct ProviderListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Provider.name) private var providers: [Provider]
 
-    @State private var showingAddProvider = false
-    @State private var providerToEdit: Provider?
-    @State private var deleteBlockedProvider: Provider?
+    @State private var model = ProviderListViewModel()
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -22,7 +20,7 @@ struct ProviderListView: View {
                     List {
                         ForEach(providers) { provider in
                             Button {
-                                providerToEdit = provider
+                                model.providerToEdit = provider
                             } label: {
                                 VStack(alignment: .leading, spacing: 2) {
                                     HStack {
@@ -41,47 +39,36 @@ struct ProviderListView: View {
                                 }
                             }
                         }
-                        .onDelete(perform: deleteProviders)
+                        .onDelete { model.delete(at: $0, in: providers, context: modelContext) }
                     }
                 }
             }
             .navigationTitle("Providers")
             .navigationBarTitleDisplayMode(.large)
 
-            FloatingActionButton { showingAddProvider = true }
+            FloatingActionButton { model.showingAddProvider = true }
         }
-        .sheet(isPresented: $showingAddProvider) {
+        .sheet(isPresented: $model.showingAddProvider) {
             ProviderFormView()
         }
-        .sheet(item: $providerToEdit) { provider in
+        .sheet(item: $model.providerToEdit) { provider in
             ProviderFormView(provider: provider)
         }
         .alert(
             "Cannot Delete Provider",
             isPresented: Binding(
-                get: { deleteBlockedProvider != nil },
-                set: { if !$0 { deleteBlockedProvider = nil } }
+                get: { model.deleteBlockedProvider != nil },
+                set: { if !$0 { model.deleteBlockedProvider = nil } }
             ),
-            presenting: deleteBlockedProvider
+            presenting: model.deleteBlockedProvider
         ) { _ in
-            Button("OK", role: .cancel) { deleteBlockedProvider = nil }
+            Button("OK", role: .cancel) { model.deleteBlockedProvider = nil }
         } message: { provider in
             let count = provider.batches.count
             Text(
                 "\"\(provider.name)\" is assigned to \(count) batch\(count == 1 ? "" : "es"). " +
                 "Remove the provider from those batches first."
             )
-        }
-    }
-
-    private func deleteProviders(at offsets: IndexSet) {
-        for index in offsets {
-            let provider = providers[index]
-            if provider.batches.isEmpty {
-                modelContext.delete(provider)
-            } else {
-                deleteBlockedProvider = provider
-            }
         }
     }
 }
