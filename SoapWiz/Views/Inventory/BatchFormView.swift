@@ -26,7 +26,7 @@ struct BatchFormView: View {
                     }
                     DatePicker("Date of Purchase", selection: $model.dateOfPurchase, displayedComponents: .date)
                     HStack {
-                        Text("Quantity (\(model.ingredient.unit))")
+                        Text("Quantity (\(model.ingredient.unit?.symbol ?? ""))")
                         Spacer()
                         TextField("0", text: $model.quantityText)
                             .keyboardType(.decimalPad)
@@ -42,7 +42,7 @@ struct BatchFormView: View {
                             .frame(width: 100)
                     }
                     if model.quantity > 0 && model.totalPrice > 0 {
-                        LabeledContent("Price / \(model.ingredient.unit)") {
+                        LabeledContent("Price / \(model.ingredient.unit?.symbol ?? "")") {
                             Text(model.pricePerUnit.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
                                 .foregroundStyle(.secondary)
                         }

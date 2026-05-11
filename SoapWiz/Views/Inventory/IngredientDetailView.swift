@@ -17,9 +17,12 @@ struct IngredientDetailView: View {
                     if let categoryName = model.ingredient.category?.name {
                         LabeledContent("Category", value: categoryName)
                     }
-                    LabeledContent("Unit", value: model.ingredient.unit)
+                    if let unitName = model.ingredient.unit?.name {
+                        LabeledContent("Unit", value: unitName)
+                    }
                     LabeledContent("Total Remaining") {
-                        Text("\(model.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(model.ingredient.unit)")
+                        let symbol = model.ingredient.unit?.symbol ?? ""
+                        Text("\(model.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(symbol)")
                             .foregroundStyle(model.totalRemaining > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
                     }
                     LabeledContent("Batches", value: "\(model.ingredient.batches.count)")
@@ -32,7 +35,7 @@ struct IngredientDetailView: View {
                     } else {
                         ForEach(model.sortedBatches) { batch in
                             NavigationLink(destination: BatchDetailView(batch: batch)) {
-                                BatchRowView(batch: batch, unit: model.ingredient.unit)
+                                BatchRowView(batch: batch, unit: model.ingredient.unit?.symbol ?? "")
                             }
                         }
                         .onDelete { model.delete(at: $0, context: modelContext) }

@@ -1,0 +1,7 @@
+[
+  { "name": "Gram", "symbol": "g" },
+  { "name": "Kilogram", "symbol": "kg" },
+  { "name": "Litre", "symbol": "l" },
+  { "name": "Millilitre", "symbol": "ml" },
+  { "name": "Unit", "symbol": "un" }
+]

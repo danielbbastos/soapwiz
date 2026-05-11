@@ -7,7 +7,7 @@ import SwiftData
 struct CategoryTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self])
+        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         return try ModelContainer(for: schema, configurations: [config])
     }
@@ -30,7 +30,7 @@ struct CategoryTests {
 
         let category = IngredientCategory(name: "Oils")
         context.insert(category)
-        let ingredient = Ingredient(name: "Olive Oil", category: category, unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil", category: category)
         context.insert(ingredient)
         try context.save()
 
@@ -60,7 +60,7 @@ struct CategoryTests {
 
         let category = IngredientCategory(name: "Oils")
         context.insert(category)
-        let ingredient = Ingredient(name: "Olive Oil", category: category, unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil", category: category)
         context.insert(ingredient)
         try context.save()
 
@@ -73,7 +73,7 @@ struct CategoryTests {
 
         let category = IngredientCategory(name: "Oils")
         context.insert(category)
-        let ingredient = Ingredient(name: "Olive Oil", category: category, unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil", category: category)
         context.insert(ingredient)
         try context.save()
 

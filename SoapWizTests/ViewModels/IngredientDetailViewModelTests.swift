@@ -8,7 +8,7 @@ import SwiftData
 struct IngredientDetailViewModelTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self, StorageLocation.self, Provider.self])
         return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
     }
 
@@ -23,7 +23,7 @@ struct IngredientDetailViewModelTests {
     @Test func sortedBatchesDescendingByDate() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let older = makeBatch(quantity: 100, daysAgo: 30)
         let newer = makeBatch(quantity: 50, daysAgo: 5)
@@ -39,7 +39,7 @@ struct IngredientDetailViewModelTests {
     @Test func totalRemainingSumsAllBatches() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let b1 = makeBatch(quantity: 100, daysAgo: 10)
         let b2 = makeBatch(quantity: 50, daysAgo: 5)
@@ -54,7 +54,7 @@ struct IngredientDetailViewModelTests {
     @Test func deleteByOffsetUsesSortedOrder() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let older = makeBatch(quantity: 100, daysAgo: 30)
         let newer = makeBatch(quantity: 50, daysAgo: 5)
