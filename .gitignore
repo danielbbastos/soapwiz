@@ -1,1 +1,9 @@
 .DS_Store
+
+# Xcode user-specific state
+xcuserdata/
+*.xcuserstate
+
+# Python
+__pycache__/
+*.pyc
