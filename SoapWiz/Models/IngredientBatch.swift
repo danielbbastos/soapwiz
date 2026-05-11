@@ -4,7 +4,7 @@ import SwiftData
 @Model
 final class IngredientBatch {
     var ingredient: Ingredient?
-    var provider: String
+    var provider: Provider?
     var dateOfPurchase: Date
     var quantity: Double
     var totalPrice: Double
@@ -21,7 +21,7 @@ final class IngredientBatch {
     }
 
     init(
-        provider: String,
+        provider: Provider? = nil,
         dateOfPurchase: Date,
         quantity: Double,
         totalPrice: Double,

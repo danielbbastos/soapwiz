@@ -7,7 +7,7 @@ struct BatchRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(batch.provider.isEmpty ? "Unknown Provider" : batch.provider)
+                Text(batch.provider?.name ?? "Unknown Provider")
                     .font(.headline)
                 Spacer()
                 Text(batch.dateOfPurchase, style: .date)

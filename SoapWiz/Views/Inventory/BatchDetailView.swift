@@ -10,7 +10,7 @@ struct BatchDetailView: View {
     var body: some View {
         List {
             Section("Purchase") {
-                LabeledContent("Provider", value: batch.provider.isEmpty ? "—" : batch.provider)
+                LabeledContent("Provider", value: batch.provider?.name ?? "—")
                 LabeledContent("Date", value: batch.dateOfPurchase.formatted(date: .long, time: .omitted))
                 LabeledContent(
                     "Quantity",
