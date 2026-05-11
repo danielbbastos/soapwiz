@@ -12,9 +12,18 @@ struct BatchDetailView: View {
             Section("Purchase") {
                 LabeledContent("Provider", value: batch.provider.isEmpty ? "—" : batch.provider)
                 LabeledContent("Date", value: batch.dateOfPurchase.formatted(date: .long, time: .omitted))
-                LabeledContent("Quantity", value: "\(batch.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
-                LabeledContent("Total Price", value: batch.totalPrice.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
-                LabeledContent("Price / \(unit.isEmpty ? "unit" : unit)", value: batch.pricePerUnit.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
+                LabeledContent(
+                    "Quantity",
+                    value: "\(batch.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)"
+                )
+                LabeledContent(
+                    "Total Price",
+                    value: batch.totalPrice.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
+                )
+                LabeledContent(
+                    "Price / \(unit.isEmpty ? "unit" : unit)",
+                    value: batch.pricePerUnit.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
+                )
             }
 
             Section("Identification") {
@@ -40,7 +49,7 @@ struct BatchDetailView: View {
                     Text("\(batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
                         .foregroundStyle(batch.remainingAmount > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
                 }
-                LabeledContent("Storage Location", value: batch.storageLocation.isEmpty ? "—" : batch.storageLocation)
+                LabeledContent("Storage Location", value: batch.storageLocation?.name ?? "—")
             }
         }
         .navigationTitle("Batch Details")

@@ -15,6 +15,7 @@ struct SoapWizApp: App {
             Ingredient.self,
             IngredientBatch.self,
             IngredientCategory.self,
+            StorageLocation.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -23,7 +24,11 @@ struct SoapWizApp: App {
         } catch {
             // Schema changed — wipe store and retry (dev only, no production data at risk)
             let storeURL = modelConfiguration.url
-            try? FileManager.default.removeItem(at: storeURL)
+            let shmURL = storeURL.appendingPathExtension("shm")
+            let walURL = storeURL.appendingPathExtension("wal")
+            for url in [storeURL, shmURL, walURL] {
+                try? FileManager.default.removeItem(at: url)
+            }
             do {
                 return try ModelContainer(for: schema, configurations: [modelConfiguration])
             } catch {
