@@ -1,48 +1,112 @@
-# iOS Development Guidelines
+---
+name: ios-dev-guidelines
+description: Context-aware routing to Swift/iOS development patterns, architecture, and best practices. Use when working with .swift files, ViewModels, Coordinators, refactoring, or discussing Swift/SwiftUI patterns.
+---
 
-Reference this for Swift/iOS architectural patterns and non-negotiable practices in SoapWiz.
+# iOS Development Guidelines (Smart Router)
 
-## Critical Rules
+## Purpose
+Context-aware routing to iOS development patterns, code style, and architecture guidelines. This skill provides critical rules and points you to comprehensive documentation.
 
-- Never hardcode UI strings — use string constants or localization keys
-- Never trim whitespace-only lines from generated or existing files unintentionally
-- Update tests when refactoring any production code that is tested
-- All SwiftData model access stays on `@MainActor` (project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`)
-- No new external dependencies without explicit discussion
+## When Auto-Activated
+- Working with `.swift` files
+- Discussing ViewModels, architecture
+- Refactoring or formatting code
+- Keywords: swift, swiftui, mvvm, async, await, refactor
 
-## Architecture Patterns
+## 🚨 CRITICAL RULES (NEVER VIOLATE)
 
-**ViewModels** (when needed):
-- Annotate with `@MainActor`
-- Keep `init` lightweight — defer expensive work to `.task`
-- ViewModels are optional for simple views; use `@Query` + local `@State` directly for straightforward list/detail views
+1. **NEVER trim whitespace-only lines** — Preserve blank lines with spaces/tabs exactly as they appear
+2. **NEVER add comments** unless explicitly requested
+3. **ALWAYS update tests when refactoring** — Search for all references and update
+4. **NEVER commit without explicit user request** — Committing is destructive and irreversible
+5. **Always verify before deleting files** — Use `ls` to check; delete files individually, never with wildcards
+6. **Search all usages before renaming** — `rg "oldName" --type swift`; update tests, mocks, registrations
 
-**Navigation:**
-- Root view is `IngredientListView` inside `NavigationStack`
-- Push navigation via `NavigationLink`
-- Creation and edit flows via sheets
+## 📋 Quick Checklist
 
-**Dependency injection:**
-- `ModelContainer` is created once in `SoapWizApp` and flows via `.modelContainer()`
-- Never create a second `ModelContainer`
+Before completing any task:
+- [ ] Whitespace-only lines preserved (not trimmed)
+- [ ] No comments added (unless requested)
+- [ ] Tests updated if dependencies changed
+- [ ] Explicit commit request received before committing
+- [ ] File existence confirmed before deletion
 
-## SwiftUI Best Practices
+## 🎯 SwiftUI View Fundamentals (WWDC24)
 
-- Views are value types — decompose freely into subviews without performance concern
-- `body` should be declarative and readable; extract private computed view properties when it grows complex
-- Defer expensive work to `.task`, not `init` or `onAppear` when avoidable
-- Use `Button` over raw gesture handlers for accessibility
+SwiftUI views have three key qualities:
 
-## Project Conventions
+1. **Declarative** — Describe what you want, not how to build it
+2. **Compositional** — Build complex UIs from simple building blocks
+3. **State-driven** — UI automatically updates when state changes
 
-- PascalCase for types, camelCase for properties and functions
-- 4-space indentation
-- Ordering inside a view struct: property wrappers → public properties → private properties → computed properties → `body` → private view builders → helper functions
+**Key insight**: Views are VALUE TYPES (structs), not long-lived objects. They are descriptions of current UI state. Breaking views into subviews doesn't hurt performance — SwiftUI maintains efficient data structures behind the scenes.
 
-## Naming
+For detailed SwiftUI patterns, see **swiftui-patterns-developer** skill.
 
-| Thing | Convention |
-|---|---|
-| View | `<Noun>View`, `<Noun>RowView`, `<Noun>FormView`, `<Noun>DetailView` |
-| Model | `<Noun>` (e.g., `Ingredient`, `IngredientBatch`) |
-| Sheet presentation | `@State var showingAddThing = false` |
+## 🎯 Common Patterns
+
+### MVVM ViewModel
+```swift
+@MainActor
+@Observable
+final class IngredientFormViewModel {
+    var name: String = ""
+    var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    private let modelContext: ModelContext
+
+    init(modelContext: ModelContext, ingredient: Ingredient? = nil) {
+        self.modelContext = modelContext
+        if let ingredient { self.name = ingredient.name }
+    }
+
+    func save() {
+        modelContext.insert(Ingredient(name: name))
+    }
+}
+```
+
+### ViewModel Initialization
+Keep ViewModel `init()` cheap — defer heavy work to `.task`:
+```swift
+// Init assigns parameters only
+init(ingredient: Ingredient, modelContext: ModelContext) {
+    _model = State(wrappedValue: IngredientFormViewModel(modelContext: modelContext, ingredient: ingredient))
+}
+
+// Heavy work in .task
+.task { await model.loadRelatedData() }
+```
+
+For expensive init, defer creation entirely:
+```swift
+@State private var model: ViewModel?
+.task(id: id) { model = ViewModel(id: id) }
+```
+
+## 🗂️ Project Structure
+
+```
+SoapWiz/
+├── Models/              # SwiftData @Model entities (Ingredient, IngredientBatch, etc.)
+├── ViewModels/          # @Observable @MainActor ViewModels
+├── Views/
+│   ├── Inventory/       # Ingredient list, detail, batch views
+│   └── Settings/        # Settings, categories, storage locations
+└── SoapWizApp.swift     # @main, ModelContainer setup
+```
+
+## 🔧 Code Style Quick Reference
+
+- **Indentation**: 4 spaces (no tabs)
+- **Naming**: PascalCase (types), camelCase (variables/functions)
+- **Extensions**: `TypeName+Feature.swift`
+- **Property order**: `@Environment`/`@Query`/`@State` → public → private → computed → init → methods
+- **Avoid nested types** — Extract to top-level with descriptive names
+- **Enum exhaustiveness** — Use explicit switch statements (enables compiler warnings)
+
+## 🔗 Related Skills
+
+- **swiftui-patterns-developer** → View structure, composition, @Observable patterns
+- **swiftui-performance-developer** → Performance auditing, view invalidation

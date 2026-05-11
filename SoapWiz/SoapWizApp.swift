@@ -39,7 +39,7 @@ struct SoapWizApp: App {
 
     var body: some Scene {
         WindowGroup {
-            IngredientListView()
+            ContentView()
         }
         .modelContainer(sharedModelContainer)
     }

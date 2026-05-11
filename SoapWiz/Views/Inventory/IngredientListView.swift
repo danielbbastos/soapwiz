@@ -47,14 +47,7 @@ struct IngredientListView: View {
                                 .environment(\.editMode, $editMode)
                         }
                     }
-                    ToolbarItemGroup(placement: .topBarTrailing) {
-                        NavigationLink(destination: CategoryListView()) {
-                            Image(systemName: "tag")
-                        }
-                        NavigationLink(destination: StorageLocationListView()) {
-                            Image(systemName: "archivebox")
-                        }
-                    }
+
                 }
 
                 if editMode == .inactive {
