@@ -120,4 +120,72 @@ struct BatchDetailViewModelTests {
         #expect(batch.remainingAmount == 100)
         #expect(model.isDirty == false)
     }
+
+    @Test func isDirtyWhenOpeningDateAutoSetButAmountRestored() throws {
+        let ctx = try makeContainer().mainContext
+        let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
+        let model = BatchDetailViewModel(batch: batch)
+        model.adjust(by: -10)
+        model.adjust(by: 10)
+        #expect(batch.remainingAmount == 500)
+        #expect(batch.openingDate != nil)
+        #expect(model.isDirty == true)
+    }
+
+    @Test func autoSetOpeningDateOnAdjust() throws {
+        let ctx = try makeContainer().mainContext
+        let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
+        let model = BatchDetailViewModel(batch: batch)
+        model.adjust(by: -10)
+        #expect(batch.openingDate != nil)
+    }
+
+    @Test func autoSetOpeningDateOnCommitEdit() throws {
+        let ctx = try makeContainer().mainContext
+        let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
+        let model = BatchDetailViewModel(batch: batch)
+        model.editingValue = "400"
+        model.commitEdit()
+        #expect(batch.openingDate != nil)
+    }
+
+    @Test func openingDateNotOverwrittenIfAlreadySet() throws {
+        let ctx = try makeContainer().mainContext
+        let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
+        let existingDate = Calendar.current.date(byAdding: .day, value: -5, to: .now)!
+        batch.openingDate = existingDate
+        let model = BatchDetailViewModel(batch: batch)
+        model.adjust(by: -10)
+        #expect(batch.openingDate == existingDate)
+    }
+
+    @Test func openingDateNotSetWhenAtFullQuantity() throws {
+        let ctx = try makeContainer().mainContext
+        let batch = makeBatch(quantity: 500, remaining: 490, in: ctx)
+        let model = BatchDetailViewModel(batch: batch)
+        model.adjust(by: 10)
+        #expect(batch.openingDate == nil)
+    }
+
+    @Test func openingDateClearedOnUndoWhenAutoSet() throws {
+        let ctx = try makeContainer().mainContext
+        let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
+        let model = BatchDetailViewModel(batch: batch)
+        model.adjust(by: -10)
+        #expect(batch.openingDate != nil)
+        model.undo()
+        #expect(batch.remainingAmount == 500)
+        #expect(batch.openingDate == nil)
+    }
+
+    @Test func openingDateNotClearedOnUndoWhenAlreadySet() throws {
+        let ctx = try makeContainer().mainContext
+        let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
+        let existingDate = Calendar.current.date(byAdding: .day, value: -5, to: .now)!
+        batch.openingDate = existingDate
+        let model = BatchDetailViewModel(batch: batch)
+        model.adjust(by: -10)
+        model.undo()
+        #expect(batch.openingDate == existingDate)
+    }
 }
