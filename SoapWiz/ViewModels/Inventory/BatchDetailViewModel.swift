@@ -21,7 +21,7 @@ final class BatchDetailViewModel {
     }
 
     func startEditing() {
-        editingValue = batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))
+        editingValue = batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)).grouping(.never))
         isEditingAmount = true
     }
 
