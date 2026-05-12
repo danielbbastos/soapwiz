@@ -5,7 +5,7 @@ struct BatchDetailView: View {
 
     @State private var showingEdit = false
 
-    private var unit: String { batch.ingredient?.unit ?? "" }
+    private var unit: String { batch.ingredient?.unit?.symbol ?? "" }
 
     var body: some View {
         List {

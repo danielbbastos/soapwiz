@@ -6,6 +6,7 @@ struct IngredientFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
+    @Query(sort: \QuantityUnit.name) private var units: [QuantityUnit]
 
     @State private var model: IngredientFormViewModel
 
@@ -24,7 +25,12 @@ struct IngredientFormView: View {
                             Text(category.name).tag(Optional(category))
                         }
                     }
-                    TextField("Unit (e.g. g, ml, oz)", text: $model.unit)
+                    Picker("Unit", selection: $model.selectedUnit) {
+                        Text("None").tag(Optional<QuantityUnit>.none)
+                        ForEach(units) { unit in
+                            Text("\(unit.name) (\(unit.symbol))").tag(Optional(unit))
+                        }
+                    }
                 }
             }
             .navigationTitle(model.isEditing ? "Edit Ingredient" : "New Ingredient")

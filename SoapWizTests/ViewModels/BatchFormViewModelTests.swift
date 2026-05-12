@@ -8,14 +8,14 @@ import SwiftData
 struct BatchFormViewModelTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self, StorageLocation.self, Provider.self])
         return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
     }
 
     @Test func quantityRequiredForValid() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let model = BatchFormViewModel(ingredient: ingredient)
         #expect(!model.isValid)
@@ -26,7 +26,7 @@ struct BatchFormViewModelTests {
     @Test func pricePerUnitComputed() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let model = BatchFormViewModel(ingredient: ingredient)
         model.quantityText = "100"
@@ -37,7 +37,7 @@ struct BatchFormViewModelTests {
     @Test func pricePerUnitZeroWhenQuantityZero() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let model = BatchFormViewModel(ingredient: ingredient)
         model.totalPriceText = "25"
@@ -47,7 +47,7 @@ struct BatchFormViewModelTests {
     @Test func saveInsertsNewBatchLinkedToIngredient() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let model = BatchFormViewModel(ingredient: ingredient)
         model.quantityText = "100"
@@ -62,7 +62,7 @@ struct BatchFormViewModelTests {
     @Test func saveUpdatesExistingBatch() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let batch = IngredientBatch(
             dateOfPurchase: .now,

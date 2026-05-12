@@ -8,13 +8,13 @@ import SwiftData
 struct StorageLocationTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self, StorageLocation.self, Provider.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         return try ModelContainer(for: schema, configurations: [config])
     }
 
     private func makeBatch(in context: ModelContext, location: StorageLocation? = nil) -> IngredientBatch {
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         context.insert(ingredient)
         let batch = IngredientBatch(
             dateOfPurchase: .now,

@@ -9,7 +9,7 @@ import SwiftUI
 struct ListViewModelTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self, StorageLocation.self, Provider.self])
         return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
     }
 
@@ -18,7 +18,7 @@ struct ListViewModelTests {
         let ctx = container.mainContext
         let category = IngredientCategory(name: "Oils")
         ctx.insert(category)
-        let ingredient = Ingredient(name: "Olive Oil", category: category, unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil", category: category)
         ctx.insert(ingredient)
         try ctx.save()
 
@@ -49,7 +49,7 @@ struct ListViewModelTests {
     @Test func storageLocationDeleteBlockedWhenBatchesAssigned() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let location = StorageLocation(name: "Shelf A")
         ctx.insert(location)
@@ -70,7 +70,7 @@ struct ListViewModelTests {
     @Test func providerDeleteBlockedWhenBatchesAssigned() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let provider = Provider(name: "Acme")
         ctx.insert(provider)
@@ -91,8 +91,8 @@ struct ListViewModelTests {
     @Test func ingredientDeleteAtOffsets() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let a = Ingredient(name: "A", unit: "g")
-        let b = Ingredient(name: "B", unit: "g")
+        let a = Ingredient(name: "A")
+        let b = Ingredient(name: "B")
         ctx.insert(a); ctx.insert(b)
         try ctx.save()
 
@@ -108,7 +108,7 @@ struct ListViewModelTests {
     @Test func ingredientDeleteSelectedClearsStateAndExitsEditMode() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let a = Ingredient(name: "A", unit: "g")
+        let a = Ingredient(name: "A")
         ctx.insert(a)
         try ctx.save()
 

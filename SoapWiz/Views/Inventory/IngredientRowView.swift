@@ -14,7 +14,7 @@ struct IngredientRowView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
+                Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit?.symbol ?? "")")
                     .font(.subheadline)
                     .foregroundStyle(ingredient.totalRemaining > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
             }

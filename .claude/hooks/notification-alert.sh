@@ -3,7 +3,6 @@
 # Stop hook — sends a macOS native notification when Claude finishes or needs input
 
 command -v jq &> /dev/null || exit 0
-
 INPUT=$(cat)
 [ -z "$INPUT" ] && exit 0
 
@@ -24,6 +23,9 @@ esac
 
 osascript - "$MESSAGE" "$TITLE" <<'EOF' 2>/dev/null || true
 on run argv
-  display notification (item 1 of argv) with title (item 2 of argv) sound name "Submarine"
+  set frontApp to name of (info for (path to frontmost application))
+  if frontApp is not "Ghostty.app" then
+    display notification (item 1 of argv) with title (item 2 of argv) sound name "Submarine"
+  end if
 end run
 EOF

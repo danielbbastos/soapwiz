@@ -19,13 +19,15 @@ struct SoapWizApp: App {
             Ingredient.self,
             IngredientBatch.self,
             IngredientCategory.self,
+            QuantityUnit.self,
             StorageLocation.self,
             Provider.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
+        let container: ModelContainer
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            container = try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             // Schema changed — wipe store and retry (dev only, no production data at risk)
             let storeURL = modelConfiguration.url
@@ -35,11 +37,14 @@ struct SoapWizApp: App {
                 try? FileManager.default.removeItem(at: url)
             }
             do {
-                return try ModelContainer(for: schema, configurations: [modelConfiguration])
+                container = try ModelContainer(for: schema, configurations: [modelConfiguration])
             } catch {
                 fatalError("Could not create ModelContainer after reset: \(error)")
             }
         }
+
+        DataSeeder.seed(into: container.mainContext)
+        return container
     }()
 
     var body: some Scene {
