@@ -60,6 +60,18 @@ struct IngredientListView: View {
                 }
             }
         }
+        .alert("Delete Ingredient?", isPresented: Binding(
+            get: { !model.confirmingDelete.isEmpty },
+            set: { if !$0 { model.confirmingDelete = [] } }
+        )) {
+            Button("Delete", role: .destructive) { model.confirmDelete(context: modelContext) }
+            Button("Cancel", role: .cancel) { model.confirmingDelete = [] }
+        } message: {
+            let batchCount = model.confirmingDelete.reduce(0) { $0 + $1.batches.count }
+            let ingredientWord = model.confirmingDelete.count == 1 ? "ingredient" : "ingredients"
+            let batchWord = batchCount == 1 ? "batch" : "batches"
+            Text("Deleting \(model.confirmingDelete.count) \(ingredientWord) will also delete \(batchCount) \(batchWord).")
+        }
         .sheet(isPresented: $model.showingAddIngredient, onDismiss: {
             if let ingredient = model.pendingIngredient {
                 navigationPath.append(ingredient)

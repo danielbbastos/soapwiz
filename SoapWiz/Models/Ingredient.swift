@@ -14,6 +14,15 @@ final class Ingredient {
         batches.reduce(0) { $0 + $1.remainingAmount }
     }
 
+    var nearestUpcomingExpiry: Date? {
+        let now = Date.now
+        let cutoff = Calendar.current.date(byAdding: .month, value: 1, to: now)!
+        return batches
+            .compactMap(\.expiryDate)
+            .filter { $0 > now && $0 <= cutoff }
+            .min()
+    }
+
     init(name: String, category: IngredientCategory? = nil, unit: QuantityUnit? = nil) {
         self.name = name
         self.category = category

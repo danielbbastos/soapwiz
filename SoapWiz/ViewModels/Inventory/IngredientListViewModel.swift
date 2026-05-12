@@ -9,19 +9,31 @@ final class IngredientListViewModel {
     var pendingIngredient: Ingredient?
     var editMode: EditMode = .inactive
     var selection: Set<PersistentIdentifier> = []
+    var confirmingDelete: [Ingredient] = []
 
     func delete(at offsets: IndexSet, in ingredients: [Ingredient], context: ModelContext) {
-        for index in offsets {
-            context.delete(ingredients[index])
+        let targets = offsets.map { ingredients[$0] }
+        if targets.contains(where: { !$0.batches.isEmpty }) {
+            confirmingDelete = targets
+        } else {
+            targets.forEach { context.delete($0) }
         }
     }
 
     func deleteSelected(in ingredients: [Ingredient], context: ModelContext) {
-        for id in selection {
-            if let match = ingredients.first(where: { $0.persistentModelID == id }) {
-                context.delete(match)
-            }
+        let targets = selection.compactMap { id in ingredients.first { $0.persistentModelID == id } }
+        if targets.contains(where: { !$0.batches.isEmpty }) {
+            confirmingDelete = targets
+        } else {
+            targets.forEach { context.delete($0) }
+            selection.removeAll()
+            editMode = .inactive
         }
+    }
+
+    func confirmDelete(context: ModelContext) {
+        confirmingDelete.forEach { context.delete($0) }
+        confirmingDelete = []
         selection.removeAll()
         editMode = .inactive
     }
