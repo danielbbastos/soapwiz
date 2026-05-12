@@ -10,6 +10,7 @@ final class IngredientListViewModel {
     var editMode: EditMode = .inactive
     var selection: Set<PersistentIdentifier> = []
     var confirmingDelete: [Ingredient] = []
+    var showLowStockOnly: Bool = false
 
     func delete(_ ingredient: Ingredient, context: ModelContext) {
         if ingredient.batches.isEmpty {

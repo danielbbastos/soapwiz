@@ -4,15 +4,30 @@ struct BatchRowView: View {
     let batch: IngredientBatch
     let unit: String
 
+    private var expiryLabel: (text: String, color: Color)? {
+        guard let expiry = batch.expiryDate else { return nil }
+        let now = Date.now
+        let formatted = expiry.formatted(.dateTime.day().month(.abbreviated).year())
+        if expiry < now {
+            return ("Expired", .red)
+        }
+        if let cutoff = Calendar.current.date(byAdding: .month, value: 1, to: now), expiry <= cutoff {
+            return (formatted, .red)
+        }
+        return (formatted, .secondary)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(batch.provider?.name ?? "Unknown Provider")
                     .font(.headline)
                 Spacer()
-                Text(batch.dateOfPurchase, style: .date)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if let label = expiryLabel {
+                    Text(label.text)
+                        .font(.caption)
+                        .foregroundStyle(label.color)
+                }
             }
             HStack {
                 Text("\(batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) / \(batch.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")

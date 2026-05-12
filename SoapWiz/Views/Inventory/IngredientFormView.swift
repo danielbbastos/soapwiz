@@ -34,6 +34,21 @@ struct IngredientFormView: View {
                         }
                     }
                 }
+
+                Section {
+                    HStack {
+                        TextField("Low Stock Threshold", text: $model.lowStockThreshold)
+                            .keyboardType(.decimalPad)
+                        if let symbol = model.selectedUnit?.symbol {
+                            Text(symbol)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Alerts")
+                } footer: {
+                    Text("You'll see a warning when stock falls at or below this amount. Leave blank to disable.")
+                }
             }
             .navigationTitle(model.isEditing ? "Edit Ingredient" : "New Ingredient")
             .navigationBarTitleDisplayMode(.inline)

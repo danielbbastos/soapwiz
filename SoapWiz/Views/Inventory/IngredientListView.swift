@@ -8,19 +8,23 @@ struct IngredientListView: View {
     @State private var model = IngredientListViewModel()
     @State private var navigationPath = NavigationPath()
 
+    private var displayedIngredients: [Ingredient] {
+        model.showLowStockOnly ? ingredients.filter(\.isLowStock) : ingredients
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottomTrailing) {
                 Group {
-                    if ingredients.isEmpty {
+                    if displayedIngredients.isEmpty {
                         ContentUnavailableView(
-                            "No Ingredients",
-                            systemImage: "flask",
-                            description: Text("Tap + to add your first ingredient.")
+                            model.showLowStockOnly ? "No Low Stock Ingredients" : "No Ingredients",
+                            systemImage: model.showLowStockOnly ? "gauge.low" : "flask",
+                            description: Text(model.showLowStockOnly ? "No ingredients are below their threshold." : "Tap + to add your first ingredient.")
                         )
                     } else {
                         List(selection: $model.selection) {
-                            ForEach(ingredients) { ingredient in
+                            ForEach(displayedIngredients) { ingredient in
                                 NavigationLink(value: ingredient) {
                                     IngredientRowView(ingredient: ingredient)
                                 }
@@ -43,15 +47,23 @@ struct IngredientListView: View {
                     .onAppear { model.pendingIngredient = nil }
                 }
                 .toolbar {
-                    if !ingredients.isEmpty {
-                        ToolbarItem(placement: .topBarLeading) {
-                            if model.editMode == .active {
-                                Button("Delete", role: .destructive) {
-                                    model.deleteSelected(in: ingredients, context: modelContext)
-                                }
-                                .disabled(model.selection.isEmpty)
+                    ToolbarItem(placement: .topBarLeading) {
+                        if model.editMode == .active {
+                            Button("Delete", role: .destructive) {
+                                model.deleteSelected(in: displayedIngredients, context: modelContext)
                             }
+                            .disabled(model.selection.isEmpty)
+                        } else {
+                            Button {
+                                model.showLowStockOnly.toggle()
+                            } label: {
+                                Label("Low Stock", systemImage: "gauge.low")
+                                    .symbolVariant(model.showLowStockOnly ? .fill : .none)
+                            }
+                            .foregroundStyle(model.showLowStockOnly ? .orange : .primary)
                         }
+                    }
+                    if !ingredients.isEmpty {
                         ToolbarItem(placement: .topBarTrailing) {
                             EditButton()
                                 .environment(\.editMode, $model.editMode)
