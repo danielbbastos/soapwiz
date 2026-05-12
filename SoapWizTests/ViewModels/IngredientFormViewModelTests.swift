@@ -55,13 +55,14 @@ struct IngredientFormViewModelTests {
         model.name = "  Olive Oil  "
         model.selectedUnit = gram
         model.selectedCategory = cat
-        model.save(context: ctx)
+        let returned = model.save(context: ctx)
         try ctx.save()
 
         let fetched = try ctx.fetch(FetchDescriptor<Ingredient>())
         #expect(fetched.first?.name == "Olive Oil")
         #expect(fetched.first?.unit === gram)
         #expect(fetched.first?.category === cat)
+        #expect(returned === fetched.first)
     }
 
     @Test func saveUpdatesExisting() throws {
@@ -72,7 +73,8 @@ struct IngredientFormViewModelTests {
 
         let model = IngredientFormViewModel(ingredient: existing)
         model.name = "Coconut Oil"
-        model.save(context: ctx)
+        let returned = model.save(context: ctx)
         #expect(existing.name == "Coconut Oil")
+        #expect(returned == nil)
     }
 }

@@ -27,13 +27,17 @@ final class IngredientFormViewModel {
         return selectedUnit != nil || (isEditing && ingredient?.unit == nil)
     }
 
-    func save(context: ModelContext) {
+    @discardableResult
+    func save(context: ModelContext) -> Ingredient? {
         if let ingredient {
             ingredient.name = trimmedName
             ingredient.category = selectedCategory
             ingredient.unit = selectedUnit
+            return nil
         } else {
-            context.insert(Ingredient(name: trimmedName, category: selectedCategory, unit: selectedUnit))
+            let newIngredient = Ingredient(name: trimmedName, category: selectedCategory, unit: selectedUnit)
+            context.insert(newIngredient)
+            return newIngredient
         }
     }
 }

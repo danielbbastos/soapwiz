@@ -6,6 +6,7 @@ import SwiftUI
 @Observable
 final class IngredientListViewModel {
     var showingAddIngredient: Bool = false
+    var pendingIngredient: Ingredient?
     var editMode: EditMode = .inactive
     var selection: Set<PersistentIdentifier> = []
 
