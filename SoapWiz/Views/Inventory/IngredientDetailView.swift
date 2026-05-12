@@ -6,8 +6,8 @@ struct IngredientDetailView: View {
 
     @State private var model: IngredientDetailViewModel
 
-    init(ingredient: Ingredient) {
-        _model = State(initialValue: IngredientDetailViewModel(ingredient: ingredient))
+    init(ingredient: Ingredient, autoAddBatch: Bool = false) {
+        _model = State(initialValue: IngredientDetailViewModel(ingredient: ingredient, showingAddBatch: autoAddBatch))
     }
 
     var body: some View {

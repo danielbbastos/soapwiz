@@ -2,7 +2,7 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+    types: [opened, synchronize]
     # Optional: Only run on specific file changes
     # paths:
     #   - "src/**/*.ts"
@@ -31,14 +31,40 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Load review skill and CI automation
+        id: load-prompt
+        run: |
+          # Load the code-review-developer skill (routes to general standards)
+          SKILL_CONTENT=$(cat .claude/skills/code-review-developer/SKILL.md)
+
+          # Load CI-specific automation instructions
+          CI_AUTOMATION=$(cat .github/workflows/pr-review-automation.md)
+
+          # Combine both for the prompt
+          PROMPT_CONTENT="${SKILL_CONTENT}
+
+          ---
+
+          # CI/PR-Specific Instructions
+
+          ${CI_AUTOMATION}"
+
+          echo "prompt_content<<EOF" >> $GITHUB_OUTPUT
+          echo "$PROMPT_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
-          plugins: 'code-review@claude-code-plugins'
-          prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            COMMIT SHA: ${{ github.event.pull_request.head.sha }}
 
+            ${{ steps.load-prompt.outputs.prompt_content }}
+
+          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
+          # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
+          claude_args: '--max-turns 30 --allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh api:*)"'

@@ -6,9 +6,10 @@ struct IngredientListView: View {
     @Query(sort: \Ingredient.name) private var ingredients: [Ingredient]
 
     @State private var model = IngredientListViewModel()
+    @State private var navigationPath = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottomTrailing) {
                 Group {
                     if ingredients.isEmpty {
@@ -20,7 +21,7 @@ struct IngredientListView: View {
                     } else {
                         List(selection: $model.selection) {
                             ForEach(ingredients) { ingredient in
-                                NavigationLink(destination: IngredientDetailView(ingredient: ingredient)) {
+                                NavigationLink(value: ingredient) {
                                     IngredientRowView(ingredient: ingredient)
                                 }
                             }
@@ -30,6 +31,13 @@ struct IngredientListView: View {
                     }
                 }
                 .navigationTitle("Inventory")
+                .navigationDestination(for: Ingredient.self) { ingredient in
+                    IngredientDetailView(
+                        ingredient: ingredient,
+                        autoAddBatch: model.pendingIngredient?.persistentModelID == ingredient.persistentModelID
+                    )
+                    .onAppear { model.pendingIngredient = nil }
+                }
                 .toolbar {
                     if !ingredients.isEmpty {
                         ToolbarItem(placement: .topBarLeading) {
@@ -52,8 +60,14 @@ struct IngredientListView: View {
                 }
             }
         }
-        .sheet(isPresented: $model.showingAddIngredient) {
-            IngredientFormView()
+        .sheet(isPresented: $model.showingAddIngredient, onDismiss: {
+            if let ingredient = model.pendingIngredient {
+                navigationPath.append(ingredient)
+            }
+        }) {
+            IngredientFormView(onSave: { ingredient in
+                model.pendingIngredient = ingredient
+            })
         }
     }
 }

@@ -9,9 +9,11 @@ struct IngredientFormView: View {
     @Query(sort: \QuantityUnit.name) private var units: [QuantityUnit]
 
     @State private var model: IngredientFormViewModel
+    let onSave: ((Ingredient) -> Void)?
 
-    init(ingredient: Ingredient? = nil) {
+    init(ingredient: Ingredient? = nil, onSave: ((Ingredient) -> Void)? = nil) {
         _model = State(initialValue: IngredientFormViewModel(ingredient: ingredient))
+        self.onSave = onSave
     }
 
     var body: some View {
@@ -41,7 +43,9 @@ struct IngredientFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(model.isEditing ? "Save" : "Add") {
-                        model.save(context: modelContext)
+                        if let newIngredient = model.save(context: modelContext) {
+                            onSave?(newIngredient)
+                        }
                         dismiss()
                     }
                     .disabled(!model.isValid)

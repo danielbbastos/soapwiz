@@ -9,8 +9,9 @@ final class IngredientDetailViewModel {
 
     let ingredient: Ingredient
 
-    init(ingredient: Ingredient) {
+    init(ingredient: Ingredient, showingAddBatch: Bool = false) {
         self.ingredient = ingredient
+        self.showingAddBatch = showingAddBatch
     }
 
     var sortedBatches: [IngredientBatch] {
