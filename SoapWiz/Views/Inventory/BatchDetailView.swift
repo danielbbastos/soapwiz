@@ -3,7 +3,14 @@ import SwiftUI
 struct BatchDetailView: View {
     let batch: IngredientBatch
 
+    @State private var model: BatchDetailViewModel
     @State private var showingEdit = false
+    @FocusState private var amountFocused: Bool
+
+    init(batch: IngredientBatch) {
+        self.batch = batch
+        _model = State(initialValue: BatchDetailViewModel(batch: batch))
+    }
 
     private var unit: String { batch.ingredient?.unit?.symbol ?? "" }
 
@@ -45,13 +52,60 @@ struct BatchDetailView: View {
             }
 
             Section("Stock") {
-                LabeledContent("Remaining") {
-                    Text("\(batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
-                        .foregroundStyle(batch.remainingAmount > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
+                HStack {
+                    Text("Remaining")
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    if model.isEditingAmount {
+                        HStack(spacing: 8) {
+                            TextField("Amount", text: $model.editingValue)
+                                .keyboardType(.decimalPad)
+                                .multilineTextAlignment(.center)
+                                .frame(width: 80)
+                                .focused($amountFocused)
+                                .onSubmit { model.commitEdit() }
+                            Button("Done") { model.commitEdit() }
+                                .font(.subheadline.bold())
+                        }
+                    } else {
+                        HStack(spacing: 8) {
+                            if model.isDirty {
+                                Button { model.undo() } label: {
+                                    Image(systemName: "arrow.uturn.backward.circle.fill")
+                                        .font(.title2)
+                                }
+                                .buttonStyle(.borderless)
+                                .foregroundStyle(.orange)
+                            }
+
+                            Button { model.adjust(by: -10) } label: {
+                                Image(systemName: "minus.circle.fill")
+                                    .font(.title2)
+                            }
+                            .buttonStyle(.borderless)
+                            .foregroundStyle(.secondary)
+
+                            Text("\(batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
+                                .foregroundStyle(batch.remainingAmount > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
+                                .onTapGesture { model.startEditing() }
+
+                            Button { model.adjust(by: 10) } label: {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title2)
+                            }
+                            .buttonStyle(.borderless)
+                            .foregroundStyle(.secondary)
+
+                        }
+                    }
+                }
+                .onChange(of: model.isEditingAmount) {
+                    if model.isEditingAmount { amountFocused = true }
                 }
                 LabeledContent("Storage Location", value: batch.storageLocation?.name ?? "—")
             }
         }
+        .onDisappear { model.isEditingAmount = false }
         .navigationTitle("Batch Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

@@ -97,7 +97,7 @@ struct ListViewModelTests {
         try ctx.save()
 
         let model = IngredientListViewModel()
-        model.delete(at: IndexSet(integer: 0), in: [a, b], context: ctx)
+        model.delete(a, context: ctx)
         try ctx.save()
 
         let remaining = try ctx.fetch(FetchDescriptor<Ingredient>())
