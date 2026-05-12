@@ -33,24 +33,6 @@ struct BatchDetailView: View {
                 )
             }
 
-            Section("Identification") {
-                LabeledContent("Badge", value: batch.badge.isEmpty ? "—" : batch.badge)
-                LabeledContent("Journal Code", value: batch.journalCode.isEmpty ? "—" : batch.journalCode)
-            }
-
-            Section("Dates") {
-                if let expiry = batch.expiryDate {
-                    LabeledContent("Expiry Date", value: expiry.formatted(date: .long, time: .omitted))
-                }
-                if let opening = batch.openingDate {
-                    LabeledContent("Opening Date", value: opening.formatted(date: .long, time: .omitted))
-                }
-                if batch.expiryDate == nil && batch.openingDate == nil {
-                    Text("No dates recorded")
-                        .foregroundStyle(.secondary)
-                }
-            }
-
             Section("Stock") {
                 HStack {
                     Text("Remaining")
@@ -103,6 +85,24 @@ struct BatchDetailView: View {
                     if model.isEditingAmount { amountFocused = true }
                 }
                 LabeledContent("Storage Location", value: batch.storageLocation?.name ?? "—")
+            }
+
+            Section("Identification") {
+                LabeledContent("Badge", value: batch.badge.isEmpty ? "—" : batch.badge)
+                LabeledContent("Journal Code", value: batch.journalCode.isEmpty ? "—" : batch.journalCode)
+            }
+
+            Section("Dates") {
+                if let expiry = batch.expiryDate {
+                    LabeledContent("Expiry Date", value: expiry.formatted(date: .long, time: .omitted))
+                }
+                if let opening = batch.openingDate {
+                    LabeledContent("Opening Date", value: opening.formatted(date: .long, time: .omitted))
+                }
+                if batch.expiryDate == nil && batch.openingDate == nil {
+                    Text("No dates recorded")
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .onDisappear { model.isEditingAmount = false }

@@ -77,4 +77,43 @@ struct IngredientFormViewModelTests {
         #expect(existing.name == "Coconut Oil")
         #expect(returned == nil)
     }
+
+    @Test func saveStoresThreshold() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let gram = QuantityUnit(name: "Gram", symbol: "g")
+        ctx.insert(gram)
+
+        let model = IngredientFormViewModel()
+        model.name = "Olive Oil"
+        model.selectedUnit = gram
+        model.lowStockThreshold = "100"
+        let ingredient = model.save(context: ctx)
+        #expect(ingredient?.lowStockThreshold == 100)
+    }
+
+    @Test func saveClearsThresholdWhenEmpty() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = Ingredient(name: "Olive Oil")
+        existing.lowStockThreshold = 50
+        ctx.insert(existing)
+
+        let model = IngredientFormViewModel(ingredient: existing)
+        model.lowStockThreshold = ""
+        model.save(context: ctx)
+        #expect(existing.lowStockThreshold == nil)
+    }
+
+    @Test func populatesThresholdWhenEditing() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = Ingredient(name: "Olive Oil")
+        existing.lowStockThreshold = 75.5
+        ctx.insert(existing)
+
+        let model = IngredientFormViewModel(ingredient: existing)
+        let parsed = Double(model.lowStockThreshold.replacingOccurrences(of: ",", with: "."))
+        #expect(parsed == 75.5)
+    }
 }

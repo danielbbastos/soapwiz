@@ -7,11 +7,23 @@ final class Ingredient {
     var category: IngredientCategory?
     var unit: QuantityUnit?
 
+    var lowStockThreshold: Double?
+
     @Relationship(deleteRule: .cascade, inverse: \IngredientBatch.ingredient)
     var batches: [IngredientBatch] = []
 
     var totalRemaining: Double {
         batches.reduce(0) { $0 + $1.remainingAmount }
+    }
+
+    var isLowStock: Bool {
+        guard let threshold = lowStockThreshold else { return false }
+        return totalRemaining <= threshold
+    }
+
+    var hasExpiredBatch: Bool {
+        let now = Date.now
+        return batches.contains { ($0.expiryDate ?? .distantFuture) < now }
     }
 
     var nearestUpcomingExpiry: Date? {
