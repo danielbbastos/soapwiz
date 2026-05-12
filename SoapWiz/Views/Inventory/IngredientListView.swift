@@ -60,7 +60,7 @@ struct IngredientListView: View {
                 }
             }
         }
-        .alert("Delete Ingredient?", isPresented: Binding(
+        .alert(model.confirmingDelete.count == 1 ? "Delete Ingredient?" : "Delete Ingredients?", isPresented: Binding(
             get: { !model.confirmingDelete.isEmpty },
             set: { if !$0 { model.confirmingDelete = [] } }
         )) {
