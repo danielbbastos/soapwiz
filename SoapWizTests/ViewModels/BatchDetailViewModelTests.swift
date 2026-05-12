@@ -121,6 +121,17 @@ struct BatchDetailViewModelTests {
         #expect(model.isDirty == false)
     }
 
+    @Test func isDirtyWhenOpeningDateAutoSetButAmountRestored() throws {
+        let ctx = try makeContainer().mainContext
+        let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
+        let model = BatchDetailViewModel(batch: batch)
+        model.adjust(by: -10)
+        model.adjust(by: 10)
+        #expect(batch.remainingAmount == 500)
+        #expect(batch.openingDate != nil)
+        #expect(model.isDirty == true)
+    }
+
     @Test func autoSetOpeningDateOnAdjust() throws {
         let ctx = try makeContainer().mainContext
         let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)

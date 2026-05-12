@@ -16,7 +16,9 @@ final class BatchDetailViewModel {
         self.originalOpeningDate = batch.openingDate
     }
 
-    var isDirty: Bool { batch.remainingAmount != originalAmount }
+    var isDirty: Bool {
+        batch.remainingAmount != originalAmount || batch.openingDate != originalOpeningDate
+    }
 
     func undo() {
         batch.remainingAmount = originalAmount
@@ -37,9 +39,9 @@ final class BatchDetailViewModel {
     func commitEdit() {
         if let parsed = Double(editingValue.replacingOccurrences(of: ",", with: ".")) {
             batch.remainingAmount = parsed.clamped(to: 0...batch.quantity)
+            autoSetOpeningDateIfNeeded()
         }
         isEditingAmount = false
-        autoSetOpeningDateIfNeeded()
     }
 
     private func autoSetOpeningDateIfNeeded() {
