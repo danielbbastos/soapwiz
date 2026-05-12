@@ -24,8 +24,12 @@ struct IngredientListView: View {
                                 NavigationLink(value: ingredient) {
                                     IngredientRowView(ingredient: ingredient)
                                 }
+                                .swipeActions(edge: .trailing) {
+                                    Button("Delete", role: .destructive) {
+                                        model.delete(ingredient, context: modelContext)
+                                    }
+                                }
                             }
-                            .onDelete { model.delete(at: $0, in: ingredients, context: modelContext) }
                         }
                         .environment(\.editMode, $model.editMode)
                     }
@@ -59,6 +63,18 @@ struct IngredientListView: View {
                     FloatingActionButton { model.showingAddIngredient = true }
                 }
             }
+        }
+        .alert(model.confirmingDelete.count == 1 ? "Delete Ingredient?" : "Delete Ingredients?", isPresented: Binding(
+            get: { !model.confirmingDelete.isEmpty },
+            set: { if !$0 { model.confirmingDelete = [] } }
+        )) {
+            Button("Delete", role: .destructive) { model.confirmDelete(context: modelContext) }
+            Button("Cancel", role: .cancel) { model.confirmingDelete = [] }
+        } message: {
+            let batchCount = model.confirmingDelete.reduce(0) { $0 + $1.batches.count }
+            let ingredientWord = model.confirmingDelete.count == 1 ? "ingredient" : "ingredients"
+            let batchWord = batchCount == 1 ? "batch" : "batches"
+            Text("Deleting \(model.confirmingDelete.count) \(ingredientWord) will also delete \(batchCount) \(batchWord).")
         }
         .sheet(isPresented: $model.showingAddIngredient, onDismiss: {
             if let ingredient = model.pendingIngredient {
