@@ -11,12 +11,11 @@ final class IngredientListViewModel {
     var selection: Set<PersistentIdentifier> = []
     var confirmingDelete: [Ingredient] = []
 
-    func delete(at offsets: IndexSet, in ingredients: [Ingredient], context: ModelContext) {
-        let targets = offsets.map { ingredients[$0] }
-        if targets.contains(where: { !$0.batches.isEmpty }) {
-            confirmingDelete = targets
+    func delete(_ ingredient: Ingredient, context: ModelContext) {
+        if ingredient.batches.isEmpty {
+            context.delete(ingredient)
         } else {
-            targets.forEach { context.delete($0) }
+            confirmingDelete = [ingredient]
         }
     }
 

@@ -24,8 +24,12 @@ struct IngredientListView: View {
                                 NavigationLink(value: ingredient) {
                                     IngredientRowView(ingredient: ingredient)
                                 }
+                                .swipeActions(edge: .trailing) {
+                                    Button("Delete", role: .destructive) {
+                                        model.delete(ingredient, context: modelContext)
+                                    }
+                                }
                             }
-                            .onDelete { model.delete(at: $0, in: ingredients, context: modelContext) }
                         }
                         .environment(\.editMode, $model.editMode)
                     }
