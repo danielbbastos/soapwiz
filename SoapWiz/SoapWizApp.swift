@@ -43,15 +43,13 @@ struct SoapWizApp: App {
             }
         }
 
+        DataSeeder.seed(into: container.mainContext)
         return container
     }()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .task {
-                    DataSeeder.seed(into: sharedModelContainer.mainContext)
-                }
         }
         .modelContainer(sharedModelContainer)
     }

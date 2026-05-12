@@ -44,7 +44,7 @@ struct DataSeederTests {
         #expect(units.first?.name == "Existing")
     }
 
-    @Test func emptySeedException() throws {
+    @Test func emptySeeds_producesNoUnits() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
 

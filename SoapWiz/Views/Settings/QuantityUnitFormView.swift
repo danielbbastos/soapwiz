@@ -18,12 +18,16 @@ struct QuantityUnitFormView: View {
             Form {
                 Section {
                     TextField("Name", text: $model.name)
-                    TextField("Symbol", text: $model.symbol)
                 } footer: {
                     if model.isDuplicateName(among: allUnits) {
                         Text("A unit with this name already exists.")
                             .foregroundStyle(.red)
-                    } else if model.isDuplicateSymbol(among: allUnits) {
+                    }
+                }
+                Section {
+                    TextField("Symbol", text: $model.symbol)
+                } footer: {
+                    if model.isDuplicateSymbol(among: allUnits) {
                         Text("A unit with this symbol already exists.")
                             .foregroundStyle(.red)
                     }

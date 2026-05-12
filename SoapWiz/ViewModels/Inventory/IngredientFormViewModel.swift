@@ -22,7 +22,10 @@ final class IngredientFormViewModel {
     var isEditing: Bool { ingredient != nil }
     var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
 
-    var isValid: Bool { !trimmedName.isEmpty && selectedUnit != nil }
+    var isValid: Bool {
+        guard !trimmedName.isEmpty else { return false }
+        return selectedUnit != nil || (isEditing && ingredient?.unit == nil)
+    }
 
     func save(context: ModelContext) {
         if let ingredient {
