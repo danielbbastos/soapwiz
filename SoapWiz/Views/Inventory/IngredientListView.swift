@@ -18,9 +18,9 @@ struct IngredientListView: View {
                 Group {
                     if displayedIngredients.isEmpty {
                         ContentUnavailableView(
-                            model.showLowStockOnly ? "No Low Stock Ingredients" : "No Ingredients",
-                            systemImage: model.showLowStockOnly ? "gauge.low" : "flask",
-                            description: Text(model.showLowStockOnly ? "No ingredients are below their threshold." : "Tap + to add your first ingredient.")
+                            ingredients.isEmpty ? "No Ingredients" : "No Low Stock Ingredients",
+                            systemImage: ingredients.isEmpty ? "flask" : "gauge.low",
+                            description: Text(ingredients.isEmpty ? "Tap + to add your first ingredient." : "No ingredients are below their threshold.")
                         )
                     } else {
                         List(selection: $model.selection) {
