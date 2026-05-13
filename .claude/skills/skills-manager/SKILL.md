@@ -1,3 +1,8 @@
+---
+name: skills-manager
+description: Context-aware routing to skills and hooks management. Use when troubleshooting skill activation, fine-tuning keywords, or managing the automated documentation system.
+---
+
 # Skills Manager
 
 Use this when creating, updating, or auditing the skills in `.claude/skills/`.

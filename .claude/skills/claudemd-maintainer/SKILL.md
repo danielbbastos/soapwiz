@@ -1,6 +1,17 @@
-# CLAUDE.md Maintainer
+---
+name: claudemd-maintainer
+description: Context-aware guidance for maintaining and improving CLAUDE.md files. Use when editing CLAUDE.md, discussing documentation structure for AI assistants, or optimizing project instructions.
+---
 
-Run this when asked to update, audit, or improve CLAUDE.md.
+# CLAUDE.md Maintainer (Smart Router)
+
+## Purpose
+Context-aware guidance for maintaining and improving CLAUDE.md files. Helps ensure the file stays effective, concise, and follows best practices for LLM instruction files.
+
+## When Auto-Activated
+- Editing or discussing CLAUDE.md
+- Keywords: claude.md, project instructions, onboarding claude, context file
+- Discussing documentation structure for AI assistants
 
 ## Core Rules
 

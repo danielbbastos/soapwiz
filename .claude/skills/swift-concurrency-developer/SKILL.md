@@ -1,3 +1,8 @@
+---
+name: swift-concurrency-developer
+description: Swift concurrency specialist. Use when writing async/await code, working with actors, or resolving concurrency warnings in SoapWiz.
+---
+
 # Swift Concurrency Developer
 
 Use this when writing or reviewing async/await code, actors, or fixing concurrency warnings in SoapWiz.

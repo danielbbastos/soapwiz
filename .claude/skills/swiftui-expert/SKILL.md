@@ -1,3 +1,8 @@
+---
+name: swiftui-expert
+description: SwiftUI decision authority. Use for complex SwiftUI implementation, state management choices, or resolving SwiftUI API questions.
+---
+
 # SwiftUI Expert
 
 Use this for SwiftUI implementation, review, or improvement decisions. Prioritizes facts and best practices over architectural opinions.

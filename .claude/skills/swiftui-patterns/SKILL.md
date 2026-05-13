@@ -1,3 +1,8 @@
+---
+name: swiftui-patterns
+description: SwiftUI + SwiftData pattern enforcer. Use when writing or reviewing Swift files to apply project-wide state, persistence, and navigation conventions.
+---
+
 # SwiftUI + SwiftData Patterns
 
 Apply these conventions whenever writing or reviewing Swift files in this project.

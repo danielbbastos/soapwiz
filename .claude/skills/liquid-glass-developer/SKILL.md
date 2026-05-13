@@ -1,62 +1,225 @@
-# Liquid Glass Developer (iOS 26+)
+---
+name: liquid-glass-developer
+description: Context-aware routing to iOS 26 Liquid Glass implementation patterns. Use when working with glass effects, GlassEffectContainer, morphing transitions, or iOS 26 visual effects.
+---
 
-Use this when implementing iOS 26 Liquid Glass effects in SwiftUI.
+# Liquid Glass Developer (iOS 26)
 
-## Critical Rules
+## Purpose
+Context-aware routing to iOS 26 Liquid Glass implementation patterns. Proper use of GlassEffectContainer, glassEffect modifiers, morphing transitions, and interactive effects.
 
-1. **Container grouping** — glass elements must be grouped within a `GlassEffectContainer` for unified composition
-2. **Morphing IDs** — elements that appear/disappear require a `glassEffectID` for smooth transitions
-3. **No separate clip** — glass effects define their own shape; never add `clipShape()` on top
-4. **Navigation layer only** — glass styling applies to floating controls (FAB, toolbars), never to content views
+## When Auto-Activated
+- Working with glass effects or iOS 26 visual effects
+- Keywords: glass, liquid glass, glassEffect, GlassEffectContainer, iOS 26, morphing
+- Editing files with glass effect modifiers
+- Implementing navigation panels, floating buttons, or translucent UI
 
-## SwiftUI Patterns
+## 🚨 CRITICAL RULES (NEVER VIOLATE)
 
-**Static glass element:**
+1. **ALWAYS group glass elements in `GlassEffectContainerIOS26`** - Glass elements must be grouped for unified composition
+2. **ALWAYS use `glassEffectIDIOS26` for morphing** - Elements that appear/disappear need IDs for smooth transitions
+3. **Glass defines its shape** - Use `glassEffect(in: Shape)`, no separate `clipShape()` needed
+4. **Glass is for navigation layer only** - Never apply to content, only floating controls
+5. **Use interactive glass for buttons** - Buttons should use `.regular.interactive()` for touch feedback
+
+## 📋 Quick Reference
+
+### Available Utilities (View+iOS26.swift)
+
 ```swift
-Button("Add") { ... }
-    .glassEffect()
+// Wrapper for GlassEffectContainer with iOS version check
+GlassEffectContainerIOS26(spacing: 20) {
+    // Glass elements here
+}
+
+// Interactive glass effect (scaling/bounce on touch)
+.glassEffectInteractiveIOS26(in: Circle())
+.glassEffectInteractiveIOS26(in: .rect(cornerRadius: 16))
+
+// Standard glass effect (no touch feedback)
+.glassEffectIOS26(in: Circle())
+
+// Morphing transition ID
+.glassEffectIDIOS26("buttonId", in: glassNamespace)
+
+// Circle glass button style (for Button views — handles full-frame hit testing)
+.buttonStyleCircleGlassIOS26()
 ```
 
-**Interactive (touch feedback):**
+### Complete Pattern Example
+
 ```swift
-Button("Add") { ... }
-    .glassEffect(.regular.interactive())
-```
+struct NavigationPanel: View {
+    @Namespace private var glassNamespace
+    @State private var isExpanded = false
 
-**Morphing between states (requires matching namespace):**
-```swift
-@Namespace var glass
+    var body: some View {
+        GlassEffectContainerIOS26(spacing: 20) {
+            HStack {
+                Button { } label: {
+                    Image(systemName: "magnifyingglass")
+                        .frame(width: 40, height: 40)
+                }
+                .glassEffectInteractiveIOS26(in: Circle())
+                .glassEffectIDIOS26("search", in: glassNamespace)
 
-// Element A
-view.glassEffect(.regular, in: .capsule, id: "fab", namespace: glass)
-
-// Element B (same ID = morphs)
-view.glassEffect(.regular, in: .capsule, id: "fab", namespace: glass)
-```
-
-**Container (required when grouping multiple glass elements):**
-```swift
-GlassEffectContainer {
-    // glass-styled views here
+                if isExpanded {
+                    Button { } label: {
+                        Image(systemName: "plus")
+                            .frame(width: 40, height: 40)
+                    }
+                    .glassEffectInteractiveIOS26(in: Circle())
+                    .glassEffectIDIOS26("add", in: glassNamespace)
+                }
+            }
+        }
+        .animation(.bouncy, value: isExpanded)
+    }
 }
 ```
 
-## When to Apply
+### Glass Shapes
 
-- FAB (`+` button) on list views — good candidate for glass
-- Bottom toolbars / action bars
-- Modal sheet drag handles
+```swift
+// Circular buttons
+.glassEffectInteractiveIOS26(in: Circle())
 
-## When NOT to Apply
+// Rounded rectangle
+.glassEffectInteractiveIOS26(in: .rect(cornerRadius: 16))
 
-- List rows or content cells
-- Form fields
-- Any view that is primarily content, not navigation/control
+// Capsule
+.glassEffectInteractiveIOS26(in: Capsule())
+```
 
-## Backward Compatibility
+## 🔄 Morphing Transitions
 
-Use `#available(iOS 26, *)` guards. On older OS versions, fall back to standard button styles — the glass modifiers handle this automatically when used with the provided APIs.
+For smooth state transitions between glass elements:
 
-## Gate on Explicit Request
+```swift
+@Namespace private var glassNamespace
 
-Do not apply Liquid Glass effects speculatively. Only add them when the user explicitly asks, or when implementing a view that is clearly a floating control.
+// Elements with same container + IDs morph smoothly
+GlassEffectContainerIOS26 {
+    if editing {
+        plusButton
+            .glassEffectIDIOS26("leftButton", in: glassNamespace)
+    } else {
+        burgerButton
+            .glassEffectIDIOS26("leftButton", in: glassNamespace)
+    }
+}
+.animation(.bouncy, value: editing)
+```
+
+**Key requirements:**
+1. Elements in same `GlassEffectContainerIOS26`
+2. Each element has `glassEffectIDIOS26` with shared namespace
+3. Wrap state changes with animation
+
+## ⚠️ Common Mistakes
+
+### No Container Grouping
+
+```swift
+// ❌ WRONG - Individual glass effects
+HStack {
+    button1.glassEffectIOS26(in: Circle())
+    button2.glassEffectIOS26(in: Circle())
+}
+
+// ✅ CORRECT - Grouped in container
+GlassEffectContainerIOS26 {
+    HStack {
+        button1.glassEffectInteractiveIOS26(in: Circle())
+        button2.glassEffectInteractiveIOS26(in: Circle())
+    }
+}
+```
+
+### Redundant clipShape
+
+```swift
+// ❌ WRONG - clipShape before glass
+.clipShape(Circle())
+.glassEffectIOS26(in: Circle())
+
+// ✅ CORRECT - Glass defines shape
+.glassEffectInteractiveIOS26(in: Circle())
+```
+
+### Missing Morphing IDs
+
+```swift
+// ❌ WRONG - Abrupt appear/disappear
+if isVisible {
+    button.glassEffectInteractiveIOS26(in: Circle())
+}
+
+// ✅ CORRECT - Smooth morphing
+if isVisible {
+    button
+        .glassEffectInteractiveIOS26(in: Circle())
+        .glassEffectIDIOS26("button", in: namespace)
+}
+```
+
+### Glass on Content
+
+```swift
+// ❌ WRONG - Glass on content
+Text("Hello World")
+    .glassEffectIOS26(in: .rect(cornerRadius: 8))
+
+// ✅ CORRECT - Glass only on floating controls
+// Use standard backgrounds for content:
+Text("Hello World")
+    .background(Color(.systemBackground))
+```
+
+## 📚 iOS Version Handling
+
+All utilities handle iOS version checks internally:
+- **iOS 26+**: Native glass effects applied
+- **iOS < 26**: Fallback to `.ultraThinMaterial`
+
+```swift
+// This works on all iOS versions
+.glassEffectInteractiveIOS26(in: Circle())
+
+// Equivalent to:
+if #available(iOS 26.0, *) {
+    self.glassEffect(.regular.interactive(), in: Circle())
+} else {
+    self
+        .background(.ultraThinMaterial)
+}
+```
+
+## 🔗 External Resources
+
+- [Understanding GlassEffectContainer - DEV](https://dev.to/arshtechpro/understanding-glasseffectcontainer-in-ios-26-2n8p)
+- [GlassEffectContainer - Apple Docs](https://developer.apple.com/documentation/swiftui/glasseffectcontainer/)
+- [iOS 26 Liquid Glass Reference](https://github.com/conorluddy/LiquidGlassReference)
+- [WWDC25: Build a SwiftUI app with the new design](https://developer.apple.com/videos/play/wwdc2025/323/)
+
+## ✅ Implementation Checklist
+
+### SwiftUI
+- [ ] Glass elements wrapped in `GlassEffectContainerIOS26`
+- [ ] Buttons use `glassEffectInteractiveIOS26` (not just `glassEffectIOS26`)
+- [ ] State-dependent elements have `glassEffectIDIOS26` for morphing
+- [ ] No redundant `clipShape()` before glass effects
+- [ ] Glass only on navigation/floating controls, not content
+- [ ] Animation wrapper for state changes (`withAnimation(.bouncy)` or `.animation()`)
+
+### Testing
+- [ ] Tested on iOS 26 simulator for glass appearance
+- [ ] Tested on iOS 18 simulator for fallback behavior
+
+## 🔗 Related Skills
+
+- **ios-dev-guidelines** → SwiftUI patterns and view modifiers
+
+---
+
+**Navigation**: This skill covers iOS 26 Liquid Glass patterns. For implementation details, see `View+iOS26.swift`.

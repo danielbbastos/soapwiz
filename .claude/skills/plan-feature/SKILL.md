@@ -1,3 +1,8 @@
+---
+name: plan-feature
+description: Feature planning assistant. Use before starting any feature that touches more than one file or introduces a new model, view, or ViewModel.
+---
+
 # Plan Feature
 
 Use this before starting any new feature that touches more than one file or adds a new model/view.

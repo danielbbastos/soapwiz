@@ -118,6 +118,24 @@ struct IngredientListViewModelFilterTests {
         #expect(results.first?.name == "Olive Oil")
     }
 
+    @Test func categoryFilterMultipleSelections() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let oils = IngredientCategory(name: "Oils")
+        let lyes = IngredientCategory(name: "Lyes")
+        ctx.insert(oils); ctx.insert(lyes)
+        let olive = Ingredient(name: "Olive Oil", category: oils)
+        let naoh = Ingredient(name: "NaOH", category: lyes)
+        let fragrance = Ingredient(name: "Fragrance")
+        ctx.insert(olive); ctx.insert(naoh); ctx.insert(fragrance)
+        try ctx.save()
+
+        let model = IngredientListViewModel()
+        model.selectedCategories = [oils.persistentModelID, lyes.persistentModelID]
+        let results = model.filtered([olive, naoh, fragrance])
+        #expect(results.count == 2)
+    }
+
     // MARK: - Stock status filter
 
     @Test func stockFilterInStock() throws {
@@ -133,6 +151,19 @@ struct IngredientListViewModelFilterTests {
         let results = model.filtered([a, b])
         #expect(results.count == 1)
         #expect(results.first?.name == "A")
+    }
+
+    @Test func stockFilterInStockExcludesLowStock() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let a = Ingredient(name: "A")
+        a.lowStockThreshold = 30
+        a.batches.append(makeBatch(quantity: 100, remaining: 20))
+        ctx.insert(a)
+
+        let model = IngredientListViewModel()
+        model.stockStatus = .inStock
+        #expect(model.filtered([a]).isEmpty)
     }
 
     @Test func stockFilterOutOfStock() throws {
@@ -193,8 +224,8 @@ struct IngredientListViewModelFilterTests {
     @Test func expiryFilterExpiringSoon() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let soon = Calendar.current.date(byAdding: .day, value: 15, to: .now)!
-        let far = Calendar.current.date(byAdding: .year, value: 2, to: .now)!
+        let soon = try #require(Calendar.current.date(byAdding: .day, value: 15, to: .now))
+        let far = try #require(Calendar.current.date(byAdding: .year, value: 2, to: .now))
         let a = Ingredient(name: "A")
         a.batches.append(makeBatch(expiryDate: soon))
         let b = Ingredient(name: "B")
@@ -211,8 +242,8 @@ struct IngredientListViewModelFilterTests {
     @Test func expiryFilterExpired() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let past = Calendar.current.date(byAdding: .day, value: -1, to: .now)!
-        let future = Calendar.current.date(byAdding: .year, value: 1, to: .now)!
+        let past = try #require(Calendar.current.date(byAdding: .day, value: -1, to: .now))
+        let future = try #require(Calendar.current.date(byAdding: .year, value: 1, to: .now))
         let a = Ingredient(name: "A")
         a.batches.append(makeBatch(expiryDate: past))
         let b = Ingredient(name: "B")
@@ -229,7 +260,7 @@ struct IngredientListViewModelFilterTests {
     @Test func expiryFilterNoExpiry() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let future = Calendar.current.date(byAdding: .year, value: 1, to: .now)!
+        let future = try #require(Calendar.current.date(byAdding: .year, value: 1, to: .now))
         let a = Ingredient(name: "A")
         a.batches.append(makeBatch(expiryDate: nil))
         let b = Ingredient(name: "B")
@@ -241,6 +272,17 @@ struct IngredientListViewModelFilterTests {
         let results = model.filtered([a, b])
         #expect(results.count == 1)
         #expect(results.first?.name == "A")
+    }
+
+    @Test func expiryFilterNoExpiryMatchesIngredientWithNoBatches() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let a = Ingredient(name: "A")
+        ctx.insert(a)
+
+        let model = IngredientListViewModel()
+        model.expiryFilter = .noExpiry
+        #expect(model.filtered([a]).count == 1)
     }
 
     // MARK: - Combined filters
@@ -264,7 +306,7 @@ struct IngredientListViewModelFilterTests {
         #expect(results.first?.name == "Olive Oil")
     }
 
-    // MARK: - hasActiveFilters / clearFilters
+    // MARK: - hasActiveFilters / activeFilterCount / clearFilters
 
     @Test func hasActiveFiltersIsFalseByDefault() {
         let model = IngredientListViewModel()
@@ -281,6 +323,20 @@ struct IngredientListViewModelFilterTests {
         let model = IngredientListViewModel()
         model.selectedCategories = [oils.persistentModelID]
         #expect(model.hasActiveFilters)
+    }
+
+    @Test func activeFilterCountTracksEachDimension() {
+        let model = IngredientListViewModel()
+        #expect(model.activeFilterCount == 0)
+
+        model.stockStatus = .inStock
+        #expect(model.activeFilterCount == 1)
+
+        model.expiryFilter = .expired
+        #expect(model.activeFilterCount == 2)
+
+        model.clearFilters()
+        #expect(model.activeFilterCount == 0)
     }
 
     @Test func clearFiltersResetsAll() throws {
