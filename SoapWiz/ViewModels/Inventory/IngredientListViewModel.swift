@@ -36,9 +36,7 @@ final class IngredientListViewModel {
     var selectedUnits: Set<PersistentIdentifier> = []
     var expiryFilter: ExpiryFilter = .all
 
-    var hasActiveFilters: Bool {
-        !selectedCategories.isEmpty || stockStatus != .all || !selectedUnits.isEmpty || expiryFilter != .all
-    }
+    var hasActiveFilters: Bool { activeFilterCount > 0 }
 
     var activeFilterCount: Int {
         (selectedCategories.isEmpty ? 0 : 1) +

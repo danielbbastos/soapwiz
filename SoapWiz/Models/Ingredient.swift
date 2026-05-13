@@ -26,10 +26,6 @@ final class Ingredient {
         return batches.contains { ($0.expiryDate ?? .distantFuture) < now }
     }
 
-    var firstExpiryDate: Date? {
-        batches.compactMap(\.expiryDate).min()
-    }
-
     var nearestUpcomingExpiry: Date? {
         let now = Date.now
         guard let cutoff = Calendar.current.date(byAdding: .month, value: 1, to: now) else { return nil }

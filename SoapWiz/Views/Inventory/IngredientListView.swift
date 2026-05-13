@@ -12,10 +12,6 @@ struct IngredientListView: View {
         model.filtered(ingredients)
     }
 
-    private var isSearchOrFilterActive: Bool {
-        !model.searchText.isEmpty || model.hasActiveFilters
-    }
-
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottomTrailing) {
@@ -119,7 +115,7 @@ struct IngredientListView: View {
                 Image(systemName: model.hasActiveFilters
                       ? "line.3.horizontal.decrease.circle.fill"
                       : "line.3.horizontal.decrease.circle")
-                if model.activeFilterCount > 0 {
+                if model.hasActiveFilters {
                     Text("\(model.activeFilterCount)")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.white)
