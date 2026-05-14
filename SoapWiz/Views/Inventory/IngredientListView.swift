@@ -9,19 +9,29 @@ struct IngredientListView: View {
     @State private var navigationPath = NavigationPath()
 
     private var displayedIngredients: [Ingredient] {
-        model.showLowStockOnly ? ingredients.filter(\.isLowStock) : ingredients
+        model.filtered(ingredients)
     }
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottomTrailing) {
                 Group {
-                    if displayedIngredients.isEmpty {
+                    if ingredients.isEmpty {
                         ContentUnavailableView(
-                            ingredients.isEmpty ? "No Ingredients" : "No Low Stock Ingredients",
-                            systemImage: ingredients.isEmpty ? "flask" : "gauge.low",
-                            description: Text(ingredients.isEmpty ? "Tap + to add your first ingredient." : "No ingredients are below their threshold.")
+                            "No Ingredients",
+                            systemImage: "flask",
+                            description: Text("Tap + to add your first ingredient.")
                         )
+                    } else if displayedIngredients.isEmpty {
+                        if !model.searchText.isEmpty {
+                            ContentUnavailableView.search(text: model.searchText)
+                        } else {
+                            ContentUnavailableView(
+                                "No Results",
+                                systemImage: "line.3.horizontal.decrease.circle",
+                                description: Text("Try adjusting your filters.")
+                            )
+                        }
                     } else {
                         List(selection: $model.selection) {
                             ForEach(displayedIngredients) { ingredient in
@@ -46,6 +56,7 @@ struct IngredientListView: View {
                     )
                     .onAppear { model.pendingIngredient = nil }
                 }
+                .searchable(text: $model.searchText, prompt: "Search ingredients")
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         if model.editMode == .active {
@@ -54,13 +65,7 @@ struct IngredientListView: View {
                             }
                             .disabled(model.selection.isEmpty)
                         } else {
-                            Button {
-                                model.showLowStockOnly.toggle()
-                            } label: {
-                                Label("Low Stock", systemImage: "gauge.low")
-                                    .symbolVariant(model.showLowStockOnly ? .fill : .none)
-                            }
-                            .foregroundStyle(model.showLowStockOnly ? .orange : .primary)
+                            filterButton
                         }
                     }
                     if !ingredients.isEmpty {
@@ -97,5 +102,29 @@ struct IngredientListView: View {
                 model.pendingIngredient = ingredient
             })
         }
+        .sheet(isPresented: $model.showingFilters) {
+            InventoryFilterView(model: model)
+        }
+    }
+
+    private var filterButton: some View {
+        Button {
+            model.showingFilters = true
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: model.hasActiveFilters
+                      ? "line.3.horizontal.decrease.circle.fill"
+                      : "line.3.horizontal.decrease.circle")
+                if model.hasActiveFilters {
+                    Text("\(model.activeFilterCount)")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.white)
+                        .padding(2)
+                        .background(.blue, in: Circle())
+                        .offset(x: 6, y: -6)
+                }
+            }
+        }
+        .foregroundStyle(model.hasActiveFilters ? .blue : .primary)
     }
 }
