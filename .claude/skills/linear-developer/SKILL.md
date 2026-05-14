@@ -30,8 +30,11 @@ linctl auth  # Interactive authentication
 
 1. **Always use `--json` flag** for structured output parsing
 2. **Use issue identifiers** (SW-XXXX) not UUIDs for user-facing references
-3. **Default filters exclude old/completed items** - use `--newer-than all_time` and `--include-completed` when needed
-4. **Limit results** - Default is 50, use `--limit` for large datasets
+3. **Default filters exclude old/completed items** — use `--newer-than all_time` and `--include-completed` when needed
+4. **Limit results** — Default is 50, use `--limit` for large datasets
+5. **`issue list` has no `--labels` filter** — use `issue search "label-name"` to find by label
+6. **No `linctl cycle` command** — filter by cycle via `linctl issue list --cycle current`
+7. **`--assign-me` on create vs `--assignee me` on update** — different flags, same intent
 
 ## Quick Reference
 
@@ -41,10 +44,36 @@ linctl auth  # Interactive authentication
 | Get issue details | `linctl issue get SW-1234 --json` |
 | List my issues | `linctl issue list --assignee me --json` |
 | List team issues | `linctl issue list --team SW --json` |
-| Search issues | `linctl issue search "query" --json` |
+| Search issues | `linctl issue search "query" --team SW --json` |
 | Create issue | `linctl issue create --title "Title" --team SW --json` |
+| Create + assign to self | `linctl issue create --title "Title" --team SW --assign-me --json` |
+| Create with labels | `linctl issue create --title "Title" --team SW --labels "Bug,urgent" --json` |
 | Update issue | `linctl issue update SW-1234 --state "Done" --json` |
 | Assign to self | `linctl issue assign SW-1234` |
+| Set parent (sub-issue) | `linctl issue update SW-1234 --parent SW-100 --json` |
+| Remove parent | `linctl issue update SW-1234 --parent none --json` |
+| Add labels | `linctl issue update SW-1234 --labels "Bug,urgent" --json` |
+| Clear labels | `linctl issue update SW-1234 --clear-labels --json` |
+| Attach PR | `linctl issue attach SW-1234 --pr 456` |
+| Attach URL | `linctl issue attach SW-1234 --url https://example.com --title "Spec"` |
+
+### Label Commands
+| Task | Command |
+|------|---------|
+| List team labels | `linctl label list --team SW --json` |
+| Get label by ID | `linctl label get <label-id> --json` |
+| Create label | `linctl label create --team SW --name "bug" --color "#ff0000"` |
+| Update label | `linctl label update <label-id> --name "critical bug"` |
+| Delete label | `linctl label delete <label-id>` |
+
+### Issue Relation Commands
+| Task | Command |
+|------|---------|
+| List relations | `linctl issue relation list SW-1234 --json` |
+| Add blocks relation | `linctl issue relation add SW-1234 --blocks SW-456` |
+| Add blocked-by relation | `linctl issue relation add SW-1234 --blocked-by SW-456` |
+| Add related relation | `linctl issue relation add SW-1234 --related SW-456` |
+| Remove relation | `linctl issue relation remove <relation-id>` |
 
 ### Project Commands
 | Task | Command |
@@ -59,11 +88,12 @@ linctl auth  # Interactive authentication
 | List teams | `linctl team list --json` |
 | Get team | `linctl team get SW --json` |
 | Team members | `linctl team members SW --json` |
+| Workflow states | `linctl team state list SW --json` |
 
 ### User Commands
 | Task | Command |
 |------|---------|
-| Current user | `linctl whoami --json` |
+| Current user (with JSON) | `linctl user me --json` |
 | List users | `linctl user list --json` |
 | Get user | `linctl user get email@example.com --json` |
 
@@ -72,30 +102,57 @@ linctl auth  # Interactive authentication
 |------|---------|
 | List comments | `linctl comment list SW-1234 --json` |
 | Add comment | `linctl comment create SW-1234 --body "Comment text"` |
+| Update comment | `linctl comment update <comment-id> --body "Updated text"` |
+| Delete comment | `linctl comment delete <comment-id>` |
 
-### Cycle Commands
-| Task | Command |
-|------|---------|
-| Current cycle | `linctl cycle list --team SW --type current --json` |
+### Cycle Filtering (no separate cycle command)
+```bash
+# Filter issues by current cycle — NOT linctl cycle list
+linctl issue list --team SW --cycle current --json
+linctl issue list --team SW --cycle 42 --json
+```
 
 ## Common Workflows
 
+### Create a fully populated issue
+```bash
+linctl issue create \
+  --title "Fix login bug" \
+  --team SW \
+  --labels "Bug" \
+  --assign-me \
+  --state "In Progress" \
+  --json
+# Then set parent, description, etc. via update
+linctl issue update SW-1234 \
+  --parent SW-5 \
+  --description "Detailed description here" \
+  --json
+```
+
+### Find epics and set sub-issue
+```bash
+# Search for epics
+linctl issue search "EPIC" --team SW --newer-than all_time --json
+
+# Set sub-issue relationship
+linctl issue update SW-1234 --parent SW-5 --json
+```
+
 ### Get Branch Name for Task
 ```bash
-# Instead of: mcp__linear-server__list_issues(query: "SW-1234")
 linctl issue get SW-1234 --json | jq -r '.gitBranchName'
 ```
 
-### Release Task Hierarchy (for /impact_linear)
+### Release Task Hierarchy
 ```bash
 # Step 1: Get release task
 linctl issue get SW-5467 --json
 
-# Step 2: Get subtasks (need UUID from step 1)
-linctl issue list --parent-id <uuid> --json --include-completed
-
-# Step 3: Get epic subtasks (repeat for each epic UUID)
-linctl issue list --parent-id <epic-uuid> --json --include-completed
+# Step 2: Get subtasks — use search since issue list has no --parent-id flag
+linctl issue search "SW-5467" --team SW --json
+# Or get issue details which includes children
+linctl issue get SW-5467 --json | jq '.children'
 ```
 
 ### List All Issues for Sprint
@@ -115,8 +172,8 @@ linctl issue list --state "Done" --include-completed --json
 |----------|-------------------|
 | `mcp__linear-server__get_issue(id)` | `linctl issue get <id> --json` |
 | `mcp__linear-server__list_issues(...)` | `linctl issue list [filters] --json` |
-| `mcp__linear-server__create_issue(...)` | `linctl issue create [options]` |
-| `mcp__linear-server__update_issue(...)` | `linctl issue update <id> [options]` |
+| `mcp__linear-server__create_issue(...)` | `linctl issue create [options] --json` |
+| `mcp__linear-server__update_issue(...)` | `linctl issue update <id> [options] --json` |
 | `mcp__linear-server__list_comments(issueId)` | `linctl comment list <id> --json` |
 | `mcp__linear-server__create_comment(...)` | `linctl comment create <id> --body "..."` |
 | `mcp__linear-server__list_teams` | `linctl team list --json` |
@@ -125,7 +182,7 @@ linctl issue list --state "Done" --include-completed --json
 | `mcp__linear-server__get_project(query)` | `linctl project get <id> --json` |
 | `mcp__linear-server__list_users` | `linctl user list --json` |
 | `mcp__linear-server__get_user(query)` | `linctl user get <email> --json` |
-| `mcp__linear-server__list_cycles(...)` | `linctl cycle list --team <key> --json` |
+| `mcp__linear-server__list_cycles(...)` | `linctl issue list --cycle current --json` |
 
 ## Priority Values
 | Priority | Name |
@@ -141,7 +198,8 @@ linctl issue list --state "Done" --include-completed --json
 - `6_months_ago` - Default
 - `1_month_ago`
 - `1_week_ago`
-- ISO-8601 dates
+- `1_day_ago`
+- ISO-8601 dates (e.g. `2025-07-01`)
 
 ## Output Formats
 - `--json` - Structured JSON (recommended for agents)
@@ -149,6 +207,54 @@ linctl issue list --state "Done" --include-completed --json
 - Default: Table format
 
 ## Common Mistakes
+
+### Using --labels on issue list (doesn't exist)
+```bash
+# Wrong — issue list has no --labels flag
+linctl issue list --team SW --labels "Epic" --json
+
+# Correct — use search to filter by label name
+linctl issue search "Epic" --team SW --newer-than all_time --json
+```
+
+### Using linctl cycle list (doesn't exist)
+```bash
+# Wrong — no top-level cycle command
+linctl cycle list --team SW --type current --json
+
+# Correct — cycle is a filter on issue list
+linctl issue list --team SW --cycle current --json
+```
+
+### Using linctl whoami --json (no --json on whoami)
+```bash
+# Wrong — whoami has no --json flag
+linctl whoami --json
+
+# Correct
+linctl user me --json
+```
+
+### Using --parent-id on issue list (doesn't exist)
+```bash
+# Wrong — issue list has no --parent-id flag
+linctl issue list --parent-id <uuid> --json
+
+# Correct — use issue get and check .children, or search by parent identifier
+linctl issue get SW-5 --json | jq '.children'
+```
+
+### Wrong flag for labels on create vs update
+```bash
+# Create: use --labels (comma-separated names or IDs)
+linctl issue create --title "..." --team SW --labels "Bug,urgent"
+
+# Create: use --assign-me (not --assignee me)
+linctl issue create --title "..." --team SW --assign-me
+
+# Update: use --assignee me (not --assign-me)
+linctl issue update SW-1234 --assignee me
+```
 
 ### Forgetting --json
 ```bash
