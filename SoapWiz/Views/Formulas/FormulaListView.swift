@@ -77,8 +77,7 @@ struct FormulaListView: View {
             Button("Cancel", role: .cancel) { model.confirmingDelete = [] }
         } message: {
             let count = model.confirmingDelete.count
-            let word = count == 1 ? "formula" : "formulas"
-            Text("Deleting \(count) \(word) will also remove its ingredients and production history.")
+            Text("Deleting ^[\(count) formula](inflect: true) will also remove all linked ingredients and production history.")
         }
         .sheet(isPresented: $model.showingAddFormula) {
             NavigationStack {
