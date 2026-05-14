@@ -68,8 +68,12 @@ struct BatchDetailView: View {
                             .foregroundStyle(.secondary)
 
                             Button { model.startEditing() } label: {
-                                Text("\(batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
-                                    .foregroundStyle(batch.remainingAmount > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
+                                ZStack {
+                                    Text("\(batch.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
+                                        .hidden()
+                                    Text("\(batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
+                                        .foregroundStyle(batch.remainingAmount > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
+                                }
                             }
                             .buttonStyle(.plain)
 
