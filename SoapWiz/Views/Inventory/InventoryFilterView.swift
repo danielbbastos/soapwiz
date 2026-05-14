@@ -2,12 +2,12 @@ import SwiftUI
 import SwiftData
 
 struct InventoryFilterView: View {
-    @Bindable var model: IngredientListViewModel
+    @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
     @Query(sort: \QuantityUnit.name) private var units: [QuantityUnit]
 
-    @Environment(\.dismiss) private var dismiss
+    @Bindable var model: IngredientListViewModel
 
     private var categoryLabel: String {
         switch model.selectedCategories.count {

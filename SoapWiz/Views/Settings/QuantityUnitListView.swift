@@ -3,6 +3,7 @@ import SwiftData
 
 struct QuantityUnitListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.editMode) private var editMode
     @Query(sort: \QuantityUnit.name) private var units: [QuantityUnit]
 
     @State private var model = QuantityUnitListViewModel()
@@ -39,7 +40,9 @@ struct QuantityUnitListView: View {
             .navigationTitle("Quantity Units")
             .navigationBarTitleDisplayMode(.large)
 
-            FloatingActionButton { model.showingAddUnit = true }
+            if editMode?.wrappedValue != .active {
+                FloatingActionButton { model.showingAddUnit = true }
+            }
         }
         .sheet(isPresented: $model.showingAddUnit) {
             QuantityUnitFormView()

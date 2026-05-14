@@ -67,9 +67,11 @@ struct BatchDetailView: View {
                             .buttonStyle(.borderless)
                             .foregroundStyle(.secondary)
 
-                            Text("\(batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
-                                .foregroundStyle(batch.remainingAmount > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
-                                .onTapGesture { model.startEditing() }
+                            Button { model.startEditing() } label: {
+                                Text("\(batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
+                                    .foregroundStyle(batch.remainingAmount > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
+                            }
+                            .buttonStyle(.plain)
 
                             Button { model.adjust(by: 10) } label: {
                                 Image(systemName: "plus.circle.fill")
