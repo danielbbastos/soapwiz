@@ -10,3 +10,6 @@ __pycache__/
 
 # Dev scripts
 Scripts/
+
+# Plans
+plans/

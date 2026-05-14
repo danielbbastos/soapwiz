@@ -1,4 +1,9 @@
-# SwiftUI + SwiftData Patterns
+---
+name: swiftui-patterns-soapwiz
+description: SoapWiz-specific SwiftUI + SwiftData conventions. Use when writing or reviewing Swift files to apply project-wide state, persistence, FAB, and form patterns.
+---
+
+# SwiftUI + SwiftData Patterns (SoapWiz)
 
 Apply these conventions whenever writing or reviewing Swift files in this project.
 
@@ -8,12 +13,6 @@ Apply these conventions whenever writing or reviewing Swift files in this projec
 - Use `@State` only for transient, view-local UI state (sheet presentation, form fields, edit mode).
 - `ModelContainer` is configured once in `SoapWizApp` and flows down via `.modelContainer()` — never create a second container.
 - All SwiftData model access must stay on `@MainActor`. The project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` globally.
-
-## View Structure
-
-- Views are structs. Keep `body` focused; split large bodies into private computed view properties.
-- Ordering inside a view: property wrappers → public properties → private properties → computed properties → `body` → computed view builders → helper functions.
-- Defer expensive work to `.task`, not `init`.
 
 ## Form Pattern
 

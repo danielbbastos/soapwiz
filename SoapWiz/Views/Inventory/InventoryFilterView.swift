@@ -37,15 +37,15 @@ struct InventoryFilterView: View {
                     LabeledContent("Category") {
                         Menu(categoryLabel) {
                             ForEach(categories) { category in
+                                let id = category.persistentModelID
                                 Button {
-                                    let id = category.persistentModelID
                                     if model.selectedCategories.contains(id) {
                                         model.selectedCategories.remove(id)
                                     } else {
                                         model.selectedCategories.insert(id)
                                     }
                                 } label: {
-                                    if model.selectedCategories.contains(category.persistentModelID) {
+                                    if model.selectedCategories.contains(id) {
                                         Label(category.name, systemImage: "checkmark")
                                     } else {
                                         Text(category.name)
@@ -67,15 +67,15 @@ struct InventoryFilterView: View {
                     LabeledContent("Unit Type") {
                         Menu(unitLabel) {
                             ForEach(units) { unit in
+                                let id = unit.persistentModelID
                                 Button {
-                                    let id = unit.persistentModelID
                                     if model.selectedUnits.contains(id) {
                                         model.selectedUnits.remove(id)
                                     } else {
                                         model.selectedUnits.insert(id)
                                     }
                                 } label: {
-                                    if model.selectedUnits.contains(unit.persistentModelID) {
+                                    if model.selectedUnits.contains(id) {
                                         Label("\(unit.name) (\(unit.symbol))", systemImage: "checkmark")
                                     } else {
                                         Text("\(unit.name) (\(unit.symbol))")
