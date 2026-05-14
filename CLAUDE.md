@@ -23,7 +23,7 @@ When context reaches 70%, run `/compact` preserving: current task, modified file
 3. **Soap formulas** *(planned)* — create recipes specifying ingredient amounts.
 4. **Formula execution** *(planned)* — using a formula deducts ingredient quantities from batches.
 
-**Stack:** Swift, SwiftUI, SwiftData, iOS 26+. No external dependencies.
+**Stack:** Swift, SwiftUI, SwiftData, iOS 18+. iOS 26 Liquid Glass features are gated with `#available(iOS 26, *)`. No external dependencies.
 
 ## Building
 
