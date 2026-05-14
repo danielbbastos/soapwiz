@@ -7,8 +7,8 @@ final class FormulaIngredient {
     var ingredient: Ingredient?
     var percentage: Double
 
-    func amountForSize(_ sizeGrams: Double) -> Double {
-        sizeGrams * percentage / 100
+    func amountForSize(_ size: Double) -> Double {
+        size * percentage / 100
     }
 
     var costPerUnit: Double {
