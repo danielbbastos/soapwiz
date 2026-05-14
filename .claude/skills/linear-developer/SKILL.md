@@ -112,6 +112,23 @@ linctl issue list --team SW --cycle current --json
 linctl issue list --team SW --cycle 42 --json
 ```
 
+## Issue State Workflow
+
+**Always follow this sequence when picking up a task:**
+
+```bash
+# 1. Check current state
+linctl issue get SW-XXXX --json | jq -r '.state.name'
+
+# 2. If not "Todo", set it first
+linctl issue update SW-XXXX --state "Todo" --json
+
+# 3. When starting work (branching/coding)
+linctl issue update SW-XXXX --state "In Progress" --json
+
+# 4. After merge — Linear auto-sets to Done, no action needed
+```
+
 ## Common Workflows
 
 ### Create a fully populated issue
