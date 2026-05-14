@@ -117,7 +117,7 @@ struct IngredientListView: View {
                       : "line.3.horizontal.decrease.circle")
                 if model.hasActiveFilters {
                     Text("\(model.activeFilterCount)")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.caption2.bold())
                         .foregroundStyle(.white)
                         .padding(2)
                         .background(.blue, in: Circle())
