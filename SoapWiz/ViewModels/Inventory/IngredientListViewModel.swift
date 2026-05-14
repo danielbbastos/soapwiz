@@ -64,7 +64,7 @@ final class IngredientListViewModel {
             switch stockStatus {
             case .all:        matchesStock = true
             case .inStock:    matchesStock = ingredient.totalRemaining > 0 && !ingredient.isLowStock
-            case .lowStock:   matchesStock = ingredient.isLowStock
+            case .lowStock:   matchesStock = ingredient.isLowStock && ingredient.totalRemaining > 0
             case .outOfStock: matchesStock = ingredient.totalRemaining == 0
             }
 
