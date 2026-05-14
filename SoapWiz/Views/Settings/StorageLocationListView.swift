@@ -3,6 +3,7 @@ import SwiftData
 
 struct StorageLocationListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.editMode) private var editMode
     @Query(sort: \StorageLocation.name) private var locations: [StorageLocation]
 
     @State private var model = StorageLocationListViewModel()
@@ -46,7 +47,9 @@ struct StorageLocationListView: View {
             .navigationTitle("Storage Locations")
             .navigationBarTitleDisplayMode(.large)
 
-            FloatingActionButton { model.showingAddLocation = true }
+            if editMode?.wrappedValue != .active {
+                FloatingActionButton { model.showingAddLocation = true }
+            }
         }
         .sheet(isPresented: $model.showingAddLocation) {
             StorageLocationFormView()

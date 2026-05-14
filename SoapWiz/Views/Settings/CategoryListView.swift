@@ -3,6 +3,7 @@ import SwiftData
 
 struct CategoryListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.editMode) private var editMode
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
 
     @State private var model = CategoryListViewModel()
@@ -39,7 +40,9 @@ struct CategoryListView: View {
             .navigationTitle("Categories")
             .navigationBarTitleDisplayMode(.large)
 
-            FloatingActionButton { model.showingAddCategory = true }
+            if editMode?.wrappedValue != .active {
+                FloatingActionButton { model.showingAddCategory = true }
+            }
         }
         .sheet(isPresented: $model.showingAddCategory) {
             CategoryFormView()

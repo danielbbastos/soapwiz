@@ -3,6 +3,7 @@ import SwiftData
 
 struct ProviderListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.editMode) private var editMode
     @Query(sort: \Provider.name) private var providers: [Provider]
 
     @State private var model = ProviderListViewModel()
@@ -46,7 +47,9 @@ struct ProviderListView: View {
             .navigationTitle("Providers")
             .navigationBarTitleDisplayMode(.large)
 
-            FloatingActionButton { model.showingAddProvider = true }
+            if editMode?.wrappedValue != .active {
+                FloatingActionButton { model.showingAddProvider = true }
+            }
         }
         .sheet(isPresented: $model.showingAddProvider) {
             ProviderFormView()

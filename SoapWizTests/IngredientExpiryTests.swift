@@ -42,7 +42,7 @@ struct IngredientExpiryTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Test")
         ctx.insert(ingredient)
-        let expired = makeBatch(expiryDate: Calendar.current.date(byAdding: .day, value: -1, to: .now)!)
+        let expired = makeBatch(expiryDate: try #require(Calendar.current.date(byAdding: .day, value: -1, to: .now)))
         ctx.insert(expired)
         ingredient.batches.append(expired)
         #expect(ingredient.nearestUpcomingExpiry == nil)
@@ -53,8 +53,8 @@ struct IngredientExpiryTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Test")
         ctx.insert(ingredient)
-        let cutoff = Calendar.current.date(byAdding: .month, value: 1, to: .now)!
-        let farFuture = makeBatch(expiryDate: Calendar.current.date(byAdding: .day, value: 1, to: cutoff)!)
+        let cutoff = try #require(Calendar.current.date(byAdding: .month, value: 1, to: .now))
+        let farFuture = makeBatch(expiryDate: try #require(Calendar.current.date(byAdding: .day, value: 1, to: cutoff)))
         ctx.insert(farFuture)
         ingredient.batches.append(farFuture)
         #expect(ingredient.nearestUpcomingExpiry == nil)
@@ -65,13 +65,12 @@ struct IngredientExpiryTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Test")
         ctx.insert(ingredient)
-        let soon = Calendar.current.date(byAdding: .day, value: 15, to: .now)!
+        let soon = try #require(Calendar.current.date(byAdding: .day, value: 15, to: .now))
         let batch = makeBatch(expiryDate: soon)
         ctx.insert(batch)
         ingredient.batches.append(batch)
-        let result = ingredient.nearestUpcomingExpiry
-        #expect(result != nil)
-        #expect(abs(result!.timeIntervalSince(soon)) < 1)
+        let result = try #require(ingredient.nearestUpcomingExpiry)
+        #expect(abs(result.timeIntervalSince(soon)) < 1)
     }
 
     @Test func returnsNearestWhenMultipleBatchesExpiring() throws {
@@ -79,16 +78,15 @@ struct IngredientExpiryTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Test")
         ctx.insert(ingredient)
-        let sooner = Calendar.current.date(byAdding: .day, value: 5, to: .now)!
-        let later = Calendar.current.date(byAdding: .day, value: 20, to: .now)!
+        let sooner = try #require(Calendar.current.date(byAdding: .day, value: 5, to: .now))
+        let later = try #require(Calendar.current.date(byAdding: .day, value: 20, to: .now))
         let b1 = makeBatch(expiryDate: sooner)
         let b2 = makeBatch(expiryDate: later)
         ctx.insert(b1); ctx.insert(b2)
         ingredient.batches.append(b1)
         ingredient.batches.append(b2)
-        let result = ingredient.nearestUpcomingExpiry
-        #expect(result != nil)
-        #expect(abs(result!.timeIntervalSince(sooner)) < 1)
+        let result = try #require(ingredient.nearestUpcomingExpiry)
+        #expect(abs(result.timeIntervalSince(sooner)) < 1)
     }
 
     @Test func ignoresExpiredWhenMixedWithUpcoming() throws {
@@ -96,15 +94,14 @@ struct IngredientExpiryTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Test")
         ctx.insert(ingredient)
-        let past = Calendar.current.date(byAdding: .day, value: -5, to: .now)!
-        let future = Calendar.current.date(byAdding: .day, value: 10, to: .now)!
+        let past = try #require(Calendar.current.date(byAdding: .day, value: -5, to: .now))
+        let future = try #require(Calendar.current.date(byAdding: .day, value: 10, to: .now))
         let b1 = makeBatch(expiryDate: past)
         let b2 = makeBatch(expiryDate: future)
         ctx.insert(b1); ctx.insert(b2)
         ingredient.batches.append(b1)
         ingredient.batches.append(b2)
-        let result = ingredient.nearestUpcomingExpiry
-        #expect(result != nil)
-        #expect(abs(result!.timeIntervalSince(future)) < 1)
+        let result = try #require(ingredient.nearestUpcomingExpiry)
+        #expect(abs(result.timeIntervalSince(future)) < 1)
     }
 }

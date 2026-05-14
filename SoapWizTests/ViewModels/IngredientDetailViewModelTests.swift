@@ -12,8 +12,8 @@ struct IngredientDetailViewModelTests {
         return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
     }
 
-    private func makeBatch(quantity: Double, daysAgo: Int) -> IngredientBatch {
-        let date = Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now)!
+    private func makeBatch(quantity: Double, daysAgo: Int) throws -> IngredientBatch {
+        let date = try #require(Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now))
         return IngredientBatch(
             dateOfPurchase: date, quantity: quantity, totalPrice: 10,
             badge: "", journalCode: "", expiryDate: nil, openingDate: nil
@@ -25,8 +25,8 @@ struct IngredientDetailViewModelTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let older = makeBatch(quantity: 100, daysAgo: 30)
-        let newer = makeBatch(quantity: 50, daysAgo: 5)
+        let older = try makeBatch(quantity: 100, daysAgo: 30)
+        let newer = try makeBatch(quantity: 50, daysAgo: 5)
         ctx.insert(older); ctx.insert(newer)
         ingredient.batches.append(older)
         ingredient.batches.append(newer)
@@ -41,8 +41,8 @@ struct IngredientDetailViewModelTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let b1 = makeBatch(quantity: 100, daysAgo: 10)
-        let b2 = makeBatch(quantity: 50, daysAgo: 5)
+        let b1 = try makeBatch(quantity: 100, daysAgo: 10)
+        let b2 = try makeBatch(quantity: 50, daysAgo: 5)
         ctx.insert(b1); ctx.insert(b2)
         ingredient.batches.append(b1)
         ingredient.batches.append(b2)
@@ -56,8 +56,8 @@ struct IngredientDetailViewModelTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let older = makeBatch(quantity: 100, daysAgo: 30)
-        let newer = makeBatch(quantity: 50, daysAgo: 5)
+        let older = try makeBatch(quantity: 100, daysAgo: 30)
+        let newer = try makeBatch(quantity: 50, daysAgo: 5)
         ctx.insert(older); ctx.insert(newer)
         ingredient.batches.append(older)
         ingredient.batches.append(newer)

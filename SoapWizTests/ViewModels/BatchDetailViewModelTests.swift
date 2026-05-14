@@ -152,7 +152,7 @@ struct BatchDetailViewModelTests {
     @Test func openingDateNotOverwrittenIfAlreadySet() throws {
         let ctx = try makeContainer().mainContext
         let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
-        let existingDate = Calendar.current.date(byAdding: .day, value: -5, to: .now)!
+        let existingDate = try #require(Calendar.current.date(byAdding: .day, value: -5, to: .now))
         batch.openingDate = existingDate
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: -10)
@@ -181,7 +181,7 @@ struct BatchDetailViewModelTests {
     @Test func openingDateNotClearedOnUndoWhenAlreadySet() throws {
         let ctx = try makeContainer().mainContext
         let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
-        let existingDate = Calendar.current.date(byAdding: .day, value: -5, to: .now)!
+        let existingDate = try #require(Calendar.current.date(byAdding: .day, value: -5, to: .now))
         batch.openingDate = existingDate
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: -10)
