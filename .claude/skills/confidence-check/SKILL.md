@@ -12,7 +12,7 @@ Run this before implementing any non-trivial feature, refactor, or bug fix. Skip
 | Check | Weight | Question |
 |---|---|---|
 | No duplicates | 30% | Does this functionality already exist somewhere in the codebase? |
-| Pattern compliance | 30% | Does the approach follow the conventions in `swiftui-patterns`? |
+| Pattern compliance | 30% | Does the approach follow the conventions in `swiftui-patterns-soapwiz`? |
 | Scope is clear | 25% | Do I understand exactly what files change and why? |
 | Root cause clear | 15% | For bug fixes: do I understand *why* the bug happens, not just its symptom? |
 

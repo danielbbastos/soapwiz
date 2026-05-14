@@ -82,7 +82,7 @@ chmod +x .claude/hooks/*.sh
 | `skills-manager` | This skill — skill lifecycle and hooks management |
 | `swift-concurrency-developer` | Swift async/await and actor patterns |
 | `swiftui-expert` | SwiftUI state, composition, animation, APIs |
-| `swiftui-patterns` | Project-specific SwiftUI/SwiftData conventions |
+| `swiftui-patterns-soapwiz` | SoapWiz-specific SwiftUI/SwiftData conventions |
 | `swiftui-patterns-developer` | SwiftUI view structure, composition, subview extraction |
 | `swiftui-performance-developer` | Performance auditing for SwiftUI views |
 | `tests-developer` | Swift Testing patterns and test writing |

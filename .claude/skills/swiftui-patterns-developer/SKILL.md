@@ -3,7 +3,7 @@ name: swiftui-patterns-developer
 description: SwiftUI view structure, composition, and best practices. Use when refactoring SwiftUI views, organizing view files, or extracting subviews.
 ---
 
-# SwiftUI Patterns Developer
+# SwiftUI Patterns Developer (Smart Router)
 
 ## Purpose
 Apply consistent structure and patterns to SwiftUI views, with focus on ordering, subview extraction, and proper composition.
@@ -22,6 +22,7 @@ Understanding these fundamentals helps you write better SwiftUI code:
 
 **1. Declarative** — Describe what you want, not how to create it:
 ```swift
+// ✅ Declarative - describe the result
 List(ingredients) { ingredient in
     HStack {
         Text(ingredient.name)
@@ -29,16 +30,17 @@ List(ingredients) { ingredient in
         Text(ingredient.unit)
     }
 }
-// No need to add/remove rows manually — SwiftUI handles it
+// No need to add/remove rows manually - SwiftUI handles it
 ```
 
 **2. Compositional** — Build complex UIs from simple building blocks:
 ```swift
+// ViewBuilder closures define children of containers
 HStack {
     Image(systemName: "flask")
     VStack(alignment: .leading) {
         Text(ingredient.name)
-        Text(ingredient.category?.name ?? "—")
+        Text(ingredient.category ?? "—")
     }
     Spacer()
 }
@@ -46,11 +48,12 @@ HStack {
 
 **3. State-Driven** — UI automatically updates when state changes:
 ```swift
+// SwiftUI tracks dependencies and updates views automatically
 @State private var count = 0
 
 var body: some View {
-    Button("Count: \(count)") {
-        count += 1
+    Button("Count: \(count)") {  // Dependency on `count`
+        count += 1               // State change triggers re-render
     }
 }
 ```
@@ -61,36 +64,34 @@ var body: some View {
 
 ```swift
 struct IngredientFormView: View {
-    // 1. Environment / Query
+    // 1. Property wrappers (@State, @Environment, @Query)
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query private var categories: [IngredientCategory]
-
-    // 2. ViewModel (once SW-37 is implemented)
     @State private var model: IngredientFormViewModel
 
-    // 3. Public properties
+    // 2. Public properties
     let ingredient: Ingredient?
 
-    // 4. Computed properties
+    // 3. Private properties
     private var isEditing: Bool { ingredient != nil }
 
-    // 5. init (if needed)
+    // 4. init (if needed)
     init(ingredient: Ingredient? = nil) {
         self.ingredient = ingredient
-        _model = State(initialValue: IngredientFormViewModel(ingredient: ingredient))
+        _model = State(wrappedValue: IngredientFormViewModel(ingredient: ingredient))
     }
 
-    // 6. body
+    // 5. body
     var body: some View {
         content
             .navigationTitle(isEditing ? "Edit Ingredient" : "New Ingredient")
     }
 
-    // 7. Computed view builders
+    // 6. Computed view builders
     private var content: some View { ... }
 
-    // 8. Helper functions
+    // 7. Helper / async functions
     private func save() { ... }
 }
 ```
@@ -107,7 +108,7 @@ struct IngredientFormView: View {
     @State private var model: IngredientFormViewModel
 
     init(ingredient: Ingredient? = nil) {
-        _model = State(initialValue: IngredientFormViewModel(ingredient: ingredient))
+        _model = State(wrappedValue: IngredientFormViewModel(ingredient: ingredient))
     }
 
     var body: some View {
@@ -133,7 +134,6 @@ struct IngredientFormView: View {
 final class IngredientFormViewModel {
     var name: String = ""
     var unit: String = ""
-    var selectedCategory: IngredientCategory?
 
     var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -141,7 +141,6 @@ final class IngredientFormViewModel {
         if let ingredient {
             name = ingredient.name
             unit = ingredient.unit
-            selectedCategory = ingredient.category
         }
     }
 
@@ -153,7 +152,7 @@ final class IngredientFormViewModel {
 
 **Key points:**
 - Use `@State private var model: ViewModel` in views
-- Initialize ViewModel in view's `init` with `_model = State(initialValue:)`
+- Initialize ViewModel in view's `init` with `_model = State(wrappedValue:)`
 - Keep ViewModel init cheap — heavy work in `.task`
 - Use `@Observable` macro (not `ObservableObject`)
 - Mark ViewModels `@MainActor`
@@ -171,8 +170,8 @@ Understanding **why** `@Observable` works helps you use it correctly.
 ```swift
 @Observable
 final class IngredientDetailViewModel {
-    var name: String = ""           // Accessed in body → triggers update
-    var isLoading: Bool = false     // Accessed in body → triggers update
+    var name: String = ""            // Accessed in body → triggers update
+    var isLoading: Bool = false      // Accessed in body → triggers update
     var internalCache: [String] = [] // NOT accessed in body → no update
 }
 ```
@@ -189,6 +188,9 @@ List(ingredients) { ingredient in
 ```
 
 **Computed Properties Just Work:**
+- Computed properties composed from stored properties are automatically tracked
+- SwiftUI traces through to the underlying stored properties
+
 ```swift
 @Observable
 final class BatchFormViewModel {
@@ -223,13 +225,13 @@ struct IngredientFormView: View {
     @State private var model: IngredientFormViewModel
 
     init(ingredient: Ingredient? = nil) {
-        _model = State(initialValue: IngredientFormViewModel(ingredient: ingredient))
+        _model = State(wrappedValue: IngredientFormViewModel(ingredient: ingredient))
     }
 }
 
 // Need $ bindings inside body
 var body: some View {
-    @Bindable var model = model
+    @Bindable var model = model  // Local binding for $ syntax
     TextField("Name", text: $model.name)
 }
 
@@ -239,11 +241,12 @@ struct IngredientRow: View {
 
     var body: some View {
         Text(ingredient.name)
+        Image(systemName: ingredient.totalRemaining > 0 ? "checkmark.circle" : "exclamationmark.circle")
     }
 }
 ```
 
-**Migration from ObservableObject (for SW-37):**
+**Migration from ObservableObject:**
 
 | Old | New |
 |-----|-----|
@@ -251,86 +254,101 @@ struct IngredientRow: View {
 | `@ObservedObject` | `@Bindable` or nothing |
 | `@EnvironmentObject` | `@Environment` |
 
-### 5) Migration from ObservableObject (SW-37 Reference)
+### 5) Migration from ObservableObject
 
-Step-by-step conversion when implementing ViewModels per SW-37:
+Step-by-step conversion from legacy `ObservableObject`:
 
-**Before (no ViewModel — current state):**
+**Before (ObservableObject):**
 ```swift
+class IngredientFormViewModel: ObservableObject {
+    @Published var name: String = ""
+    @Published var unit: String = ""
+}
+
 struct IngredientFormView: View {
-    @State private var name = ""
-    @State private var unit = ""
+    @StateObject private var model = IngredientFormViewModel()
 
-    private var isValid: Bool { !name.isEmpty }
-
-    private func save() {
-        // persistence logic directly in view
+    var body: some View {
+        TextField("Name", text: $model.name)
+        TextField("Unit", text: $model.unit)
     }
 }
 ```
 
-**After (@Observable ViewModel):**
+**After (@Observable):**
 ```swift
 @Observable
 final class IngredientFormViewModel {
     var name: String = ""
     var unit: String = ""
-    var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
-
-    func save(context: ModelContext) { ... }
 }
 
 struct IngredientFormView: View {
-    @Environment(\.modelContext) private var modelContext
     @State private var model = IngredientFormViewModel()
 
     var body: some View {
-        @Bindable var model = model
+        @Bindable var model = model  // Local binding for $ syntax
         TextField("Name", text: $model.name)
+        TextField("Unit", text: $model.unit)
     }
 }
 ```
 
 **Migration Steps:**
-1. Create `ViewModel` class with `@Observable` + `@MainActor`
-2. Move `@State` vars, validation, and save/delete logic into ViewModel
-3. Remove `@Published` / `ObservableObject` if present
-4. Add `@ObservationIgnored` to properties that shouldn't trigger updates
-5. Change `@StateObject` → `@State` in views
-6. For `$` binding syntax, use `@Bindable var model = model` in body
+1. Remove `ObservableObject` conformance, add `@Observable` macro
+2. Remove `@Published` from all properties (observation is automatic)
+3. Add `@ObservationIgnored` to properties that shouldn't trigger updates
+4. Change `@StateObject` → `@State` in views
+5. For `$` binding syntax, use `@Bindable var model = model` in body
+6. Replace `@EnvironmentObject` with `@Environment`
 
 ### 6) View Modifiers and Order (WWDC24)
 
 View modifiers create a hierarchical structure. **Order matters** — modifiers are applied sequentially:
 
 ```swift
+// Each modifier wraps the previous result
 Image(systemName: "flask")
-    .clipShape(Circle())
-    .shadow(radius: 4)
-    .overlay(
-        Circle().stroke(.accent, lineWidth: 2)
+    .clipShape(Circle())      // 1. Clip to circle first
+    .shadow(radius: 4)        // 2. Add shadow to clipped shape
+    .overlay(                 // 3. Overlay on top of shadow
+        Circle().stroke(Color.accentColor, lineWidth: 2)
     )
 ```
 
+The hierarchy and order of effect is defined by the exact order of modifiers. Chaining modifiers makes it clear how results are produced and how to customize them.
+
 ### 7) Adaptive Views (WWDC24)
 
-SwiftUI views describe **purpose**, not exact visual construction:
+SwiftUI views describe **purpose**, not exact visual construction. This enables adaptation:
 
+**Buttons** — Same purpose (labeled action), different contexts:
 ```swift
-// Adapts to context automatically
+// Adapts to: borderless, bordered, prominent styles
+// Adapts to: swipe actions, menus, forms
 Button("Edit", action: handleEdit)
 
 // In swipe actions
 .swipeActions {
     Button("Delete", role: .destructive) { delete() }
+    Button("Archive") { archive() }
 }
+```
 
-// Toggle adapts to platform/context
+**Toggles** — Switch, checkbox, or toggle button depending on context:
+```swift
+// Automatically shows appropriate style for platform/context
 Toggle("Has Expiry Date", isOn: $hasExpiryDate)
+```
 
-// Searchable handles idiomatic presentation
+**Searchable** — Describes capability, SwiftUI handles idiomatic presentation:
+```swift
+// iOS: overlay list, filters as search suggestions
 List(filteredIngredients) { ... }
     .searchable(text: $searchText)
+    .searchSuggestions {
+        ForEach(suggestions) { Text($0) }
+    }
 ```
 
 ### 8) Split Large Bodies
@@ -338,6 +356,7 @@ List(filteredIngredients) { ... }
 If `body` grows beyond a screen, split into smaller subviews:
 
 ```swift
+// Computed view properties (same file)
 var body: some View {
     List {
         purchaseSection
@@ -352,7 +371,7 @@ private var datesSection: some View { ... }
 ```
 
 ```swift
-// Extracted reusable subview
+// Extracted subview (reusable or complex)
 struct SectionHeader: View {
     let title: String
     let subtitle: String?
@@ -381,13 +400,13 @@ enum ViewState {
 
 @MainActor
 @Observable
-final class IngredientListViewModel {
+final class FeedViewModel {
     var viewState: ViewState = .loading
-    var ingredients: [Ingredient] = []
+    var items: [Item] = []
 
     func load() async {
         do {
-            ingredients = try await ingredientService.all()
+            items = try await service.fetchAll()
             viewState = .loaded
         } catch {
             viewState = .error(error.localizedDescription)
@@ -395,8 +414,8 @@ final class IngredientListViewModel {
     }
 }
 
-struct IngredientListView: View {
-    @State private var model: IngredientListViewModel
+struct FeedView: View {
+    @State private var model: FeedViewModel
 
     var body: some View {
         content
@@ -406,9 +425,12 @@ struct IngredientListView: View {
     @ViewBuilder
     private var content: some View {
         switch model.viewState {
-        case .loading: ProgressView()
-        case .error(let message): Text(message).foregroundStyle(.red)
-        case .loaded: List(model.ingredients) { IngredientRow(ingredient: $0) }
+        case .loading:
+            ProgressView()
+        case .error(let message):
+            ContentUnavailableView(message, systemImage: "exclamationmark.triangle")
+        case .loaded:
+            List(model.items) { ItemRow(item: $0) }
         }
     }
 }
@@ -419,12 +441,13 @@ struct IngredientListView: View {
 **@State** creates internal source of data for a view:
 ```swift
 struct RatingView: View {
-    @State private var rating = 0
+    @State private var rating = 0  // View owns this state
 
     var body: some View {
         HStack {
             Text("\(rating)")
             Button("+") { rating += 1 }
+            Button("-") { rating -= 1 }
         }
     }
 }
@@ -436,15 +459,18 @@ struct BatchFormView: View {
     @State private var quantity: Double = 0  // Single source of truth
 
     var body: some View {
-        QuantityEditor(quantity: $quantity)
+        VStack {
+            Text("Quantity: \(quantity)")
+            QuantityEditor(quantity: $quantity)  // Pass binding
+        }
     }
 }
 
 struct QuantityEditor: View {
-    @Binding var quantity: Double  // Two-way reference
+    @Binding var quantity: Double  // Two-way reference to parent's state
 
     var body: some View {
-        TextField("0", value: $quantity, format: .number)
+        TextField("0", value: $quantity, format: .number)  // Updates parent's state
     }
 }
 ```
@@ -453,16 +479,23 @@ struct QuantityEditor: View {
 
 ### 11) Animation with State Changes (WWDC24)
 
+Wrap state changes with `withAnimation` to animate resulting view updates:
+
 ```swift
 Button("Add Batch") {
     withAnimation {
         showingAddBatch = true
     }
 }
-
-Text("\(batch.remainingAmount)")
-    .contentTransition(.numericText())
 ```
+
+Customize transitions for specific views:
+```swift
+Text("\(batch.remainingAmount, format: .number)")
+    .contentTransition(.numericText())  // Smooth number transition
+```
+
+Animations in SwiftUI build on the same data-driven updates — when state changes, views update, and `withAnimation` makes those updates animate.
 
 ### 12) Task and onChange Usage
 
@@ -472,12 +505,13 @@ Text("\(batch.remainingAmount)")
     await model.loadData()
 }
 
-// React to state changes
+// React to identity change (re-runs when searchText changes)
 .task(id: searchText) {
     guard !searchText.isEmpty else { return }
     await model.search(query: searchText)
 }
 
+// React to value change
 .onChange(of: selectedCategory) { _, newValue in
     model.filterByCategory(newValue)
 }
@@ -525,13 +559,17 @@ struct BatchFormView: View {
 }
 ```
 
-### Using onAppear with Group + Conditionals
+### Avoid Group with Lifecycle Modifiers + Conditionals
+
 ```swift
 // ❌ WRONG — onAppear can fire multiple times
 var body: some View {
     Group {
-        if model.isLoading { ProgressView() }
-        else { content }
+        if model.isLoading {
+            ProgressView()
+        } else {
+            content
+        }
     }
     .onAppear { model.onAppear() }
 }
@@ -544,12 +582,37 @@ var body: some View {
 
 @ViewBuilder
 private var loadingContent: some View {
-    if model.isLoading { ProgressView() }
-    else { content }
+    if model.isLoading {
+        ProgressView()
+    } else {
+        content
+    }
+}
+```
+
+### Task Inside onAppear Instead of .task Modifier
+
+```swift
+// ❌ WRONG — not cancelled on disappear, fires on every re-appear
+.onAppear {
+    Task { await model.loadData() }
+}
+
+// ✅ CORRECT — cancelled automatically when view disappears
+.task {
+    await model.loadData()
 }
 ```
 
 ## Related Skills
 
 - **ios-dev-guidelines** → Full MVVM patterns, code style, critical rules
+- **swiftui-patterns-soapwiz** → SoapWiz-specific conventions (SwiftData, FAB, form pattern)
+- **swiftui-expert** → In-depth SwiftUI API guidance, state management, performance
 - **swiftui-performance-developer** → Performance optimization, view invalidation
+
+---
+
+**Navigation**: This skill provides SwiftUI structure patterns. For full API guidance, see the `swiftui-expert` skill.
+
+**Attribution**: View structure patterns adapted from [Dimillian/Skills](https://github.com/Dimillian/Skills). WWDC24 insights from "SwiftUI Essentials" session.

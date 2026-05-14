@@ -31,26 +31,16 @@ struct IngredientListViewModelFilterTests {
 
     // MARK: - No filters
 
-    @Test func noFiltersReturnsAll() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        let a = Ingredient(name: "A")
-        let b = Ingredient(name: "B")
-        ctx.insert(a); ctx.insert(b)
-
+    @Test func noFiltersReturnsAll() {
         let model = IngredientListViewModel()
-        #expect(model.filtered([a, b]).count == 2)
+        #expect(model.filtered([Ingredient(name: "A"), Ingredient(name: "B")]).count == 2)
     }
 
     // MARK: - Search
 
-    @Test func searchFiltersByNameCaseInsensitive() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
+    @Test func searchFiltersByNameCaseInsensitive() {
         let olive = Ingredient(name: "Olive Oil")
         let coconut = Ingredient(name: "Coconut Oil")
-        ctx.insert(olive); ctx.insert(coconut)
-
         let model = IngredientListViewModel()
         model.searchText = "olive"
         let results = model.filtered([olive, coconut])
@@ -58,27 +48,16 @@ struct IngredientListViewModelFilterTests {
         #expect(results.first?.name == "Olive Oil")
     }
 
-    @Test func searchPartialMatch() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        let olive = Ingredient(name: "Olive Oil")
-        let coconut = Ingredient(name: "Coconut Oil")
-        ctx.insert(olive); ctx.insert(coconut)
-
+    @Test func searchPartialMatch() {
         let model = IngredientListViewModel()
         model.searchText = "oil"
-        #expect(model.filtered([olive, coconut]).count == 2)
+        #expect(model.filtered([Ingredient(name: "Olive Oil"), Ingredient(name: "Coconut Oil")]).count == 2)
     }
 
-    @Test func searchNoMatchReturnsEmpty() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        let olive = Ingredient(name: "Olive Oil")
-        ctx.insert(olive)
-
+    @Test func searchNoMatchReturnsEmpty() {
         let model = IngredientListViewModel()
         model.searchText = "xyz"
-        #expect(model.filtered([olive]).isEmpty)
+        #expect(model.filtered([Ingredient(name: "Olive Oil")]).isEmpty)
     }
 
     // MARK: - Category filter
