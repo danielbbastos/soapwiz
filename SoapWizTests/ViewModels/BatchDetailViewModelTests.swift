@@ -7,9 +7,10 @@ import SwiftData
 @MainActor
 struct BatchDetailViewModelTests {
 
-    private func makeContainer() throws -> ModelContainer {
+    private func makeContext() throws -> (ModelContainer, ModelContext) {
         let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self, StorageLocation.self, Provider.self])
-        return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+        return (container, container.mainContext)
     }
 
     private func makeBatch(quantity: Double, remaining: Double, in ctx: ModelContext) -> IngredientBatch {
@@ -23,7 +24,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func adjustIncrements() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 100, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: 10)
@@ -31,7 +33,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func adjustDecrements() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 100, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: -10)
@@ -39,7 +42,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func adjustClampsToZero() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 5, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: -10)
@@ -47,7 +51,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func adjustClampsToQuantity() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 495, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: 10)
@@ -55,7 +60,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func commitEditParsesValidValue() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 100, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.editingValue = "250"
@@ -65,7 +71,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func commitEditClampsAboveQuantity() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 100, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.editingValue = "999"
@@ -74,7 +81,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func commitEditClampsBelowZero() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 100, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.editingValue = "-50"
@@ -83,7 +91,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func commitEditIgnoresInvalidInput() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 100, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.editingValue = "abc"
@@ -93,16 +102,18 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func startEditingPopulatesValue() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 123.5, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.startEditing()
         #expect(model.isEditingAmount == true)
-        #expect(model.editingValue == "123.5")
+        #expect(model.editingValue == (123.5).formatted(.number.precision(.fractionLength(0...2)).grouping(.never)))
     }
 
     @Test func isDirtyAfterAdjust() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 100, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         #expect(model.isDirty == false)
@@ -111,7 +122,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func undoRestoresOriginalAmount() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 100, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: 10)
@@ -122,7 +134,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func isDirtyWhenOpeningDateAutoSetButAmountRestored() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: -10)
@@ -133,7 +146,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func autoSetOpeningDateOnAdjust() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: -10)
@@ -141,7 +155,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func autoSetOpeningDateOnCommitEdit() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.editingValue = "400"
@@ -150,7 +165,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func openingDateNotOverwrittenIfAlreadySet() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
         let existingDate = try #require(Calendar.current.date(byAdding: .day, value: -5, to: .now))
         batch.openingDate = existingDate
@@ -160,7 +176,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func openingDateNotSetWhenAtFullQuantity() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 490, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: 10)
@@ -168,7 +185,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func openingDateClearedOnUndoWhenAutoSet() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
         let model = BatchDetailViewModel(batch: batch)
         model.adjust(by: -10)
@@ -179,7 +197,8 @@ struct BatchDetailViewModelTests {
     }
 
     @Test func openingDateNotClearedOnUndoWhenAlreadySet() throws {
-        let ctx = try makeContainer().mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
         let batch = makeBatch(quantity: 500, remaining: 500, in: ctx)
         let existingDate = try #require(Calendar.current.date(byAdding: .day, value: -5, to: .now))
         batch.openingDate = existingDate

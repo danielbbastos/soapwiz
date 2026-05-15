@@ -69,18 +69,6 @@
                ReferencedContainer = "container:SoapWiz.xcodeproj">
             </BuildableReference>
          </TestableReference>
-         <TestableReference
-            skipped = "NO"
-            parallelizable = "YES"
-            testExecutionOrdering = "random">
-            <BuildableReference
-               BuildableIdentifier = "primary"
-               BlueprintIdentifier = "64F2A5882FB0D6CF00E5F783"
-               BuildableName = "SoapWizUITests.xctest"
-               BlueprintName = "SoapWizUITests"
-               ReferencedContainer = "container:SoapWiz.xcodeproj">
-            </BuildableReference>
-         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
