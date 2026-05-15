@@ -12,6 +12,9 @@ final class Ingredient {
     @Relationship(deleteRule: .cascade, inverse: \IngredientBatch.ingredient)
     var batches: [IngredientBatch] = []
 
+    @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.ingredient)
+    var recipeIngredients: [RecipeIngredient] = []
+
     var totalRemaining: Double {
         batches.reduce(0) { $0 + $1.remainingAmount }
     }
