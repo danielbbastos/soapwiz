@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 @testable import SoapWiz
 
-@Suite("StorageLocation")
+@Suite("StorageLocation", .serialized)
 @MainActor
 struct StorageLocationTests {
 

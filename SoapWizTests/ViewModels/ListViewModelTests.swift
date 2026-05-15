@@ -4,7 +4,7 @@ import SwiftData
 import SwiftUI
 @testable import SoapWiz
 
-@Suite("List ViewModels")
+@Suite("List ViewModels", .serialized)
 @MainActor
 struct ListViewModelTests {
 

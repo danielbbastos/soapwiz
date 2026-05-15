@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 @testable import SoapWiz
 
-@Suite("DataSeeder")
+@Suite("DataSeeder", .serialized)
 @MainActor
 struct DataSeederTests {
 

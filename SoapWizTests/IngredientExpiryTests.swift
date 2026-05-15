@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 @testable import SoapWiz
 
-@Suite("Ingredient.nearestUpcomingExpiry")
+@Suite("Ingredient.nearestUpcomingExpiry", .serialized)
 @MainActor
 struct IngredientExpiryTests {
 

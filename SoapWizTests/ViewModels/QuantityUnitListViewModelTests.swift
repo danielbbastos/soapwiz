@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 @testable import SoapWiz
 
-@Suite("QuantityUnitListViewModel")
+@Suite("QuantityUnitListViewModel", .serialized)
 @MainActor
 struct QuantityUnitListViewModelTests {
 

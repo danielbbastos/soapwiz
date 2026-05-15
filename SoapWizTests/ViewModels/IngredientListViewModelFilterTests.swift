@@ -4,7 +4,7 @@ import SwiftData
 import SwiftUI
 @testable import SoapWiz
 
-@Suite("IngredientListViewModel — filtering")
+@Suite("IngredientListViewModel — filtering", .serialized)
 @MainActor
 struct IngredientListViewModelFilterTests {
 

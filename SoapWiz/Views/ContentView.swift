@@ -6,6 +6,9 @@ struct ContentView: View {
             Tab("Inventory", systemImage: "flask") {
                 IngredientListView()
             }
+            Tab("Recipes", systemImage: "function") {
+                RecipeListView()
+            }
             Tab("Settings", systemImage: "gearshape") {
                 SettingsView()
             }

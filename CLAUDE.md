@@ -129,3 +129,5 @@ Build output path: `~/Library/Developer/Xcode/DerivedData/SoapWiz-*/Build/Produc
 - **Mutating SwiftData models off `@MainActor`** — all model access must stay on the main thread. The project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` globally.
 - **Using `@State` for persisted data** — use `@Query` for anything that lives in SwiftData.
 - **Sorting `ingredient.batches` directly in views** — batches are unordered in SwiftData; always sort before display (currently by `dateOfPurchase` descending).
+- **Discarding `ModelContainer` in tests** — never do `let ctx = try makeContainer().mainContext`; the container is released immediately and `ctx.insert()` hangs on a dead backing store. Always store the container: `let (container, ctx) = try makeContext(); _ = container`.
+- **Hardcoding locale-sensitive strings in test assertions** — never hardcode `"123.5"` when testing formatted numbers; use the same formatter the production code uses so the test passes on any locale.
