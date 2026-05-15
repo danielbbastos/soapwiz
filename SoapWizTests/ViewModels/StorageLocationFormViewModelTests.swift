@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 @testable import SoapWiz
 
-@Suite("StorageLocationFormViewModel")
+@Suite("StorageLocationFormViewModel", .serialized)
 @MainActor
 struct StorageLocationFormViewModelTests {
 

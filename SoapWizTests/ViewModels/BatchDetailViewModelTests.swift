@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 @testable import SoapWiz
 
-@Suite("BatchDetailViewModel")
+@Suite("BatchDetailViewModel", .serialized)
 @MainActor
 struct BatchDetailViewModelTests {
 

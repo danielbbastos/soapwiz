@@ -1,8 +1,9 @@
 import Testing
+import Foundation
 import SwiftData
 @testable import SoapWiz
 
-@Suite("IngredientCategory")
+@Suite("IngredientCategory", .serialized)
 @MainActor
 struct CategoryTests {
 

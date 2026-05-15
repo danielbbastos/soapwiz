@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 @testable import SoapWiz
 
-@Suite("ProviderFormViewModel")
+@Suite("ProviderFormViewModel", .serialized)
 @MainActor
 struct ProviderFormViewModelTests {
 

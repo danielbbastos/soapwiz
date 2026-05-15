@@ -3,7 +3,7 @@ import Foundation
 import SwiftData
 @testable import SoapWiz
 
-@Suite("CategoryFormViewModel")
+@Suite("CategoryFormViewModel", .serialized)
 @MainActor
 struct CategoryFormViewModelTests {
 
