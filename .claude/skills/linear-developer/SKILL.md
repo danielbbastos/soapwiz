@@ -123,14 +123,10 @@ linctl issue get SW-XXXX --json | jq -r '.state.name'
 # 2. If not "Todo", set it first
 linctl issue update SW-XXXX --state "Todo" --json
 
-# 3. Create a feature branch from main — BEFORE writing any code
-git checkout main
-git checkout -b feature/sw-XXXX-short-description
-
-# 4. Set state to In Progress
+# 3. When starting work (branching/coding)
 linctl issue update SW-XXXX --state "In Progress" --json
 
-# 5. After merge — Linear auto-sets to Done, no action needed
+# 4. After merge — Linear auto-sets to Done, no action needed
 ```
 
 ## Common Workflows
