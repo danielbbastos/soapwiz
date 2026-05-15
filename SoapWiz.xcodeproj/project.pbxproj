@@ -387,6 +387,7 @@
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
+				EXCLUDED_SOURCE_FILE_NAMES = "TestIngredients.json";
 			};
 			name = Release;
 		};
