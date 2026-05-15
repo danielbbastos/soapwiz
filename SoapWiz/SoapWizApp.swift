@@ -22,7 +22,8 @@ struct SoapWizApp: App {
             QuantityUnit.self,
             StorageLocation.self,
             Provider.self,
-            Recipe.self
+            Recipe.self,
+            RecipeIngredient.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
