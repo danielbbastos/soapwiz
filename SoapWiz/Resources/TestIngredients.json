@@ -1,0 +1,562 @@
+{
+  "categories": [
+    "outros",
+    "argilas",
+    "aditivo",
+    "óleo",
+    "manteiga",
+    "embalagem",
+    "cera",
+    "óleo essencial"
+  ],
+  "providers": [
+    "Plena Natura",
+    "Amazon",
+    "Jumbex",
+    "Cremas Caseras"
+  ],
+  "storageLocations": [
+    "caixa IngS IKEA",
+    "armário P1",
+    "caixa OE IKEA"
+  ],
+  "ingredients": [
+    {
+      "name": "alcool cetílico",
+      "category": "outros",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 100,
+          "totalPrice": 2.5,
+          "badge": "P1-183-RZ",
+          "journalCode": "AC0225",
+          "expiryDate": "2026-12-31",
+          "openingDate": "2025-10-01",
+          "remainingAmount": 90,
+          "storageLocation": "caixa IngS IKEA"
+        }
+      ]
+    },
+    {
+      "name": "aloe vera 10:1",
+      "category": "outros",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 125,
+          "totalPrice": 5.5,
+          "badge": "0015769",
+          "journalCode": "AV0225",
+          "expiryDate": "2025-06-30",
+          "openingDate": null,
+          "remainingAmount": 125,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "argila bentotine",
+      "category": "argilas",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 250,
+          "totalPrice": 3.7,
+          "badge": "15.22-S1624",
+          "journalCode": "AB0225",
+          "expiryDate": "2025-12-31",
+          "openingDate": null,
+          "remainingAmount": 250,
+          "storageLocation": "caixa IngS IKEA"
+        }
+      ]
+    },
+    {
+      "name": "aveia coloidal",
+      "category": "aditivo",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Cremas Caseras",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 250,
+          "totalPrice": 12.98,
+          "badge": "08895",
+          "journalCode": "AC0225",
+          "expiryDate": "2026-07-31",
+          "openingDate": null,
+          "remainingAmount": 250,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "azeite",
+      "category": "óleo",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Jumbex",
+          "dateOfPurchase": "2025-06-14",
+          "quantity": 3000,
+          "totalPrice": 14.49,
+          "badge": "25195",
+          "journalCode": "A0625",
+          "expiryDate": "2026-10-31",
+          "openingDate": null,
+          "remainingAmount": 3000,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "benjoim fluido",
+      "category": "aditivo",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-05-27",
+          "quantity": 60,
+          "totalPrice": 8.2,
+          "badge": "0017358",
+          "journalCode": "BF0525",
+          "expiryDate": "2027-01-31",
+          "openingDate": "2025-05-29",
+          "remainingAmount": 59.4,
+          "storageLocation": "caixa OE IKEA"
+        }
+      ]
+    },
+    {
+      "name": "BTMS",
+      "category": "outros",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 250,
+          "totalPrice": 12,
+          "badge": "J022A24610",
+          "journalCode": "BT0225",
+          "expiryDate": "2025-04-30",
+          "openingDate": null,
+          "remainingAmount": 250,
+          "storageLocation": "caixa IngS IKEA"
+        }
+      ]
+    },
+    {
+      "name": "carvão ativado",
+      "category": "aditivo",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 100,
+          "totalPrice": 5.6,
+          "badge": "24E151",
+          "journalCode": "CA0225",
+          "expiryDate": "2027-05-31",
+          "openingDate": null,
+          "remainingAmount": 100,
+          "storageLocation": "caixa IngS IKEA"
+        }
+      ]
+    },
+    {
+      "name": "cera candelilla",
+      "category": "cera",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 125,
+          "totalPrice": 7,
+          "badge": "0019110",
+          "journalCode": "CC0225",
+          "expiryDate": "2026-08-31",
+          "openingDate": "2025-07-05",
+          "remainingAmount": 92.6,
+          "storageLocation": "caixa IngS IKEA"
+        }
+      ]
+    },
+    {
+      "name": "euxy K940",
+      "category": "aditivo",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 30,
+          "totalPrice": 3.6,
+          "badge": "0002661819",
+          "journalCode": "EK0225",
+          "expiryDate": "2025-10-31",
+          "openingDate": null,
+          "remainingAmount": 30,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "extrato alecrim",
+      "category": "aditivo",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 10,
+          "totalPrice": 2.4,
+          "badge": "0019559",
+          "journalCode": "EA0225",
+          "expiryDate": "2027-11-30",
+          "openingDate": "2025-06-13",
+          "remainingAmount": 8.1,
+          "storageLocation": "armário P1"
+        },
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-05-27",
+          "quantity": 10,
+          "totalPrice": 2.4,
+          "badge": "0019559",
+          "journalCode": "EA0525",
+          "expiryDate": "2027-11-30",
+          "openingDate": null,
+          "remainingAmount": 10,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "glicerina vegetal",
+      "category": "outros",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 125,
+          "totalPrice": 3.2,
+          "badge": "0018260",
+          "journalCode": "GV0225",
+          "expiryDate": "2026-05-31",
+          "openingDate": null,
+          "remainingAmount": 125,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "lata 15ml",
+      "category": "embalagem",
+      "unit": "un",
+      "batches": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2025-05-27",
+          "quantity": 30,
+          "totalPrice": 14.22,
+          "badge": "AMZ-L15-001",
+          "journalCode": "L150525",
+          "expiryDate": "2027-12-31",
+          "openingDate": "2025-07-05",
+          "remainingAmount": 15,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "manteiga de cacau",
+      "category": "manteiga",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 500,
+          "totalPrice": 9.5,
+          "badge": "MDC0225-01",
+          "journalCode": "MDC0225",
+          "expiryDate": "2027-02-28",
+          "openingDate": "2025-07-05",
+          "remainingAmount": 0,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "manteiga de karrité",
+      "category": "manteiga",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-05-27",
+          "quantity": 1000,
+          "totalPrice": 14.9,
+          "badge": "0019618",
+          "journalCode": "MK0525",
+          "expiryDate": "2026-11-30",
+          "openingDate": "2025-06-12",
+          "remainingAmount": 500,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "manteiga de kokum",
+      "category": "manteiga",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-05-27",
+          "quantity": 250,
+          "totalPrice": 6.95,
+          "badge": "0020008",
+          "journalCode": "MKK0525",
+          "expiryDate": "2027-02-28",
+          "openingDate": "2025-06-12",
+          "remainingAmount": 20,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "manteiga de manga",
+      "category": "manteiga",
+      "unit": "g",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-05-27",
+          "quantity": 500,
+          "totalPrice": 12.5,
+          "badge": "0019632",
+          "journalCode": "MM0525",
+          "expiryDate": "2026-05-31",
+          "openingDate": "2025-07-03",
+          "remainingAmount": 300,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "OE alecrim",
+      "category": "óleo essencial",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2023-08-16",
+          "quantity": 125,
+          "totalPrice": 16.5,
+          "badge": "OEA-2308-01",
+          "journalCode": "OEA0823",
+          "expiryDate": "2025-08-31",
+          "openingDate": "2023-08-20",
+          "remainingAmount": 47.2,
+          "storageLocation": "caixa OE IKEA"
+        }
+      ]
+    },
+    {
+      "name": "OE cravinho",
+      "category": "óleo essencial",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 10,
+          "totalPrice": 2.9,
+          "badge": "0018432",
+          "journalCode": "OECV0225",
+          "expiryDate": "2027-06-30",
+          "openingDate": null,
+          "remainingAmount": 10,
+          "storageLocation": "caixa OE IKEA"
+        }
+      ]
+    },
+    {
+      "name": "OE erva-príncipe",
+      "category": "óleo essencial",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 60,
+          "totalPrice": 10.9,
+          "badge": "AELECB017",
+          "journalCode": "OEEP0225",
+          "expiryDate": "2026-04-30",
+          "openingDate": "2025-05-11",
+          "remainingAmount": 60,
+          "storageLocation": "caixa OE IKEA"
+        }
+      ]
+    },
+    {
+      "name": "OE frankincese",
+      "category": "óleo essencial",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 30,
+          "totalPrice": 11,
+          "badge": "0018132",
+          "journalCode": "OEF0225",
+          "expiryDate": "2027-05-31",
+          "openingDate": "2025-05-11",
+          "remainingAmount": 30,
+          "storageLocation": "caixa OE IKEA"
+        }
+      ]
+    },
+    {
+      "name": "OE hortelã pimenta",
+      "category": "óleo essencial",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2023-08-16",
+          "quantity": 60,
+          "totalPrice": 7.9,
+          "badge": "OEAHP-2308-01",
+          "journalCode": "OEAHP0823",
+          "expiryDate": "2025-08-31",
+          "openingDate": "2023-08-20",
+          "remainingAmount": 29.1,
+          "storageLocation": "caixa OE IKEA"
+        }
+      ]
+    },
+    {
+      "name": "OE lavandim",
+      "category": "óleo essencial",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 30,
+          "totalPrice": 5.1,
+          "badge": "0017220",
+          "journalCode": "OELS0225-1",
+          "expiryDate": "2027-01-31",
+          "openingDate": "2025-07-03",
+          "remainingAmount": 30,
+          "storageLocation": "caixa OE IKEA"
+        },
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 30,
+          "totalPrice": 5.1,
+          "badge": "0017220",
+          "journalCode": "OELS0225-2",
+          "expiryDate": "2027-01-31",
+          "openingDate": null,
+          "remainingAmount": 30,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "OE petigrain",
+      "category": "óleo essencial",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2023-08-16",
+          "quantity": 125,
+          "totalPrice": 18,
+          "badge": "OEP-2308-01",
+          "journalCode": "OEP0823",
+          "expiryDate": "2025-08-31",
+          "openingDate": "2023-08-20",
+          "remainingAmount": 49.2,
+          "storageLocation": "caixa OE IKEA"
+        }
+      ]
+    },
+    {
+      "name": "OE teatrea",
+      "category": "óleo essencial",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 30,
+          "totalPrice": 6.25,
+          "badge": "0018831",
+          "journalCode": "OETT0225",
+          "expiryDate": "2027-07-31",
+          "openingDate": "2025-06-13",
+          "remainingAmount": 29.1,
+          "storageLocation": "caixa OE IKEA"
+        }
+      ]
+    },
+    {
+      "name": "óleo de amêndoas doces",
+      "category": "óleo",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 250,
+          "totalPrice": 3.55,
+          "badge": "0019371",
+          "journalCode": "OAD0225",
+          "expiryDate": "2026-10-31",
+          "openingDate": "2025-05-14",
+          "remainingAmount": 50,
+          "storageLocation": "armário P1"
+        }
+      ]
+    },
+    {
+      "name": "óleo de arnica",
+      "category": "óleo",
+      "unit": "mL",
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-02-23",
+          "quantity": 125,
+          "totalPrice": 4.4,
+          "badge": "0018287",
+          "journalCode": "OAM0225",
+          "expiryDate": "2026-05-31",
+          "openingDate": null,
+          "remainingAmount": 125,
+          "storageLocation": "armário P1"
+        }
+      ]
+    }
+  ]
+}
