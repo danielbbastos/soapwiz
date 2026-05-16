@@ -67,7 +67,7 @@ final class RecipeFormViewModel {
 
     private static let percentageFormatter: NumberFormatter = {
         let f = NumberFormatter()
-        f.locale = Locale.current
+        f.locale = .autoupdatingCurrent
         f.minimumFractionDigits = 0
         f.maximumFractionDigits = 1
         return f

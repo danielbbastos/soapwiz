@@ -165,6 +165,21 @@ struct RecipeFormViewModelTests {
         #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(50))
     }
 
+    @Test func removeIngredient_AllRemainingLocked_TotalsUnchanged() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "A"))
+        model.addIngredient(Ingredient(name: "B"))
+        model.addIngredient(Ingredient(name: "C"))
+        model.userEdited(id: model.ingredientDrafts[0].id, percentage: "60")
+        model.userEdited(id: model.ingredientDrafts[1].id, percentage: "40")
+
+        model.removeIngredient(at: IndexSet(integer: 2))
+
+        #expect(model.ingredientDrafts[0].percentage == "60")
+        #expect(model.ingredientDrafts[1].percentage == "40")
+        #expect(abs(model.totalPercentage - 100) < 0.1)
+    }
+
     @Test func totalPercentage_SumsAllDrafts() {
         let model = RecipeFormViewModel()
         model.addIngredient(Ingredient(name: "A"))
