@@ -98,4 +98,108 @@ struct RecipeFormViewModelTests {
 
         #expect(recipe.ingredients[0].percentage == 33.5)
     }
+
+    // MARK: - Percentage distribution
+
+    @Test func addIngredient_First_Gets100Percent() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "Coconut Oil"))
+        #expect(model.ingredientDrafts[0].percentage == model.formatPercentage(100))
+    }
+
+    @Test func addIngredient_Second_SplitsEqually() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "Coconut Oil"))
+        model.addIngredient(Ingredient(name: "Olive Oil"))
+        #expect(model.ingredientDrafts[0].percentage == model.formatPercentage(50))
+        #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(50))
+    }
+
+    @Test func addIngredient_Third_SplitsEqually() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "A"))
+        model.addIngredient(Ingredient(name: "B"))
+        model.addIngredient(Ingredient(name: "C"))
+        let share = model.formatPercentage(100.0 / 3.0)
+        #expect(model.ingredientDrafts[0].percentage == share)
+        #expect(model.ingredientDrafts[1].percentage == share)
+        #expect(abs(model.totalPercentage - 100) < 0.1) // last ingredient absorbs rounding
+    }
+
+    @Test func userEdited_Locks_OtherIngredientsRedistribute() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "A"))
+        model.addIngredient(Ingredient(name: "B"))
+
+        let id = model.ingredientDrafts[0].id
+        model.userEdited(id: id, percentage: "60")
+
+        #expect(model.ingredientDrafts[0].percentage == "60")
+        #expect(model.ingredientDrafts[0].isLocked == true)
+        #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(40))
+        #expect(model.ingredientDrafts[1].isLocked == false)
+    }
+
+    @Test func addIngredient_AfterLock_DistributesRemainingToUnlocked() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "A"))
+        model.addIngredient(Ingredient(name: "B"))
+        model.userEdited(id: model.ingredientDrafts[0].id, percentage: "60")
+
+        model.addIngredient(Ingredient(name: "C"))
+
+        #expect(model.ingredientDrafts[0].percentage == "60")
+        #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(20))
+        #expect(model.ingredientDrafts[2].percentage == model.formatPercentage(20))
+    }
+
+    @Test func removeIngredient_Redistributes() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "A"))
+        model.addIngredient(Ingredient(name: "B"))
+        model.addIngredient(Ingredient(name: "C"))
+
+        model.removeIngredient(at: IndexSet(integer: 2))
+
+        #expect(model.ingredientDrafts[0].percentage == model.formatPercentage(50))
+        #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(50))
+    }
+
+    @Test func removeIngredient_AllRemainingLocked_TotalsUnchanged() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "A"))
+        model.addIngredient(Ingredient(name: "B"))
+        model.addIngredient(Ingredient(name: "C"))
+        model.userEdited(id: model.ingredientDrafts[0].id, percentage: "60")
+        model.userEdited(id: model.ingredientDrafts[1].id, percentage: "40")
+
+        model.removeIngredient(at: IndexSet(integer: 2))
+
+        #expect(model.ingredientDrafts[0].percentage == "60")
+        #expect(model.ingredientDrafts[1].percentage == "40")
+        #expect(abs(model.totalPercentage - 100) < 0.1)
+    }
+
+    @Test func totalPercentage_SumsAllDrafts() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "A"))
+        model.addIngredient(Ingredient(name: "B"))
+        #expect(model.totalPercentage == 100)
+    }
+
+    @Test func totalPercentage_EmptyDrafts_ReturnsZero() {
+        let model = RecipeFormViewModel()
+        #expect(model.totalPercentage == 0)
+    }
+
+    @Test func addIngredient_WhenLockedSumExceeds100_GetsZero() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "A"))
+        model.userEdited(id: model.ingredientDrafts[0].id, percentage: "100")
+
+        model.addIngredient(Ingredient(name: "B"))
+
+        #expect(model.ingredientDrafts[0].percentage == "100")
+        #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(0))
+    }
 }
