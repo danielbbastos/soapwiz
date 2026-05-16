@@ -4,6 +4,7 @@ import SwiftData
 @Model
 final class Ingredient {
     var name: String
+    var code: String = ""
     var category: IngredientCategory?
     var unit: QuantityUnit?
 

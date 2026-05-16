@@ -7,6 +7,7 @@ struct IngredientFormView: View {
 
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
     @Query(sort: \QuantityUnit.name) private var units: [QuantityUnit]
+    @Query private var allIngredients: [Ingredient]
 
     @State private var model: IngredientFormViewModel
     let onSave: ((Ingredient) -> Void)?
@@ -16,11 +17,22 @@ struct IngredientFormView: View {
         self.onSave = onSave
     }
 
+    private var existingCodes: [String] {
+        allIngredients.compactMap {
+            guard $0 !== model.ingredient, !$0.code.isEmpty else { return nil }
+            return $0.code
+        }
+    }
+
     var body: some View {
         NavigationStack {
             Form {
                 Section("Details") {
                     TextField("Name", text: $model.name)
+                        .onChange(of: model.name) { _, _ in
+                            model.applyNameChange(existingCodes: existingCodes)
+                        }
+                    codeField
                     Picker("Category", selection: $model.selectedCategory) {
                         Text("None").tag(Optional<IngredientCategory>.none)
                         ForEach(categories) { category in
@@ -63,8 +75,32 @@ struct IngredientFormView: View {
                         }
                         dismiss()
                     }
-                    .disabled(!model.isValid)
+                    .disabled(!model.isValid || model.codeHasDuplicate(among: allIngredients))
                 }
+            }
+        }
+    }
+
+    private var codeBinding: Binding<String> {
+        Binding(
+            get: { model.code },
+            set: { model.code = $0; model.markCodeEdited() }
+        )
+    }
+
+    @ViewBuilder
+    private var codeField: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            TextField("Ingredient Code", text: codeBinding)
+                .textInputAutocapitalization(.characters)
+            if model.codeHasDuplicate(among: allIngredients) {
+                Text("This code is already in use.")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            } else if !model.trimmedCode.isEmpty && model.trimmedCode.count < 3 {
+                Text("Code must be at least 3 characters.")
+                    .font(.caption)
+                    .foregroundStyle(.red)
             }
         }
     }
