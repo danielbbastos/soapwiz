@@ -120,9 +120,10 @@ struct RecipeFormViewModelTests {
         model.addIngredient(Ingredient(name: "A"))
         model.addIngredient(Ingredient(name: "B"))
         model.addIngredient(Ingredient(name: "C"))
-        #expect(model.ingredientDrafts[0].percentage == "33.3")
-        #expect(model.ingredientDrafts[1].percentage == "33.3")
-        #expect(model.ingredientDrafts[2].percentage == "33.3")
+        let expected = model.formatPercentage(100.0 / 3.0)
+        #expect(model.ingredientDrafts[0].percentage == expected)
+        #expect(model.ingredientDrafts[1].percentage == expected)
+        #expect(model.ingredientDrafts[2].percentage == expected)
     }
 
     @Test func userEdited_Locks_OtherIngredientsRedistribute() {
