@@ -58,12 +58,17 @@ final class RecipeFormViewModel {
         }
     }
 
+    private static let percentageFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.minimumFractionDigits = 0
+        f.maximumFractionDigits = 1
+        return f
+    }()
+
     private func formatPercentage(_ value: Double) -> String {
         let rounded = (value * 10).rounded() / 10
-        if rounded.truncatingRemainder(dividingBy: 1) == 0 {
-            return String(Int(rounded))
-        }
-        return String(format: "%.1f", rounded)
+        return Self.percentageFormatter.string(from: NSNumber(value: rounded)) ?? "0"
     }
 
     @discardableResult
