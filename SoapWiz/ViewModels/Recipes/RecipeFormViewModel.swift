@@ -5,6 +5,7 @@ struct RecipeIngredientDraft: Identifiable {
     let id = UUID()
     let ingredient: Ingredient
     var percentage: String = ""
+    var isLocked: Bool = false
 }
 
 @Observable
@@ -15,15 +16,54 @@ final class RecipeFormViewModel {
 
     var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
 
+    var totalPercentage: Double {
+        ingredientDrafts
+            .compactMap { Double($0.percentage.replacingOccurrences(of: ",", with: ".")) }
+            .reduce(0, +)
+    }
+
+    var totalPercentageText: String { formatPercentage(totalPercentage) }
+
     func addIngredient(_ ingredient: Ingredient) {
         guard !ingredientDrafts.contains(where: {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
         ingredientDrafts.append(RecipeIngredientDraft(ingredient: ingredient))
+        redistributePercentages()
     }
 
     func removeIngredient(at offsets: IndexSet) {
         ingredientDrafts.remove(atOffsets: offsets)
+        redistributePercentages()
+    }
+
+    func userEdited(id: UUID, percentage: String) {
+        guard let idx = ingredientDrafts.firstIndex(where: { $0.id == id }) else { return }
+        ingredientDrafts[idx].percentage = percentage
+        ingredientDrafts[idx].isLocked = true
+        redistributePercentages()
+    }
+
+    private func redistributePercentages() {
+        let lockedSum = ingredientDrafts
+            .filter(\.isLocked)
+            .compactMap { Double($0.percentage.replacingOccurrences(of: ",", with: ".")) }
+            .reduce(0, +)
+        let remaining = max(0, 100 - lockedSum)
+        let unlockedIndices = ingredientDrafts.indices.filter { !ingredientDrafts[$0].isLocked }
+        guard !unlockedIndices.isEmpty else { return }
+        let share = remaining / Double(unlockedIndices.count)
+        for idx in unlockedIndices {
+            ingredientDrafts[idx].percentage = formatPercentage(share)
+        }
+    }
+
+    private func formatPercentage(_ value: Double) -> String {
+        let rounded = (value * 10).rounded() / 10
+        if rounded.truncatingRemainder(dividingBy: 1) == 0 {
+            return String(Int(rounded))
+        }
+        return String(format: "%.1f", rounded)
     }
 
     @discardableResult
