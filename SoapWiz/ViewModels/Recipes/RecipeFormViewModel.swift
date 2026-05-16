@@ -53,8 +53,15 @@ final class RecipeFormViewModel {
         let unlockedIndices = ingredientDrafts.indices.filter { !ingredientDrafts[$0].isLocked }
         guard !unlockedIndices.isEmpty else { return }
         let share = remaining / Double(unlockedIndices.count)
-        for idx in unlockedIndices {
-            ingredientDrafts[idx].percentage = formatPercentage(share)
+        for (enumIdx, idx) in unlockedIndices.enumerated() {
+            if enumIdx == unlockedIndices.count - 1 {
+                let assignedSum = unlockedIndices.dropLast()
+                    .compactMap { Double(ingredientDrafts[$0].percentage.replacingOccurrences(of: ",", with: ".")) }
+                    .reduce(0, +)
+                ingredientDrafts[idx].percentage = formatPercentage(max(0, remaining - assignedSum))
+            } else {
+                ingredientDrafts[idx].percentage = formatPercentage(share)
+            }
         }
     }
 

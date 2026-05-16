@@ -26,7 +26,7 @@ struct RecipeFormView: View {
                     Spacer()
                     if !model.ingredientDrafts.isEmpty {
                         Text(model.totalPercentageText)
-                            .foregroundStyle(abs(model.totalPercentage - 100) < 0.01 ? Color.green : Color.red)
+                            .foregroundStyle(abs(model.totalPercentage - 100) < 0.1 ? Color.green : Color.red)
                             .frame(width: 60, alignment: .trailing)
                         Text("%")
                             .foregroundStyle(.secondary)
