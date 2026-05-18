@@ -154,7 +154,7 @@ struct IngredientFormViewModelTests {
         #expect(model.suggestCode(for: "Glycerin", existingCodes: ["GLY", "GLYC", "GLYCE"]) == "GLYCER")
     }
 
-    @Test func suggestCode_MultiWord_TwoWords_InitialsAtLeastThree_ReturnsInitials() {
+    @Test func suggestCode_MultiWord_ThreeWords_InitialsAtLeastThree_ReturnsInitials() {
         let model = IngredientFormViewModel()
         // "Soy Bean Oil" → 3 initials → "SBO"
         #expect(model.suggestCode(for: "Soy Bean Oil", existingCodes: []) == "SBO")
@@ -166,9 +166,9 @@ struct IngredientFormViewModelTests {
         #expect(model.suggestCode(for: "Coconut Oil", existingCodes: []) == "COI")
     }
 
-    @Test func suggestCode_MultiWord_TwoWords_InitialsOneChar_PadsFromLastWord() {
+    @Test func suggestCode_MultiWord_TwoWords_TwoCharInitials_PadsFromLastWord() {
         let model = IngredientFormViewModel()
-        // "Sodium Hydroxide" → initials "SH" → pad with "Y" from "HYDROXIDE" → "SHY"
+        // "Sodium Hydroxide" → initials "SH" (2 chars) → pad with "Y" from "HYDROXIDE" → "SHY"
         #expect(model.suggestCode(for: "Sodium Hydroxide", existingCodes: []) == "SHY")
     }
 

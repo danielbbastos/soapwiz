@@ -12,7 +12,7 @@ Switch to main, fetch origin, pull to sync, and delete all other local branches.
 git checkout main
 git fetch origin
 git pull
-git branch | grep -v '^\* main' | xargs git branch -D
+git branch | grep -v '^\* main' | xargs git branch -d
 ```
 
 Run these sequentially. Report how many branches were deleted and confirm main is up to date.
