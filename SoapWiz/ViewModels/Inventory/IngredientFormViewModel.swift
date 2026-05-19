@@ -12,10 +12,8 @@ final class IngredientFormViewModel {
     var sapValue: String = ""
     var density: String = ""
 
-    private static let oilCategoryNames: Set<String> = ["Oils", "Waxes", "Fats"]
-
     var showsSapValue: Bool {
-        selectedCategory.map { Self.oilCategoryNames.contains($0.name) } ?? false
+        selectedCategory?.showsSapValue ?? false
     }
 
     var showsDensity: Bool {

@@ -343,10 +343,13 @@ struct IngredientFormViewModelTests {
     @Test func saveSapValue_EmptyString_StoresNil() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
+        let oilsCategory = IngredientCategory(name: "Oils")
+        ctx.insert(oilsCategory)
 
         let model = IngredientFormViewModel()
         model.name = "Olive Oil"
         model.selectedUnit = .grams
+        model.selectedCategory = oilsCategory
         model.sapValue = ""
         let ingredient = try #require(model.save(context: ctx))
         #expect(ingredient.sapValue == nil)
