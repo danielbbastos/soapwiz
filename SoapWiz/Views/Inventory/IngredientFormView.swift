@@ -46,6 +46,35 @@ struct IngredientFormView: View {
                     }
                 }
 
+                if model.showsSapValue || model.showsDensity {
+                    Section("Properties") {
+                        if model.showsSapValue {
+                            HStack {
+                                Text("SAP Value (NaOH)")
+                                Spacer()
+                                TextField("0.134", text: $model.sapValue)
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 80)
+                                Text("g/g")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        if model.showsDensity {
+                            HStack {
+                                Text("Density")
+                                Spacer()
+                                TextField("1.0", text: $model.density)
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 80)
+                                Text("g/ml")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+
                 Section {
                     HStack {
                         TextField("Low Stock Threshold", text: $model.lowStockThreshold)

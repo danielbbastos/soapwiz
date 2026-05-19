@@ -26,6 +26,18 @@ struct IngredientDetailView: View {
                             .foregroundStyle(model.totalRemaining > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
                     }
                     LabeledContent("Batches", value: "\(model.ingredient.batches.count)")
+                    if let sap = model.ingredient.sapValue {
+                        LabeledContent("SAP Value (NaOH)") {
+                            Text("\(sap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))) g/g")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    if let dens = model.ingredient.density {
+                        LabeledContent("Density") {
+                            Text("\(dens.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))) g/ml")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
 
                 Section("Batches") {
