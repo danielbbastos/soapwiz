@@ -24,8 +24,18 @@ struct IngredientProductBreakdown {
 final class RecipeFormViewModel {
     var name: String = ""
     var desc: String = ""
+    var weightUnit: String = "g"
+    var totalOilWeight: String = ""
+    var oilWeightUnit: String = "g"
+    var lyeType: String = "NaOH"
+    var lyePurity: String = "99"
+    var waterParts: String = "2"
+    var lyeParts: String = "1"
+    var superFat: String = "5"
     var ingredientDrafts: [RecipeIngredientDraft] = []
     var productDrafts: [RecipeProductDraft] = []
+
+    var weightUnitIsPercentage: Bool { weightUnit == "%" }
 
     var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -124,6 +134,14 @@ final class RecipeFormViewModel {
             name: name.trimmingCharacters(in: .whitespaces),
             desc: desc.trimmingCharacters(in: .whitespaces)
         )
+        recipe.weightUnit = weightUnit
+        recipe.totalOilWeight = Double(totalOilWeight.replacingOccurrences(of: ",", with: ".")) ?? 0
+        recipe.oilWeightUnit = oilWeightUnit
+        recipe.lyeType = lyeType
+        recipe.lyePurity = Double(lyePurity.replacingOccurrences(of: ",", with: ".")) ?? 99
+        recipe.waterParts = Double(waterParts.replacingOccurrences(of: ",", with: ".")) ?? 2
+        recipe.lyeParts = Double(lyeParts.replacingOccurrences(of: ",", with: ".")) ?? 1
+        recipe.superFat = Double(superFat.replacingOccurrences(of: ",", with: ".")) ?? 5
         context.insert(recipe)
         for draft in ingredientDrafts {
             let pct = Double(draft.percentage.replacingOccurrences(of: ",", with: ".")) ?? 0

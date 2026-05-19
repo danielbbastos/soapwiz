@@ -4,6 +4,14 @@ import SwiftData
 final class Recipe {
     var name: String
     var desc: String
+    var weightUnit: String = "g"
+    var totalOilWeight: Double = 0
+    var oilWeightUnit: String = "g"
+    var lyeType: String = "NaOH"
+    var lyePurity: Double = 99
+    var waterParts: Double = 2
+    var lyeParts: Double = 1
+    var superFat: Double = 5
 
     @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.recipe)
     var ingredients: [RecipeIngredient] = []
