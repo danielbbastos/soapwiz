@@ -203,6 +203,116 @@ struct RecipeFormViewModelTests {
         #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(0))
     }
 
+    // MARK: - Edit mode
+
+    @Test func load_PopulatesAllConfigFields() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Test Soap", desc: "A description")
+        recipe.weightUnit = "oz"
+        recipe.totalOilWeight = 500
+        recipe.oilWeightUnit = "lb"
+        recipe.lyeType = "NaOH"
+        recipe.lyePurity = 95
+        recipe.waterParts = 3
+        recipe.lyeParts = 1
+        recipe.superFat = 8
+        ctx.insert(recipe)
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+
+        #expect(model.name == "Test Soap")
+        #expect(model.desc == "A description")
+        #expect(model.weightUnit == "oz")
+        #expect(model.oilWeightUnit == "lb")
+        #expect(model.lyeType == "NaOH")
+        #expect(Double(model.lyePurity.replacingOccurrences(of: ",", with: ".")) == 95)
+        #expect(Double(model.waterParts.replacingOccurrences(of: ",", with: ".")) == 3)
+        #expect(Double(model.superFat.replacingOccurrences(of: ",", with: ".")) == 8)
+        #expect(!model.totalOilWeight.isEmpty)
+    }
+
+    @Test func load_ZeroTotalOilWeight_LeavesFieldEmpty() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Test", desc: "")
+        recipe.totalOilWeight = 0
+        ctx.insert(recipe)
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+
+        #expect(model.totalOilWeight.isEmpty)
+    }
+
+    @Test func load_PopulatesIngredientDrafts() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let unit = QuantityUnit(name: "g", symbol: "g")
+        ctx.insert(unit)
+        let ingredient = Ingredient(name: "Coconut Oil", unit: unit)
+        ctx.insert(ingredient)
+        let recipe = Recipe(name: "Test", desc: "")
+        ctx.insert(recipe)
+        let ri = RecipeIngredient(ingredient: ingredient, percentage: 75)
+        ri.recipe = recipe
+        ctx.insert(ri)
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+
+        #expect(model.ingredientDrafts.count == 1)
+        #expect(model.ingredientDrafts[0].ingredient.name == "Coconut Oil")
+        #expect(Double(model.ingredientDrafts[0].percentage.replacingOccurrences(of: ",", with: ".")) == 75)
+    }
+
+    @Test func save_EditMode_UpdatesInPlace_RecipeCountStaysOne() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Original", desc: "")
+        ctx.insert(recipe)
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+        model.name = "Updated"
+        model.lyePurity = "95"
+        model.save(context: ctx)
+
+        let all = try ctx.fetch(FetchDescriptor<Recipe>())
+        #expect(all.count == 1)
+        #expect(all[0].name == "Updated")
+        #expect(all[0].lyePurity == 95)
+    }
+
+    @Test func save_EditMode_ReplacesOldIngredients() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let unit = QuantityUnit(name: "g", symbol: "g")
+        ctx.insert(unit)
+        let ing1 = Ingredient(name: "Coconut Oil", unit: unit)
+        ctx.insert(ing1)
+        let ing2 = Ingredient(name: "Olive Oil", unit: unit)
+        ctx.insert(ing2)
+        let recipe = Recipe(name: "Test", desc: "")
+        ctx.insert(recipe)
+        let ri = RecipeIngredient(ingredient: ing1, percentage: 100)
+        ri.recipe = recipe
+        ctx.insert(ri)
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+        model.removeIngredient(at: IndexSet(integer: 0))
+        model.addIngredient(ing2)
+        model.save(context: ctx)
+
+        let allRecipes = try ctx.fetch(FetchDescriptor<Recipe>())
+        #expect(allRecipes.count == 1)
+        let allRI = try ctx.fetch(FetchDescriptor<RecipeIngredient>())
+        #expect(allRI.count == 1)
+        #expect(allRI[0].ingredient.name == "Olive Oil")
+    }
+
     // MARK: - Cost breakdown
 
     @Test func breakdownAndCost_NoIngredients_ReturnsEmptyAndZeroTotal() {

@@ -1,23 +1,189 @@
 import SwiftUI
 import SwiftData
 
+private enum RecipeTab: String, CaseIterable {
+    case config = "Config"
+    case ingredients = "Ingredients"
+    case stats = "Stats"
+}
+
+private let weightUnits = ["g", "oz", "lb", "kg", "%"]
+private let absoluteWeightUnits = ["g", "oz", "lb", "kg"]
+
 struct RecipeFormView: View {
+    var recipe: Recipe? = nil
+
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \QuantityUnit.name) private var quantityUnits: [QuantityUnit]
 
     @State private var model = RecipeFormViewModel()
+    @State private var selectedTab: RecipeTab = .config
     @State private var showingPicker = false
+    @FocusState private var oilWeightFocused: Bool
+
     var onSave: ((Recipe) -> Void)?
 
     var body: some View {
-        Form {
-            Section("Details") {
-                TextField("Name", text: $model.name)
-                TextField("Description", text: $model.desc, axis: .vertical)
-                    .lineLimit(3...6)
+        currentTab
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .safeAreaInset(edge: .top, spacing: 0) {
+                Picker("Tab", selection: $selectedTab) {
+                    ForEach(RecipeTab.allCases, id: \.self) { tab in
+                        Text(tab.rawValue).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
             }
+            .navigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
+            .navigationBarTitleDisplayMode(.inline)
+            .task(id: recipe?.persistentModelID) {
+                guard let recipe else { return }
+                model.load(from: recipe)
+            }
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        let recipe = model.save(context: modelContext)
+                        onSave?(recipe)
+                        dismiss()
+                    }
+                    .disabled(!model.canSave)
+                }
+            }
+            .sheet(isPresented: $showingPicker) {
+                IngredientPickerView(
+                    addedIDs: Set(model.ingredientDrafts.map(\.ingredient.persistentModelID)),
+                    onSelect: model.addIngredient
+                )
+            }
+    }
+
+    @ViewBuilder
+    private var currentTab: some View {
+        switch selectedTab {
+        case .config: configTab
+        case .ingredients: ingredientsTab
+        case .stats: statsTab
+        }
+    }
+}
+
+// MARK: - Config Tab
+
+private extension RecipeFormView {
+    var configTab: some View {
+        Form {
+            detailsSection
+            weightSection
+            lyeSection
+        }
+        .scrollClipDisabled()
+    }
+
+    var detailsSection: some View {
+        Section("Details") {
+            TextField("Name", text: $model.name)
+            TextField("Description", text: $model.desc, axis: .vertical)
+                .lineLimit(3...6)
+        }
+    }
+
+    var weightSection: some View {
+        Section("Weight & unit") {
+            HStack {
+                Text("Measurement unit")
+                Spacer()
+                Picker("Unit", selection: $model.weightUnit) {
+                    ForEach(weightUnits, id: \.self) { Text($0) }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+            }
+
+            if model.weightUnitIsPercentage {
+                HStack {
+                    Text("Total oil weight")
+                    Spacer()
+                    TextField("0", text: $model.totalOilWeight)
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 80)
+                        .focused($oilWeightFocused)
+                    Picker("Oil unit", selection: $model.oilWeightUnit) {
+                        ForEach(absoluteWeightUnits, id: \.self) { Text($0) }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .animation(.default, value: model.weightUnitIsPercentage)
+        .onChange(of: model.weightUnitIsPercentage) { _, isPercentage in
+            if isPercentage {
+                Task {
+                    try? await Task.sleep(for: .seconds(0.15))
+                    oilWeightFocused = true
+                }
+            }
+        }
+    }
+
+    var lyeSection: some View {
+        Section("Lye configuration") {
+            HStack {
+                Text("Lye type")
+                Spacer()
+                Text("NaOH")
+                    .foregroundStyle(.secondary)
+            }
+            HStack {
+                Text("Lye purity")
+                Spacer()
+                TextField("99", text: $model.lyePurity)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 60)
+                Text("%")
+                    .foregroundStyle(.secondary)
+            }
+            HStack {
+                Text("Water to lye ratio")
+                Spacer()
+                TextField("2", text: $model.waterParts)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.center)
+                    .frame(width: 30)
+                Text(":")
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 4)
+                Text("1")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 30, alignment: .center)
+            }
+            HStack {
+                Text("Super Fat")
+                Spacer()
+                TextField("5", text: $model.superFat)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 60)
+                Text("%")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - Ingredients Tab
+
+private extension RecipeFormView {
+    var ingredientsTab: some View {
+        Form {
             Section("Ingredients") {
                 HStack {
                     Button {
@@ -84,9 +250,9 @@ struct RecipeFormView: View {
                     }
                     .listRowInsets(EdgeInsets())
 
-                    if model.productDrafts.count > 0 {
+                    if !model.productDrafts.isEmpty {
                         HStack(spacing: 6) {
-                            ForEach(0..<model.productDrafts.count + 1, id: \.self) { _ in
+                            ForEach(0...model.productDrafts.count, id: \.self) { _ in
                                 Circle()
                                     .fill(Color.secondary.opacity(0.5))
                                     .frame(width: 6, height: 6)
@@ -98,26 +264,20 @@ struct RecipeFormView: View {
                 }
             }
         }
-        .navigationTitle("New Recipe")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    let recipe = model.save(context: modelContext)
-                    onSave?(recipe)
-                    dismiss()
-                }
-                .disabled(!model.canSave)
-            }
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") { dismiss() }
+        .scrollClipDisabled()
+    }
+}
+
+// MARK: - Stats Tab
+
+private extension RecipeFormView {
+    var statsTab: some View {
+        Form {
+            Section {
+                Text("Cost breakdown and soap properties coming soon.")
+                    .foregroundStyle(.secondary)
             }
         }
-        .sheet(isPresented: $showingPicker) {
-            IngredientPickerView(
-                addedIDs: Set(model.ingredientDrafts.map(\.ingredient.persistentModelID)),
-                onSelect: model.addIngredient
-            )
-        }
+        .scrollClipDisabled()
     }
 }
