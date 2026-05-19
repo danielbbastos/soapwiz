@@ -35,6 +35,9 @@ final class RecipeFormViewModel {
     var ingredientDrafts: [RecipeIngredientDraft] = []
     var productDrafts: [RecipeProductDraft] = []
 
+    @ObservationIgnored
+    private var editingRecipe: Recipe?
+
     var weightUnitIsPercentage: Bool { weightUnit == "%" }
 
     var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -46,6 +49,26 @@ final class RecipeFormViewModel {
     }
 
     var totalPercentageText: String { formatPercentage(totalPercentage) }
+
+    func load(from recipe: Recipe) {
+        editingRecipe = recipe
+        name = recipe.name
+        desc = recipe.desc
+        weightUnit = recipe.weightUnit
+        totalOilWeight = recipe.totalOilWeight > 0 ? format(recipe.totalOilWeight) : ""
+        oilWeightUnit = recipe.oilWeightUnit
+        lyeType = recipe.lyeType
+        lyePurity = format(recipe.lyePurity)
+        waterParts = format(recipe.waterParts)
+        lyeParts = format(recipe.lyeParts)
+        superFat = format(recipe.superFat)
+        ingredientDrafts = recipe.ingredients.map {
+            RecipeIngredientDraft(ingredient: $0.ingredient, percentage: formatPercentage($0.percentage), isLocked: true)
+        }
+        productDrafts = recipe.products.map {
+            RecipeProductDraft(size: format($0.size), unitSymbol: $0.unitSymbol)
+        }
+    }
 
     func addIngredient(_ ingredient: Ingredient) {
         guard !ingredientDrafts.contains(where: {
@@ -130,10 +153,15 @@ final class RecipeFormViewModel {
 
     @discardableResult
     func save(context: ModelContext) -> Recipe {
-        let recipe = Recipe(
-            name: name.trimmingCharacters(in: .whitespaces),
-            desc: desc.trimmingCharacters(in: .whitespaces)
-        )
+        let recipe: Recipe
+        if let existing = editingRecipe {
+            recipe = existing
+        } else {
+            recipe = Recipe(name: "", desc: "")
+            context.insert(recipe)
+        }
+        recipe.name = name.trimmingCharacters(in: .whitespaces)
+        recipe.desc = desc.trimmingCharacters(in: .whitespaces)
         recipe.weightUnit = weightUnit
         recipe.totalOilWeight = Double(totalOilWeight.replacingOccurrences(of: ",", with: ".")) ?? 0
         recipe.oilWeightUnit = oilWeightUnit
@@ -142,13 +170,14 @@ final class RecipeFormViewModel {
         recipe.waterParts = Double(waterParts.replacingOccurrences(of: ",", with: ".")) ?? 2
         recipe.lyeParts = Double(lyeParts.replacingOccurrences(of: ",", with: ".")) ?? 1
         recipe.superFat = Double(superFat.replacingOccurrences(of: ",", with: ".")) ?? 5
-        context.insert(recipe)
+        recipe.ingredients.forEach { context.delete($0) }
         for draft in ingredientDrafts {
             let pct = Double(draft.percentage.replacingOccurrences(of: ",", with: ".")) ?? 0
             let ri = RecipeIngredient(ingredient: draft.ingredient, percentage: pct)
             ri.recipe = recipe
             context.insert(ri)
         }
+        recipe.products.forEach { context.delete($0) }
         for draft in productDrafts {
             let size = Double(draft.size.replacingOccurrences(of: ",", with: ".")) ?? 0
             let rp = RecipeProduct(size: size, unitSymbol: draft.unitSymbol)
@@ -156,5 +185,9 @@ final class RecipeFormViewModel {
             context.insert(rp)
         }
         return recipe
+    }
+
+    private func format(_ value: Double) -> String {
+        Self.percentageFormatter.string(from: NSNumber(value: value)) ?? String(value)
     }
 }

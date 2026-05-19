@@ -27,6 +27,7 @@ struct RecipeFormView: View {
 
     var body: some View {
         currentTab
+            .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .safeAreaInset(edge: .top, spacing: 0) {
                 Picker("Tab", selection: $selectedTab) {
                     ForEach(RecipeTab.allCases, id: \.self) { tab in
@@ -36,10 +37,13 @@ struct RecipeFormView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
                 .padding(.vertical, 8)
-                .background(.bar)
             }
-            .navigationTitle("New Recipe")
+            .navigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
             .navigationBarTitleDisplayMode(.inline)
+            .task(id: recipe?.persistentModelID) {
+                guard let recipe else { return }
+                model.load(from: recipe)
+            }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
@@ -48,9 +52,6 @@ struct RecipeFormView: View {
                         dismiss()
                     }
                     .disabled(!model.canSave)
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
                 }
             }
             .sheet(isPresented: $showingPicker) {
@@ -69,18 +70,21 @@ struct RecipeFormView: View {
         case .stats: statsTab
         }
     }
+}
 
-    // MARK: - Config Tab
+// MARK: - Config Tab
 
-    private var configTab: some View {
+private extension RecipeFormView {
+    var configTab: some View {
         Form {
             detailsSection
             weightSection
             lyeSection
         }
+        .scrollClipDisabled()
     }
 
-    private var detailsSection: some View {
+    var detailsSection: some View {
         Section("Details") {
             TextField("Name", text: $model.name)
             TextField("Description", text: $model.desc, axis: .vertical)
@@ -88,7 +92,7 @@ struct RecipeFormView: View {
         }
     }
 
-    private var weightSection: some View {
+    var weightSection: some View {
         Section("Weight & unit") {
             HStack {
                 Text("Measurement unit")
@@ -129,7 +133,7 @@ struct RecipeFormView: View {
         }
     }
 
-    private var lyeSection: some View {
+    var lyeSection: some View {
         Section("Lye configuration") {
             HStack {
                 Text("Lye type")
@@ -174,10 +178,12 @@ struct RecipeFormView: View {
             }
         }
     }
+}
 
-    // MARK: - Ingredients Tab
+// MARK: - Ingredients Tab
 
-    private var ingredientsTab: some View {
+private extension RecipeFormView {
+    var ingredientsTab: some View {
         Form {
             Section("Ingredients") {
                 HStack {
@@ -259,16 +265,20 @@ struct RecipeFormView: View {
                 }
             }
         }
+        .scrollClipDisabled()
     }
+}
 
-    // MARK: - Stats Tab
+// MARK: - Stats Tab
 
-    private var statsTab: some View {
+private extension RecipeFormView {
+    var statsTab: some View {
         Form {
             Section {
                 Text("Cost breakdown and soap properties coming soon.")
                     .foregroundStyle(.secondary)
             }
         }
+        .scrollClipDisabled()
     }
 }
