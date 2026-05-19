@@ -267,6 +267,144 @@ struct IngredientFormViewModelTests {
         #expect(!model.codeIsManuallyEdited)
     }
 
+    // MARK: - SAP Value visibility
+
+    @Test func showsSapValue_OilsCategory_ReturnsTrue() {
+        let model = IngredientFormViewModel()
+        model.selectedCategory = IngredientCategory(name: "Oils")
+        #expect(model.showsSapValue)
+    }
+
+    @Test func showsSapValue_WaxesCategory_ReturnsTrue() {
+        let model = IngredientFormViewModel()
+        model.selectedCategory = IngredientCategory(name: "Waxes")
+        #expect(model.showsSapValue)
+    }
+
+    @Test func showsSapValue_FatsCategory_ReturnsTrue() {
+        let model = IngredientFormViewModel()
+        model.selectedCategory = IngredientCategory(name: "Fats")
+        #expect(model.showsSapValue)
+    }
+
+    @Test func showsSapValue_AdditivesCategory_ReturnsFalse() {
+        let model = IngredientFormViewModel()
+        model.selectedCategory = IngredientCategory(name: "Additives")
+        #expect(!model.showsSapValue)
+    }
+
+    @Test func showsSapValue_NoCategory_ReturnsFalse() {
+        let model = IngredientFormViewModel()
+        #expect(!model.showsSapValue)
+    }
+
+    // MARK: - Density visibility
+
+    @Test func showsDensity_MillilitersUnit_ReturnsTrue() {
+        let model = IngredientFormViewModel()
+        model.selectedUnit = .milliliters
+        #expect(model.showsDensity)
+    }
+
+    @Test func showsDensity_LitersUnit_ReturnsTrue() {
+        let model = IngredientFormViewModel()
+        model.selectedUnit = .liters
+        #expect(model.showsDensity)
+    }
+
+    @Test func showsDensity_GramsUnit_ReturnsFalse() {
+        let model = IngredientFormViewModel()
+        model.selectedUnit = .grams
+        #expect(!model.showsDensity)
+    }
+
+    @Test func showsDensity_NoUnit_ReturnsFalse() {
+        let model = IngredientFormViewModel()
+        #expect(!model.showsDensity)
+    }
+
+    // MARK: - SAP Value save / load
+
+    @Test func saveSapValue_PersistsValue() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let cat = IngredientCategory(name: "Oils")
+        ctx.insert(cat)
+
+        let model = IngredientFormViewModel()
+        model.name = "Olive Oil"
+        model.selectedUnit = .grams
+        model.selectedCategory = cat
+        model.sapValue = "0.134"
+        let ingredient = try #require(model.save(context: ctx))
+        #expect(ingredient.sapValue == 0.134)
+    }
+
+    @Test func saveSapValue_EmptyString_StoresNil() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let oilsCategory = IngredientCategory(name: "Oils")
+        ctx.insert(oilsCategory)
+
+        let model = IngredientFormViewModel()
+        model.name = "Olive Oil"
+        model.selectedUnit = .grams
+        model.selectedCategory = oilsCategory
+        model.sapValue = ""
+        let ingredient = try #require(model.save(context: ctx))
+        #expect(ingredient.sapValue == nil)
+    }
+
+    @Test func populatesSapValueWhenEditing() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = Ingredient(name: "Olive Oil")
+        existing.sapValue = 0.134
+        ctx.insert(existing)
+
+        let model = IngredientFormViewModel(ingredient: existing)
+        let parsed = Double(model.sapValue.replacingOccurrences(of: ",", with: "."))
+        #expect(parsed == 0.134)
+    }
+
+    // MARK: - Density save / load
+
+    @Test func saveDensity_PersistsValue() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+
+        let model = IngredientFormViewModel()
+        model.name = "Olive Oil"
+        model.selectedUnit = .milliliters
+        model.density = "0.916"
+        let ingredient = try #require(model.save(context: ctx))
+        #expect(ingredient.density == 0.916)
+    }
+
+    @Test func saveDensity_EmptyString_StoresNil() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+
+        let model = IngredientFormViewModel()
+        model.name = "Olive Oil"
+        model.selectedUnit = .milliliters
+        model.density = ""
+        let ingredient = try #require(model.save(context: ctx))
+        #expect(ingredient.density == nil)
+    }
+
+    @Test func populatesDensityWhenEditing() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = Ingredient(name: "Olive Oil")
+        existing.density = 0.916
+        ctx.insert(existing)
+
+        let model = IngredientFormViewModel(ingredient: existing)
+        let parsed = Double(model.density.replacingOccurrences(of: ",", with: "."))
+        #expect(parsed == 0.916)
+    }
+
     // MARK: - Save persists code
 
     @Test func save_PersistsCodeUppercasedAndTrimmed() throws {
@@ -306,5 +444,38 @@ struct IngredientFormViewModelTests {
 
         let model = IngredientFormViewModel(ingredient: existing)
         #expect(model.code == "OOI")
+    }
+
+    @Test func save_CategoryChangedFromOilToAdditive_ClearsSapValue() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let oilsCategory = IngredientCategory(name: "Oils")
+        let additivesCategory = IngredientCategory(name: "Additives")
+        ctx.insert(oilsCategory)
+        ctx.insert(additivesCategory)
+        let existing = Ingredient(name: "Olive Oil")
+        existing.category = oilsCategory
+        existing.sapValue = 0.134
+        ctx.insert(existing)
+
+        let model = IngredientFormViewModel(ingredient: existing)
+        model.selectedCategory = additivesCategory
+        model.save(context: ctx)
+
+        #expect(existing.sapValue == nil)
+    }
+
+    @Test func save_UnitChangedFromMlToG_ClearsDensity() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = Ingredient(name: "Avocado Oil", unit: "ml")
+        existing.density = 0.914
+        ctx.insert(existing)
+
+        let model = IngredientFormViewModel(ingredient: existing)
+        model.selectedUnit = .grams
+        model.save(context: ctx)
+
+        #expect(existing.density == nil)
     }
 }

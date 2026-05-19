@@ -1,560 +1,824 @@
 {
-  "categories": [
-    "outros",
-    "argilas",
-    "aditivo",
-    "óleo",
-    "manteiga",
-    "embalagem",
-    "cera",
-    "óleo essencial"
-  ],
-  "providers": [
-    "Plena Natura",
-    "Amazon",
-    "Jumbex",
-    "Cremas Caseras"
-  ],
-  "storageLocations": [
-    "caixa IngS IKEA",
-    "armário P1",
-    "caixa OE IKEA"
-  ],
+  "categories": ["Oils", "Waxes", "Fats", "Additives", "Fragrances", "Packages", "Others"],
+  "providers": ["Plena Natura", "Aroma Zone", "New Directions", "Amazon"],
+  "storageLocations": ["Shelf A1", "Shelf A2", "Shelf B1", "Fridge"],
   "ingredients": [
     {
-      "name": "alcool cetílico",
-      "category": "outros",
-      "unit": "g",
+      "name": "Olive Oil",
+      "category": "Oils",
+      "unit": "ml",
+      "sapValue": 0.134,
+      "density": 0.911,
       "batches": [
         {
           "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 100,
-          "totalPrice": 2.5,
-          "badge": "P1-183-RZ",
-          "journalCode": "AC0225",
-          "expiryDate": "2026-12-31",
-          "openingDate": "2025-10-01",
-          "remainingAmount": 90,
-          "storageLocation": "caixa IngS IKEA"
+          "dateOfPurchase": "2026-03-10",
+          "quantity": 5489,
+          "totalPrice": 18.50,
+          "badge": "OLV-001",
+          "journalCode": "J-001",
+          "expiryDate": "2027-03-10",
+          "openingDate": "2026-03-15",
+          "remainingAmount": 3513,
+          "storageLocation": "Shelf A1"
         }
       ]
     },
     {
-      "name": "aloe vera 10:1",
-      "category": "outros",
+      "name": "Coconut Oil",
+      "category": "Oils",
       "unit": "g",
+      "sapValue": 0.190,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 125,
-          "totalPrice": 5.5,
-          "badge": "0015769",
-          "journalCode": "AV0225",
-          "expiryDate": "2025-06-30",
-          "openingDate": null,
-          "remainingAmount": 125,
-          "storageLocation": "armário P1"
-        }
-      ]
-    },
-    {
-      "name": "argila bentotine",
-      "category": "argilas",
-      "unit": "g",
-      "batches": [
-        {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 250,
-          "totalPrice": 3.7,
-          "badge": "15.22-S1624",
-          "journalCode": "AB0225",
-          "expiryDate": "2025-12-31",
-          "openingDate": null,
-          "remainingAmount": 250,
-          "storageLocation": "caixa IngS IKEA"
-        }
-      ]
-    },
-    {
-      "name": "aveia coloidal",
-      "category": "aditivo",
-      "unit": "g",
-      "batches": [
-        {
-          "provider": "Cremas Caseras",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 250,
-          "totalPrice": 12.98,
-          "badge": "08895",
-          "journalCode": "AC0225",
-          "expiryDate": "2026-07-31",
-          "openingDate": null,
-          "remainingAmount": 250,
-          "storageLocation": "armário P1"
-        }
-      ]
-    },
-    {
-      "name": "azeite",
-      "category": "óleo",
-      "unit": "mL",
-      "batches": [
-        {
-          "provider": "Jumbex",
-          "dateOfPurchase": "2025-06-14",
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-02-20",
           "quantity": 3000,
-          "totalPrice": 14.49,
-          "badge": "25195",
-          "journalCode": "A0625",
-          "expiryDate": "2026-10-31",
-          "openingDate": null,
-          "remainingAmount": 3000,
-          "storageLocation": "armário P1"
+          "totalPrice": 14.00,
+          "badge": "COC-001",
+          "journalCode": "J-002",
+          "expiryDate": "2028-02-20",
+          "openingDate": "2026-02-25",
+          "remainingAmount": 1800,
+          "storageLocation": "Shelf A1"
         }
       ]
     },
     {
-      "name": "benjoim fluido",
-      "category": "aditivo",
-      "unit": "mL",
-      "batches": [
-        {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-05-27",
-          "quantity": 60,
-          "totalPrice": 8.2,
-          "badge": "0017358",
-          "journalCode": "BF0525",
-          "expiryDate": "2027-01-31",
-          "openingDate": "2025-05-29",
-          "remainingAmount": 59.4,
-          "storageLocation": "caixa OE IKEA"
-        }
-      ]
-    },
-    {
-      "name": "BTMS",
-      "category": "outros",
+      "name": "Palm Oil",
+      "category": "Oils",
       "unit": "g",
+      "sapValue": 0.141,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 250,
-          "totalPrice": 12,
-          "badge": "J022A24610",
-          "journalCode": "BT0225",
-          "expiryDate": "2025-04-30",
-          "openingDate": null,
-          "remainingAmount": 250,
-          "storageLocation": "caixa IngS IKEA"
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-01-15",
+          "quantity": 4000,
+          "totalPrice": 20.00,
+          "badge": "PLM-001",
+          "journalCode": "J-003",
+          "expiryDate": "2027-01-15",
+          "openingDate": "2026-01-20",
+          "remainingAmount": 2500,
+          "storageLocation": "Shelf A2"
         }
       ]
     },
     {
-      "name": "carvão ativado",
-      "category": "aditivo",
+      "name": "Castor Oil",
+      "category": "Oils",
       "unit": "g",
+      "sapValue": 0.128,
+      "density": null,
       "batches": [
         {
           "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 100,
-          "totalPrice": 5.6,
-          "badge": "24E151",
-          "journalCode": "CA0225",
-          "expiryDate": "2027-05-31",
-          "openingDate": null,
-          "remainingAmount": 100,
-          "storageLocation": "caixa IngS IKEA"
+          "dateOfPurchase": "2026-04-01",
+          "quantity": 1000,
+          "totalPrice": 9.00,
+          "badge": "CST-001",
+          "journalCode": "J-004",
+          "expiryDate": "2028-04-01",
+          "openingDate": "2026-04-05",
+          "remainingAmount": 850,
+          "storageLocation": "Shelf A2"
         }
       ]
     },
     {
-      "name": "cera candelilla",
-      "category": "cera",
+      "name": "Sweet Almond Oil",
+      "category": "Oils",
       "unit": "g",
+      "sapValue": 0.136,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 125,
-          "totalPrice": 7,
-          "badge": "0019110",
-          "journalCode": "CC0225",
-          "expiryDate": "2026-08-31",
-          "openingDate": "2025-07-05",
-          "remainingAmount": 92.6,
-          "storageLocation": "caixa IngS IKEA"
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-03-01",
+          "quantity": 2000,
+          "totalPrice": 16.00,
+          "badge": "ALM-001",
+          "journalCode": "J-005",
+          "expiryDate": "2027-09-01",
+          "openingDate": "2026-03-05",
+          "remainingAmount": 1400,
+          "storageLocation": "Shelf A2"
         }
       ]
     },
     {
-      "name": "euxy K940",
-      "category": "aditivo",
+      "name": "Avocado Oil",
+      "category": "Oils",
+      "unit": "ml",
+      "sapValue": 0.133,
+      "density": 0.914,
+      "batches": [
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-02-10",
+          "quantity": 1641,
+          "totalPrice": 14.50,
+          "badge": "AVO-001",
+          "journalCode": "J-006",
+          "expiryDate": "2027-02-10",
+          "openingDate": "2026-02-15",
+          "remainingAmount": 985,
+          "storageLocation": "Shelf B1"
+        }
+      ]
+    },
+    {
+      "name": "Sunflower Oil",
+      "category": "Oils",
       "unit": "g",
-      "batches": [
-        {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 30,
-          "totalPrice": 3.6,
-          "badge": "0002661819",
-          "journalCode": "EK0225",
-          "expiryDate": "2025-10-31",
-          "openingDate": null,
-          "remainingAmount": 30,
-          "storageLocation": "armário P1"
-        }
-      ]
-    },
-    {
-      "name": "extrato alecrim",
-      "category": "aditivo",
-      "unit": "mL",
-      "batches": [
-        {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 10,
-          "totalPrice": 2.4,
-          "badge": "0019559",
-          "journalCode": "EA0225",
-          "expiryDate": "2027-11-30",
-          "openingDate": "2025-06-13",
-          "remainingAmount": 8.1,
-          "storageLocation": "armário P1"
-        },
-        {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-05-27",
-          "quantity": 10,
-          "totalPrice": 2.4,
-          "badge": "0019559",
-          "journalCode": "EA0525",
-          "expiryDate": "2027-11-30",
-          "openingDate": null,
-          "remainingAmount": 10,
-          "storageLocation": "armário P1"
-        }
-      ]
-    },
-    {
-      "name": "glicerina vegetal",
-      "category": "outros",
-      "unit": "mL",
-      "batches": [
-        {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 125,
-          "totalPrice": 3.2,
-          "badge": "0018260",
-          "journalCode": "GV0225",
-          "expiryDate": "2026-05-31",
-          "openingDate": null,
-          "remainingAmount": 125,
-          "storageLocation": "armário P1"
-        }
-      ]
-    },
-    {
-      "name": "lata 15ml",
-      "category": "embalagem",
-      "unit": "un",
+      "sapValue": 0.134,
+      "density": null,
       "batches": [
         {
           "provider": "Amazon",
-          "dateOfPurchase": "2025-05-27",
-          "quantity": 30,
-          "totalPrice": 14.22,
-          "badge": "AMZ-L15-001",
-          "journalCode": "L150525",
-          "expiryDate": "2027-12-31",
-          "openingDate": "2025-07-05",
-          "remainingAmount": 15,
-          "storageLocation": "armário P1"
+          "dateOfPurchase": "2026-04-10",
+          "quantity": 3000,
+          "totalPrice": 8.00,
+          "badge": "SUN-001",
+          "journalCode": "J-007",
+          "expiryDate": "2027-04-10",
+          "openingDate": "2026-04-12",
+          "remainingAmount": 2800,
+          "storageLocation": "Shelf A1"
         }
       ]
     },
     {
-      "name": "manteiga de cacau",
-      "category": "manteiga",
+      "name": "Jojoba Oil",
+      "category": "Oils",
       "unit": "g",
+      "sapValue": 0.069,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-01-20",
           "quantity": 500,
-          "totalPrice": 9.5,
-          "badge": "MDC0225-01",
-          "journalCode": "MDC0225",
-          "expiryDate": "2027-02-28",
-          "openingDate": "2025-07-05",
-          "remainingAmount": 0,
-          "storageLocation": "armário P1"
+          "totalPrice": 22.00,
+          "badge": "JJB-001",
+          "journalCode": "J-008",
+          "expiryDate": "2028-01-20",
+          "openingDate": "2026-01-25",
+          "remainingAmount": 380,
+          "storageLocation": "Shelf B1"
         }
       ]
     },
     {
-      "name": "manteiga de karrité",
-      "category": "manteiga",
+      "name": "Grapeseed Oil",
+      "category": "Oils",
       "unit": "g",
+      "sapValue": 0.126,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-05-27",
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-03-15",
           "quantity": 1000,
-          "totalPrice": 14.9,
-          "badge": "0019618",
-          "journalCode": "MK0525",
-          "expiryDate": "2026-11-30",
-          "openingDate": "2025-06-12",
-          "remainingAmount": 500,
-          "storageLocation": "armário P1"
+          "totalPrice": 10.00,
+          "badge": "GRP-001",
+          "journalCode": "J-009",
+          "expiryDate": "2027-03-15",
+          "openingDate": null,
+          "remainingAmount": 1000,
+          "storageLocation": "Shelf A2"
         }
       ]
     },
     {
-      "name": "manteiga de kokum",
-      "category": "manteiga",
+      "name": "Argan Oil",
+      "category": "Oils",
       "unit": "g",
+      "sapValue": 0.136,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-05-27",
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-02-05",
           "quantity": 250,
-          "totalPrice": 6.95,
-          "badge": "0020008",
-          "journalCode": "MKK0525",
-          "expiryDate": "2027-02-28",
-          "openingDate": "2025-06-12",
-          "remainingAmount": 20,
-          "storageLocation": "armário P1"
+          "totalPrice": 18.00,
+          "badge": "ARG-001",
+          "journalCode": "J-010",
+          "expiryDate": "2028-02-05",
+          "openingDate": "2026-02-10",
+          "remainingAmount": 200,
+          "storageLocation": "Shelf B1"
         }
       ]
     },
     {
-      "name": "manteiga de manga",
-      "category": "manteiga",
+      "name": "Apricot Kernel Oil",
+      "category": "Oils",
       "unit": "g",
+      "sapValue": 0.135,
+      "density": null,
       "batches": [
         {
           "provider": "Plena Natura",
-          "dateOfPurchase": "2025-05-27",
+          "dateOfPurchase": "2026-04-20",
+          "quantity": 1000,
+          "totalPrice": 11.00,
+          "badge": "APR-001",
+          "journalCode": "J-011",
+          "expiryDate": "2027-10-20",
+          "openingDate": null,
+          "remainingAmount": 1000,
+          "storageLocation": "Shelf A2"
+        }
+      ]
+    },
+    {
+      "name": "Hemp Seed Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.135,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-03-25",
           "quantity": 500,
-          "totalPrice": 12.5,
-          "badge": "0019632",
-          "journalCode": "MM0525",
-          "expiryDate": "2026-05-31",
-          "openingDate": "2025-07-03",
-          "remainingAmount": 300,
-          "storageLocation": "armário P1"
+          "totalPrice": 13.00,
+          "badge": "HMP-001",
+          "journalCode": "J-012",
+          "expiryDate": "2026-09-25",
+          "openingDate": "2026-04-01",
+          "remainingAmount": 420,
+          "storageLocation": "Fridge"
         }
       ]
     },
     {
-      "name": "OE alecrim",
-      "category": "óleo essencial",
-      "unit": "mL",
+      "name": "Rice Bran Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.128,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2023-08-16",
-          "quantity": 125,
-          "totalPrice": 16.5,
-          "badge": "OEA-2308-01",
-          "journalCode": "OEA0823",
-          "expiryDate": "2025-08-31",
-          "openingDate": "2023-08-20",
-          "remainingAmount": 47.2,
-          "storageLocation": "caixa OE IKEA"
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-01-10",
+          "quantity": 2000,
+          "totalPrice": 12.00,
+          "badge": "RCB-001",
+          "journalCode": "J-013",
+          "expiryDate": "2027-01-10",
+          "openingDate": "2026-01-15",
+          "remainingAmount": 1200,
+          "storageLocation": "Shelf A1"
         }
       ]
     },
     {
-      "name": "OE cravinho",
-      "category": "óleo essencial",
-      "unit": "mL",
+      "name": "Safflower Oil",
+      "category": "Oils",
+      "unit": "ml",
+      "sapValue": 0.136,
+      "density": 0.924,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 10,
-          "totalPrice": 2.9,
-          "badge": "0018432",
-          "journalCode": "OECV0225",
-          "expiryDate": "2027-06-30",
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-02-28",
+          "quantity": 1082,
+          "totalPrice": 9.50,
+          "badge": "SFF-001",
+          "journalCode": "J-014",
+          "expiryDate": "2027-02-28",
           "openingDate": null,
-          "remainingAmount": 10,
-          "storageLocation": "caixa OE IKEA"
+          "remainingAmount": 1082,
+          "storageLocation": "Shelf A2"
         }
       ]
     },
     {
-      "name": "OE erva-príncipe",
-      "category": "óleo essencial",
-      "unit": "mL",
+      "name": "Sesame Oil",
+      "category": "Oils",
+      "unit": "ml",
+      "sapValue": 0.133,
+      "density": 0.919,
       "batches": [
         {
           "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 60,
-          "totalPrice": 10.9,
-          "badge": "AELECB017",
-          "journalCode": "OEEP0225",
-          "expiryDate": "2026-04-30",
-          "openingDate": "2025-05-11",
-          "remainingAmount": 60,
-          "storageLocation": "caixa OE IKEA"
+          "dateOfPurchase": "2026-03-05",
+          "quantity": 1088,
+          "totalPrice": 10.50,
+          "badge": "SSM-001",
+          "journalCode": "J-015",
+          "expiryDate": "2027-03-05",
+          "openingDate": "2026-03-10",
+          "remainingAmount": 816,
+          "storageLocation": "Shelf B1"
         }
       ]
     },
     {
-      "name": "OE frankincese",
-      "category": "óleo essencial",
-      "unit": "mL",
+      "name": "Canola Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.124,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 30,
-          "totalPrice": 11,
-          "badge": "0018132",
-          "journalCode": "OEF0225",
-          "expiryDate": "2027-05-31",
-          "openingDate": "2025-05-11",
-          "remainingAmount": 30,
-          "storageLocation": "caixa OE IKEA"
-        }
-      ]
-    },
-    {
-      "name": "OE hortelã pimenta",
-      "category": "óleo essencial",
-      "unit": "mL",
-      "batches": [
-        {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2023-08-16",
-          "quantity": 60,
-          "totalPrice": 7.9,
-          "badge": "OEAHP-2308-01",
-          "journalCode": "OEAHP0823",
-          "expiryDate": "2025-08-31",
-          "openingDate": "2023-08-20",
-          "remainingAmount": 29.1,
-          "storageLocation": "caixa OE IKEA"
-        }
-      ]
-    },
-    {
-      "name": "OE lavandim",
-      "category": "óleo essencial",
-      "unit": "mL",
-      "batches": [
-        {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 30,
-          "totalPrice": 5.1,
-          "badge": "0017220",
-          "journalCode": "OELS0225-1",
-          "expiryDate": "2027-01-31",
-          "openingDate": "2025-07-03",
-          "remainingAmount": 30,
-          "storageLocation": "caixa OE IKEA"
-        },
-        {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 30,
-          "totalPrice": 5.1,
-          "badge": "0017220",
-          "journalCode": "OELS0225-2",
-          "expiryDate": "2027-01-31",
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-04-05",
+          "quantity": 3000,
+          "totalPrice": 7.00,
+          "badge": "CNL-001",
+          "journalCode": "J-016",
+          "expiryDate": "2027-04-05",
           "openingDate": null,
-          "remainingAmount": 30,
-          "storageLocation": "armário P1"
+          "remainingAmount": 3000,
+          "storageLocation": "Shelf A1"
         }
       ]
     },
     {
-      "name": "OE petigrain",
-      "category": "óleo essencial",
-      "unit": "mL",
+      "name": "Macadamia Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.139,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2023-08-16",
-          "quantity": 125,
-          "totalPrice": 18,
-          "badge": "OEP-2308-01",
-          "journalCode": "OEP0823",
-          "expiryDate": "2025-08-31",
-          "openingDate": "2023-08-20",
-          "remainingAmount": 49.2,
-          "storageLocation": "caixa OE IKEA"
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-01-25",
+          "quantity": 500,
+          "totalPrice": 20.00,
+          "badge": "MCD-001",
+          "journalCode": "J-017",
+          "expiryDate": "2028-01-25",
+          "openingDate": "2026-02-01",
+          "remainingAmount": 350,
+          "storageLocation": "Shelf B1"
         }
       ]
     },
     {
-      "name": "OE teatrea",
-      "category": "óleo essencial",
-      "unit": "mL",
+      "name": "Neem Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.132,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 30,
-          "totalPrice": 6.25,
-          "badge": "0018831",
-          "journalCode": "OETT0225",
-          "expiryDate": "2027-07-31",
-          "openingDate": "2025-06-13",
-          "remainingAmount": 29.1,
-          "storageLocation": "caixa OE IKEA"
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-02-15",
+          "quantity": 500,
+          "totalPrice": 8.00,
+          "badge": "NEM-001",
+          "journalCode": "J-018",
+          "expiryDate": "2027-02-15",
+          "openingDate": "2026-03-01",
+          "remainingAmount": 450,
+          "storageLocation": "Shelf A2"
         }
       ]
     },
     {
-      "name": "óleo de amêndoas doces",
-      "category": "óleo",
-      "unit": "mL",
+      "name": "Babassu Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.175,
+      "density": null,
       "batches": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-03-20",
+          "quantity": 500,
+          "totalPrice": 16.00,
+          "badge": "BBS-001",
+          "journalCode": "J-019",
+          "expiryDate": "2028-03-20",
+          "openingDate": null,
+          "remainingAmount": 500,
+          "storageLocation": "Shelf A2"
+        }
+      ]
+    },
+    {
+      "name": "Palm Kernel Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.156,
+      "density": null,
+      "batches": [
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-01-05",
+          "quantity": 2000,
+          "totalPrice": 15.00,
+          "badge": "PKO-001",
+          "journalCode": "J-020",
+          "expiryDate": "2027-01-05",
+          "openingDate": "2026-01-10",
+          "remainingAmount": 1600,
+          "storageLocation": "Shelf A1"
+        }
+      ]
+    },
+    {
+      "name": "Tamanu Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.120,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-04-15",
           "quantity": 250,
-          "totalPrice": 3.55,
-          "badge": "0019371",
-          "journalCode": "OAD0225",
-          "expiryDate": "2026-10-31",
-          "openingDate": "2025-05-14",
-          "remainingAmount": 50,
-          "storageLocation": "armário P1"
+          "totalPrice": 19.00,
+          "badge": "TMN-001",
+          "journalCode": "J-021",
+          "expiryDate": "2028-04-15",
+          "openingDate": null,
+          "remainingAmount": 250,
+          "storageLocation": "Shelf B1"
         }
       ]
     },
     {
-      "name": "óleo de arnica",
-      "category": "óleo",
-      "unit": "mL",
+      "name": "Meadowfoam Seed Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.119,
+      "density": null,
+      "batches": [
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-03-28",
+          "quantity": 250,
+          "totalPrice": 17.00,
+          "badge": "MDF-001",
+          "journalCode": "J-022",
+          "expiryDate": "2028-03-28",
+          "openingDate": null,
+          "remainingAmount": 250,
+          "storageLocation": "Shelf B1"
+        }
+      ]
+    },
+    {
+      "name": "Pumpkin Seed Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.133,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-02-22",
+          "quantity": 500,
+          "totalPrice": 11.00,
+          "badge": "PKN-001",
+          "journalCode": "J-023",
+          "expiryDate": "2027-02-22",
+          "openingDate": "2026-03-01",
+          "remainingAmount": 400,
+          "storageLocation": "Fridge"
+        }
+      ]
+    },
+    {
+      "name": "Soybean Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.135,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-04-08",
+          "quantity": 2000,
+          "totalPrice": 6.50,
+          "badge": "SOY-001",
+          "journalCode": "J-024",
+          "expiryDate": "2027-04-08",
+          "openingDate": null,
+          "remainingAmount": 2000,
+          "storageLocation": "Shelf A1"
+        }
+      ]
+    },
+    {
+      "name": "Corn Oil",
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.136,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-01-30",
+          "quantity": 2000,
+          "totalPrice": 7.50,
+          "badge": "CRN-001",
+          "journalCode": "J-025",
+          "expiryDate": "2027-01-30",
+          "openingDate": "2026-02-05",
+          "remainingAmount": 1500,
+          "storageLocation": "Shelf A1"
+        }
+      ]
+    },
+    {
+      "name": "Beeswax",
+      "category": "Waxes",
+      "unit": "g",
+      "sapValue": 0.069,
+      "density": null,
       "batches": [
         {
           "provider": "Plena Natura",
-          "dateOfPurchase": "2025-02-23",
-          "quantity": 125,
-          "totalPrice": 4.4,
-          "badge": "0018287",
-          "journalCode": "OAM0225",
-          "expiryDate": "2026-05-31",
+          "dateOfPurchase": "2026-02-01",
+          "quantity": 500,
+          "totalPrice": 12.00,
+          "badge": "BWX-001",
+          "journalCode": "J-026",
+          "expiryDate": null,
+          "openingDate": "2026-02-10",
+          "remainingAmount": 380,
+          "storageLocation": "Shelf B1"
+        }
+      ]
+    },
+    {
+      "name": "Candelilla Wax",
+      "category": "Waxes",
+      "unit": "g",
+      "sapValue": 0.033,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-03-10",
+          "quantity": 200,
+          "totalPrice": 8.50,
+          "badge": "CDW-001",
+          "journalCode": "J-027",
+          "expiryDate": null,
           "openingDate": null,
-          "remainingAmount": 125,
-          "storageLocation": "armário P1"
+          "remainingAmount": 200,
+          "storageLocation": "Shelf B1"
+        }
+      ]
+    },
+    {
+      "name": "Lard",
+      "category": "Fats",
+      "unit": "g",
+      "sapValue": 0.138,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-04-01",
+          "quantity": 2000,
+          "totalPrice": 6.00,
+          "badge": "LRD-001",
+          "journalCode": "J-028",
+          "expiryDate": "2026-10-01",
+          "openingDate": "2026-04-05",
+          "remainingAmount": 1700,
+          "storageLocation": "Fridge"
+        }
+      ]
+    },
+    {
+      "name": "Beef Tallow",
+      "category": "Fats",
+      "unit": "g",
+      "sapValue": 0.140,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-03-15",
+          "quantity": 2000,
+          "totalPrice": 8.00,
+          "badge": "TLW-001",
+          "journalCode": "J-029",
+          "expiryDate": "2026-09-15",
+          "openingDate": "2026-03-20",
+          "remainingAmount": 1500,
+          "storageLocation": "Fridge"
+        }
+      ]
+    },
+    {
+      "name": "Shea Butter",
+      "category": "Fats",
+      "unit": "g",
+      "sapValue": 0.128,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-02-10",
+          "quantity": 1000,
+          "totalPrice": 11.00,
+          "badge": "SHA-001",
+          "journalCode": "J-030",
+          "expiryDate": "2028-02-10",
+          "openingDate": "2026-02-15",
+          "remainingAmount": 700,
+          "storageLocation": "Shelf A2"
+        }
+      ]
+    },
+    {
+      "name": "Cocoa Butter",
+      "category": "Fats",
+      "unit": "g",
+      "sapValue": 0.137,
+      "density": null,
+      "batches": [
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-01-20",
+          "quantity": 1000,
+          "totalPrice": 13.00,
+          "badge": "CCB-001",
+          "journalCode": "J-031",
+          "expiryDate": "2028-01-20",
+          "openingDate": "2026-01-25",
+          "remainingAmount": 650,
+          "storageLocation": "Shelf A2"
+        }
+      ]
+    },
+    {
+      "name": "Mango Butter",
+      "category": "Fats",
+      "unit": "g",
+      "sapValue": 0.128,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-04-12",
+          "quantity": 500,
+          "totalPrice": 9.00,
+          "badge": "MNG-001",
+          "journalCode": "J-032",
+          "expiryDate": "2028-04-12",
+          "openingDate": null,
+          "remainingAmount": 500,
+          "storageLocation": "Shelf A2"
+        }
+      ]
+    },
+    {
+      "name": "Sodium Hydroxide (Lye)",
+      "category": "Others",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-03-01",
+          "quantity": 1000,
+          "totalPrice": 8.00,
+          "badge": "LYE-001",
+          "journalCode": "J-033",
+          "expiryDate": null,
+          "openingDate": "2026-03-05",
+          "remainingAmount": 720,
+          "storageLocation": "Shelf B1"
+        }
+      ]
+    },
+    {
+      "name": "Sodium Lactate",
+      "category": "Additives",
+      "unit": "ml",
+      "sapValue": null,
+      "density": 1.13,
+      "batches": [
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-02-01",
+          "quantity": 250,
+          "totalPrice": 5.50,
+          "badge": "NLT-001",
+          "journalCode": "J-034",
+          "expiryDate": "2028-02-01",
+          "openingDate": "2026-02-10",
+          "remainingAmount": 200,
+          "storageLocation": "Shelf B1"
+        }
+      ]
+    },
+    {
+      "name": "Glycerin",
+      "category": "Additives",
+      "unit": "ml",
+      "sapValue": null,
+      "density": 1.26,
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-01-15",
+          "quantity": 500,
+          "totalPrice": 4.00,
+          "badge": "GLY-001",
+          "journalCode": "J-035",
+          "expiryDate": null,
+          "openingDate": "2026-01-20",
+          "remainingAmount": 350,
+          "storageLocation": "Shelf B1"
+        }
+      ]
+    },
+    {
+      "name": "Titanium Dioxide",
+      "category": "Additives",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "batches": [
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-03-08",
+          "quantity": 100,
+          "totalPrice": 4.50,
+          "badge": "TIO-001",
+          "journalCode": "J-036",
+          "expiryDate": null,
+          "openingDate": null,
+          "remainingAmount": 100,
+          "storageLocation": "Shelf B1"
+        }
+      ]
+    },
+    {
+      "name": "Lavender Essential Oil",
+      "category": "Fragrances",
+      "unit": "ml",
+      "sapValue": null,
+      "density": 0.88,
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-02-20",
+          "quantity": 100,
+          "totalPrice": 12.00,
+          "badge": "LVD-001",
+          "journalCode": "J-037",
+          "expiryDate": "2028-02-20",
+          "openingDate": "2026-03-01",
+          "remainingAmount": 85,
+          "storageLocation": "Shelf B1"
+        }
+      ]
+    },
+    {
+      "name": "Peppermint Essential Oil",
+      "category": "Fragrances",
+      "unit": "ml",
+      "sapValue": null,
+      "density": 0.90,
+      "batches": [
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-01-10",
+          "quantity": 50,
+          "totalPrice": 9.00,
+          "badge": "PPM-001",
+          "journalCode": "J-038",
+          "expiryDate": "2028-01-10",
+          "openingDate": "2026-01-15",
+          "remainingAmount": 38,
+          "storageLocation": "Shelf B1"
+        }
+      ]
+    },
+    {
+      "name": "Eucalyptus Essential Oil",
+      "category": "Fragrances",
+      "unit": "ml",
+      "sapValue": null,
+      "density": 0.92,
+      "batches": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-04-18",
+          "quantity": 50,
+          "totalPrice": 7.50,
+          "badge": "EUC-001",
+          "journalCode": "J-039",
+          "expiryDate": "2028-04-18",
+          "openingDate": null,
+          "remainingAmount": 50,
+          "storageLocation": "Shelf B1"
         }
       ]
     }

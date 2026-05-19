@@ -9,6 +9,8 @@ final class Ingredient {
     var unit: String
 
     var lowStockThreshold: Double?
+    var sapValue: Double?
+    var density: Double?
 
     @Relationship(deleteRule: .cascade, inverse: \IngredientBatch.ingredient)
     var batches: [IngredientBatch] = []

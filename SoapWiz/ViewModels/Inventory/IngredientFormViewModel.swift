@@ -9,6 +9,16 @@ final class IngredientFormViewModel {
     var selectedUnit: IngredientUnit?
     var selectedCategory: IngredientCategory?
     var lowStockThreshold: String = ""
+    var sapValue: String = ""
+    var density: String = ""
+
+    var showsSapValue: Bool {
+        selectedCategory?.showsSapValue ?? false
+    }
+
+    var showsDensity: Bool {
+        selectedUnit == .milliliters || selectedUnit == .liters
+    }
 
     private(set) var codeIsManuallyEdited: Bool = false
 
@@ -23,6 +33,12 @@ final class IngredientFormViewModel {
             selectedCategory = ingredient.category
             if let threshold = ingredient.lowStockThreshold {
                 lowStockThreshold = threshold.formatted(.number.precision(.fractionLength(0...2)).grouping(.never))
+            }
+            if let sap = ingredient.sapValue {
+                sapValue = sap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
+            }
+            if let dens = ingredient.density {
+                density = dens.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
             }
         }
     }
@@ -85,6 +101,8 @@ final class IngredientFormViewModel {
     @discardableResult
     func save(context: ModelContext) -> Ingredient? {
         let parsedThreshold = Double(lowStockThreshold.replacingOccurrences(of: ",", with: "."))
+        let parsedSap = Double(sapValue.replacingOccurrences(of: ",", with: "."))
+        let parsedDensity = Double(density.replacingOccurrences(of: ",", with: "."))
         let savedCode = trimmedCode
         if let ingredient {
             ingredient.name = trimmedName
@@ -92,11 +110,15 @@ final class IngredientFormViewModel {
             ingredient.category = selectedCategory
             ingredient.unit = selectedUnit?.rawValue ?? ""
             ingredient.lowStockThreshold = parsedThreshold
+            ingredient.sapValue = showsSapValue ? parsedSap : nil
+            ingredient.density = showsDensity ? parsedDensity : nil
             return nil
         } else {
             let newIngredient = Ingredient(name: trimmedName, category: selectedCategory, unit: selectedUnit?.rawValue ?? "")
             newIngredient.code = savedCode
             newIngredient.lowStockThreshold = parsedThreshold
+            newIngredient.sapValue = showsSapValue ? parsedSap : nil
+            newIngredient.density = showsDensity ? parsedDensity : nil
             context.insert(newIngredient)
             return newIngredient
         }
