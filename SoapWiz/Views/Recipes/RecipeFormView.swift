@@ -161,10 +161,9 @@ private extension RecipeFormView {
                 Text(":")
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 4)
-                TextField("1", text: $model.lyeParts)
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.center)
-                    .frame(width: 30)
+                Text("1")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 30, alignment: .center)
             }
             HStack {
                 Text("Super Fat")
