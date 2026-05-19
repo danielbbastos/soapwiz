@@ -6,7 +6,7 @@ import SwiftData
 final class IngredientFormViewModel {
     var name: String = ""
     var code: String = ""
-    var selectedUnit: QuantityUnit?
+    var selectedUnit: IngredientUnit?
     var selectedCategory: IngredientCategory?
     var lowStockThreshold: String = ""
 
@@ -19,7 +19,7 @@ final class IngredientFormViewModel {
         if let ingredient {
             name = ingredient.name
             code = ingredient.code
-            selectedUnit = ingredient.unit
+            selectedUnit = IngredientUnit(rawValue: ingredient.unit)
             selectedCategory = ingredient.category
             if let threshold = ingredient.lowStockThreshold {
                 lowStockThreshold = threshold.formatted(.number.precision(.fractionLength(0...2)).grouping(.never))
@@ -33,7 +33,7 @@ final class IngredientFormViewModel {
 
     var isValid: Bool {
         guard !trimmedName.isEmpty else { return false }
-        guard selectedUnit != nil || (isEditing && ingredient?.unit == nil) else { return false }
+        guard selectedUnit != nil || (isEditing && ingredient?.unit.isEmpty ?? false) else { return false }
         let c = trimmedCode
         if !c.isEmpty && c.count < 3 { return false }
         return true
@@ -90,11 +90,11 @@ final class IngredientFormViewModel {
             ingredient.name = trimmedName
             ingredient.code = savedCode
             ingredient.category = selectedCategory
-            ingredient.unit = selectedUnit
+            ingredient.unit = selectedUnit?.rawValue ?? ""
             ingredient.lowStockThreshold = parsedThreshold
             return nil
         } else {
-            let newIngredient = Ingredient(name: trimmedName, category: selectedCategory, unit: selectedUnit)
+            let newIngredient = Ingredient(name: trimmedName, category: selectedCategory, unit: selectedUnit?.rawValue ?? "")
             newIngredient.code = savedCode
             newIngredient.lowStockThreshold = parsedThreshold
             context.insert(newIngredient)

@@ -12,7 +12,7 @@ struct BatchDetailView: View {
         _model = State(initialValue: BatchDetailViewModel(batch: batch))
     }
 
-    private var unit: String { batch.ingredient?.unit?.symbol ?? "" }
+    private var unit: String { batch.ingredient?.unit ?? "" }
 
     var body: some View {
         List {

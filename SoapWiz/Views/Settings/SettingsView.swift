@@ -5,7 +5,6 @@ struct SettingsView: View {
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
     @Query private var providers: [Provider]
-    @Query private var units: [QuantityUnit]
 
     var body: some View {
         NavigationStack {
@@ -19,9 +18,6 @@ struct SettingsView: View {
                     }
                     NavigationLink(destination: ProviderListView()) {
                         LabeledContent("Providers", value: "\(providers.count)")
-                    }
-                    NavigationLink(destination: QuantityUnitListView()) {
-                        LabeledContent("Quantity Units", value: "\(units.count)")
                     }
                 }
             }

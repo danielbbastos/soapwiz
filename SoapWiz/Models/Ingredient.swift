@@ -6,7 +6,7 @@ final class Ingredient {
     var name: String
     var code: String = ""
     var category: IngredientCategory?
-    var unit: QuantityUnit?
+    var unit: String
 
     var lowStockThreshold: Double?
 
@@ -39,7 +39,7 @@ final class Ingredient {
             .min()
     }
 
-    init(name: String, category: IngredientCategory? = nil, unit: QuantityUnit? = nil) {
+    init(name: String, category: IngredientCategory? = nil, unit: String = "") {
         self.name = name
         self.category = category
         self.unit = unit
