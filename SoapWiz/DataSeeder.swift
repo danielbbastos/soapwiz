@@ -2,30 +2,10 @@ import Foundation
 import SwiftData
 
 struct DataSeeder {
-    struct QuantityUnitSeed: Decodable {
-        let name: String
-        let symbol: String
-    }
-
     static func seed(into context: ModelContext) {
-        guard
-            let url = Bundle.main.url(forResource: "DefaultQuantityUnits", withExtension: "json"),
-            let data = try? Data(contentsOf: url),
-            let seeds = try? JSONDecoder().decode([QuantityUnitSeed].self, from: data)
-        else { return }
-
-        seedQuantityUnits(seeds, into: context)
-
         #if DEBUG
         seedTestIngredients(into: context)
         #endif
-    }
-
-    static func seedQuantityUnits(_ seeds: [QuantityUnitSeed], into context: ModelContext) {
-        guard let count = try? context.fetchCount(FetchDescriptor<QuantityUnit>()), count == 0 else { return }
-        for seed in seeds {
-            context.insert(QuantityUnit(name: seed.name, symbol: seed.symbol))
-        }
     }
 }
 
@@ -92,14 +72,14 @@ extension DataSeeder {
             storageMap[name] = loc
         }
 
-        let units = (try? context.fetch(FetchDescriptor<QuantityUnit>())) ?? []
-        let unitMap = Dictionary(uniqueKeysWithValues: units.map { ($0.symbol, $0) })
-
         for ingredientSeed in seed.ingredients {
+            let unitRaw = IngredientUnit.allCases
+                .first { $0.rawValue.lowercased() == ingredientSeed.unit.lowercased() }?.rawValue
+                ?? ingredientSeed.unit
             let ingredient = Ingredient(
                 name: ingredientSeed.name,
                 category: categoryMap[ingredientSeed.category],
-                unit: unitMap[ingredientSeed.unit]
+                unit: unitRaw
             )
             context.insert(ingredient)
 

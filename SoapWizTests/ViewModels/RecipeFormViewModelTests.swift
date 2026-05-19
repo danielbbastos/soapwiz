@@ -8,7 +8,7 @@ import SwiftData
 struct RecipeFormViewModelTests {
 
     private func makeContext() throws -> (ModelContainer, ModelContext) {
-        let schema = Schema([Recipe.self, RecipeIngredient.self, RecipeProduct.self, Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self])
+        let schema = Schema([Recipe.self, RecipeIngredient.self, RecipeProduct.self, Ingredient.self, IngredientBatch.self, IngredientCategory.self])
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
         return (container, container.mainContext)
     }
@@ -48,9 +48,7 @@ struct RecipeFormViewModelTests {
     @Test func addIngredientPreventsDuplicates() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let unit = QuantityUnit(name: "g", symbol: "g")
-        ctx.insert(unit)
-        let ingredient = Ingredient(name: "Shea Butter", unit: unit)
+        let ingredient = Ingredient(name: "Shea Butter", unit: "g")
         ctx.insert(ingredient)
 
         let model = RecipeFormViewModel()
@@ -63,9 +61,7 @@ struct RecipeFormViewModelTests {
     @Test func saveInsertsRecipeIngredients() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let unit = QuantityUnit(name: "g", symbol: "g")
-        ctx.insert(unit)
-        let ingredient = Ingredient(name: "Coconut Oil", unit: unit)
+        let ingredient = Ingredient(name: "Coconut Oil", unit: "g")
         ctx.insert(ingredient)
 
         let model = RecipeFormViewModel()
@@ -84,9 +80,7 @@ struct RecipeFormViewModelTests {
     @Test func saveConvertsCommaDecimalSeparator() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let unit = QuantityUnit(name: "g", symbol: "g")
-        ctx.insert(unit)
-        let ingredient = Ingredient(name: "Olive Oil", unit: unit)
+        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
         ctx.insert(ingredient)
 
         let model = RecipeFormViewModel()
@@ -249,9 +243,7 @@ struct RecipeFormViewModelTests {
     @Test func load_PopulatesIngredientDrafts() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let unit = QuantityUnit(name: "g", symbol: "g")
-        ctx.insert(unit)
-        let ingredient = Ingredient(name: "Coconut Oil", unit: unit)
+        let ingredient = Ingredient(name: "Coconut Oil", unit: "g")
         ctx.insert(ingredient)
         let recipe = Recipe(name: "Test", desc: "")
         ctx.insert(recipe)
@@ -288,11 +280,9 @@ struct RecipeFormViewModelTests {
     @Test func save_EditMode_ReplacesOldIngredients() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let unit = QuantityUnit(name: "g", symbol: "g")
-        ctx.insert(unit)
-        let ing1 = Ingredient(name: "Coconut Oil", unit: unit)
+        let ing1 = Ingredient(name: "Coconut Oil", unit: "g")
         ctx.insert(ing1)
-        let ing2 = Ingredient(name: "Olive Oil", unit: unit)
+        let ing2 = Ingredient(name: "Olive Oil", unit: "g")
         ctx.insert(ing2)
         let recipe = Recipe(name: "Test", desc: "")
         ctx.insert(recipe)

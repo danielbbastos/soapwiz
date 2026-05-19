@@ -8,7 +8,7 @@ import SwiftData
 struct BatchDetailViewModelTests {
 
     private func makeContext() throws -> (ModelContainer, ModelContext) {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
         return (container, container.mainContext)
     }

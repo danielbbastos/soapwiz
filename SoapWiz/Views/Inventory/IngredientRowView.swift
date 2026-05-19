@@ -62,7 +62,7 @@ struct IngredientRowView: View {
                         }
                     }
                 }
-                Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit?.symbol ?? "")")
+                Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
                     .font(.subheadline)
                     .foregroundStyle(ingredient.totalRemaining > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
             }

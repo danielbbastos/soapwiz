@@ -5,8 +5,6 @@ struct InventoryFilterView: View {
     @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
-    @Query(sort: \QuantityUnit.name) private var units: [QuantityUnit]
-
     @Bindable var model: IngredientListViewModel
 
     private var categoryLabel: String {
@@ -23,8 +21,7 @@ struct InventoryFilterView: View {
         switch model.selectedUnits.count {
         case 0: return "All"
         case 1:
-            return units.first { model.selectedUnits.contains($0.persistentModelID) }
-                .map { "\($0.name) (\($0.symbol))" } ?? "1 selected"
+            return model.selectedUnits.first.map { "\($0.label) (\($0.rawValue))" } ?? "1 selected"
         default:
             return "\(model.selectedUnits.count) selected"
         }
@@ -63,23 +60,20 @@ struct InventoryFilterView: View {
                 }
                 .pickerStyle(.menu)
 
-                if !units.isEmpty {
-                    LabeledContent("Unit Type") {
-                        Menu(unitLabel) {
-                            ForEach(units) { unit in
-                                let id = unit.persistentModelID
-                                Button {
-                                    if model.selectedUnits.contains(id) {
-                                        model.selectedUnits.remove(id)
-                                    } else {
-                                        model.selectedUnits.insert(id)
-                                    }
-                                } label: {
-                                    if model.selectedUnits.contains(id) {
-                                        Label("\(unit.name) (\(unit.symbol))", systemImage: "checkmark")
-                                    } else {
-                                        Text("\(unit.name) (\(unit.symbol))")
-                                    }
+                LabeledContent("Unit Type") {
+                    Menu(unitLabel) {
+                        ForEach(IngredientUnit.allCases, id: \.self) { unit in
+                            Button {
+                                if model.selectedUnits.contains(unit) {
+                                    model.selectedUnits.remove(unit)
+                                } else {
+                                    model.selectedUnits.insert(unit)
+                                }
+                            } label: {
+                                if model.selectedUnits.contains(unit) {
+                                    Label("\(unit.label) (\(unit.rawValue))", systemImage: "checkmark")
+                                } else {
+                                    Text("\(unit.label) (\(unit.rawValue))")
                                 }
                             }
                         }

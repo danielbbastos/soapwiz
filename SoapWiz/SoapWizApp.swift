@@ -19,7 +19,6 @@ struct SoapWizApp: App {
             Ingredient.self,
             IngredientBatch.self,
             IngredientCategory.self,
-            QuantityUnit.self,
             StorageLocation.self,
             Provider.self,
             Recipe.self,

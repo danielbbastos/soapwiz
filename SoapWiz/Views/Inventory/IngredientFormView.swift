@@ -6,7 +6,6 @@ struct IngredientFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
-    @Query(sort: \QuantityUnit.name) private var units: [QuantityUnit]
     @Query private var allIngredients: [Ingredient]
 
     @State private var model: IngredientFormViewModel
@@ -40,9 +39,9 @@ struct IngredientFormView: View {
                         }
                     }
                     Picker("Unit", selection: $model.selectedUnit) {
-                        Text("None").tag(Optional<QuantityUnit>.none)
-                        ForEach(units) { unit in
-                            Text("\(unit.name) (\(unit.symbol))").tag(Optional(unit))
+                        Text("None").tag(Optional<IngredientUnit>.none)
+                        ForEach(IngredientUnit.allCases, id: \.self) { unit in
+                            Text("\(unit.label) (\(unit.rawValue))").tag(Optional(unit))
                         }
                     }
                 }
@@ -51,7 +50,7 @@ struct IngredientFormView: View {
                     HStack {
                         TextField("Low Stock Threshold", text: $model.lowStockThreshold)
                             .keyboardType(.decimalPad)
-                        if let symbol = model.selectedUnit?.symbol {
+                        if let symbol = model.selectedUnit?.rawValue {
                             Text(symbol)
                                 .foregroundStyle(.secondary)
                         }

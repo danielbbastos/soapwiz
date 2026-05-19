@@ -1,11 +1,10 @@
 import SwiftUI
-import SwiftData
 
 struct RecipeProductCardView: View {
     @Binding var draft: RecipeProductDraft
     let breakdown: [IngredientProductBreakdown]
     let totalCost: Double
-    let availableUnits: [QuantityUnit]
+    let availableUnits: [IngredientUnit]
 
     private static let amountFormatter: NumberFormatter = {
         let f = NumberFormatter()
@@ -31,8 +30,8 @@ struct RecipeProductCardView: View {
                     .frame(width: 70)
 
                 Picker("Unit", selection: $draft.unitSymbol) {
-                    ForEach(availableUnits, id: \.symbol) { unit in
-                        Text(unit.symbol).tag(unit.symbol)
+                    ForEach(availableUnits, id: \.rawValue) { unit in
+                        Text(unit.rawValue).tag(unit.rawValue)
                     }
                 }
                 .pickerStyle(.menu)

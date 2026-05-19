@@ -8,7 +8,7 @@ import SwiftData
 struct IngredientFormViewModelTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
         return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
     }
 
@@ -17,29 +17,19 @@ struct IngredientFormViewModelTests {
         #expect(!model.isValid)
     }
 
-    @Test func requiresNameAndUnit() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        let gram = QuantityUnit(name: "Gram", symbol: "g")
-        ctx.insert(gram)
-
+    @Test func requiresNameAndUnit() {
         let model = IngredientFormViewModel()
         #expect(!model.isValid)
         model.name = "Olive Oil"
         #expect(!model.isValid)
-        model.selectedUnit = gram
+        model.selectedUnit = .grams
         #expect(model.isValid)
     }
 
-    @Test func whitespaceOnlyNameInvalid() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        let gram = QuantityUnit(name: "Gram", symbol: "g")
-        ctx.insert(gram)
-
+    @Test func whitespaceOnlyNameInvalid() {
         let model = IngredientFormViewModel()
         model.name = "   "
-        model.selectedUnit = gram
+        model.selectedUnit = .grams
         #expect(!model.isValid)
     }
 
@@ -48,19 +38,17 @@ struct IngredientFormViewModelTests {
         let ctx = container.mainContext
         let cat = IngredientCategory(name: "Oils")
         ctx.insert(cat)
-        let gram = QuantityUnit(name: "Gram", symbol: "g")
-        ctx.insert(gram)
 
         let model = IngredientFormViewModel()
         model.name = "  Olive Oil  "
-        model.selectedUnit = gram
+        model.selectedUnit = .grams
         model.selectedCategory = cat
         let returned = model.save(context: ctx)
         try ctx.save()
 
         let fetched = try ctx.fetch(FetchDescriptor<Ingredient>())
         #expect(fetched.first?.name == "Olive Oil")
-        #expect(fetched.first?.unit === gram)
+        #expect(fetched.first?.unit == "g")
         #expect(fetched.first?.category === cat)
         #expect(returned === fetched.first)
     }
@@ -81,12 +69,10 @@ struct IngredientFormViewModelTests {
     @Test func saveStoresThreshold() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let gram = QuantityUnit(name: "Gram", symbol: "g")
-        ctx.insert(gram)
 
         let model = IngredientFormViewModel()
         model.name = "Olive Oil"
-        model.selectedUnit = gram
+        model.selectedUnit = .grams
         model.lowStockThreshold = "100"
         let ingredient = model.save(context: ctx)
         #expect(ingredient?.lowStockThreshold == 100)
@@ -198,41 +184,26 @@ struct IngredientFormViewModelTests {
 
     // MARK: - Code validation
 
-    @Test func isValid_EmptyCode_DoesNotBlockSave() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        let gram = QuantityUnit(name: "Gram", symbol: "g")
-        ctx.insert(gram)
-
+    @Test func isValid_EmptyCode_DoesNotBlockSave() {
         let model = IngredientFormViewModel()
         model.name = "Olive Oil"
-        model.selectedUnit = gram
+        model.selectedUnit = .grams
         model.code = ""
         #expect(model.isValid)
     }
 
-    @Test func isValid_CodeTwoChars_Invalid() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        let gram = QuantityUnit(name: "Gram", symbol: "g")
-        ctx.insert(gram)
-
+    @Test func isValid_CodeTwoChars_Invalid() {
         let model = IngredientFormViewModel()
         model.name = "Olive Oil"
-        model.selectedUnit = gram
+        model.selectedUnit = .grams
         model.code = "OO"
         #expect(!model.isValid)
     }
 
-    @Test func isValid_CodeThreeChars_Valid() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        let gram = QuantityUnit(name: "Gram", symbol: "g")
-        ctx.insert(gram)
-
+    @Test func isValid_CodeThreeChars_Valid() {
         let model = IngredientFormViewModel()
         model.name = "Olive Oil"
-        model.selectedUnit = gram
+        model.selectedUnit = .grams
         model.code = "OOI"
         #expect(model.isValid)
     }
@@ -301,12 +272,10 @@ struct IngredientFormViewModelTests {
     @Test func save_PersistsCodeUppercasedAndTrimmed() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let gram = QuantityUnit(name: "Gram", symbol: "g")
-        ctx.insert(gram)
 
         let model = IngredientFormViewModel()
         model.name = "Olive Oil"
-        model.selectedUnit = gram
+        model.selectedUnit = .grams
         model.code = " ooi "
         model.save(context: ctx)
         try ctx.save()

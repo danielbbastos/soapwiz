@@ -16,8 +16,6 @@ struct RecipeFormView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    @Query(sort: \QuantityUnit.name) private var quantityUnits: [QuantityUnit]
-
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
     @State private var showingPicker = false
@@ -229,14 +227,13 @@ private extension RecipeFormView {
                                         draft: $draft,
                                         breakdown: result.breakdown,
                                         totalCost: result.total,
-                                        availableUnits: quantityUnits
+                                        availableUnits: IngredientUnit.allCases
                                     )
                                     .containerRelativeFrame(.horizontal)
                                     .id(draft.id)
                                 }
                                 AddProductCardView {
-                                    let symbol = quantityUnits.first?.symbol ?? ""
-                                    model.addProduct(defaultUnitSymbol: symbol)
+                                    model.addProduct(defaultUnitSymbol: IngredientUnit.grams.rawValue)
                                     if let newID = model.productDrafts.last?.id {
                                         withAnimation { proxy.scrollTo(newID) }
                                     }

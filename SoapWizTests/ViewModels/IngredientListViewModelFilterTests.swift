@@ -9,7 +9,7 @@ import SwiftUI
 struct IngredientListViewModelFilterTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
         return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
     }
 
@@ -183,16 +183,13 @@ struct IngredientListViewModelFilterTests {
     @Test func unitFilterIncludesMatchingIngredients() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let grams = QuantityUnit(name: "Grams", symbol: "g")
-        let millilitres = QuantityUnit(name: "Millilitres", symbol: "ml")
-        ctx.insert(grams); ctx.insert(millilitres)
-        let olive = Ingredient(name: "Olive Oil", unit: grams)
-        let water = Ingredient(name: "Water", unit: millilitres)
+        let olive = Ingredient(name: "Olive Oil", unit: "g")
+        let water = Ingredient(name: "Water", unit: "ml")
         ctx.insert(olive); ctx.insert(water)
         try ctx.save()
 
         let model = IngredientListViewModel()
-        model.selectedUnits = [grams.persistentModelID]
+        model.selectedUnits = [.grams]
         let results = model.filtered([olive, water])
         #expect(results.count == 1)
         #expect(results.first?.name == "Olive Oil")

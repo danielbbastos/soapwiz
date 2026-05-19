@@ -33,7 +33,7 @@ final class IngredientListViewModel {
     var searchText: String = ""
     var selectedCategories: Set<PersistentIdentifier> = []
     var stockStatus: StockStatusFilter = .all
-    var selectedUnits: Set<PersistentIdentifier> = []
+    var selectedUnits: Set<IngredientUnit> = []
     var expiryFilter: ExpiryFilter = .all
 
     var hasActiveFilters: Bool { activeFilterCount > 0 }
@@ -69,7 +69,7 @@ final class IngredientListViewModel {
             }
 
             let matchesUnit = selectedUnits.isEmpty ||
-                (ingredient.unit.map { selectedUnits.contains($0.persistentModelID) } ?? false)
+                selectedUnits.contains(where: { $0.rawValue == ingredient.unit })
 
             let matchesExpiry: Bool
             switch expiryFilter {
