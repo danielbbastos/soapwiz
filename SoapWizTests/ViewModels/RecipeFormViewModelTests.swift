@@ -45,17 +45,17 @@ struct RecipeFormViewModelTests {
         #expect(all.count == 1)
     }
 
-    @Test func addIngredientPreventsDuplicates() throws {
+    @Test func addOilPreventsDuplicates() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let ingredient = Ingredient(name: "Shea Butter", unit: "g")
         ctx.insert(ingredient)
 
         let model = RecipeFormViewModel()
-        model.addIngredient(ingredient)
-        model.addIngredient(ingredient)
+        model.addOil(ingredient)
+        model.addOil(ingredient)
 
-        #expect(model.ingredientDrafts.count == 1)
+        #expect(model.oilDrafts.count == 1)
     }
 
     @Test func saveInsertsRecipeIngredients() throws {
@@ -66,8 +66,8 @@ struct RecipeFormViewModelTests {
 
         let model = RecipeFormViewModel()
         model.name = "Test Recipe"
-        model.addIngredient(ingredient)
-        model.ingredientDrafts[0].percentage = "45"
+        model.addOil(ingredient)
+        model.oilDrafts[0].percentage = "45"
 
         let recipe = model.save(context: ctx)
 
@@ -85,8 +85,8 @@ struct RecipeFormViewModelTests {
 
         let model = RecipeFormViewModel()
         model.name = "Test Recipe"
-        model.addIngredient(ingredient)
-        model.ingredientDrafts[0].percentage = "33,5"
+        model.addOil(ingredient)
+        model.oilDrafts[0].percentage = "33,5"
 
         let recipe = model.save(context: ctx)
 
@@ -95,89 +95,89 @@ struct RecipeFormViewModelTests {
 
     // MARK: - Percentage distribution
 
-    @Test func addIngredient_First_Gets100Percent() {
+    @Test func addOil_First_Gets100Percent() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "Coconut Oil"))
-        #expect(model.ingredientDrafts[0].percentage == model.formatPercentage(100))
+        model.addOil(Ingredient(name: "Coconut Oil"))
+        #expect(model.oilDrafts[0].percentage == model.formatPercentage(100))
     }
 
-    @Test func addIngredient_Second_SplitsEqually() {
+    @Test func addOil_Second_SplitsEqually() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "Coconut Oil"))
-        model.addIngredient(Ingredient(name: "Olive Oil"))
-        #expect(model.ingredientDrafts[0].percentage == model.formatPercentage(50))
-        #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(50))
+        model.addOil(Ingredient(name: "Coconut Oil"))
+        model.addOil(Ingredient(name: "Olive Oil"))
+        #expect(model.oilDrafts[0].percentage == model.formatPercentage(50))
+        #expect(model.oilDrafts[1].percentage == model.formatPercentage(50))
     }
 
-    @Test func addIngredient_Third_SplitsEqually() {
+    @Test func addOil_Third_SplitsEqually() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "A"))
-        model.addIngredient(Ingredient(name: "B"))
-        model.addIngredient(Ingredient(name: "C"))
+        model.addOil(Ingredient(name: "A"))
+        model.addOil(Ingredient(name: "B"))
+        model.addOil(Ingredient(name: "C"))
         let share = model.formatPercentage(100.0 / 3.0)
-        #expect(model.ingredientDrafts[0].percentage == share)
-        #expect(model.ingredientDrafts[1].percentage == share)
+        #expect(model.oilDrafts[0].percentage == share)
+        #expect(model.oilDrafts[1].percentage == share)
         #expect(abs(model.totalPercentage - 100) < 0.1) // last ingredient absorbs rounding
     }
 
     @Test func userEdited_Locks_OtherIngredientsRedistribute() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "A"))
-        model.addIngredient(Ingredient(name: "B"))
+        model.addOil(Ingredient(name: "A"))
+        model.addOil(Ingredient(name: "B"))
 
-        let id = model.ingredientDrafts[0].id
+        let id = model.oilDrafts[0].id
         model.userEdited(id: id, percentage: "60")
 
-        #expect(model.ingredientDrafts[0].percentage == "60")
-        #expect(model.ingredientDrafts[0].isLocked == true)
-        #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(40))
-        #expect(model.ingredientDrafts[1].isLocked == false)
+        #expect(model.oilDrafts[0].percentage == "60")
+        #expect(model.oilDrafts[0].isLocked == true)
+        #expect(model.oilDrafts[1].percentage == model.formatPercentage(40))
+        #expect(model.oilDrafts[1].isLocked == false)
     }
 
-    @Test func addIngredient_AfterLock_DistributesRemainingToUnlocked() {
+    @Test func addOil_AfterLock_DistributesRemainingToUnlocked() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "A"))
-        model.addIngredient(Ingredient(name: "B"))
-        model.userEdited(id: model.ingredientDrafts[0].id, percentage: "60")
+        model.addOil(Ingredient(name: "A"))
+        model.addOil(Ingredient(name: "B"))
+        model.userEdited(id: model.oilDrafts[0].id, percentage: "60")
 
-        model.addIngredient(Ingredient(name: "C"))
+        model.addOil(Ingredient(name: "C"))
 
-        #expect(model.ingredientDrafts[0].percentage == "60")
-        #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(20))
-        #expect(model.ingredientDrafts[2].percentage == model.formatPercentage(20))
+        #expect(model.oilDrafts[0].percentage == "60")
+        #expect(model.oilDrafts[1].percentage == model.formatPercentage(20))
+        #expect(model.oilDrafts[2].percentage == model.formatPercentage(20))
     }
 
-    @Test func removeIngredient_Redistributes() {
+    @Test func removeOil_Redistributes() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "A"))
-        model.addIngredient(Ingredient(name: "B"))
-        model.addIngredient(Ingredient(name: "C"))
+        model.addOil(Ingredient(name: "A"))
+        model.addOil(Ingredient(name: "B"))
+        model.addOil(Ingredient(name: "C"))
 
-        model.removeIngredient(at: IndexSet(integer: 2))
+        model.removeOil(at: IndexSet(integer: 2))
 
-        #expect(model.ingredientDrafts[0].percentage == model.formatPercentage(50))
-        #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(50))
+        #expect(model.oilDrafts[0].percentage == model.formatPercentage(50))
+        #expect(model.oilDrafts[1].percentage == model.formatPercentage(50))
     }
 
-    @Test func removeIngredient_AllRemainingLocked_TotalsUnchanged() {
+    @Test func removeOil_AllRemainingLocked_TotalsUnchanged() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "A"))
-        model.addIngredient(Ingredient(name: "B"))
-        model.addIngredient(Ingredient(name: "C"))
-        model.userEdited(id: model.ingredientDrafts[0].id, percentage: "60")
-        model.userEdited(id: model.ingredientDrafts[1].id, percentage: "40")
+        model.addOil(Ingredient(name: "A"))
+        model.addOil(Ingredient(name: "B"))
+        model.addOil(Ingredient(name: "C"))
+        model.userEdited(id: model.oilDrafts[0].id, percentage: "60")
+        model.userEdited(id: model.oilDrafts[1].id, percentage: "40")
 
-        model.removeIngredient(at: IndexSet(integer: 2))
+        model.removeOil(at: IndexSet(integer: 2))
 
-        #expect(model.ingredientDrafts[0].percentage == "60")
-        #expect(model.ingredientDrafts[1].percentage == "40")
+        #expect(model.oilDrafts[0].percentage == "60")
+        #expect(model.oilDrafts[1].percentage == "40")
         #expect(abs(model.totalPercentage - 100) < 0.1)
     }
 
     @Test func totalPercentage_SumsAllDrafts() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "A"))
-        model.addIngredient(Ingredient(name: "B"))
+        model.addOil(Ingredient(name: "A"))
+        model.addOil(Ingredient(name: "B"))
         #expect(model.totalPercentage == 100)
     }
 
@@ -186,15 +186,15 @@ struct RecipeFormViewModelTests {
         #expect(model.totalPercentage == 0)
     }
 
-    @Test func addIngredient_WhenLockedSumExceeds100_GetsZero() {
+    @Test func addOil_WhenLockedSumExceeds100_GetsZero() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "A"))
-        model.userEdited(id: model.ingredientDrafts[0].id, percentage: "100")
+        model.addOil(Ingredient(name: "A"))
+        model.userEdited(id: model.oilDrafts[0].id, percentage: "100")
 
-        model.addIngredient(Ingredient(name: "B"))
+        model.addOil(Ingredient(name: "B"))
 
-        #expect(model.ingredientDrafts[0].percentage == "100")
-        #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(0))
+        #expect(model.oilDrafts[0].percentage == "100")
+        #expect(model.oilDrafts[1].percentage == model.formatPercentage(0))
     }
 
     // MARK: - Edit mode
@@ -254,9 +254,9 @@ struct RecipeFormViewModelTests {
         let model = RecipeFormViewModel()
         model.load(from: recipe)
 
-        #expect(model.ingredientDrafts.count == 1)
-        #expect(model.ingredientDrafts[0].ingredient.name == "Coconut Oil")
-        #expect(Double(model.ingredientDrafts[0].percentage.replacingOccurrences(of: ",", with: ".")) == 75)
+        #expect(model.oilDrafts.count == 1)
+        #expect(model.oilDrafts[0].ingredient.name == "Coconut Oil")
+        #expect(Double(model.oilDrafts[0].percentage.replacingOccurrences(of: ",", with: ".")) == 75)
     }
 
     @Test func save_EditMode_UpdatesInPlace_RecipeCountStaysOne() throws {
@@ -292,8 +292,8 @@ struct RecipeFormViewModelTests {
 
         let model = RecipeFormViewModel()
         model.load(from: recipe)
-        model.removeIngredient(at: IndexSet(integer: 0))
-        model.addIngredient(ing2)
+        model.removeOil(at: IndexSet(integer: 0))
+        model.addOil(ing2)
         model.save(context: ctx)
 
         let allRecipes = try ctx.fetch(FetchDescriptor<Recipe>())
@@ -317,7 +317,7 @@ struct RecipeFormViewModelTests {
 
     @Test func breakdownAndCost_ZeroSize_AllAmountsZero() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "Olive Oil"))
+        model.addOil(Ingredient(name: "Olive Oil"))
         var draft = RecipeProductDraft(unitSymbol: "g")
         draft.size = "0"
 
@@ -330,7 +330,7 @@ struct RecipeFormViewModelTests {
 
     @Test func breakdownAndCost_NoBatches_AmountsComputedCostZero() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "Olive Oil"))
+        model.addOil(Ingredient(name: "Olive Oil"))
         var draft = RecipeProductDraft(unitSymbol: "g")
         draft.size = "100"
 
@@ -352,7 +352,7 @@ struct RecipeFormViewModelTests {
         ctx.insert(batch)
 
         let model = RecipeFormViewModel()
-        model.addIngredient(ingredient)
+        model.addOil(ingredient)
         var draft = RecipeProductDraft(unitSymbol: "g")
         draft.size = "100"
 
@@ -377,7 +377,7 @@ struct RecipeFormViewModelTests {
         ctx.insert(batch2)
 
         let model = RecipeFormViewModel()
-        model.addIngredient(ingredient)
+        model.addOil(ingredient)
         var draft = RecipeProductDraft(unitSymbol: "g")
         draft.size = "100"
 
@@ -405,8 +405,8 @@ struct RecipeFormViewModelTests {
         ctx.insert(b2)
 
         let model = RecipeFormViewModel()
-        model.addIngredient(ing1)
-        model.addIngredient(ing2) // each gets 50%
+        model.addOil(ing1)
+        model.addOil(ing2) // each gets 50%
         var draft = RecipeProductDraft(unitSymbol: "g")
         draft.size = "200"
 
@@ -420,7 +420,7 @@ struct RecipeFormViewModelTests {
 
     @Test func breakdownAndCost_CommaDecimalSize_ParsesCorrectly() {
         let model = RecipeFormViewModel()
-        model.addIngredient(Ingredient(name: "Olive Oil"))
+        model.addOil(Ingredient(name: "Olive Oil"))
         var draft = RecipeProductDraft(unitSymbol: "g")
         draft.size = "100,5"
 
