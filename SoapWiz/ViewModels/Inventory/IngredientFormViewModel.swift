@@ -112,15 +112,15 @@ final class IngredientFormViewModel {
             ingredient.category = selectedCategory
             ingredient.unit = selectedUnit?.rawValue ?? ""
             ingredient.lowStockThreshold = parsedThreshold
-            ingredient.sapValue = parsedSap
-            ingredient.density = parsedDensity
+            ingredient.sapValue = showsSapValue ? parsedSap : nil
+            ingredient.density = showsDensity ? parsedDensity : nil
             return nil
         } else {
             let newIngredient = Ingredient(name: trimmedName, category: selectedCategory, unit: selectedUnit?.rawValue ?? "")
             newIngredient.code = savedCode
             newIngredient.lowStockThreshold = parsedThreshold
-            newIngredient.sapValue = parsedSap
-            newIngredient.density = parsedDensity
+            newIngredient.sapValue = showsSapValue ? parsedSap : nil
+            newIngredient.density = showsDensity ? parsedDensity : nil
             context.insert(newIngredient)
             return newIngredient
         }

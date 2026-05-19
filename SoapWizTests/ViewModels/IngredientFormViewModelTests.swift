@@ -442,4 +442,37 @@ struct IngredientFormViewModelTests {
         let model = IngredientFormViewModel(ingredient: existing)
         #expect(model.code == "OOI")
     }
+
+    @Test func save_CategoryChangedFromOilToAdditive_ClearsSapValue() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let oilsCategory = IngredientCategory(name: "Oils")
+        let additivesCategory = IngredientCategory(name: "Additives")
+        ctx.insert(oilsCategory)
+        ctx.insert(additivesCategory)
+        let existing = Ingredient(name: "Olive Oil")
+        existing.category = oilsCategory
+        existing.sapValue = 0.134
+        ctx.insert(existing)
+
+        let model = IngredientFormViewModel(ingredient: existing)
+        model.selectedCategory = additivesCategory
+        model.save(context: ctx)
+
+        #expect(existing.sapValue == nil)
+    }
+
+    @Test func save_UnitChangedFromMlToG_ClearsDensity() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = Ingredient(name: "Avocado Oil", unit: "ml")
+        existing.density = 0.914
+        ctx.insert(existing)
+
+        let model = IngredientFormViewModel(ingredient: existing)
+        model.selectedUnit = .grams
+        model.save(context: ctx)
+
+        #expect(existing.density == nil)
+    }
 }
