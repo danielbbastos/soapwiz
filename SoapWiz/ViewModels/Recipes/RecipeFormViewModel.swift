@@ -8,11 +8,24 @@ struct RecipeIngredientDraft: Identifiable {
     var isLocked: Bool = false
 }
 
+struct RecipeProductDraft: Identifiable {
+    let id = UUID()
+    var size: String = ""
+    var unitSymbol: String = ""
+}
+
+struct IngredientProductBreakdown {
+    let ingredient: Ingredient
+    let ingredientAmount: Double
+    let cost: Double
+}
+
 @Observable
 final class RecipeFormViewModel {
     var name: String = ""
     var desc: String = ""
     var ingredientDrafts: [RecipeIngredientDraft] = []
+    var productDrafts: [RecipeProductDraft] = []
 
     var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -42,6 +55,33 @@ final class RecipeFormViewModel {
         ingredientDrafts[idx].percentage = percentage
         ingredientDrafts[idx].isLocked = true
         redistributePercentages()
+    }
+
+    func addProduct(defaultUnitSymbol: String) {
+        productDrafts.append(RecipeProductDraft(unitSymbol: defaultUnitSymbol))
+    }
+
+    func breakdownAndCost(for product: RecipeProductDraft) -> (breakdown: [IngredientProductBreakdown], total: Double) {
+        let size = Double(product.size.replacingOccurrences(of: ",", with: ".")) ?? 0
+        let breakdown = ingredientDrafts.map { draft in
+            let pct = Double(draft.percentage.replacingOccurrences(of: ",", with: ".")) ?? 0
+            let ingredientAmount = size * (pct / 100)
+            let costPer = weightedCostPerUnit(for: draft.ingredient)
+            return IngredientProductBreakdown(
+                ingredient: draft.ingredient,
+                ingredientAmount: ingredientAmount,
+                cost: ingredientAmount * costPer
+            )
+        }
+        return (breakdown, breakdown.reduce(0) { $0 + $1.cost })
+    }
+
+    private func weightedCostPerUnit(for ingredient: Ingredient) -> Double {
+        let batches = ingredient.batches.filter { $0.quantity > 0 }
+        guard !batches.isEmpty else { return 0 }
+        let totalCost = batches.reduce(0.0) { $0 + $1.totalPrice }
+        let totalQty = batches.reduce(0.0) { $0 + $1.quantity }
+        return totalQty > 0 ? totalCost / totalQty : 0
     }
 
     private func redistributePercentages() {
@@ -90,6 +130,12 @@ final class RecipeFormViewModel {
             let ri = RecipeIngredient(ingredient: draft.ingredient, percentage: pct)
             ri.recipe = recipe
             context.insert(ri)
+        }
+        for draft in productDrafts {
+            let size = Double(draft.size.replacingOccurrences(of: ",", with: ".")) ?? 0
+            let rp = RecipeProduct(size: size, unitSymbol: draft.unitSymbol)
+            rp.recipe = recipe
+            context.insert(rp)
         }
         return recipe
     }
