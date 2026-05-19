@@ -8,7 +8,7 @@ import SwiftData
 struct RecipeFormViewModelTests {
 
     private func makeContext() throws -> (ModelContainer, ModelContext) {
-        let schema = Schema([Recipe.self, RecipeIngredient.self, Ingredient.self, IngredientCategory.self, QuantityUnit.self])
+        let schema = Schema([Recipe.self, RecipeIngredient.self, RecipeProduct.self, Ingredient.self, IngredientBatch.self, IngredientCategory.self, QuantityUnit.self])
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
         return (container, container.mainContext)
     }
@@ -201,5 +201,151 @@ struct RecipeFormViewModelTests {
 
         #expect(model.ingredientDrafts[0].percentage == "100")
         #expect(model.ingredientDrafts[1].percentage == model.formatPercentage(0))
+    }
+
+    // MARK: - Cost breakdown
+
+    @Test func breakdownAndCost_NoIngredients_ReturnsEmptyAndZeroTotal() {
+        let model = RecipeFormViewModel()
+        let draft = RecipeProductDraft(unitSymbol: "g")
+
+        let result = model.breakdownAndCost(for: draft)
+
+        #expect(result.breakdown.isEmpty)
+        #expect(result.total == 0)
+    }
+
+    @Test func breakdownAndCost_ZeroSize_AllAmountsZero() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "Olive Oil"))
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = "0"
+
+        let result = model.breakdownAndCost(for: draft)
+
+        #expect(result.breakdown[0].ingredientAmount == 0)
+        #expect(result.breakdown[0].cost == 0)
+        #expect(result.total == 0)
+    }
+
+    @Test func breakdownAndCost_NoBatches_AmountsComputedCostZero() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "Olive Oil"))
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = "100"
+
+        let result = model.breakdownAndCost(for: draft)
+
+        // 100% of 100g = 100g, but no batches → cost = 0
+        #expect(result.breakdown[0].ingredientAmount == 100)
+        #expect(result.breakdown[0].cost == 0)
+        #expect(result.total == 0)
+    }
+
+    @Test func breakdownAndCost_SingleBatch_ComputesCostCorrectly() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredient = Ingredient(name: "Coconut Oil")
+        ctx.insert(ingredient)
+        let batch = IngredientBatch.mock(quantity: 500, totalPrice: 10.0)
+        batch.ingredient = ingredient
+        ctx.insert(batch)
+
+        let model = RecipeFormViewModel()
+        model.addIngredient(ingredient)
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = "100"
+
+        let result = model.breakdownAndCost(for: draft)
+
+        // 100% of 100g = 100g; cost/g = 10/500 = 0.02; total = 100 × 0.02 = 2.0
+        #expect(result.breakdown[0].ingredientAmount == 100)
+        #expect(result.breakdown[0].cost == 2.0)
+        #expect(result.total == 2.0)
+    }
+
+    @Test func breakdownAndCost_MultipleBatches_UsesWeightedAverageCost() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredient = Ingredient(name: "Olive Oil")
+        ctx.insert(ingredient)
+        let batch1 = IngredientBatch.mock(quantity: 500, totalPrice: 10.0)  // €0.020/g
+        batch1.ingredient = ingredient
+        ctx.insert(batch1)
+        let batch2 = IngredientBatch.mock(quantity: 250, totalPrice: 7.5)   // €0.030/g
+        batch2.ingredient = ingredient
+        ctx.insert(batch2)
+
+        let model = RecipeFormViewModel()
+        model.addIngredient(ingredient)
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = "100"
+
+        let result = model.breakdownAndCost(for: draft)
+
+        // Weighted avg = (10 + 7.5) / (500 + 250) = 17.5/750 ≈ €0.02333/g
+        let expected = 100 * (17.5 / 750.0)
+        #expect(abs(result.breakdown[0].cost - expected) < 0.0001)
+        #expect(abs(result.total - expected) < 0.0001)
+    }
+
+    @Test func breakdownAndCost_MultipleIngredients_SumsTotalCorrectly() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ing1 = Ingredient(name: "Coconut Oil")
+        ctx.insert(ing1)
+        let b1 = IngredientBatch.mock(quantity: 1000, totalPrice: 10.0)  // €0.01/g
+        b1.ingredient = ing1
+        ctx.insert(b1)
+
+        let ing2 = Ingredient(name: "Shea Butter")
+        ctx.insert(ing2)
+        let b2 = IngredientBatch.mock(quantity: 500, totalPrice: 20.0)   // €0.04/g
+        b2.ingredient = ing2
+        ctx.insert(b2)
+
+        let model = RecipeFormViewModel()
+        model.addIngredient(ing1)
+        model.addIngredient(ing2) // each gets 50%
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = "200"
+
+        let result = model.breakdownAndCost(for: draft)
+
+        // ing1: 50% of 200g = 100g × €0.01 = €1.00
+        // ing2: 50% of 200g = 100g × €0.04 = €4.00
+        #expect(result.breakdown.count == 2)
+        #expect(abs(result.total - 5.0) < 0.0001)
+    }
+
+    @Test func breakdownAndCost_CommaDecimalSize_ParsesCorrectly() {
+        let model = RecipeFormViewModel()
+        model.addIngredient(Ingredient(name: "Olive Oil"))
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = "100,5"
+
+        let result = model.breakdownAndCost(for: draft)
+
+        // 100% of 100.5g = 100.5g
+        #expect(result.breakdown[0].ingredientAmount == 100.5)
+    }
+}
+
+// MARK: - Mocks
+
+extension IngredientBatch {
+    static func mock(
+        quantity: Double = 500,
+        totalPrice: Double = 10.0
+    ) -> IngredientBatch {
+        IngredientBatch(
+            dateOfPurchase: Date(),
+            quantity: quantity,
+            totalPrice: totalPrice,
+            badge: "",
+            journalCode: "",
+            expiryDate: nil,
+            openingDate: nil
+        )
     }
 }
