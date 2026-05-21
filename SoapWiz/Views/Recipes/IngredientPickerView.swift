@@ -21,10 +21,7 @@ struct IngredientPickerView: View {
 
     private var filtered: [Ingredient] {
         allIngredients.filter { ingredient in
-            let matchesAllowed: Bool = {
-                guard let role = allowedRole else { return true }
-                return ingredient.category?.ingredientRole == role
-            }()
+            let matchesAllowed = allowedRole.map { ingredient.category?.ingredientRole == $0 } ?? true
             let matchesSearch = searchText.isEmpty ||
                 ingredient.name.localizedCaseInsensitiveContains(searchText)
             let matchesCategory = selectedCategory == nil ||

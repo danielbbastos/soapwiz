@@ -188,7 +188,7 @@ struct RecipeIngredientsTabView: View {
                         amountHeader
                         ForEach(Array(rows.enumerated()), id: \.element.id) { _, row in
                             Divider().padding(.leading, row.isSummary ? 0 : 16)
-                            amountRow(row.label, weight: row.weightGrams, pct: row.pct, summary: row.isSummary)
+                            amountRow(row.label, weight: row.weight, pct: row.pct, summary: row.isSummary)
                         }
                     }
                     .listRowInsets(EdgeInsets())
@@ -233,9 +233,9 @@ struct RecipeIngredientsTabView: View {
         .foregroundStyle(summary ? Color.secondary : Color.primary)
     }
 
-    private func formatWeight(_ grams: Double) -> String {
-        let formatted = grams.formatted(.number.precision(.fractionLength(0...2)).grouping(.automatic))
-        return "\(formatted) g"
+    private func formatWeight(_ value: Double) -> String {
+        let formatted = value.formatted(.number.precision(.fractionLength(0...2)).grouping(.automatic))
+        return "\(formatted) \(model.displayWeightUnit)"
     }
 
     private func formatPct(_ pct: Double) -> String {

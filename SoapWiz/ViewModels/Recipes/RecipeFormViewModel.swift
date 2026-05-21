@@ -30,14 +30,14 @@ struct IngredientProductBreakdown {
 struct OilAmountCalculation: Identifiable {
     let id: UUID
     let ingredient: Ingredient
-    let weightGrams: Double
-    let lyeGrams: Double
+    let weight: Double
+    let lye: Double
 }
 
 struct CalculatedAmountRow: Identifiable {
     let id = UUID()
     let label: String
-    let weightGrams: Double
+    let weight: Double
     let pct: Double
     let isSummary: Bool
 }
@@ -74,14 +74,8 @@ final class RecipeFormViewModel {
 
     var totalPercentageText: String { formatPercentage(totalPercentage) }
 
-    private var totalOilWeightInGrams: Double {
-        let weight = Double(totalOilWeight.replacingOccurrences(of: ",", with: ".")) ?? 0
-        switch oilWeightUnit {
-        case "kg": return weight * 1000
-        case "oz": return weight * 28.3495
-        case "lb": return weight * 453.592
-        default: return weight
-        }
+    var displayWeightUnit: String {
+        weightUnitIsPercentage ? oilWeightUnit : weightUnit
     }
 
     var oilAmountCalculations: [OilAmountCalculation]? {
@@ -90,44 +84,34 @@ final class RecipeFormViewModel {
         let sf = Double(superFat.replacingOccurrences(of: ",", with: ".")) ?? 5
 
         if weightUnitIsPercentage {
-            let totalWeight = totalOilWeightInGrams
+            let totalWeight = Double(totalOilWeight.replacingOccurrences(of: ",", with: ".")) ?? 0
             guard totalWeight > 0 else { return nil }
             return oilDrafts.map { draft in
                 let pct = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
                 let oilWeight = totalWeight * (pct / 100)
                 let sap = draft.ingredient.sapValue ?? 0
                 let lye = oilWeight * sap * (1 - sf / 100) / (purity / 100)
-                return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weightGrams: oilWeight, lyeGrams: lye)
+                return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: oilWeight, lye: lye)
             }
         } else {
             let calcs = oilDrafts.compactMap { draft -> OilAmountCalculation? in
-                let value = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
-                guard value > 0 else { return nil }
-                let oilWeight = toGrams(value, unit: weightUnit)
+                let oilWeight = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
+                guard oilWeight > 0 else { return nil }
                 let sap = draft.ingredient.sapValue ?? 0
                 let lye = oilWeight * sap * (1 - sf / 100) / (purity / 100)
-                return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weightGrams: oilWeight, lyeGrams: lye)
+                return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: oilWeight, lye: lye)
             }
             return calcs.isEmpty ? nil : calcs
         }
     }
 
-    private func toGrams(_ value: Double, unit: String) -> Double {
-        switch unit {
-        case "kg": return value * 1000
-        case "oz": return value * 28.3495
-        case "lb": return value * 453.592
-        default: return value
-        }
-    }
-
     var calculatedLyeAmount: Double? {
-        oilAmountCalculations.map { $0.reduce(0) { $0 + $1.lyeGrams } }
+        oilAmountCalculations.map { $0.reduce(0) { $0 + $1.lye } }
     }
 
     var calculatedWaterAmount: Double? {
         guard let lye = calculatedLyeAmount else { return nil }
-        let water = Double(waterParts.replacingOccurrences(of: ",", with: ".")) ?? 2
+        let water = Double(waterParts.replacingOccurrences(of: ",", with: ".")) ?? 1.5
         let lp = Double(lyeParts.replacingOccurrences(of: ",", with: ".")) ?? 1
         return lye * (water / lp)
     }
@@ -137,19 +121,19 @@ final class RecipeFormViewModel {
               let totalLye = calculatedLyeAmount,
               let totalWater = calculatedWaterAmount else { return nil }
 
-        let totalOil = calculations.reduce(0.0) { $0 + $1.weightGrams }
+        let totalOil = calculations.reduce(0.0) { $0 + $1.weight }
         let batchTotal = totalOil + totalLye + totalWater
 
         func batchPct(_ value: Double) -> Double { batchTotal > 0 ? value / batchTotal * 100 : 0 }
 
         var rows: [CalculatedAmountRow] = calculations.map { calc in
-            let pct = totalOil > 0 ? calc.weightGrams / totalOil * 100 : 0
-            return CalculatedAmountRow(label: calc.ingredient.name, weightGrams: calc.weightGrams, pct: pct, isSummary: false)
+            let pct = totalOil > 0 ? calc.weight / totalOil * 100 : 0
+            return CalculatedAmountRow(label: calc.ingredient.name, weight: calc.weight, pct: pct, isSummary: false)
         }
-        rows.append(CalculatedAmountRow(label: "Oils total (batch)", weightGrams: totalOil, pct: batchPct(totalOil), isSummary: true))
-        rows.append(CalculatedAmountRow(label: "NaOH (\(lyePurity)%, \(superFat)% SF)", weightGrams: totalLye, pct: batchPct(totalLye), isSummary: false))
-        rows.append(CalculatedAmountRow(label: "Water (\(waterParts):\(lyeParts))", weightGrams: totalWater, pct: batchPct(totalWater), isSummary: false))
-        rows.append(CalculatedAmountRow(label: "Batch total", weightGrams: batchTotal, pct: 100, isSummary: true))
+        rows.append(CalculatedAmountRow(label: "Oils total (batch)", weight: totalOil, pct: batchPct(totalOil), isSummary: true))
+        rows.append(CalculatedAmountRow(label: "NaOH (\(lyePurity)%, \(superFat)% SF)", weight: totalLye, pct: batchPct(totalLye), isSummary: false))
+        rows.append(CalculatedAmountRow(label: "Water (\(waterParts):\(lyeParts))", weight: totalWater, pct: batchPct(totalWater), isSummary: false))
+        rows.append(CalculatedAmountRow(label: "Batch total", weight: batchTotal, pct: 100, isSummary: true))
         return rows
     }
 

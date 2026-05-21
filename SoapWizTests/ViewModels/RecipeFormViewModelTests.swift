@@ -573,6 +573,21 @@ struct RecipeFormViewModelTests {
 
     // MARK: - Calculated amounts
 
+    // MARK: - Display weight unit
+
+    @Test func displayWeightUnit_PercentageMode_UsesOilWeightUnit() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "kg"
+        #expect(model.displayWeightUnit == "kg")
+    }
+
+    @Test func displayWeightUnit_DirectWeightMode_UsesWeightUnit() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "oz"
+        #expect(model.displayWeightUnit == "oz")
+    }
+
     @Test func oilAmountCalculations_NoOils_ReturnsNil() {
         let model = RecipeFormViewModel()
         #expect(model.oilAmountCalculations == nil)
@@ -586,7 +601,7 @@ struct RecipeFormViewModelTests {
         #expect(model.oilAmountCalculations == nil)
     }
 
-    @Test func oilAmountCalculations_PercentageMode_SingleOil_ComputesWeightAndLye() {
+    @Test func oilAmountCalculations_PercentageMode_SingleOil_ComputesWeightAndLye() throws {
         let model = RecipeFormViewModel()
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
@@ -596,11 +611,11 @@ struct RecipeFormViewModelTests {
         model.lyePurity = "100"
         model.superFat = "0"
 
-        let calcs = try? #require(model.oilAmountCalculations)
-        #expect(calcs?.count == 1)
-        #expect(calcs?[0].weightGrams == 1000)
+        let calcs = try #require(model.oilAmountCalculations)
+        #expect(calcs.count == 1)
+        #expect(calcs[0].weight == 1000)
         // lye = 1000 * 0.2 * (1 - 0/100) / (100/100) = 200
-        #expect(abs((calcs?[0].lyeGrams ?? -1) - 200) < 0.001)
+        #expect(abs(calcs[0].lye - 200) < 0.001)
     }
 
     @Test func oilAmountCalculations_PercentageMode_NoSapValue_LyeIsZero() {
@@ -615,10 +630,10 @@ struct RecipeFormViewModelTests {
 
         let calcs = model.oilAmountCalculations
         #expect(calcs != nil)
-        #expect(calcs?[0].lyeGrams == 0)
+        #expect(calcs?[0].lye == 0)
     }
 
-    @Test func oilAmountCalculations_PercentageMode_KgUnit_ConvertsToGrams() {
+    @Test func oilAmountCalculations_PercentageMode_KgUnit_NoConversion() {
         let model = RecipeFormViewModel()
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
@@ -629,8 +644,8 @@ struct RecipeFormViewModelTests {
         model.superFat = "0"
 
         let calcs = model.oilAmountCalculations
-        // 1 kg = 1000 g
-        #expect(abs((calcs?[0].weightGrams ?? -1) - 1000) < 0.001)
+        // unit is just a label — value stays as 1 (kg)
+        #expect(abs((calcs?[0].weight ?? -1) - 1.0) < 0.001)
     }
 
     @Test func oilAmountCalculations_DirectWeightMode_ComputesWeightAndLye() {
@@ -645,9 +660,9 @@ struct RecipeFormViewModelTests {
 
         let calcs = model.oilAmountCalculations
         #expect(calcs?.count == 1)
-        #expect(abs((calcs?[0].weightGrams ?? -1) - 500) < 0.001)
+        #expect(abs((calcs?[0].weight ?? -1) - 500) < 0.001)
         // lye = 500 * 0.2 * 1 / 1 = 100
-        #expect(abs((calcs?[0].lyeGrams ?? -1) - 100) < 0.001)
+        #expect(abs((calcs?[0].lye ?? -1) - 100) < 0.001)
     }
 
     @Test func oilAmountCalculations_DirectWeightMode_ZeroAmount_ReturnsNil() {
@@ -725,7 +740,7 @@ struct RecipeFormViewModelTests {
         #expect(rows?.count == 5)
     }
 
-    @Test func calculatedAmountRows_BatchTotalIsSumOfAll() {
+    @Test func calculatedAmountRows_BatchTotalIsSumOfAll() throws {
         let model = RecipeFormViewModel()
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
@@ -737,12 +752,12 @@ struct RecipeFormViewModelTests {
         model.waterParts = "1.5"
         model.lyeParts = "1"
 
-        let rows = try? #require(model.calculatedAmountRows)
+        let rows = try #require(model.calculatedAmountRows)
         // oil=1000, lye=200, water=300 → batch=1500
-        let batchRow = rows?.last
-        #expect(batchRow?.isSummary == true)
-        #expect(abs((batchRow?.weightGrams ?? -1) - 1500) < 0.1)
-        #expect(abs((batchRow?.pct ?? -1) - 100) < 0.001)
+        let batchRow = try #require(rows.last)
+        #expect(batchRow.isSummary == true)
+        #expect(abs(batchRow.weight - 1500) < 0.1)
+        #expect(abs(batchRow.pct - 100) < 0.001)
     }
 
     @Test func load_PopulatesFragranceDrafts() throws {
