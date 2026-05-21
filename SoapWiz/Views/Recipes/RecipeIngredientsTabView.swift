@@ -7,11 +7,11 @@ private enum PickerSection: String, Identifiable {
     case oils, additives, fragrances
     var id: String { rawValue }
 
-    var allowedCategories: [String] {
+    var role: RecipeIngredientRole {
         switch self {
-        case .oils: return ["Oils", "Waxes", "Fats"]
-        case .additives: return ["Additives", "Others"]
-        case .fragrances: return ["Fragrances"]
+        case .oils: return .oil
+        case .additives: return .additive
+        case .fragrances: return .fragrance
         }
     }
 }
@@ -19,15 +19,18 @@ private enum PickerSection: String, Identifiable {
 struct RecipeIngredientsTabView: View {
     @Bindable var model: RecipeFormViewModel
     @State private var activePicker: PickerSection?
+    @State private var oilsExpanded = true
+    @State private var additivesExpanded = true
+    @State private var fragrancesExpanded = true
+    @State private var calculatedAmountsExpanded = true
+    @State private var productsExpanded = true
 
     var body: some View {
         Form {
             oilsSection
             additivesSection
             fragrancesSection
-            if let calculations = model.oilAmountCalculations {
-                calculatedAmountsSection(calculations)
-            }
+            calculatedAmountsSection
             if !model.oilDrafts.isEmpty {
                 productsSection
             }
@@ -36,183 +39,214 @@ struct RecipeIngredientsTabView: View {
         .sheet(item: $activePicker) { section in
             IngredientPickerView(
                 addedIDs: addedIDs(for: section),
-                allowedCategories: section.allowedCategories,
+                allowedRole: section.role,
                 onSelect: selectAction(for: section)
             )
         }
     }
 
+    // MARK: - Collapsible header
+
+    private func sectionHeader(_ title: String, expanded: Binding<Bool>) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) { expanded.wrappedValue.toggle() }
+        } label: {
+            HStack {
+                Text(title)
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .rotationEffect(.degrees(expanded.wrappedValue ? 0 : -90))
+                    .animation(.easeInOut(duration: 0.2), value: expanded.wrappedValue)
+            }
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.primary)
+    }
+
     // MARK: - Oils
 
     private var oilsSection: some View {
-        Section("Oils") {
-            HStack {
-                Button {
-                    activePicker = .oils
-                } label: {
-                    Label("Add oil", systemImage: "plus")
-                }
-                Spacer()
-                if !model.oilDrafts.isEmpty {
-                    Text(model.totalPercentageText)
-                        .foregroundStyle(abs(model.totalPercentage - 100) < 0.1 ? Color.green : Color.red)
-                        .frame(width: 60, alignment: .trailing)
-                    Text("%")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            ForEach(model.oilDrafts) { draft in
+        Section(header: sectionHeader(IngredientCategory.Name.oils, expanded: $oilsExpanded)) {
+            if oilsExpanded {
                 HStack {
-                    Text(draft.ingredient.name)
+                    Button {
+                        activePicker = .oils
+                    } label: {
+                        Label("Add oil", systemImage: "plus")
+                    }
                     Spacer()
-                    TextField("0", text: Binding(
-                        get: { draft.percentage },
-                        set: { model.userEdited(id: draft.id, percentage: $0) }
-                    ))
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 60)
-                    Text("%")
-                        .foregroundStyle(.secondary)
+                    if model.weightUnitIsPercentage && !model.oilDrafts.isEmpty {
+                        Text(model.totalPercentageText)
+                            .foregroundStyle(abs(model.totalPercentage - 100) < 0.1 ? Color.green : Color.red)
+                            .frame(width: 60, alignment: .trailing)
+                        Text("%")
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                ForEach(model.oilDrafts) { draft in
+                    HStack {
+                        Text(draft.ingredient.name)
+                        Spacer()
+                        TextField("0", text: Binding(
+                            get: { draft.amount },
+                            set: { model.userEdited(id: draft.id, amount: $0) }
+                        ))
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 60)
+                        Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .onDelete { model.removeOil(at: $0) }
             }
-            .onDelete { model.removeOil(at: $0) }
         }
     }
 
     // MARK: - Additives
 
     private var additivesSection: some View {
-        Section("Additives") {
-            Button {
-                activePicker = .additives
-            } label: {
-                Label("Add additive", systemImage: "plus")
-            }
-            ForEach(model.additiveDrafts) { draft in
-                HStack {
-                    Text(draft.ingredient.name)
-                        .lineLimit(1)
-                    Spacer()
-                    TextField("0", text: Binding(
-                        get: { draft.amount },
-                        set: { model.updateAdditive(id: draft.id, amount: $0) }
-                    ))
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 55)
-                    Picker("Unit", selection: Binding(
-                        get: { draft.unit },
-                        set: { model.updateAdditive(id: draft.id, unit: $0) }
-                    )) {
-                        ForEach(additiveUnits, id: \.self) { Text($0) }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
+        Section(header: sectionHeader(IngredientCategory.Name.additives, expanded: $additivesExpanded)) {
+            if additivesExpanded {
+                Button {
+                    activePicker = .additives
+                } label: {
+                    Label("Add additive", systemImage: "plus")
                 }
+                ForEach(model.additiveDrafts) { draft in
+                    HStack {
+                        Text(draft.ingredient.name)
+                            .lineLimit(1)
+                        Spacer()
+                        TextField("0", text: Binding(
+                            get: { draft.amount },
+                            set: { model.updateAdditive(id: draft.id, amount: $0) }
+                        ))
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 55)
+                        Picker("Unit", selection: Binding(
+                            get: { draft.unit },
+                            set: { model.updateAdditive(id: draft.id, unit: $0) }
+                        )) {
+                            ForEach(additiveUnits, id: \.self) { Text($0) }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+                }
+                .onDelete { model.removeAdditive(at: $0) }
             }
-            .onDelete { model.removeAdditive(at: $0) }
         }
     }
 
     // MARK: - Fragrances
 
     private var fragrancesSection: some View {
-        Section("Fragrances") {
-            Button {
-                activePicker = .fragrances
-            } label: {
-                Label("Add fragrance", systemImage: "plus")
-            }
-            ForEach(model.fragranceDrafts) { draft in
-                HStack {
-                    Text(draft.ingredient.name)
-                        .lineLimit(1)
-                    Spacer()
-                    TextField("0", text: Binding(
-                        get: { draft.amount },
-                        set: { model.updateFragrance(id: draft.id, amount: $0) }
-                    ))
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 55)
-                    Picker("Unit", selection: Binding(
-                        get: { draft.unit },
-                        set: { model.updateFragrance(id: draft.id, unit: $0) }
-                    )) {
-                        ForEach(additiveUnits, id: \.self) { Text($0) }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
+        Section(header: sectionHeader(IngredientCategory.Name.fragrances, expanded: $fragrancesExpanded)) {
+            if fragrancesExpanded {
+                Button {
+                    activePicker = .fragrances
+                } label: {
+                    Label("Add fragrance", systemImage: "plus")
                 }
+                ForEach(model.fragranceDrafts) { draft in
+                    HStack {
+                        Text(draft.ingredient.name)
+                            .lineLimit(1)
+                        Spacer()
+                        TextField("0", text: Binding(
+                            get: { draft.amount },
+                            set: { model.updateFragrance(id: draft.id, amount: $0) }
+                        ))
+                        .keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                        .frame(width: 55)
+                        Picker("Unit", selection: Binding(
+                            get: { draft.unit },
+                            set: { model.updateFragrance(id: draft.id, unit: $0) }
+                        )) {
+                            ForEach(additiveUnits, id: \.self) { Text($0) }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+                }
+                .onDelete { model.removeFragrance(at: $0) }
             }
-            .onDelete { model.removeFragrance(at: $0) }
         }
     }
 
     // MARK: - Calculated amounts
 
     @ViewBuilder
-    private func calculatedAmountsSection(_ calculations: [OilAmountCalculation]) -> some View {
-        Section("Calculated amounts") {
-            Grid(alignment: .leading, horizontalSpacing: 12) {
-                GridRow {
-                    Text("Oil")
-                        .fontWeight(.medium)
-                    Text("Weight")
-                        .fontWeight(.medium)
-                        .gridColumnAlignment(.trailing)
-                    Text("NaOH")
-                        .fontWeight(.medium)
-                        .gridColumnAlignment(.trailing)
-                }
-                Divider()
-                    .gridCellUnsizedAxes(.horizontal)
-                ForEach(calculations) { calc in
-                    GridRow {
-                        Text(calc.ingredient.name)
-                            .lineLimit(1)
-                        Text(formatGrams(calc.weightGrams))
-                            .foregroundStyle(.secondary)
-                            .gridColumnAlignment(.trailing)
-                        Text(formatGrams(calc.lyeGrams))
-                            .foregroundStyle(.secondary)
-                            .gridColumnAlignment(.trailing)
+    private var calculatedAmountsSection: some View {
+        if let rows = model.calculatedAmountRows {
+            Section(header: sectionHeader("Calculated amounts", expanded: $calculatedAmountsExpanded)) {
+                if calculatedAmountsExpanded {
+                    VStack(spacing: 0) {
+                        amountHeader
+                        ForEach(Array(rows.enumerated()), id: \.element.id) { _, row in
+                            Divider().padding(.leading, row.isSummary ? 0 : 16)
+                            amountRow(row.label, weight: row.weightGrams, pct: row.pct, summary: row.isSummary)
+                        }
                     }
-                }
-                if let totalLye = model.calculatedLyeAmount,
-                   let totalWater = model.calculatedWaterAmount {
-                    Divider()
-                        .gridCellUnsizedAxes(.horizontal)
-                    GridRow {
-                        Text("NaOH total")
-                            .fontWeight(.medium)
-                        Text("")
-                            .gridColumnAlignment(.trailing)
-                        Text(formatGrams(totalLye))
-                            .fontWeight(.medium)
-                            .gridColumnAlignment(.trailing)
-                    }
-                    GridRow {
-                        Text("Water")
-                            .fontWeight(.medium)
-                        Text(formatGrams(totalWater))
-                            .fontWeight(.medium)
-                            .gridColumnAlignment(.trailing)
-                        Text("")
-                            .gridColumnAlignment(.trailing)
-                    }
+                    .listRowInsets(EdgeInsets())
                 }
             }
-            .font(.footnote)
         }
+    }
+
+    private var amountHeader: some View {
+        HStack(spacing: 8) {
+            Text("Ingredient")
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text("Weight")
+                .frame(width: 90, alignment: .trailing)
+            Text("%")
+                .frame(width: 64, alignment: .trailing)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .font(.footnote)
+        .fontWeight(.medium)
+        .foregroundStyle(.secondary)
+        .background(Color(.secondarySystemGroupedBackground))
+    }
+
+    private func amountRow(_ label: String, weight: Double, pct: Double, summary: Bool) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(1)
+            Text(formatWeight(weight))
+                .frame(width: 90, alignment: .trailing)
+                .monospacedDigit()
+            Text(formatPct(pct))
+                .frame(width: 64, alignment: .trailing)
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .font(.footnote)
+        .fontWeight(summary ? .medium : .regular)
+        .foregroundStyle(summary ? Color.secondary : Color.primary)
+    }
+
+    private func formatWeight(_ grams: Double) -> String {
+        let formatted = grams.formatted(.number.precision(.fractionLength(0...2)).grouping(.automatic))
+        return "\(formatted) g"
+    }
+
+    private func formatPct(_ pct: Double) -> String {
+        String(format: "%.1f%%", pct)
     }
 
     // MARK: - Products
 
     private var productsSection: some View {
-        Section("Products") {
-            ScrollViewReader { proxy in
+        Section(header: sectionHeader("Products", expanded: $productsExpanded)) {
+            if productsExpanded { ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(spacing: 0) {
                         ForEach($model.productDrafts) { $draft in
@@ -252,6 +286,7 @@ struct RecipeIngredientsTabView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 2)
             }
+            } // if productsExpanded
         }
     }
 
@@ -273,10 +308,4 @@ struct RecipeIngredientsTabView: View {
         }
     }
 
-    private func formatGrams(_ value: Double) -> String {
-        if value == 0 { return "0 g" }
-        if value < 1 { return String(format: "%.2f g", value) }
-        if value < 100 { return String(format: "%.1f g", value) }
-        return String(format: "%.0f g", value)
-    }
 }

@@ -4,22 +4,15 @@ import SwiftData
 struct OilIngredientDraft: Identifiable {
     let id = UUID()
     let ingredient: Ingredient
-    var percentage: String = ""
+    var amount: String = ""
     var isLocked: Bool = false
 }
 
-struct AdditiveIngredientDraft: Identifiable {
+struct IngredientAmountDraft: Identifiable {
     let id = UUID()
     let ingredient: Ingredient
     var amount: String = ""
-    var unit: String = "g"
-}
-
-struct FragranceIngredientDraft: Identifiable {
-    let id = UUID()
-    let ingredient: Ingredient
-    var amount: String = ""
-    var unit: String = "ml"
+    var unit: String
 }
 
 struct RecipeProductDraft: Identifiable {
@@ -41,21 +34,29 @@ struct OilAmountCalculation: Identifiable {
     let lyeGrams: Double
 }
 
+struct CalculatedAmountRow: Identifiable {
+    let id = UUID()
+    let label: String
+    let weightGrams: Double
+    let pct: Double
+    let isSummary: Bool
+}
+
 @Observable
 final class RecipeFormViewModel {
     var name: String = ""
     var desc: String = ""
-    var weightUnit: String = "g"
+    var weightUnit: String = "%"
     var totalOilWeight: String = ""
     var oilWeightUnit: String = "g"
     var lyeType: String = "NaOH"
     var lyePurity: String = "99"
-    var waterParts: String = "2"
+    var waterParts: String = "1.5"
     var lyeParts: String = "1"
     var superFat: String = "5"
     var oilDrafts: [OilIngredientDraft] = []
-    var additiveDrafts: [AdditiveIngredientDraft] = []
-    var fragranceDrafts: [FragranceIngredientDraft] = []
+    var additiveDrafts: [IngredientAmountDraft] = []
+    var fragranceDrafts: [IngredientAmountDraft] = []
     var productDrafts: [RecipeProductDraft] = []
 
     @ObservationIgnored
@@ -67,7 +68,7 @@ final class RecipeFormViewModel {
 
     var totalPercentage: Double {
         oilDrafts
-            .compactMap { Double($0.percentage.replacingOccurrences(of: ",", with: ".")) }
+            .compactMap { Double($0.amount.replacingOccurrences(of: ",", with: ".")) }
             .reduce(0, +)
     }
 
@@ -84,18 +85,39 @@ final class RecipeFormViewModel {
     }
 
     var oilAmountCalculations: [OilAmountCalculation]? {
-        guard weightUnitIsPercentage, !oilDrafts.isEmpty else { return nil }
-        let totalWeight = totalOilWeightInGrams
-        guard totalWeight > 0 else { return nil }
+        guard !oilDrafts.isEmpty else { return nil }
         let purity = Double(lyePurity.replacingOccurrences(of: ",", with: ".")) ?? 99
         let sf = Double(superFat.replacingOccurrences(of: ",", with: ".")) ?? 5
 
-        return oilDrafts.map { draft in
-            let pct = Double(draft.percentage.replacingOccurrences(of: ",", with: ".")) ?? 0
-            let oilWeight = totalWeight * (pct / 100)
-            let sap = draft.ingredient.sapValue ?? 0
-            let lye = oilWeight * sap * (1 - sf / 100) / (purity / 100)
-            return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weightGrams: oilWeight, lyeGrams: lye)
+        if weightUnitIsPercentage {
+            let totalWeight = totalOilWeightInGrams
+            guard totalWeight > 0 else { return nil }
+            return oilDrafts.map { draft in
+                let pct = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
+                let oilWeight = totalWeight * (pct / 100)
+                let sap = draft.ingredient.sapValue ?? 0
+                let lye = oilWeight * sap * (1 - sf / 100) / (purity / 100)
+                return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weightGrams: oilWeight, lyeGrams: lye)
+            }
+        } else {
+            let calcs = oilDrafts.compactMap { draft -> OilAmountCalculation? in
+                let value = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
+                guard value > 0 else { return nil }
+                let oilWeight = toGrams(value, unit: weightUnit)
+                let sap = draft.ingredient.sapValue ?? 0
+                let lye = oilWeight * sap * (1 - sf / 100) / (purity / 100)
+                return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weightGrams: oilWeight, lyeGrams: lye)
+            }
+            return calcs.isEmpty ? nil : calcs
+        }
+    }
+
+    private func toGrams(_ value: Double, unit: String) -> Double {
+        switch unit {
+        case "kg": return value * 1000
+        case "oz": return value * 28.3495
+        case "lb": return value * 453.592
+        default: return value
         }
     }
 
@@ -108,6 +130,27 @@ final class RecipeFormViewModel {
         let water = Double(waterParts.replacingOccurrences(of: ",", with: ".")) ?? 2
         let lp = Double(lyeParts.replacingOccurrences(of: ",", with: ".")) ?? 1
         return lye * (water / lp)
+    }
+
+    var calculatedAmountRows: [CalculatedAmountRow]? {
+        guard let calculations = oilAmountCalculations,
+              let totalLye = calculatedLyeAmount,
+              let totalWater = calculatedWaterAmount else { return nil }
+
+        let totalOil = calculations.reduce(0.0) { $0 + $1.weightGrams }
+        let batchTotal = totalOil + totalLye + totalWater
+
+        func batchPct(_ value: Double) -> Double { batchTotal > 0 ? value / batchTotal * 100 : 0 }
+
+        var rows: [CalculatedAmountRow] = calculations.map { calc in
+            let pct = totalOil > 0 ? calc.weightGrams / totalOil * 100 : 0
+            return CalculatedAmountRow(label: calc.ingredient.name, weightGrams: calc.weightGrams, pct: pct, isSummary: false)
+        }
+        rows.append(CalculatedAmountRow(label: "Oils total (batch)", weightGrams: totalOil, pct: batchPct(totalOil), isSummary: true))
+        rows.append(CalculatedAmountRow(label: "NaOH (\(lyePurity)%, \(superFat)% SF)", weightGrams: totalLye, pct: batchPct(totalLye), isSummary: false))
+        rows.append(CalculatedAmountRow(label: "Water (\(waterParts):\(lyeParts))", weightGrams: totalWater, pct: batchPct(totalWater), isSummary: false))
+        rows.append(CalculatedAmountRow(label: "Batch total", weightGrams: batchTotal, pct: 100, isSummary: true))
+        return rows
     }
 
     func load(from recipe: Recipe) {
@@ -124,14 +167,14 @@ final class RecipeFormViewModel {
         superFat = format(recipe.superFat)
 
         oilDrafts = recipe.ingredients
-            .filter { $0.role == "oil" }
-            .map { OilIngredientDraft(ingredient: $0.ingredient, percentage: formatPercentage($0.percentage), isLocked: true) }
+            .filter { $0.ingredientRole == .oil }
+            .map { OilIngredientDraft(ingredient: $0.ingredient, amount: formatPercentage($0.percentage), isLocked: true) }
         additiveDrafts = recipe.ingredients
-            .filter { $0.role == "additive" }
-            .map { AdditiveIngredientDraft(ingredient: $0.ingredient, amount: format($0.additiveAmount), unit: $0.additiveUnit) }
+            .filter { $0.ingredientRole == .additive }
+            .map { IngredientAmountDraft(ingredient: $0.ingredient, amount: format($0.additiveAmount), unit: $0.additiveUnit) }
         fragranceDrafts = recipe.ingredients
-            .filter { $0.role == "fragrance" }
-            .map { FragranceIngredientDraft(ingredient: $0.ingredient, amount: format($0.additiveAmount), unit: $0.additiveUnit) }
+            .filter { $0.ingredientRole == .fragrance }
+            .map { IngredientAmountDraft(ingredient: $0.ingredient, amount: format($0.additiveAmount), unit: $0.additiveUnit) }
 
         productDrafts = recipe.products.map {
             RecipeProductDraft(size: format($0.size), unitSymbol: $0.unitSymbol)
@@ -143,26 +186,28 @@ final class RecipeFormViewModel {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
         oilDrafts.append(OilIngredientDraft(ingredient: ingredient))
-        redistributePercentages()
+        if weightUnitIsPercentage { redistributePercentages() }
     }
 
     func removeOil(at offsets: IndexSet) {
         oilDrafts.remove(atOffsets: offsets)
-        redistributePercentages()
+        if weightUnitIsPercentage { redistributePercentages() }
     }
 
-    func userEdited(id: UUID, percentage: String) {
+    func userEdited(id: UUID, amount: String) {
         guard let idx = oilDrafts.firstIndex(where: { $0.id == id }) else { return }
-        oilDrafts[idx].percentage = percentage
-        oilDrafts[idx].isLocked = true
-        redistributePercentages()
+        oilDrafts[idx].amount = amount
+        if weightUnitIsPercentage {
+            oilDrafts[idx].isLocked = true
+            redistributePercentages()
+        }
     }
 
     func addAdditive(_ ingredient: Ingredient) {
         guard !additiveDrafts.contains(where: {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
-        additiveDrafts.append(AdditiveIngredientDraft(ingredient: ingredient))
+        additiveDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: "g"))
     }
 
     func removeAdditive(at offsets: IndexSet) {
@@ -179,7 +224,7 @@ final class RecipeFormViewModel {
         guard !fragranceDrafts.contains(where: {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
-        fragranceDrafts.append(FragranceIngredientDraft(ingredient: ingredient))
+        fragranceDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: "ml"))
     }
 
     func removeFragrance(at offsets: IndexSet) {
@@ -199,7 +244,7 @@ final class RecipeFormViewModel {
     func breakdownAndCost(for product: RecipeProductDraft) -> (breakdown: [IngredientProductBreakdown], total: Double) {
         let size = Double(product.size.replacingOccurrences(of: ",", with: ".")) ?? 0
         let breakdown = oilDrafts.map { draft in
-            let pct = Double(draft.percentage.replacingOccurrences(of: ",", with: ".")) ?? 0
+            let pct = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
             let ingredientAmount = size * (pct / 100)
             let costPer = weightedCostPerUnit(for: draft.ingredient)
             return IngredientProductBreakdown(
@@ -222,7 +267,7 @@ final class RecipeFormViewModel {
     private func redistributePercentages() {
         let lockedSum = oilDrafts
             .filter(\.isLocked)
-            .compactMap { Double($0.percentage.replacingOccurrences(of: ",", with: ".")) }
+            .compactMap { Double($0.amount.replacingOccurrences(of: ",", with: ".")) }
             .reduce(0, +)
         let remaining = max(0, 100 - lockedSum)
         let unlockedIndices = oilDrafts.indices.filter { !oilDrafts[$0].isLocked }
@@ -231,11 +276,11 @@ final class RecipeFormViewModel {
         for (enumIdx, idx) in unlockedIndices.enumerated() {
             if enumIdx == unlockedIndices.count - 1 {
                 let assignedSum = unlockedIndices.dropLast()
-                    .compactMap { Double(oilDrafts[$0].percentage.replacingOccurrences(of: ",", with: ".")) }
+                    .compactMap { Double(oilDrafts[$0].amount.replacingOccurrences(of: ",", with: ".")) }
                     .reduce(0, +)
-                oilDrafts[idx].percentage = formatPercentage(max(0, remaining - assignedSum))
+                oilDrafts[idx].amount = formatPercentage(max(0, remaining - assignedSum))
             } else {
-                oilDrafts[idx].percentage = formatPercentage(share)
+                oilDrafts[idx].amount = formatPercentage(share)
             }
         }
     }
@@ -269,27 +314,27 @@ final class RecipeFormViewModel {
         recipe.oilWeightUnit = oilWeightUnit
         recipe.lyeType = lyeType
         recipe.lyePurity = Double(lyePurity.replacingOccurrences(of: ",", with: ".")) ?? 99
-        recipe.waterParts = Double(waterParts.replacingOccurrences(of: ",", with: ".")) ?? 2
+        recipe.waterParts = Double(waterParts.replacingOccurrences(of: ",", with: ".")) ?? 1.5
         recipe.lyeParts = Double(lyeParts.replacingOccurrences(of: ",", with: ".")) ?? 1
         recipe.superFat = Double(superFat.replacingOccurrences(of: ",", with: ".")) ?? 5
 
         recipe.ingredients.forEach { context.delete($0) }
 
         for draft in oilDrafts {
-            let pct = Double(draft.percentage.replacingOccurrences(of: ",", with: ".")) ?? 0
-            let ri = RecipeIngredient(ingredient: draft.ingredient, percentage: pct, role: "oil")
+            let pct = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
+            let ri = RecipeIngredient(ingredient: draft.ingredient, percentage: pct, role: .oil)
             ri.recipe = recipe
             context.insert(ri)
         }
         for draft in additiveDrafts {
-            let ri = RecipeIngredient(ingredient: draft.ingredient, percentage: 0, role: "additive")
+            let ri = RecipeIngredient(ingredient: draft.ingredient, percentage: 0, role: .additive)
             ri.additiveAmount = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
             ri.additiveUnit = draft.unit
             ri.recipe = recipe
             context.insert(ri)
         }
         for draft in fragranceDrafts {
-            let ri = RecipeIngredient(ingredient: draft.ingredient, percentage: 0, role: "fragrance")
+            let ri = RecipeIngredient(ingredient: draft.ingredient, percentage: 0, role: .fragrance)
             ri.additiveAmount = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
             ri.additiveUnit = draft.unit
             ri.recipe = recipe

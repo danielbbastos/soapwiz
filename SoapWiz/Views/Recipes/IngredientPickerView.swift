@@ -7,7 +7,7 @@ struct IngredientPickerView: View {
     @Environment(\.dismiss) private var dismiss
 
     let addedIDs: Set<PersistentIdentifier>
-    var allowedCategories: [String]? = nil
+    var allowedRole: RecipeIngredientRole? = nil
     let onSelect: ([Ingredient]) -> Void
 
     @State private var searchText = ""
@@ -15,15 +15,16 @@ struct IngredientPickerView: View {
     @State private var pendingSelections: Set<PersistentIdentifier> = []
 
     private var categories: [IngredientCategory] {
-        guard let allowed = allowedCategories else { return allCategories }
-        return allCategories.filter { allowed.contains($0.name) }
+        guard let role = allowedRole else { return allCategories }
+        return allCategories.filter { $0.ingredientRole == role }
     }
 
     private var filtered: [Ingredient] {
         allIngredients.filter { ingredient in
-            let matchesAllowed = allowedCategories.map {
-                $0.contains(ingredient.category?.name ?? "")
-            } ?? true
+            let matchesAllowed: Bool = {
+                guard let role = allowedRole else { return true }
+                return ingredient.category?.ingredientRole == role
+            }()
             let matchesSearch = searchText.isEmpty ||
                 ingredient.name.localizedCaseInsensitiveContains(searchText)
             let matchesCategory = selectedCategory == nil ||
