@@ -24,6 +24,11 @@ Expert guidance on Swift's concurrency system using the "Office Building" mental
    - a follow-up ticket to remove or migrate it
 6. For migration work, optimize for minimal blast radius (small, reviewable changes) and add verification steps.
 7. Course references are for deeper learning only. Use them sparingly and only when they clearly help answer the developer's question.
+8. **Never use GCD (`DispatchQueue`).** Always use Swift Concurrency equivalents:
+   - `DispatchQueue.main.async { }` → `Task { }` (already on `@MainActor`)
+   - `DispatchQueue.main.asyncAfter(deadline: .now() + n) { }` → `Task { try? await Task.sleep(for: .seconds(n)); ... }`
+   - `DispatchQueue.global().async { }` → `Task.detached { }` (with justification per rule 4)
+   - `DispatchQueue.main.sync { }` → refactor to avoid; sync dispatch onto main from main deadlocks
 
 ## Project Settings (SoapWiz Baseline)
 
