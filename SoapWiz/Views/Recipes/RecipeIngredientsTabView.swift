@@ -277,7 +277,7 @@ struct RecipeIngredientsTabView: View {
 
             if !model.productDrafts.isEmpty {
                 HStack(spacing: 6) {
-                    ForEach(0...model.productDrafts.count, id: \.self) { _ in
+                    ForEach(0..<model.productDrafts.count, id: \.self) { _ in
                         Circle()
                             .fill(Color.secondary.opacity(0.5))
                             .frame(width: 6, height: 6)

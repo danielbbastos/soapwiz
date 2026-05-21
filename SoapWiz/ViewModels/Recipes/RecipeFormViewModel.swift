@@ -152,7 +152,10 @@ final class RecipeFormViewModel {
 
         oilDrafts = recipe.ingredients
             .filter { $0.ingredientRole == .oil }
-            .map { OilIngredientDraft(ingredient: $0.ingredient, amount: formatPercentage($0.percentage), isLocked: true) }
+            .map {
+                let amount = recipe.weightUnit == "%" ? formatPercentage($0.percentage) : format($0.percentage)
+                return OilIngredientDraft(ingredient: $0.ingredient, amount: amount, isLocked: true)
+            }
         additiveDrafts = recipe.ingredients
             .filter { $0.ingredientRole == .additive }
             .map { IngredientAmountDraft(ingredient: $0.ingredient, amount: format($0.additiveAmount), unit: $0.additiveUnit) }
