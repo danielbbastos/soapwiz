@@ -271,25 +271,25 @@ struct IngredientFormViewModelTests {
 
     @Test func showsSapValue_OilsCategory_ReturnsTrue() {
         let model = IngredientFormViewModel()
-        model.selectedCategory = IngredientCategory(name: "Oils")
+        model.selectedCategory = IngredientCategory(name: IngredientCategory.Name.oils)
         #expect(model.showsSapValue)
     }
 
     @Test func showsSapValue_WaxesCategory_ReturnsTrue() {
         let model = IngredientFormViewModel()
-        model.selectedCategory = IngredientCategory(name: "Waxes")
+        model.selectedCategory = IngredientCategory(name: IngredientCategory.Name.waxes)
         #expect(model.showsSapValue)
     }
 
     @Test func showsSapValue_FatsCategory_ReturnsTrue() {
         let model = IngredientFormViewModel()
-        model.selectedCategory = IngredientCategory(name: "Fats")
+        model.selectedCategory = IngredientCategory(name: IngredientCategory.Name.fats)
         #expect(model.showsSapValue)
     }
 
     @Test func showsSapValue_AdditivesCategory_ReturnsFalse() {
         let model = IngredientFormViewModel()
-        model.selectedCategory = IngredientCategory(name: "Additives")
+        model.selectedCategory = IngredientCategory(name: IngredientCategory.Name.additives)
         #expect(!model.showsSapValue)
     }
 

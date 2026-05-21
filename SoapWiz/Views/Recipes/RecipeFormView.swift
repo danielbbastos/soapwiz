@@ -18,7 +18,6 @@ struct RecipeFormView: View {
 
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
-    @State private var showingPicker = false
     @FocusState private var oilWeightFocused: Bool
 
     var onSave: ((Recipe) -> Void)?
@@ -51,12 +50,6 @@ struct RecipeFormView: View {
                     }
                     .disabled(!model.canSave)
                 }
-            }
-            .sheet(isPresented: $showingPicker) {
-                IngredientPickerView(
-                    addedIDs: Set(model.ingredientDrafts.map(\.ingredient.persistentModelID)),
-                    onSelect: model.addIngredient
-                )
             }
     }
 
@@ -152,7 +145,7 @@ private extension RecipeFormView {
             HStack {
                 Text("Water to lye ratio")
                 Spacer()
-                TextField("2", text: $model.waterParts)
+                TextField("1.5", text: $model.waterParts)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
                     .frame(width: 30)
@@ -181,87 +174,7 @@ private extension RecipeFormView {
 
 private extension RecipeFormView {
     var ingredientsTab: some View {
-        Form {
-            Section("Ingredients") {
-                HStack {
-                    Button {
-                        showingPicker = true
-                    } label: {
-                        Label("Add ingredient", systemImage: "plus")
-                    }
-                    Spacer()
-                    if !model.ingredientDrafts.isEmpty {
-                        Text(model.totalPercentageText)
-                            .foregroundStyle(abs(model.totalPercentage - 100) < 0.1 ? Color.green : Color.red)
-                            .frame(width: 60, alignment: .trailing)
-                        Text("%")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                ForEach(model.ingredientDrafts) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                        Spacer()
-                        TextField("0", text: Binding(
-                            get: { draft.percentage },
-                            set: { model.userEdited(id: draft.id, percentage: $0) }
-                        ))
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 60)
-                        Text("%")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .onDelete { model.removeIngredient(at: $0) }
-            }
-
-            if !model.ingredientDrafts.isEmpty {
-                Section("Products") {
-                    ScrollViewReader { proxy in
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            LazyHStack(spacing: 0) {
-                                ForEach($model.productDrafts) { $draft in
-                                    let result = model.breakdownAndCost(for: draft)
-                                    RecipeProductCardView(
-                                        draft: $draft,
-                                        breakdown: result.breakdown,
-                                        totalCost: result.total,
-                                        availableUnits: IngredientUnit.allCases
-                                    )
-                                    .containerRelativeFrame(.horizontal)
-                                    .id(draft.id)
-                                }
-                                AddProductCardView {
-                                    model.addProduct(defaultUnitSymbol: IngredientUnit.grams.rawValue)
-                                    if let newID = model.productDrafts.last?.id {
-                                        withAnimation { proxy.scrollTo(newID) }
-                                    }
-                                }
-                                .containerRelativeFrame(.horizontal)
-                                .id("addButton")
-                            }
-                            .scrollTargetLayout()
-                        }
-                        .scrollTargetBehavior(.paging)
-                    }
-                    .listRowInsets(EdgeInsets())
-
-                    if !model.productDrafts.isEmpty {
-                        HStack(spacing: 6) {
-                            ForEach(0...model.productDrafts.count, id: \.self) { _ in
-                                Circle()
-                                    .fill(Color.secondary.opacity(0.5))
-                                    .frame(width: 6, height: 6)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 2)
-                    }
-                }
-            }
-        }
-        .scrollClipDisabled()
+        RecipeIngredientsTabView(model: model)
     }
 }
 

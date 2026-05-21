@@ -9,7 +9,7 @@ final class Recipe {
     var oilWeightUnit: String = "g"
     var lyeType: String = "NaOH"
     var lyePurity: Double = 99
-    var waterParts: Double = 2
+    var waterParts: Double = 1.5
     var lyeParts: Double = 1
     var superFat: Double = 5
 
