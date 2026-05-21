@@ -10,7 +10,6 @@ final class Recipe {
     var lyeType: String = "NaOH"
     var lyePurity: Double = 99
     var waterParts: Double = 1.5
-    var lyeParts: Double = 1
     var superFat: Double = 5
 
     @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.recipe)
