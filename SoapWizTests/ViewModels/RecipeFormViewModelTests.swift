@@ -134,6 +134,21 @@ struct RecipeFormViewModelTests {
         #expect(model.oilDrafts[1].isLocked == false)
     }
 
+    @Test func userEdited_DirectWeightMode_SetsAmountWithoutLockingOrRedistributing() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "g"
+        model.addOil(Ingredient(name: "A"))
+        model.addOil(Ingredient(name: "B"))
+        model.oilDrafts[0].amount = "300"
+        model.oilDrafts[1].amount = "200"
+
+        model.userEdited(id: model.oilDrafts[0].id, amount: "400")
+
+        #expect(model.oilDrafts[0].amount == "400")
+        #expect(model.oilDrafts[0].isLocked == false)
+        #expect(model.oilDrafts[1].amount == "200")
+    }
+
     @Test func addOil_AfterLock_DistributesRemainingToUnlocked() {
         let model = RecipeFormViewModel()
         model.addOil(Ingredient(name: "A"))
@@ -209,7 +224,6 @@ struct RecipeFormViewModelTests {
         recipe.lyeType = "NaOH"
         recipe.lyePurity = 95
         recipe.waterParts = 3
-        recipe.lyeParts = 1
         recipe.superFat = 8
         ctx.insert(recipe)
 
@@ -763,9 +777,8 @@ struct RecipeFormViewModelTests {
         model.lyePurity = "100"
         model.superFat = "0"
         model.waterParts = "2"
-        model.lyeParts = "1"
 
-        // lye = 100, water = 100 * (2/1) = 200
+        // lye = 100, water = 100 * 2 = 200
         let water = model.calculatedWaterAmount
         #expect(abs((water ?? -1) - 200) < 0.001)
     }
@@ -789,7 +802,7 @@ struct RecipeFormViewModelTests {
         model.oilWeightUnit = "g"
         model.lyePurity = "100"
         model.superFat = "0"
-        // waterParts = "1.5", lyeParts = "1" (defaults)
+        // waterParts = "1.5" (default), lye ratio is always 1
 
         let rows = model.calculatedAmountRows
         // 1 oil row + oils total + NaOH + Water + Batch total = 5
@@ -806,7 +819,6 @@ struct RecipeFormViewModelTests {
         model.lyePurity = "100"
         model.superFat = "0"
         model.waterParts = "1.5"
-        model.lyeParts = "1"
 
         let rows = try #require(model.calculatedAmountRows)
         // oil=1000, lye=200, water=300 → batch=1500

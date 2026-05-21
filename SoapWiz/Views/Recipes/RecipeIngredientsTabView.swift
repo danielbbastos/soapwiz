@@ -230,7 +230,7 @@ struct RecipeIngredientsTabView: View {
         .padding(.vertical, 10)
         .font(.footnote)
         .fontWeight(summary ? .medium : .regular)
-        .foregroundStyle(summary ? Color.secondary : Color.primary)
+        .foregroundStyle(summary ? Color.primary : Color.secondary)
     }
 
     private func formatWeight(_ value: Double) -> String {
