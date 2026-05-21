@@ -131,7 +131,7 @@ final class RecipeFormViewModel {
             return CalculatedAmountRow(label: calc.ingredient.name, weight: calc.weight, pct: pct, isSummary: false)
         }
         rows.append(CalculatedAmountRow(label: "Oils total (batch)", weight: totalOil, pct: batchPct(totalOil), isSummary: true))
-        rows.append(CalculatedAmountRow(label: "NaOH (\(lyePurity)%, \(superFat)% SF)", weight: totalLye, pct: batchPct(totalLye), isSummary: false))
+        rows.append(CalculatedAmountRow(label: "\(lyeType) (\(lyePurity)%, \(superFat)% SF)", weight: totalLye, pct: batchPct(totalLye), isSummary: false))
         rows.append(CalculatedAmountRow(label: "Water (\(waterParts):\(lyeParts))", weight: totalWater, pct: batchPct(totalWater), isSummary: false))
         rows.append(CalculatedAmountRow(label: "Batch total", weight: batchTotal, pct: 100, isSummary: true))
         return rows
