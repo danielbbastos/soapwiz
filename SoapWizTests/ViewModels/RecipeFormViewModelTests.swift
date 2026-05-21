@@ -571,7 +571,63 @@ struct RecipeFormViewModelTests {
         #expect(model.additiveDrafts[0].unit == "g")
     }
 
-    // MARK: - Calculated amounts
+    // MARK: - Calculated amounts — edge cases
+
+    @Test func oilAmountCalculations_ZeroPurity_ReturnsNil() {
+        let model = RecipeFormViewModel()
+        let oil = Ingredient(name: "Coconut Oil")
+        oil.sapValue = 0.2
+        model.addOil(oil)
+        model.totalOilWeight = "1000"
+        model.lyePurity = "0"
+
+        #expect(model.oilAmountCalculations == nil)
+    }
+
+    @Test func oilAmountCalculations_PurityAbove100_ReturnsNil() {
+        let model = RecipeFormViewModel()
+        let oil = Ingredient(name: "Coconut Oil")
+        oil.sapValue = 0.2
+        model.addOil(oil)
+        model.totalOilWeight = "1000"
+        model.lyePurity = "101"
+
+        #expect(model.oilAmountCalculations == nil)
+    }
+
+    @Test func breakdownAndCost_DirectWeightMode_UsesOilShareNotPercentage() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ing1 = Ingredient(name: "Coconut Oil")
+        ctx.insert(ing1)
+        let b1 = IngredientBatch.mock(quantity: 1000, totalPrice: 10.0)  // €0.01/g
+        b1.ingredient = ing1
+        ctx.insert(b1)
+
+        let ing2 = Ingredient(name: "Olive Oil")
+        ctx.insert(ing2)
+        let b2 = IngredientBatch.mock(quantity: 500, totalPrice: 20.0)   // €0.04/g
+        b2.ingredient = ing2
+        ctx.insert(b2)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "g"
+        model.addOil(ing1)
+        model.oilDrafts[0].amount = "300"  // 300g → 75% of 400g total
+        model.addOil(ing2)
+        model.oilDrafts[1].amount = "100"  // 100g → 25% of 400g total
+
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = "200"
+
+        let result = model.breakdownAndCost(for: draft)
+
+        // ing1: 75% of 200g = 150g × €0.01 = €1.50
+        // ing2: 25% of 200g = 50g × €0.04 = €2.00
+        #expect(abs(result.breakdown[0].ingredientAmount - 150) < 0.001)
+        #expect(abs(result.breakdown[1].ingredientAmount - 50) < 0.001)
+        #expect(abs(result.total - 3.5) < 0.001)
+    }
 
     // MARK: - Display weight unit
 

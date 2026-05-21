@@ -81,6 +81,7 @@ final class RecipeFormViewModel {
     var oilAmountCalculations: [OilAmountCalculation]? {
         guard !oilDrafts.isEmpty else { return nil }
         let purity = Double(lyePurity.replacingOccurrences(of: ",", with: ".")) ?? 99
+        guard purity > 0 && purity <= 100 else { return nil }
         let sf = Double(superFat.replacingOccurrences(of: ",", with: ".")) ?? 5
 
         if weightUnitIsPercentage {
@@ -112,8 +113,7 @@ final class RecipeFormViewModel {
     var calculatedWaterAmount: Double? {
         guard let lye = calculatedLyeAmount else { return nil }
         let water = Double(waterParts.replacingOccurrences(of: ",", with: ".")) ?? 1.5
-        let lp = Double(lyeParts.replacingOccurrences(of: ",", with: ".")) ?? 1
-        return lye * (water / lp)
+        return lye * water
     }
 
     var calculatedAmountRows: [CalculatedAmountRow]? {
@@ -227,15 +227,25 @@ final class RecipeFormViewModel {
 
     func breakdownAndCost(for product: RecipeProductDraft) -> (breakdown: [IngredientProductBreakdown], total: Double) {
         let size = Double(product.size.replacingOccurrences(of: ",", with: ".")) ?? 0
-        let breakdown = oilDrafts.map { draft in
-            let pct = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
-            let ingredientAmount = size * (pct / 100)
-            let costPer = weightedCostPerUnit(for: draft.ingredient)
-            return IngredientProductBreakdown(
-                ingredient: draft.ingredient,
-                ingredientAmount: ingredientAmount,
-                cost: ingredientAmount * costPer
-            )
+        let breakdown: [IngredientProductBreakdown]
+        if weightUnitIsPercentage {
+            breakdown = oilDrafts.map { draft in
+                let pct = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
+                let ingredientAmount = size * (pct / 100)
+                let costPer = weightedCostPerUnit(for: draft.ingredient)
+                return IngredientProductBreakdown(ingredient: draft.ingredient, ingredientAmount: ingredientAmount, cost: ingredientAmount * costPer)
+            }
+        } else {
+            let totalOilWeight = oilDrafts
+                .compactMap { Double($0.amount.replacingOccurrences(of: ",", with: ".")) }
+                .reduce(0, +)
+            breakdown = oilDrafts.map { draft in
+                let oilWeight = Double(draft.amount.replacingOccurrences(of: ",", with: ".")) ?? 0
+                let share = totalOilWeight > 0 ? oilWeight / totalOilWeight : 0
+                let ingredientAmount = size * share
+                let costPer = weightedCostPerUnit(for: draft.ingredient)
+                return IngredientProductBreakdown(ingredient: draft.ingredient, ingredientAmount: ingredientAmount, cost: ingredientAmount * costPer)
+            }
         }
         return (breakdown, breakdown.reduce(0) { $0 + $1.cost })
     }

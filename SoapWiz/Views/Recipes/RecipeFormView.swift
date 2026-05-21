@@ -145,7 +145,7 @@ private extension RecipeFormView {
             HStack {
                 Text("Water to lye ratio")
                 Spacer()
-                TextField("2", text: $model.waterParts)
+                TextField("1.5", text: $model.waterParts)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
                     .frame(width: 30)
