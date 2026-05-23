@@ -55,15 +55,31 @@ struct ExtraSectionARow: Identifiable {
     let val1: Double
     let val2: Double
     let val3: Double
-    var naohLyeSolution: (v1: Double, v2: Double, v3: Double)?
+    let naohLyeSolution: (v1: Double, v2: Double, v3: Double)?
+
+    init(label: String, val1: Double, val2: Double, val3: Double,
+         naohLyeSolution: (v1: Double, v2: Double, v3: Double)? = nil) {
+        self.label = label
+        self.val1 = val1
+        self.val2 = val2
+        self.val3 = val3
+        self.naohLyeSolution = naohLyeSolution
+    }
 }
 
 struct ExtraSectionBRow: Identifiable {
     let id = UUID()
     let label: String
     let minValue: Double
-    var maxValue: Double? = nil
-    var naohLyeSolution: Double? = nil
+    let maxValue: Double?
+    let naohLyeSolution: Double?
+
+    init(label: String, minValue: Double, maxValue: Double? = nil, naohLyeSolution: Double? = nil) {
+        self.label = label
+        self.minValue = minValue
+        self.maxValue = maxValue
+        self.naohLyeSolution = naohLyeSolution
+    }
 }
 
 @Observable
