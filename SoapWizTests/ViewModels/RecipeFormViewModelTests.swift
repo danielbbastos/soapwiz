@@ -849,6 +849,181 @@ struct RecipeFormViewModelTests {
         #expect(Double(model.fragranceDrafts[0].amount.replacingOccurrences(of: ",", with: ".")) == 10)
         #expect(model.fragranceDrafts[0].unit == "ml")
     }
+
+    // MARK: - Extra ingredient data
+
+    private func makeModelWithOils(oils: Double = 1000, waterParts: String = "1.5") -> RecipeFormViewModel {
+        let model = RecipeFormViewModel()
+        let oil = Ingredient(name: "Coconut Oil")
+        oil.sapValue = 0.2
+        model.addOil(oil)
+        model.totalOilWeight = String(oils)
+        model.oilWeightUnit = "g"
+        model.lyePurity = "100"
+        model.superFat = "0"
+        model.waterParts = waterParts
+        return model
+    }
+
+    @Test func extraIngredientData_NoOils_ReturnsNil() {
+        let model = RecipeFormViewModel()
+        #expect(model.extraIngredientData == nil)
+    }
+
+    @Test func extraIngredientData_IncompleteOilWeight_ReturnsNil() {
+        let model = RecipeFormViewModel()
+        let oil = Ingredient(name: "Coconut Oil")
+        oil.sapValue = 0.2
+        model.addOil(oil)
+        model.totalOilWeight = ""
+
+        #expect(model.extraIngredientData == nil)
+    }
+
+    @Test func extraIngredientData_SectionA_HasTwoRows() throws {
+        let model = makeModelWithOils()
+        let data = try #require(model.extraIngredientData)
+        #expect(data.sectionA.count == 2)
+    }
+
+    @Test func extraIngredientData_SectionB_HasSevenRows() throws {
+        let model = makeModelWithOils()
+        let data = try #require(model.extraIngredientData)
+        #expect(data.sectionB.count == 7)
+    }
+
+    @Test func extraIngredientData_SodiumLactate_ComputesThreePercentages() throws {
+        let model = makeModelWithOils(oils: 1000)
+        let data = try #require(model.extraIngredientData)
+        let row = data.sectionA[0]
+        #expect(row.label == "Sodium Lactate (60%)")
+        #expect(abs(row.val1 - 10) < 0.001)
+        #expect(abs(row.val2 - 20) < 0.001)
+        #expect(abs(row.val3 - 30) < 0.001)
+        #expect(row.naohLyeSolution == nil)
+    }
+
+    @Test func extraIngredientData_CitricAcid_ComputesThreePercentages() throws {
+        let model = makeModelWithOils(oils: 1000)
+        let data = try #require(model.extraIngredientData)
+        let row = data.sectionA[1]
+        #expect(row.label == "Citric Acid Powder")
+        #expect(abs(row.val1 - 10) < 0.001)
+        #expect(abs(row.val2 - 20) < 0.001)
+        #expect(abs(row.val3 - 30) < 0.001)
+    }
+
+    @Test func extraIngredientData_CitricAcid_NaOHSubRow_DividedByLyeConcentration() throws {
+        // waterParts = 1.5 → lyeConc = 1 / 2.5 = 0.4
+        let model = makeModelWithOils(oils: 1000, waterParts: "1.5")
+        let data = try #require(model.extraIngredientData)
+        let naoh = try #require(data.sectionA[1].naohLyeSolution)
+        // citric_1pct = 10, naoh_pure = 10 * 0.625 = 6.25, displayed = 6.25 / 0.4 = 15.625
+        #expect(abs(naoh.v1 - 15.625) < 0.001)
+        #expect(abs(naoh.v2 - 31.25) < 0.001)
+        #expect(abs(naoh.v3 - 46.875) < 0.001)
+    }
+
+    @Test func extraIngredientData_CitricAcid_NaOHSubRow_ScalesWithLyeConcentration() throws {
+        // waterParts = 1.0 → lyeConc = 0.5; same citric but higher displayed (less concentrated lye)
+        let modelA = makeModelWithOils(oils: 1000, waterParts: "1.5") // lyeConc = 0.4
+        let modelB = makeModelWithOils(oils: 1000, waterParts: "1.0") // lyeConc = 0.5
+        let dataA = try #require(modelA.extraIngredientData)
+        let dataB = try #require(modelB.extraIngredientData)
+        let naohA = try #require(dataA.sectionA[1].naohLyeSolution)
+        let naohB = try #require(dataB.sectionA[1].naohLyeSolution)
+        // Higher concentration (0.5 > 0.4) → smaller displayed volume
+        #expect(naohB.v1 < naohA.v1)
+    }
+
+    @Test func extraIngredientData_EOFO_ComputesCorrectly() throws {
+        let model = makeModelWithOils(oils: 1000)
+        // fragrancePercentage defaults to "3" → 1000 × 0.03 = 30
+        let data = try #require(model.extraIngredientData)
+        let row = data.sectionB[0]
+        #expect(row.label == "EO / Fragrance Oil")
+        #expect(abs(row.minValue - 30) < 0.001)
+        #expect(row.maxValue == nil)
+        #expect(row.naohLyeSolution == nil)
+    }
+
+    @Test func extraIngredientData_AscorbicAcid_ComputesValueAndNaOH() throws {
+        // waterParts = 1.5 → lyeConc = 0.4
+        let model = makeModelWithOils(oils: 1000, waterParts: "1.5")
+        let data = try #require(model.extraIngredientData)
+        let row = data.sectionB[1]
+        #expect(row.label == "Ascorbic Acid")
+        #expect(abs(row.minValue - 10) < 0.001)
+        #expect(row.maxValue == nil)
+        // naoh = 10 * 0.2020 / 0.4 = 5.05
+        let naoh = try #require(row.naohLyeSolution)
+        #expect(abs(naoh - 5.05) < 0.001)
+    }
+
+    @Test func extraIngredientData_LacticAcid_ComputesValueAndNaOH() throws {
+        // waterParts = 1.5 → lyeConc = 0.4
+        let model = makeModelWithOils(oils: 1000, waterParts: "1.5")
+        let data = try #require(model.extraIngredientData)
+        let row = data.sectionB[2]
+        #expect(row.label == "Lactic Acid")
+        #expect(abs(row.minValue - 7.5) < 0.001)
+        #expect(row.maxValue == nil)
+        // naoh = 7.5 * 0.5920 / 0.4 = 11.1
+        let naoh = try #require(row.naohLyeSolution)
+        #expect(abs(naoh - 11.1) < 0.001)
+    }
+
+    @Test func extraIngredientData_TetrasodiumEDTA_UsesBatchTotal() throws {
+        // oils = 1000, lye = 200, water = 300 → batchTotal = 1500
+        let model = makeModelWithOils(oils: 1000, waterParts: "1.5")
+        let data = try #require(model.extraIngredientData)
+        let row = data.sectionB[3]
+        #expect(row.label == "Tetrasodium EDTA")
+        // 1500 * 0.005 = 7.5
+        #expect(abs(row.minValue - 7.5) < 0.001)
+        #expect(row.maxValue == nil)
+        #expect(row.naohLyeSolution == nil)
+    }
+
+    @Test func extraIngredientData_SodiumCitrate_ComputesRange() throws {
+        let model = makeModelWithOils(oils: 1000)
+        let data = try #require(model.extraIngredientData)
+        let row = data.sectionB[4]
+        #expect(row.label == "Sodium Citrate")
+        #expect(abs(row.minValue - 13) < 0.001)
+        let max = try #require(row.maxValue)
+        #expect(abs(max - 39) < 0.001)
+    }
+
+    @Test func extraIngredientData_PotassiumCitrate_ComputesRange() throws {
+        let model = makeModelWithOils(oils: 1000)
+        let data = try #require(model.extraIngredientData)
+        let row = data.sectionB[5]
+        #expect(row.label == "Potassium Citrate")
+        #expect(abs(row.minValue - 16) < 0.001)
+        let max = try #require(row.maxValue)
+        #expect(abs(max - 48) < 0.001)
+    }
+
+    @Test func extraIngredientData_ROE_ComputesRange() throws {
+        let model = makeModelWithOils(oils: 1000)
+        let data = try #require(model.extraIngredientData)
+        let row = data.sectionB[6]
+        #expect(row.label == "Rosemary Oleoresin (ROE)")
+        #expect(abs(row.minValue - 0.4) < 0.0001)
+        let max = try #require(row.maxValue)
+        #expect(abs(max - 0.5) < 0.0001)
+    }
+
+    @Test func extraIngredientData_ScalesWithOilWeight() throws {
+        let model2000 = makeModelWithOils(oils: 2000)
+        let model1000 = makeModelWithOils(oils: 1000)
+        let data2000 = try #require(model2000.extraIngredientData)
+        let data1000 = try #require(model1000.extraIngredientData)
+        // All values should double when oil weight doubles
+        #expect(abs(data2000.sectionA[0].val1 - data1000.sectionA[0].val1 * 2) < 0.001)
+        #expect(abs(data2000.sectionB[0].minValue - data1000.sectionB[0].minValue * 2) < 0.001)
+    }
 }
 
 // MARK: - Mocks
