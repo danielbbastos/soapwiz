@@ -18,6 +18,7 @@ struct RecipeFormView: View {
 
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
+    @State private var showFragranceInfo = false
     @FocusState private var oilWeightFocused: Bool
 
     var onSave: ((Recipe) -> Void)?
@@ -71,8 +72,22 @@ private extension RecipeFormView {
             detailsSection
             weightSection
             lyeSection
+            fragranceSection
         }
         .scrollClipDisabled()
+        .sheet(isPresented: $showFragranceInfo) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("EO / Fragrances %")
+                    .font(.headline)
+                Text("The target percentage of total oil weight reserved for essential oils and fragrance oils. Used to calculate the recommended amount and to track usage in the Ingredients tab.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .presentationDetents([.fraction(0.3)])
+            .presentationDragIndicator(.visible)
+        }
     }
 
     var detailsSection: some View {
@@ -160,6 +175,28 @@ private extension RecipeFormView {
                 Text("Super Fat")
                 Spacer()
                 TextField("5", text: $model.superFat)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 60)
+                Text("%")
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    var fragranceSection: some View {
+        Section("Fragrance configuration") {
+            HStack {
+                Text("EO / Fragrances")
+                Button {
+                    showFragranceInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                Spacer()
+                TextField("3", text: $model.fragrancePercentage)
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 60)

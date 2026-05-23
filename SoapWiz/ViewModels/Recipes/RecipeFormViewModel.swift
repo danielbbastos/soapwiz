@@ -13,6 +13,13 @@ struct IngredientAmountDraft: Identifiable {
     let ingredient: Ingredient
     var amount: String = ""
     var unit: String
+    var isLocked: Bool = false
+}
+
+struct FragranceIndicator {
+    let currentText: String
+    let targetText: String?
+    let isOverTarget: Bool
 }
 
 struct RecipeProductDraft: Identifiable {
@@ -42,12 +49,45 @@ struct CalculatedAmountRow: Identifiable {
     let isSummary: Bool
 }
 
+struct ExtraSectionARow: Identifiable {
+    let id = UUID()
+    let label: String
+    let val1: Double
+    let val2: Double
+    let val3: Double
+    let naohLyeSolution: (v1: Double, v2: Double, v3: Double)?
+
+    init(label: String, val1: Double, val2: Double, val3: Double,
+         naohLyeSolution: (v1: Double, v2: Double, v3: Double)? = nil) {
+        self.label = label
+        self.val1 = val1
+        self.val2 = val2
+        self.val3 = val3
+        self.naohLyeSolution = naohLyeSolution
+    }
+}
+
+struct ExtraSectionBRow: Identifiable {
+    let id = UUID()
+    let label: String
+    let minValue: Double
+    let maxValue: Double?
+    let naohLyeSolution: Double?
+
+    init(label: String, minValue: Double, maxValue: Double? = nil, naohLyeSolution: Double? = nil) {
+        self.label = label
+        self.minValue = minValue
+        self.maxValue = maxValue
+        self.naohLyeSolution = naohLyeSolution
+    }
+}
+
 @Observable
 final class RecipeFormViewModel {
     var name: String = ""
     var desc: String = ""
     var weightUnit: String = "%"
-    var totalOilWeight: String = ""
+    var totalOilWeight: String = "1000"
     var oilWeightUnit: String = "g"
     var lyeType: String = "NaOH"
     var lyePurity: String = "99"
@@ -57,6 +97,7 @@ final class RecipeFormViewModel {
     var additiveDrafts: [IngredientAmountDraft] = []
     var fragranceDrafts: [IngredientAmountDraft] = []
     var productDrafts: [RecipeProductDraft] = []
+    var fragrancePercentage: String = "3"
 
     @ObservationIgnored
     private var editingRecipe: Recipe?
@@ -136,6 +177,131 @@ final class RecipeFormViewModel {
         return rows
     }
 
+    var fragranceTargetPercentage: Double {
+        Double(fragrancePercentage.replacingOccurrences(of: ",", with: ".")) ?? 3
+    }
+
+    var fragranceIndicator: FragranceIndicator? {
+        guard !fragranceDrafts.isEmpty else { return nil }
+
+        let units = Set(fragranceDrafts.map(\.unit))
+        let unit = units.count == 1 ? fragranceDrafts[0].unit : nil
+
+        let percentageUnits: Set<String> = ["% of oils", "% of batch", "% of liquids"]
+
+        if let unit, percentageUnits.contains(unit) {
+            let sumPct = fragranceDrafts
+                .compactMap { Double($0.amount.replacingOccurrences(of: ",", with: ".")) }
+                .reduce(0, +)
+            let targetPct = fragranceTargetPercentage
+
+            let base: Double?
+            switch unit {
+            case "% of oils":
+                let totalOil = Double(totalOilWeight.replacingOccurrences(of: ",", with: ".")) ?? 0
+                base = totalOil > 0 ? totalOil : nil
+            case "% of batch":
+                if let calcs = oilAmountCalculations,
+                   let lye = calculatedLyeAmount,
+                   let water = calculatedWaterAmount {
+                    base = calcs.reduce(0.0) { $0 + $1.weight } + lye + water
+                } else { base = nil }
+            case "% of liquids":
+                if let lye = calculatedLyeAmount, let water = calculatedWaterAmount {
+                    base = lye + water
+                } else { base = nil }
+            default: base = nil
+            }
+
+            if let base, base > 0 {
+                let fmt = { (v: Double) -> String in
+                    "\(v.formatted(.number.precision(.fractionLength(0...2)))) g"
+                }
+                let currentGrams = sumPct / 100 * base
+                if unit == "% of oils" {
+                    let targetGrams = targetPct / 100 * base
+                    return FragranceIndicator(
+                        currentText: fmt(currentGrams),
+                        targetText: fmt(targetGrams),
+                        isOverTarget: currentGrams > targetGrams * 1.005
+                    )
+                } else {
+                    return FragranceIndicator(currentText: fmt(currentGrams), targetText: nil, isOverTarget: false)
+                }
+            } else {
+                let sumText = formatPercentage(sumPct) + "%"
+                return FragranceIndicator(currentText: sumText, targetText: nil, isOverTarget: false)
+            }
+        }
+
+        let absoluteUnits: Set<String> = ["g", "kg", "oz"]
+        if let unit, absoluteUnits.contains(unit), unit == oilWeightUnit {
+            let totalOil = Double(totalOilWeight.replacingOccurrences(of: ",", with: ".")) ?? 0
+            guard totalOil > 0 else { return nil }
+            let target = totalOil * fragranceTargetPercentage / 100
+            let sum = fragranceDrafts
+                .compactMap { Double($0.amount.replacingOccurrences(of: ",", with: ".")) }
+                .reduce(0, +)
+            let fmt = { (v: Double) -> String in
+                v.formatted(.number.precision(.fractionLength(0...2)))
+            }
+            return FragranceIndicator(
+                currentText: fmt(sum),
+                targetText: "\(fmt(target)) \(unit)",
+                isOverTarget: sum > target * 1.005
+            )
+        }
+
+        return nil
+    }
+
+    private var lyeConcentration: Double {
+        let wp = Double(waterParts.replacingOccurrences(of: ",", with: ".")) ?? 1.5
+        return 1.0 / (1.0 + wp)
+    }
+
+    var extraIngredientData: (sectionA: [ExtraSectionARow], sectionB: [ExtraSectionBRow])? {
+        guard let calculations = oilAmountCalculations,
+              let totalLye = calculatedLyeAmount,
+              let totalWater = calculatedWaterAmount else { return nil }
+
+        let oils = calculations.reduce(0.0) { $0 + $1.weight }
+        guard oils > 0 else { return nil }
+
+        let lyeConc = lyeConcentration
+        let batchTotal = oils + totalLye + totalWater
+
+        let citric1 = oils * 0.01
+        let citric2 = oils * 0.02
+        let citric3 = oils * 0.03
+        let sectionA: [ExtraSectionARow] = [
+            ExtraSectionARow(label: "Sodium Lactate (60%)", val1: oils * 0.01, val2: oils * 0.02, val3: oils * 0.03),
+            ExtraSectionARow(
+                label: "Citric Acid Powder",
+                val1: citric1, val2: citric2, val3: citric3,
+                naohLyeSolution: (
+                    v1: citric1 * 0.625 / lyeConc,
+                    v2: citric2 * 0.625 / lyeConc,
+                    v3: citric3 * 0.625 / lyeConc
+                )
+            ),
+        ]
+
+        let ascorbic = oils * 0.01
+        let lactic = oils * 0.0075
+        let sectionB: [ExtraSectionBRow] = [
+            ExtraSectionBRow(label: "EO / Fragrance Oil", minValue: oils * fragranceTargetPercentage / 100),
+            ExtraSectionBRow(label: "Ascorbic Acid", minValue: ascorbic, naohLyeSolution: ascorbic * 0.2020 / lyeConc),
+            ExtraSectionBRow(label: "Lactic Acid", minValue: lactic, naohLyeSolution: lactic * 0.5920 / lyeConc),
+            ExtraSectionBRow(label: "Tetrasodium EDTA", minValue: batchTotal * 0.005),
+            ExtraSectionBRow(label: "Sodium Citrate", minValue: oils * 0.013, maxValue: oils * 0.039),
+            ExtraSectionBRow(label: "Potassium Citrate", minValue: oils * 0.016, maxValue: oils * 0.048),
+            ExtraSectionBRow(label: "Rosemary Oleoresin (ROE)", minValue: oils * 0.0004, maxValue: oils * 0.0005),
+        ]
+
+        return (sectionA, sectionB)
+    }
+
     func load(from recipe: Recipe) {
         editingRecipe = recipe
         name = recipe.name
@@ -147,6 +313,7 @@ final class RecipeFormViewModel {
         lyePurity = format(recipe.lyePurity)
         waterParts = format(recipe.waterParts)
         superFat = format(recipe.superFat)
+        fragrancePercentage = format(recipe.fragrancePercentage)
 
         oilDrafts = recipe.ingredients
             .filter { $0.ingredientRole == .oil }
@@ -209,17 +376,57 @@ final class RecipeFormViewModel {
         guard !fragranceDrafts.contains(where: {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
-        fragranceDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: "ml"))
+        let unit = fragranceUnitIsPercentageOfOils ? "% of oils" : "g"
+        fragranceDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: unit))
+        if fragranceUnitIsPercentageOfOils { redistributeFragrancePercentages() }
     }
 
     func removeFragrance(at offsets: IndexSet) {
         fragranceDrafts.remove(atOffsets: offsets)
+        if fragranceUnitIsPercentageOfOils { redistributeFragrancePercentages() }
     }
 
     func updateFragrance(id: UUID, amount: String? = nil, unit: String? = nil) {
         guard let idx = fragranceDrafts.firstIndex(where: { $0.id == id }) else { return }
         if let amount { fragranceDrafts[idx].amount = amount }
-        if let unit { fragranceDrafts[idx].unit = unit }
+        if let unit {
+            fragranceDrafts[idx].unit = unit
+            fragranceDrafts.indices.forEach { fragranceDrafts[$0].isLocked = false }
+            if unit == "% of oils" { redistributeFragrancePercentages() }
+        }
+    }
+
+    func userEditedFragrance(id: UUID, amount: String) {
+        guard let idx = fragranceDrafts.firstIndex(where: { $0.id == id }) else { return }
+        fragranceDrafts[idx].amount = amount
+        fragranceDrafts[idx].isLocked = true
+        redistributeFragrancePercentages()
+    }
+
+    private var fragranceUnitIsPercentageOfOils: Bool {
+        fragranceDrafts.first?.unit == "% of oils"
+    }
+
+    private func redistributeFragrancePercentages() {
+        let target = fragranceTargetPercentage
+        let lockedSum = fragranceDrafts
+            .filter(\.isLocked)
+            .compactMap { Double($0.amount.replacingOccurrences(of: ",", with: ".")) }
+            .reduce(0, +)
+        let remaining = max(0, target - lockedSum)
+        let unlockedIndices = fragranceDrafts.indices.filter { !fragranceDrafts[$0].isLocked }
+        guard !unlockedIndices.isEmpty else { return }
+        let share = remaining / Double(unlockedIndices.count)
+        for (enumIdx, idx) in unlockedIndices.enumerated() {
+            if enumIdx == unlockedIndices.count - 1 {
+                let assignedSum = unlockedIndices.dropLast()
+                    .compactMap { Double(fragranceDrafts[$0].amount.replacingOccurrences(of: ",", with: ".")) }
+                    .reduce(0, +)
+                fragranceDrafts[idx].amount = formatPercentage(max(0, remaining - assignedSum))
+            } else {
+                fragranceDrafts[idx].amount = formatPercentage(share)
+            }
+        }
     }
 
     func addProduct(defaultUnitSymbol: String) {
@@ -311,6 +518,7 @@ final class RecipeFormViewModel {
         recipe.lyePurity = Double(lyePurity.replacingOccurrences(of: ",", with: ".")) ?? 99
         recipe.waterParts = Double(waterParts.replacingOccurrences(of: ",", with: ".")) ?? 1.5
         recipe.superFat = Double(superFat.replacingOccurrences(of: ",", with: ".")) ?? 5
+        recipe.fragrancePercentage = Double(fragrancePercentage.replacingOccurrences(of: ",", with: ".")) ?? 3
 
         recipe.ingredients.forEach { context.delete($0) }
 
