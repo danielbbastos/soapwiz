@@ -1,7 +1,7 @@
 import Foundation
 
 struct OilQualityContribution: Identifiable {
-    var id: String { oilName }
+    let id: Int
     let oilName: String
     let value: Double
 }
@@ -56,8 +56,8 @@ struct RecipeStats {
     }
 
     func contributions(for quality: SoapQuality) -> [OilQualityContribution] {
-        oilSharedProfiles
-            .map { OilQualityContribution(oilName: $0.name, value: quality.value(from: $0.profile)) }
+        oilSharedProfiles.enumerated()
+            .map { OilQualityContribution(id: $0.offset, oilName: $0.element.name, value: quality.value(from: $0.element.profile)) }
             .filter { $0.value > 0.01 }
             .sorted { $0.value > $1.value }
     }

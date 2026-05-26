@@ -58,6 +58,15 @@ struct RecipeStatsTests {
         #expect(abs(stats.totalNaOHSap - (0.190 * 0.3 + 0.134 * 0.7)) < 0.0001)
     }
 
+    @Test func stats_MultipleOils_WeightsKOHSap() {
+        let coconut = Ingredient.mockOil(name: "Coconut", naohSap: 0.190, kohSap: 0.266)
+        let olive = Ingredient.mockOil(name: "Olive", naohSap: 0.134, kohSap: 0.188)
+        var d1 = OilIngredientDraft(ingredient: coconut); d1.amount = "30"
+        var d2 = OilIngredientDraft(ingredient: olive); d2.amount = "70"
+        let stats = RecipeStats(oilDrafts: [d1, d2])
+        #expect(abs(stats.totalKOHSap - (0.266 * 0.3 + 0.188 * 0.7)) < 0.0001)
+    }
+
     @Test func stats_OilWithoutProfile_ContributesZero() {
         let unknown = Ingredient(name: "Unknown", unit: "g")
         var draft = OilIngredientDraft(ingredient: unknown); draft.amount = "100"
@@ -71,6 +80,7 @@ extension Ingredient {
     static func mockOil(
         name: String,
         naohSap: Double,
+        kohSap: Double? = nil,
         lauric: Double = 0, myristic: Double = 0,
         palmitic: Double = 0, stearic: Double = 0,
         oleic: Double = 0, linoleic: Double = 0,
@@ -78,6 +88,7 @@ extension Ingredient {
     ) -> Ingredient {
         let ing = Ingredient(name: name, unit: "g")
         ing.sapValue = naohSap
+        ing.kohSapValue = kohSap
         var profile = FattyAcidProfile()
         profile.lauric = lauric
         profile.myristic = myristic
