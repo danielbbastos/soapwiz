@@ -219,12 +219,6 @@ private extension RecipeFormView {
 
 private extension RecipeFormView {
     var statsTab: some View {
-        Form {
-            Section {
-                Text("Cost breakdown and soap properties coming soon.")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .scrollClipDisabled()
+        RecipeStatsTabView(model: model)
     }
 }

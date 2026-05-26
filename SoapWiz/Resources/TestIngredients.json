@@ -1,7 +1,25 @@
 {
-  "categories": ["Oils", "Waxes", "Fats", "Additives", "Fragrances", "Packages", "Others"],
-  "providers": ["Plena Natura", "Aroma Zone", "New Directions", "Amazon"],
-  "storageLocations": ["Shelf A1", "Shelf A2", "Shelf B1", "Fridge"],
+  "categories": [
+    "Oils",
+    "Waxes",
+    "Fats",
+    "Additives",
+    "Fragrances",
+    "Packages",
+    "Others"
+  ],
+  "providers": [
+    "Plena Natura",
+    "Aroma Zone",
+    "New Directions",
+    "Amazon"
+  ],
+  "storageLocations": [
+    "Shelf A1",
+    "Shelf A2",
+    "Shelf B1",
+    "Fridge"
+  ],
   "ingredients": [
     {
       "name": "Olive Oil",
@@ -14,7 +32,7 @@
           "provider": "Plena Natura",
           "dateOfPurchase": "2026-03-10",
           "quantity": 5489,
-          "totalPrice": 18.50,
+          "totalPrice": 18.5,
           "badge": "OLV-001",
           "journalCode": "J-001",
           "expiryDate": "2027-03-10",
@@ -22,20 +40,32 @@
           "remainingAmount": 3513,
           "storageLocation": "Shelf A1"
         }
-      ]
+      ],
+      "scientificName": "Olea europaea",
+      "koHSapValue": 0.188,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 14,
+        "stearic": 3,
+        "oleic": 69,
+        "linoleic": 12,
+        "linolenic": 1,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Coconut Oil",
       "category": "Oils",
       "unit": "g",
-      "sapValue": 0.190,
+      "sapValue": 0.19,
       "density": null,
       "batches": [
         {
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-02-20",
           "quantity": 3000,
-          "totalPrice": 14.00,
+          "totalPrice": 14.0,
           "badge": "COC-001",
           "journalCode": "J-002",
           "expiryDate": "2028-02-20",
@@ -43,7 +73,19 @@
           "remainingAmount": 1800,
           "storageLocation": "Shelf A1"
         }
-      ]
+      ],
+      "scientificName": "Cocos nucifera",
+      "koHSapValue": 0.266,
+      "fattyAcidProfile": {
+        "lauric": 48,
+        "myristic": 19,
+        "palmitic": 9,
+        "stearic": 3,
+        "oleic": 6,
+        "linoleic": 2,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Palm Oil",
@@ -56,7 +98,7 @@
           "provider": "New Directions",
           "dateOfPurchase": "2026-01-15",
           "quantity": 4000,
-          "totalPrice": 20.00,
+          "totalPrice": 20.0,
           "badge": "PLM-001",
           "journalCode": "J-003",
           "expiryDate": "2027-01-15",
@@ -64,7 +106,19 @@
           "remainingAmount": 2500,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Elaeis guineensis",
+      "koHSapValue": 0.197,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 1,
+        "palmitic": 44,
+        "stearic": 5,
+        "oleic": 39,
+        "linoleic": 10,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Castor Oil",
@@ -77,7 +131,7 @@
           "provider": "Plena Natura",
           "dateOfPurchase": "2026-04-01",
           "quantity": 1000,
-          "totalPrice": 9.00,
+          "totalPrice": 9.0,
           "badge": "CST-001",
           "journalCode": "J-004",
           "expiryDate": "2028-04-01",
@@ -85,7 +139,19 @@
           "remainingAmount": 850,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Ricinus communis",
+      "koHSapValue": 0.18,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 1,
+        "stearic": 1,
+        "oleic": 3,
+        "linoleic": 4,
+        "linolenic": 0,
+        "ricinoleic": 90
+      }
     },
     {
       "name": "Sweet Almond Oil",
@@ -98,7 +164,7 @@
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-03-01",
           "quantity": 2000,
-          "totalPrice": 16.00,
+          "totalPrice": 16.0,
           "badge": "ALM-001",
           "journalCode": "J-005",
           "expiryDate": "2027-09-01",
@@ -106,7 +172,19 @@
           "remainingAmount": 1400,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Prunus amygdalus",
+      "koHSapValue": 0.19,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 7,
+        "stearic": 2,
+        "oleic": 69,
+        "linoleic": 17,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Avocado Oil",
@@ -119,7 +197,7 @@
           "provider": "New Directions",
           "dateOfPurchase": "2026-02-10",
           "quantity": 1641,
-          "totalPrice": 14.50,
+          "totalPrice": 14.5,
           "badge": "AVO-001",
           "journalCode": "J-006",
           "expiryDate": "2027-02-10",
@@ -127,7 +205,19 @@
           "remainingAmount": 985,
           "storageLocation": "Shelf B1"
         }
-      ]
+      ],
+      "scientificName": "Persea americana",
+      "koHSapValue": 0.187,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 18,
+        "stearic": 1,
+        "oleic": 64,
+        "linoleic": 12,
+        "linolenic": 1,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Sunflower Oil",
@@ -140,7 +230,7 @@
           "provider": "Amazon",
           "dateOfPurchase": "2026-04-10",
           "quantity": 3000,
-          "totalPrice": 8.00,
+          "totalPrice": 8.0,
           "badge": "SUN-001",
           "journalCode": "J-007",
           "expiryDate": "2027-04-10",
@@ -148,7 +238,19 @@
           "remainingAmount": 2800,
           "storageLocation": "Shelf A1"
         }
-      ]
+      ],
+      "scientificName": "Helianthus annuus",
+      "koHSapValue": 0.188,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 7,
+        "stearic": 5,
+        "oleic": 19,
+        "linoleic": 68,
+        "linolenic": 1,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Jojoba Oil",
@@ -161,7 +263,7 @@
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-01-20",
           "quantity": 500,
-          "totalPrice": 22.00,
+          "totalPrice": 22.0,
           "badge": "JJB-001",
           "journalCode": "J-008",
           "expiryDate": "2028-01-20",
@@ -169,7 +271,19 @@
           "remainingAmount": 380,
           "storageLocation": "Shelf B1"
         }
-      ]
+      ],
+      "scientificName": "Simmondsia chinensis",
+      "koHSapValue": 0.097,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 1,
+        "stearic": 0,
+        "oleic": 11,
+        "linoleic": 1,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Grapeseed Oil",
@@ -182,7 +296,7 @@
           "provider": "New Directions",
           "dateOfPurchase": "2026-03-15",
           "quantity": 1000,
-          "totalPrice": 10.00,
+          "totalPrice": 10.0,
           "badge": "GRP-001",
           "journalCode": "J-009",
           "expiryDate": "2027-03-15",
@@ -190,7 +304,19 @@
           "remainingAmount": 1000,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Vitis vinifera",
+      "koHSapValue": 0.177,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 7,
+        "stearic": 4,
+        "oleic": 16,
+        "linoleic": 70,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Argan Oil",
@@ -203,7 +329,7 @@
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-02-05",
           "quantity": 250,
-          "totalPrice": 18.00,
+          "totalPrice": 18.0,
           "badge": "ARG-001",
           "journalCode": "J-010",
           "expiryDate": "2028-02-05",
@@ -211,7 +337,19 @@
           "remainingAmount": 200,
           "storageLocation": "Shelf B1"
         }
-      ]
+      ],
+      "scientificName": "Argania spinosa",
+      "koHSapValue": 0.19,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 12,
+        "stearic": 6,
+        "oleic": 45,
+        "linoleic": 35,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Apricot Kernel Oil",
@@ -224,7 +362,7 @@
           "provider": "Plena Natura",
           "dateOfPurchase": "2026-04-20",
           "quantity": 1000,
-          "totalPrice": 11.00,
+          "totalPrice": 11.0,
           "badge": "APR-001",
           "journalCode": "J-011",
           "expiryDate": "2027-10-20",
@@ -232,7 +370,19 @@
           "remainingAmount": 1000,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Prunus armeniaca",
+      "koHSapValue": 0.189,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 6,
+        "stearic": 1,
+        "oleic": 60,
+        "linoleic": 30,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Hemp Seed Oil",
@@ -245,7 +395,7 @@
           "provider": "Amazon",
           "dateOfPurchase": "2026-03-25",
           "quantity": 500,
-          "totalPrice": 13.00,
+          "totalPrice": 13.0,
           "badge": "HMP-001",
           "journalCode": "J-012",
           "expiryDate": "2026-09-25",
@@ -253,7 +403,19 @@
           "remainingAmount": 420,
           "storageLocation": "Fridge"
         }
-      ]
+      ],
+      "scientificName": "Cannabis sativa",
+      "koHSapValue": 0.189,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 6,
+        "stearic": 2,
+        "oleic": 12,
+        "linoleic": 57,
+        "linolenic": 18,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Rice Bran Oil",
@@ -266,7 +428,7 @@
           "provider": "New Directions",
           "dateOfPurchase": "2026-01-10",
           "quantity": 2000,
-          "totalPrice": 12.00,
+          "totalPrice": 12.0,
           "badge": "RCB-001",
           "journalCode": "J-013",
           "expiryDate": "2027-01-10",
@@ -274,7 +436,19 @@
           "remainingAmount": 1200,
           "storageLocation": "Shelf A1"
         }
-      ]
+      ],
+      "scientificName": "Oryza sativa",
+      "koHSapValue": 0.18,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 1,
+        "palmitic": 22,
+        "stearic": 3,
+        "oleic": 38,
+        "linoleic": 34,
+        "linolenic": 1,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Safflower Oil",
@@ -287,7 +461,7 @@
           "provider": "Amazon",
           "dateOfPurchase": "2026-02-28",
           "quantity": 1082,
-          "totalPrice": 9.50,
+          "totalPrice": 9.5,
           "badge": "SFF-001",
           "journalCode": "J-014",
           "expiryDate": "2027-02-28",
@@ -295,7 +469,19 @@
           "remainingAmount": 1082,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Carthamus tinctorius",
+      "koHSapValue": 0.19,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 7,
+        "stearic": 2,
+        "oleic": 13,
+        "linoleic": 78,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Sesame Oil",
@@ -308,7 +494,7 @@
           "provider": "Plena Natura",
           "dateOfPurchase": "2026-03-05",
           "quantity": 1088,
-          "totalPrice": 10.50,
+          "totalPrice": 10.5,
           "badge": "SSM-001",
           "journalCode": "J-015",
           "expiryDate": "2027-03-05",
@@ -316,7 +502,19 @@
           "remainingAmount": 816,
           "storageLocation": "Shelf B1"
         }
-      ]
+      ],
+      "scientificName": "Sesamum indicum",
+      "koHSapValue": 0.187,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 9,
+        "stearic": 6,
+        "oleic": 41,
+        "linoleic": 43,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Canola Oil",
@@ -329,7 +527,7 @@
           "provider": "Amazon",
           "dateOfPurchase": "2026-04-05",
           "quantity": 3000,
-          "totalPrice": 7.00,
+          "totalPrice": 7.0,
           "badge": "CNL-001",
           "journalCode": "J-016",
           "expiryDate": "2027-04-05",
@@ -337,7 +535,19 @@
           "remainingAmount": 3000,
           "storageLocation": "Shelf A1"
         }
-      ]
+      ],
+      "scientificName": "Brassica napus",
+      "koHSapValue": 0.174,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 4,
+        "stearic": 2,
+        "oleic": 62,
+        "linoleic": 22,
+        "linolenic": 10,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Macadamia Oil",
@@ -350,7 +560,7 @@
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-01-25",
           "quantity": 500,
-          "totalPrice": 20.00,
+          "totalPrice": 20.0,
           "badge": "MCD-001",
           "journalCode": "J-017",
           "expiryDate": "2028-01-25",
@@ -358,7 +568,19 @@
           "remainingAmount": 350,
           "storageLocation": "Shelf B1"
         }
-      ]
+      ],
+      "scientificName": "Macadamia integrifolia",
+      "koHSapValue": 0.195,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 8,
+        "stearic": 4,
+        "oleic": 59,
+        "linoleic": 2,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Neem Oil",
@@ -371,7 +593,7 @@
           "provider": "New Directions",
           "dateOfPurchase": "2026-02-15",
           "quantity": 500,
-          "totalPrice": 8.00,
+          "totalPrice": 8.0,
           "badge": "NEM-001",
           "journalCode": "J-018",
           "expiryDate": "2027-02-15",
@@ -379,7 +601,19 @@
           "remainingAmount": 450,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Azadirachta indica",
+      "koHSapValue": 0.185,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 18,
+        "stearic": 16,
+        "oleic": 50,
+        "linoleic": 14,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Babassu Oil",
@@ -392,7 +626,7 @@
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-03-20",
           "quantity": 500,
-          "totalPrice": 16.00,
+          "totalPrice": 16.0,
           "badge": "BBS-001",
           "journalCode": "J-019",
           "expiryDate": "2028-03-20",
@@ -400,7 +634,19 @@
           "remainingAmount": 500,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Attalea speciosa",
+      "koHSapValue": 0.246,
+      "fattyAcidProfile": {
+        "lauric": 50,
+        "myristic": 20,
+        "palmitic": 11,
+        "stearic": 4,
+        "oleic": 10,
+        "linoleic": 2,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Palm Kernel Oil",
@@ -413,7 +659,7 @@
           "provider": "New Directions",
           "dateOfPurchase": "2026-01-05",
           "quantity": 2000,
-          "totalPrice": 15.00,
+          "totalPrice": 15.0,
           "badge": "PKO-001",
           "journalCode": "J-020",
           "expiryDate": "2027-01-05",
@@ -421,20 +667,32 @@
           "remainingAmount": 1600,
           "storageLocation": "Shelf A1"
         }
-      ]
+      ],
+      "scientificName": "Elaeis guineensis (kernel)",
+      "koHSapValue": 0.219,
+      "fattyAcidProfile": {
+        "lauric": 48,
+        "myristic": 16,
+        "palmitic": 8,
+        "stearic": 3,
+        "oleic": 15,
+        "linoleic": 2,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Tamanu Oil",
       "category": "Oils",
       "unit": "g",
-      "sapValue": 0.120,
+      "sapValue": 0.12,
       "density": null,
       "batches": [
         {
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-04-15",
           "quantity": 250,
-          "totalPrice": 19.00,
+          "totalPrice": 19.0,
           "badge": "TMN-001",
           "journalCode": "J-021",
           "expiryDate": "2028-04-15",
@@ -442,7 +700,19 @@
           "remainingAmount": 250,
           "storageLocation": "Shelf B1"
         }
-      ]
+      ],
+      "scientificName": "Calophyllum inophyllum",
+      "koHSapValue": 0.169,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 13,
+        "stearic": 14,
+        "oleic": 39,
+        "linoleic": 30,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Meadowfoam Seed Oil",
@@ -455,7 +725,7 @@
           "provider": "New Directions",
           "dateOfPurchase": "2026-03-28",
           "quantity": 250,
-          "totalPrice": 17.00,
+          "totalPrice": 17.0,
           "badge": "MDF-001",
           "journalCode": "J-022",
           "expiryDate": "2028-03-28",
@@ -463,7 +733,19 @@
           "remainingAmount": 250,
           "storageLocation": "Shelf B1"
         }
-      ]
+      ],
+      "scientificName": "Limnanthes alba",
+      "koHSapValue": 0.167,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 0,
+        "stearic": 0,
+        "oleic": 4,
+        "linoleic": 1,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Pumpkin Seed Oil",
@@ -476,7 +758,7 @@
           "provider": "Amazon",
           "dateOfPurchase": "2026-02-22",
           "quantity": 500,
-          "totalPrice": 11.00,
+          "totalPrice": 11.0,
           "badge": "PKN-001",
           "journalCode": "J-023",
           "expiryDate": "2027-02-22",
@@ -484,7 +766,19 @@
           "remainingAmount": 400,
           "storageLocation": "Fridge"
         }
-      ]
+      ],
+      "scientificName": "Cucurbita pepo",
+      "koHSapValue": 0.187,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 13,
+        "stearic": 7,
+        "oleic": 30,
+        "linoleic": 50,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Soybean Oil",
@@ -497,7 +791,7 @@
           "provider": "Amazon",
           "dateOfPurchase": "2026-04-08",
           "quantity": 2000,
-          "totalPrice": 6.50,
+          "totalPrice": 6.5,
           "badge": "SOY-001",
           "journalCode": "J-024",
           "expiryDate": "2027-04-08",
@@ -505,7 +799,19 @@
           "remainingAmount": 2000,
           "storageLocation": "Shelf A1"
         }
-      ]
+      ],
+      "scientificName": "Glycine max",
+      "koHSapValue": 0.19,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 10,
+        "stearic": 4,
+        "oleic": 23,
+        "linoleic": 54,
+        "linolenic": 8,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Corn Oil",
@@ -518,7 +824,7 @@
           "provider": "Amazon",
           "dateOfPurchase": "2026-01-30",
           "quantity": 2000,
-          "totalPrice": 7.50,
+          "totalPrice": 7.5,
           "badge": "CRN-001",
           "journalCode": "J-025",
           "expiryDate": "2027-01-30",
@@ -526,7 +832,19 @@
           "remainingAmount": 1500,
           "storageLocation": "Shelf A1"
         }
-      ]
+      ],
+      "scientificName": "Zea mays",
+      "koHSapValue": 0.19,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 11,
+        "stearic": 2,
+        "oleic": 28,
+        "linoleic": 58,
+        "linolenic": 1,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Beeswax",
@@ -539,7 +857,7 @@
           "provider": "Plena Natura",
           "dateOfPurchase": "2026-02-01",
           "quantity": 500,
-          "totalPrice": 12.00,
+          "totalPrice": 12.0,
           "badge": "BWX-001",
           "journalCode": "J-026",
           "expiryDate": null,
@@ -547,7 +865,19 @@
           "remainingAmount": 380,
           "storageLocation": "Shelf B1"
         }
-      ]
+      ],
+      "scientificName": "Apis mellifera",
+      "koHSapValue": 0.097,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 0,
+        "stearic": 0,
+        "oleic": 0,
+        "linoleic": 0,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Candelilla Wax",
@@ -560,7 +890,7 @@
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-03-10",
           "quantity": 200,
-          "totalPrice": 8.50,
+          "totalPrice": 8.5,
           "badge": "CDW-001",
           "journalCode": "J-027",
           "expiryDate": null,
@@ -568,7 +898,19 @@
           "remainingAmount": 200,
           "storageLocation": "Shelf B1"
         }
-      ]
+      ],
+      "scientificName": "Euphorbia cerifera",
+      "koHSapValue": 0.046,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 0,
+        "stearic": 0,
+        "oleic": 0,
+        "linoleic": 0,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Lard",
@@ -581,7 +923,7 @@
           "provider": "Plena Natura",
           "dateOfPurchase": "2026-04-01",
           "quantity": 2000,
-          "totalPrice": 6.00,
+          "totalPrice": 6.0,
           "badge": "LRD-001",
           "journalCode": "J-028",
           "expiryDate": "2026-10-01",
@@ -589,20 +931,32 @@
           "remainingAmount": 1700,
           "storageLocation": "Fridge"
         }
-      ]
+      ],
+      "scientificName": "Sus scrofa",
+      "koHSapValue": 0.194,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 1,
+        "palmitic": 27,
+        "stearic": 14,
+        "oleic": 44,
+        "linoleic": 10,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Beef Tallow",
       "category": "Fats",
       "unit": "g",
-      "sapValue": 0.140,
+      "sapValue": 0.14,
       "density": null,
       "batches": [
         {
           "provider": "Plena Natura",
           "dateOfPurchase": "2026-03-15",
           "quantity": 2000,
-          "totalPrice": 8.00,
+          "totalPrice": 8.0,
           "badge": "TLW-001",
           "journalCode": "J-029",
           "expiryDate": "2026-09-15",
@@ -610,7 +964,19 @@
           "remainingAmount": 1500,
           "storageLocation": "Fridge"
         }
-      ]
+      ],
+      "scientificName": "Bos taurus",
+      "koHSapValue": 0.196,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 3,
+        "palmitic": 25,
+        "stearic": 19,
+        "oleic": 36,
+        "linoleic": 3,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Shea Butter",
@@ -623,7 +989,7 @@
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-02-10",
           "quantity": 1000,
-          "totalPrice": 11.00,
+          "totalPrice": 11.0,
           "badge": "SHA-001",
           "journalCode": "J-030",
           "expiryDate": "2028-02-10",
@@ -631,7 +997,19 @@
           "remainingAmount": 700,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Vitellaria paradoxa",
+      "koHSapValue": 0.179,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 5,
+        "stearic": 38,
+        "oleic": 50,
+        "linoleic": 5,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Cocoa Butter",
@@ -644,7 +1022,7 @@
           "provider": "New Directions",
           "dateOfPurchase": "2026-01-20",
           "quantity": 1000,
-          "totalPrice": 13.00,
+          "totalPrice": 13.0,
           "badge": "CCB-001",
           "journalCode": "J-031",
           "expiryDate": "2028-01-20",
@@ -652,7 +1030,19 @@
           "remainingAmount": 650,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Theobroma cacao",
+      "koHSapValue": 0.192,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 27,
+        "stearic": 33,
+        "oleic": 33,
+        "linoleic": 3,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Mango Butter",
@@ -665,7 +1055,7 @@
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-04-12",
           "quantity": 500,
-          "totalPrice": 9.00,
+          "totalPrice": 9.0,
           "badge": "MNG-001",
           "journalCode": "J-032",
           "expiryDate": "2028-04-12",
@@ -673,7 +1063,19 @@
           "remainingAmount": 500,
           "storageLocation": "Shelf A2"
         }
-      ]
+      ],
+      "scientificName": "Mangifera indica",
+      "koHSapValue": 0.18,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 5,
+        "stearic": 42,
+        "oleic": 47,
+        "linoleic": 3,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
     },
     {
       "name": "Sodium Hydroxide (Lye)",
@@ -686,7 +1088,7 @@
           "provider": "Amazon",
           "dateOfPurchase": "2026-03-01",
           "quantity": 1000,
-          "totalPrice": 8.00,
+          "totalPrice": 8.0,
           "badge": "LYE-001",
           "journalCode": "J-033",
           "expiryDate": null,
@@ -707,7 +1109,7 @@
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-02-01",
           "quantity": 250,
-          "totalPrice": 5.50,
+          "totalPrice": 5.5,
           "badge": "NLT-001",
           "journalCode": "J-034",
           "expiryDate": "2028-02-01",
@@ -728,7 +1130,7 @@
           "provider": "Plena Natura",
           "dateOfPurchase": "2026-01-15",
           "quantity": 500,
-          "totalPrice": 4.00,
+          "totalPrice": 4.0,
           "badge": "GLY-001",
           "journalCode": "J-035",
           "expiryDate": null,
@@ -749,7 +1151,7 @@
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-03-08",
           "quantity": 100,
-          "totalPrice": 4.50,
+          "totalPrice": 4.5,
           "badge": "TIO-001",
           "journalCode": "J-036",
           "expiryDate": null,
@@ -770,7 +1172,7 @@
           "provider": "Plena Natura",
           "dateOfPurchase": "2026-02-20",
           "quantity": 100,
-          "totalPrice": 12.00,
+          "totalPrice": 12.0,
           "badge": "LVD-001",
           "journalCode": "J-037",
           "expiryDate": "2028-02-20",
@@ -785,13 +1187,13 @@
       "category": "Fragrances",
       "unit": "ml",
       "sapValue": null,
-      "density": 0.90,
+      "density": 0.9,
       "batches": [
         {
           "provider": "Aroma Zone",
           "dateOfPurchase": "2026-01-10",
           "quantity": 50,
-          "totalPrice": 9.00,
+          "totalPrice": 9.0,
           "badge": "PPM-001",
           "journalCode": "J-038",
           "expiryDate": "2028-01-10",
@@ -812,7 +1214,7 @@
           "provider": "Plena Natura",
           "dateOfPurchase": "2026-04-18",
           "quantity": 50,
-          "totalPrice": 7.50,
+          "totalPrice": 7.5,
           "badge": "EUC-001",
           "journalCode": "J-039",
           "expiryDate": "2028-04-18",
