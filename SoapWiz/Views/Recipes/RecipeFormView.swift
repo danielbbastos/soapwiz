@@ -33,6 +33,7 @@ struct RecipeFormView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .shadow(color: .black.opacity(0.12), radius: 4, y: 1)
                 .padding(.horizontal)
                 .padding(.vertical, 8)
             }

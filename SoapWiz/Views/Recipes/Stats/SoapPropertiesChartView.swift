@@ -13,7 +13,7 @@ struct SoapPropertiesChartView: View {
                     x: .value("Quality", quality.displayName),
                     yStart: .value("Min", range.lowerBound),
                     yEnd: .value("Max", range.upperBound),
-                    width: .ratio(0.7)
+                    width: .ratio(0.78)
                 )
                 .foregroundStyle(.gray.opacity(0.18))
                 .cornerRadius(4)

@@ -27,6 +27,7 @@ struct RecipeIngredientsTabView: View {
     @State private var extraIngredientsExpanded = false
     @State private var selectedSectionAPct: Int = 1
     @State private var showSectionAInfo = false
+    @State private var costBreakdownExpanded = false
 
     var body: some View {
         Form {
@@ -37,6 +38,9 @@ struct RecipeIngredientsTabView: View {
             extraIngredientsSection
         }
         .scrollClipDisabled()
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            CostBreakdownBarView(model: model, isExpanded: $costBreakdownExpanded)
+        }
         .sheet(isPresented: $showSectionAInfo) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Dosage Percentages")

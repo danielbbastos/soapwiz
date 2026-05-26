@@ -2,7 +2,6 @@ import SwiftUI
 
 struct RecipeStatsTabView: View {
     @Bindable var model: RecipeFormViewModel
-    @State private var productsExpanded = true
 
     private var stats: RecipeStats {
         RecipeStats(oilDrafts: model.oilDrafts)
@@ -10,60 +9,12 @@ struct RecipeStatsTabView: View {
 
     var body: some View {
         Form {
-            productsSection
             propertiesSection
             indicatorsSection
             fattyAcidSection
             calculatedValuesSection
         }
         .scrollClipDisabled()
-    }
-
-    private var productsSection: some View {
-        Section(header: sectionHeader("Cost breakdown", expanded: $productsExpanded)) {
-            if productsExpanded {
-                ScrollViewReader { proxy in
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        LazyHStack(spacing: 0) {
-                            ForEach($model.productDrafts) { $draft in
-                                let result = model.breakdownAndCost(for: draft)
-                                RecipeProductCardView(
-                                    draft: $draft,
-                                    breakdown: result.breakdown,
-                                    totalCost: result.total,
-                                    availableUnits: IngredientUnit.allCases
-                                )
-                                .containerRelativeFrame(.horizontal)
-                                .id(draft.id)
-                            }
-                            AddProductCardView {
-                                model.addProduct(defaultUnitSymbol: IngredientUnit.grams.rawValue)
-                                if let newID = model.productDrafts.last?.id {
-                                    withAnimation { proxy.scrollTo(newID) }
-                                }
-                            }
-                            .containerRelativeFrame(.horizontal)
-                            .id("addButton")
-                        }
-                        .scrollTargetLayout()
-                    }
-                    .scrollTargetBehavior(.paging)
-                }
-                .listRowInsets(EdgeInsets())
-
-                if !model.productDrafts.isEmpty {
-                    HStack(spacing: 6) {
-                        ForEach(0..<model.productDrafts.count, id: \.self) { _ in
-                            Circle()
-                                .fill(Color.secondary.opacity(0.5))
-                                .frame(width: 6, height: 6)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 2)
-                }
-            }
-        }
     }
 
     private var propertiesSection: some View {
@@ -155,19 +106,4 @@ struct RecipeStatsTabView: View {
         }
     }
 
-    private func sectionHeader(_ title: String, expanded: Binding<Bool>) -> some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) { expanded.wrappedValue.toggle() }
-        } label: {
-            HStack {
-                Text(title)
-                Spacer()
-                Image(systemName: "chevron.down")
-                    .rotationEffect(.degrees(expanded.wrappedValue ? 0 : -90))
-                    .animation(.easeInOut(duration: 0.2), value: expanded.wrappedValue)
-            }
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.primary)
-    }
 }
