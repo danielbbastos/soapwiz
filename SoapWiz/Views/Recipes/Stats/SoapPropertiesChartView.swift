@@ -4,6 +4,7 @@ import Charts
 struct SoapPropertiesChartView: View {
     let profile: FattyAcidProfile
     let hasOils: Bool
+    @Binding var selectedDisplayName: String?
 
     var body: some View {
         Chart {
@@ -40,6 +41,98 @@ struct SoapPropertiesChartView: View {
         .chartYAxis {
             AxisMarks(values: [0, 20, 40, 60, 80, 100])
         }
+        .chartXAxis {
+            AxisMarks { value in
+                AxisValueLabel {
+                    if let name = value.as(String.self),
+                       let quality = SoapQuality.allCases.first(where: { $0.displayName == name }) {
+                        Text(quality.shortName)
+                    }
+                }
+            }
+        }
+        .chartOverlay { proxy in
+            GeometryReader { geo in
+                Rectangle()
+                    .fill(.clear)
+                    .contentShape(Rectangle())
+                    .onTapGesture { location in
+                        guard let plotFrame = proxy.plotFrame else { return }
+                        let origin = geo[plotFrame].origin
+                        let x = location.x - origin.x
+                        if let name: String = proxy.value(atX: x) {
+                            withAnimation(.easeInOut(duration: 0.22)) {
+                                selectedDisplayName = (selectedDisplayName == name) ? nil : name
+                            }
+                        }
+                    }
+            }
+        }
         .frame(height: 260)
+    }
+}
+
+struct OilContributionCardView: View {
+    let quality: SoapQuality
+    let totalValue: Double
+    let contributions: [OilQualityContribution]
+    var onClose: () -> Void
+
+    private var rangeText: String {
+        let lo = quality.recommendedRange.lowerBound.formatted(.number.precision(.fractionLength(0)))
+        let hi = quality.recommendedRange.upperBound.formatted(.number.precision(.fractionLength(0)))
+        return "Recommended: \(lo) – \(hi)"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Circle()
+                    .fill(quality.color)
+                    .frame(width: 10, height: 10)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(quality.displayName)
+                        .font(.subheadline.weight(.semibold))
+                    Text(rangeText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                Spacer()
+                Text(totalValue, format: .number.precision(.fractionLength(1)))
+                    .font(.subheadline.weight(.semibold))
+                    .monospacedDigit()
+                Button(action: onClose) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if contributions.isEmpty {
+                Text("No oil in this recipe contributes to \(quality.displayName.lowercased()).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(contributions) { row in
+                    HStack {
+                        Text(row.oilName)
+                            .font(.caption)
+                        Spacer()
+                        Text(row.value, format: .number.precision(.fractionLength(1)))
+                            .font(.caption)
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(quality.color.opacity(0.08), in: .rect(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(quality.color.opacity(0.25), lineWidth: 1)
+        )
     }
 }

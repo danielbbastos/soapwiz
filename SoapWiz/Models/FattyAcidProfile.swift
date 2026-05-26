@@ -27,6 +27,19 @@ struct FattyAcidProfile: Codable, Equatable {
 
     static let zero = FattyAcidProfile()
 
+    func scaled(by factor: Double) -> FattyAcidProfile {
+        var p = FattyAcidProfile()
+        p.lauric = lauric * factor
+        p.myristic = myristic * factor
+        p.palmitic = palmitic * factor
+        p.stearic = stearic * factor
+        p.oleic = oleic * factor
+        p.linoleic = linoleic * factor
+        p.linolenic = linolenic * factor
+        p.ricinoleic = ricinoleic * factor
+        return p
+    }
+
     static func weightedSum(_ contributions: [(profile: FattyAcidProfile, weight: Double)]) -> FattyAcidProfile {
         let totalWeight = contributions.reduce(0) { $0 + $1.weight }
         guard totalWeight > 0 else { return .zero }

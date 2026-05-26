@@ -6,10 +6,18 @@ struct SoapPropertyIndicatorView: View {
     let recommended: ClosedRange<Double>
     let scale: ClosedRange<Double>
 
+    @State private var showingRange = false
+
     private var status: Status {
         if recommended.contains(value) { .ideal }
         else if value < recommended.lowerBound { .low }
         else { .high }
+    }
+
+    private var rangeText: String {
+        let lo = recommended.lowerBound.formatted(.number.precision(.fractionLength(0)))
+        let hi = recommended.upperBound.formatted(.number.precision(.fractionLength(0)))
+        return "\(lo) – \(hi)"
     }
 
     var body: some View {
@@ -40,19 +48,44 @@ struct SoapPropertyIndicatorView: View {
                     Capsule()
                         .fill(.gray.opacity(0.18))
                         .frame(height: 8)
-                    Capsule()
-                        .fill(.green.opacity(0.35))
-                        .frame(width: bandWidth, height: 8)
-                        .offset(x: bandStart)
+
+                    HStack(spacing: 0) {
+                        Color.clear.frame(width: bandStart)
+                        Button {
+                            showingRange = true
+                        } label: {
+                            Capsule()
+                                .fill(.green.opacity(0.35))
+                                .frame(width: bandWidth, height: 22)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .popover(isPresented: $showingRange, arrowEdge: .top) {
+                            VStack(alignment: .center, spacing: 2) {
+                                Text("Recommended")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                Text(rangeText)
+                                    .font(.caption)
+                                    .monospacedDigit()
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .presentationCompactAdaptation(.popover)
+                        }
+                        Spacer(minLength: 0)
+                    }
+
                     Circle()
                         .fill(.tint)
                         .frame(width: 14, height: 14)
                         .overlay(Circle().stroke(.background, lineWidth: 2))
-                        .offset(x: markerX - 7)
+                        .position(x: markerX, y: 11)
+                        .allowsHitTesting(false)
                 }
-                .frame(height: 14)
+                .frame(height: 22)
             }
-            .frame(height: 14)
+            .frame(height: 22)
         }
     }
 

@@ -41,8 +41,7 @@
           "storageLocation": "Shelf A1"
         }
       ],
-      "scientificName": "Olea europaea",
-      "koHSapValue": 0.188,
+      "kohSapValue": 0.188,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -74,8 +73,7 @@
           "storageLocation": "Shelf A1"
         }
       ],
-      "scientificName": "Cocos nucifera",
-      "koHSapValue": 0.266,
+      "kohSapValue": 0.266,
       "fattyAcidProfile": {
         "lauric": 48,
         "myristic": 19,
@@ -107,8 +105,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Elaeis guineensis",
-      "koHSapValue": 0.197,
+      "kohSapValue": 0.197,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 1,
@@ -140,8 +137,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Ricinus communis",
-      "koHSapValue": 0.18,
+      "kohSapValue": 0.18,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -173,8 +169,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Prunus amygdalus",
-      "koHSapValue": 0.19,
+      "kohSapValue": 0.19,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -206,8 +201,7 @@
           "storageLocation": "Shelf B1"
         }
       ],
-      "scientificName": "Persea americana",
-      "koHSapValue": 0.187,
+      "kohSapValue": 0.187,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -239,8 +233,7 @@
           "storageLocation": "Shelf A1"
         }
       ],
-      "scientificName": "Helianthus annuus",
-      "koHSapValue": 0.188,
+      "kohSapValue": 0.188,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -272,8 +265,7 @@
           "storageLocation": "Shelf B1"
         }
       ],
-      "scientificName": "Simmondsia chinensis",
-      "koHSapValue": 0.097,
+      "kohSapValue": 0.097,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -305,8 +297,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Vitis vinifera",
-      "koHSapValue": 0.177,
+      "kohSapValue": 0.177,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -338,8 +329,7 @@
           "storageLocation": "Shelf B1"
         }
       ],
-      "scientificName": "Argania spinosa",
-      "koHSapValue": 0.19,
+      "kohSapValue": 0.19,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -371,8 +361,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Prunus armeniaca",
-      "koHSapValue": 0.189,
+      "kohSapValue": 0.189,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -404,8 +393,7 @@
           "storageLocation": "Fridge"
         }
       ],
-      "scientificName": "Cannabis sativa",
-      "koHSapValue": 0.189,
+      "kohSapValue": 0.189,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -437,8 +425,7 @@
           "storageLocation": "Shelf A1"
         }
       ],
-      "scientificName": "Oryza sativa",
-      "koHSapValue": 0.18,
+      "kohSapValue": 0.18,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 1,
@@ -470,8 +457,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Carthamus tinctorius",
-      "koHSapValue": 0.19,
+      "kohSapValue": 0.19,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -503,8 +489,7 @@
           "storageLocation": "Shelf B1"
         }
       ],
-      "scientificName": "Sesamum indicum",
-      "koHSapValue": 0.187,
+      "kohSapValue": 0.187,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -536,8 +521,7 @@
           "storageLocation": "Shelf A1"
         }
       ],
-      "scientificName": "Brassica napus",
-      "koHSapValue": 0.174,
+      "kohSapValue": 0.174,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -569,8 +553,7 @@
           "storageLocation": "Shelf B1"
         }
       ],
-      "scientificName": "Macadamia integrifolia",
-      "koHSapValue": 0.195,
+      "kohSapValue": 0.195,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -602,8 +585,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Azadirachta indica",
-      "koHSapValue": 0.185,
+      "kohSapValue": 0.185,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -635,8 +617,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Attalea speciosa",
-      "koHSapValue": 0.246,
+      "kohSapValue": 0.246,
       "fattyAcidProfile": {
         "lauric": 50,
         "myristic": 20,
@@ -668,8 +649,7 @@
           "storageLocation": "Shelf A1"
         }
       ],
-      "scientificName": "Elaeis guineensis (kernel)",
-      "koHSapValue": 0.219,
+      "kohSapValue": 0.219,
       "fattyAcidProfile": {
         "lauric": 48,
         "myristic": 16,
@@ -701,8 +681,7 @@
           "storageLocation": "Shelf B1"
         }
       ],
-      "scientificName": "Calophyllum inophyllum",
-      "koHSapValue": 0.169,
+      "kohSapValue": 0.169,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -734,8 +713,7 @@
           "storageLocation": "Shelf B1"
         }
       ],
-      "scientificName": "Limnanthes alba",
-      "koHSapValue": 0.167,
+      "kohSapValue": 0.167,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -767,8 +745,7 @@
           "storageLocation": "Fridge"
         }
       ],
-      "scientificName": "Cucurbita pepo",
-      "koHSapValue": 0.187,
+      "kohSapValue": 0.187,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -800,8 +777,7 @@
           "storageLocation": "Shelf A1"
         }
       ],
-      "scientificName": "Glycine max",
-      "koHSapValue": 0.19,
+      "kohSapValue": 0.19,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -833,8 +809,7 @@
           "storageLocation": "Shelf A1"
         }
       ],
-      "scientificName": "Zea mays",
-      "koHSapValue": 0.19,
+      "kohSapValue": 0.19,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -866,8 +841,7 @@
           "storageLocation": "Shelf B1"
         }
       ],
-      "scientificName": "Apis mellifera",
-      "koHSapValue": 0.097,
+      "kohSapValue": 0.097,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -899,8 +873,7 @@
           "storageLocation": "Shelf B1"
         }
       ],
-      "scientificName": "Euphorbia cerifera",
-      "koHSapValue": 0.046,
+      "kohSapValue": 0.046,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -932,8 +905,7 @@
           "storageLocation": "Fridge"
         }
       ],
-      "scientificName": "Sus scrofa",
-      "koHSapValue": 0.194,
+      "kohSapValue": 0.194,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 1,
@@ -965,8 +937,7 @@
           "storageLocation": "Fridge"
         }
       ],
-      "scientificName": "Bos taurus",
-      "koHSapValue": 0.196,
+      "kohSapValue": 0.196,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 3,
@@ -998,8 +969,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Vitellaria paradoxa",
-      "koHSapValue": 0.179,
+      "kohSapValue": 0.179,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -1031,8 +1001,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Theobroma cacao",
-      "koHSapValue": 0.192,
+      "kohSapValue": 0.192,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,
@@ -1064,8 +1033,7 @@
           "storageLocation": "Shelf A2"
         }
       ],
-      "scientificName": "Mangifera indica",
-      "koHSapValue": 0.18,
+      "kohSapValue": 0.18,
       "fattyAcidProfile": {
         "lauric": 0,
         "myristic": 0,

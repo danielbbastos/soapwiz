@@ -1,5 +1,11 @@
 import Foundation
 
+struct OilQualityContribution: Identifiable {
+    var id: String { oilName }
+    let oilName: String
+    let value: Double
+}
+
 struct RecipeStats {
     let fattyAcidProfile: FattyAcidProfile
     let iodineValue: Double
@@ -7,6 +13,7 @@ struct RecipeStats {
     let totalNaOHSap: Double
     let totalKOHSap: Double
     let hasOils: Bool
+    private let oilSharedProfiles: [(name: String, profile: FattyAcidProfile)]
 
     init(oilDrafts: [OilIngredientDraft]) {
         let contributions: [(amount: Double, ingredient: Ingredient)] = oilDrafts.compactMap { draft in
@@ -26,19 +33,32 @@ struct RecipeStats {
 
         let totalWeight = contributions.reduce(0.0) { $0 + $1.amount }
         if totalWeight > 0 {
+            self.oilSharedProfiles = contributions.map { contrib in
+                let share = contrib.amount / totalWeight
+                let p = contrib.ingredient.fattyAcidProfile ?? .zero
+                return (contrib.ingredient.name, p.scaled(by: share))
+            }
             let weightedNaOH = contributions.reduce(0.0) { acc, contrib in
                 acc + (contrib.ingredient.sapValue ?? 0) * (contrib.amount / totalWeight)
             }
             let weightedKOH = contributions.reduce(0.0) { acc, contrib in
-                acc + (contrib.ingredient.koHSapValue ?? 0) * (contrib.amount / totalWeight)
+                acc + (contrib.ingredient.kohSapValue ?? 0) * (contrib.amount / totalWeight)
             }
             self.totalNaOHSap = weightedNaOH
             self.totalKOHSap = weightedKOH
             self.ins = FattyAcidProfile.ins(naOHSapFactor: weightedNaOH, iodineValue: profile.iodineValue)
         } else {
+            self.oilSharedProfiles = []
             self.totalNaOHSap = 0
             self.totalKOHSap = 0
             self.ins = 0
         }
+    }
+
+    func contributions(for quality: SoapQuality) -> [OilQualityContribution] {
+        oilSharedProfiles
+            .map { OilQualityContribution(oilName: $0.name, value: quality.value(from: $0.profile)) }
+            .filter { $0.value > 0.01 }
+            .sorted { $0.value > $1.value }
     }
 }

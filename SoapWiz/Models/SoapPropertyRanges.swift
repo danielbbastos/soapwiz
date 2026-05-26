@@ -13,7 +13,18 @@ enum SoapQuality: String, CaseIterable, Identifiable {
         case .conditioning: "Condition"
         case .bubbly: "Bubbly"
         case .creamy: "Creamy"
-        case .longevity: "Long Life"
+        case .longevity: "Longevity"
+        }
+    }
+
+    var shortName: String {
+        switch self {
+        case .hardness: "Hard"
+        case .cleansing: "Clean"
+        case .conditioning: "Cond"
+        case .bubbly: "Bub"
+        case .creamy: "Cream"
+        case .longevity: "Life"
         }
     }
 

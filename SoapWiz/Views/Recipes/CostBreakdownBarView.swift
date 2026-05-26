@@ -92,7 +92,7 @@ struct CostBreakdownBarView: View {
 
     private var summaryText: String {
         guard let firstDraft = model.productDrafts.first else {
-            return "No products yet — tap to add"
+            return "No products yet — tap to expand"
         }
         let total = model.breakdownAndCost(for: firstDraft).total
         let totalText = Self.currencyFormatter.string(from: NSNumber(value: total)) ?? "—"

@@ -2,39 +2,52 @@ import SwiftUI
 
 struct RecipeStatsTabView: View {
     @Bindable var model: RecipeFormViewModel
+    @State private var selectedQualityName: String?
 
-    private var stats: RecipeStats {
-        RecipeStats(oilDrafts: model.oilDrafts)
+    private var selectedQuality: SoapQuality? {
+        guard let name = selectedQualityName else { return nil }
+        return SoapQuality.allCases.first { $0.displayName == name }
     }
 
     var body: some View {
+        let stats = RecipeStats(oilDrafts: model.oilDrafts)
         Form {
-            propertiesSection
-            indicatorsSection
-            fattyAcidSection
-            calculatedValuesSection
+            propertiesSection(stats)
+            fattyAcidSection(stats)
+            calculatedValuesSection(stats)
         }
         .scrollClipDisabled()
     }
 
-    private var propertiesSection: some View {
+    private func propertiesSection(_ stats: RecipeStats) -> some View {
         Section {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Grey bands show the recommended range for each property.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                SoapPropertiesChartView(profile: stats.fattyAcidProfile, hasOils: stats.hasOils)
+                SoapPropertiesChartView(
+                    profile: stats.fattyAcidProfile,
+                    hasOils: stats.hasOils,
+                    selectedDisplayName: $selectedQualityName
+                )
             }
             .padding(.vertical, 4)
-        } header: {
-            Text("Soap properties")
-        }
-    }
 
-    @ViewBuilder
-    private var indicatorsSection: some View {
-        if stats.hasOils {
-            Section {
+            if stats.hasOils, let quality = selectedQuality {
+                OilContributionCardView(
+                    quality: quality,
+                    totalValue: quality.value(from: stats.fattyAcidProfile),
+                    contributions: stats.contributions(for: quality),
+                    onClose: {
+                        withAnimation(.easeInOut(duration: 0.22)) {
+                            selectedQualityName = nil
+                        }
+                    }
+                )
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            if stats.hasOils {
                 SoapPropertyIndicatorView(
                     title: "INS",
                     value: stats.ins,
@@ -48,11 +61,13 @@ struct RecipeStatsTabView: View {
                     scale: SoapMetric.iodineScale
                 )
             }
+        } header: {
+            Text("Soap properties")
         }
     }
 
     @ViewBuilder
-    private var fattyAcidSection: some View {
+    private func fattyAcidSection(_ stats: RecipeStats) -> some View {
         if stats.hasOils {
             Section("Fatty acid profile") {
                 fattyAcidRow("Lauric", stats.fattyAcidProfile.lauric)
@@ -72,11 +87,9 @@ struct RecipeStatsTabView: View {
     }
 
     @ViewBuilder
-    private var calculatedValuesSection: some View {
+    private func calculatedValuesSection(_ stats: RecipeStats) -> some View {
         if stats.hasOils {
             Section("Calculated values") {
-                statRow("Iodine value", value: stats.iodineValue, fractionDigits: 1)
-                statRow("INS", value: stats.ins, fractionDigits: 1)
                 statRow("Total NaOH SAP", value: stats.totalNaOHSap, fractionDigits: 4)
                 statRow("Total KOH SAP", value: stats.totalKOHSap, fractionDigits: 4)
             }
