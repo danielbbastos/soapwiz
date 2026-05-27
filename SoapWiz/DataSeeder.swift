@@ -23,7 +23,9 @@ extension DataSeeder {
         let category: String
         let unit: String
         let sapValue: Double?
+        let kohSapValue: Double?
         let density: Double?
+        let fattyAcidProfile: FattyAcidProfile?
         let batches: [BatchSeed]
     }
 
@@ -84,7 +86,9 @@ extension DataSeeder {
                 unit: unitRaw
             )
             ingredient.sapValue = ingredientSeed.sapValue
+            ingredient.kohSapValue = ingredientSeed.kohSapValue
             ingredient.density = ingredientSeed.density
+            ingredient.fattyAcidProfile = ingredientSeed.fattyAcidProfile
             context.insert(ingredient)
 
             for batchSeed in ingredientSeed.batches {

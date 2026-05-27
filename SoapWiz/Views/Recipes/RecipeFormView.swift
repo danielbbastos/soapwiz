@@ -33,6 +33,7 @@ struct RecipeFormView: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .shadow(color: .black.opacity(0.12), radius: 4, y: 1)
                 .padding(.horizontal)
                 .padding(.vertical, 8)
             }
@@ -219,12 +220,6 @@ private extension RecipeFormView {
 
 private extension RecipeFormView {
     var statsTab: some View {
-        Form {
-            Section {
-                Text("Cost breakdown and soap properties coming soon.")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .scrollClipDisabled()
+        RecipeStatsTabView(model: model)
     }
 }

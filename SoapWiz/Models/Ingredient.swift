@@ -10,7 +10,9 @@ final class Ingredient {
 
     var lowStockThreshold: Double?
     var sapValue: Double?
+    var kohSapValue: Double?
     var density: Double?
+    var fattyAcidProfile: FattyAcidProfile?
 
     @Relationship(deleteRule: .cascade, inverse: \IngredientBatch.ingredient)
     var batches: [IngredientBatch] = []

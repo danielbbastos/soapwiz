@@ -27,7 +27,7 @@ struct RecipeIngredientsTabView: View {
     @State private var extraIngredientsExpanded = false
     @State private var selectedSectionAPct: Int = 1
     @State private var showSectionAInfo = false
-    @State private var productsExpanded = false
+    @State private var costBreakdownExpanded = false
 
     var body: some View {
         Form {
@@ -36,11 +36,11 @@ struct RecipeIngredientsTabView: View {
             fragrancesSection
             calculatedAmountsSection
             extraIngredientsSection
-            if !model.oilDrafts.isEmpty {
-                productsSection
-            }
         }
         .scrollClipDisabled()
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            CostBreakdownBarView(model: model, isExpanded: $costBreakdownExpanded)
+        }
         .sheet(isPresented: $showSectionAInfo) {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Dosage Percentages")
@@ -403,54 +403,6 @@ struct RecipeIngredientsTabView: View {
         .padding(.trailing, 16)
         .padding(.vertical, 6)
         .font(.footnote)
-    }
-
-    // MARK: - Products
-
-    private var productsSection: some View {
-        Section(header: sectionHeader("Products", expanded: $productsExpanded)) {
-            if productsExpanded { ScrollViewReader { proxy in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 0) {
-                        ForEach($model.productDrafts) { $draft in
-                            let result = model.breakdownAndCost(for: draft)
-                            RecipeProductCardView(
-                                draft: $draft,
-                                breakdown: result.breakdown,
-                                totalCost: result.total,
-                                availableUnits: IngredientUnit.allCases
-                            )
-                            .containerRelativeFrame(.horizontal)
-                            .id(draft.id)
-                        }
-                        AddProductCardView {
-                            model.addProduct(defaultUnitSymbol: IngredientUnit.grams.rawValue)
-                            if let newID = model.productDrafts.last?.id {
-                                withAnimation { proxy.scrollTo(newID) }
-                            }
-                        }
-                        .containerRelativeFrame(.horizontal)
-                        .id("addButton")
-                    }
-                    .scrollTargetLayout()
-                }
-                .scrollTargetBehavior(.paging)
-            }
-            .listRowInsets(EdgeInsets())
-
-            if !model.productDrafts.isEmpty {
-                HStack(spacing: 6) {
-                    ForEach(0..<model.productDrafts.count, id: \.self) { _ in
-                        Circle()
-                            .fill(Color.secondary.opacity(0.5))
-                            .frame(width: 6, height: 6)
-                    }
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 2)
-            }
-            } // if productsExpanded
-        }
     }
 
     // MARK: - Helpers
