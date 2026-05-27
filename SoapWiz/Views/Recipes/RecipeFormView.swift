@@ -51,7 +51,7 @@ struct RecipeFormView: View {
                 if let recipe { model.load(from: recipe) }
                 model.resolveDefaultLyeIngredient(from: allIngredients)
             }
-            .onChange(of: allIngredients.count) {
+            .onChange(of: allIngredients) {
                 model.resolveDefaultLyeIngredient(from: allIngredients)
             }
             .toolbar {
