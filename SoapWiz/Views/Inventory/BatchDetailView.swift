@@ -40,7 +40,7 @@ struct BatchDetailView: View {
                     Spacer()
                     if model.isEditingAmount {
                         HStack(spacing: 8) {
-                            TextField("Amount", text: $model.editingValue)
+                            TextField("Amount", text: $model.editingValue.decimalOnly())
                                 .keyboardType(.decimalPad)
                                 .multilineTextAlignment(.center)
                                 .frame(width: 80)

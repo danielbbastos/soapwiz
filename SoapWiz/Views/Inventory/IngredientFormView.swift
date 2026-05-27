@@ -52,7 +52,7 @@ struct IngredientFormView: View {
                             HStack {
                                 Text("SAP Value (NaOH)")
                                 Spacer()
-                                TextField("0.134", text: $model.sapValue)
+                                TextField("0.134", text: $model.sapValue.decimalOnly())
                                     .keyboardType(.decimalPad)
                                     .multilineTextAlignment(.trailing)
                                     .frame(width: 80)
@@ -64,7 +64,7 @@ struct IngredientFormView: View {
                             HStack {
                                 Text("Density")
                                 Spacer()
-                                TextField("1.0", text: $model.density)
+                                TextField("1.0", text: $model.density.decimalOnly())
                                     .keyboardType(.decimalPad)
                                     .multilineTextAlignment(.trailing)
                                     .frame(width: 80)
@@ -77,7 +77,7 @@ struct IngredientFormView: View {
 
                 Section {
                     HStack {
-                        TextField("Low Stock Threshold", text: $model.lowStockThreshold)
+                        TextField("Low Stock Threshold", text: $model.lowStockThreshold.decimalOnly())
                             .keyboardType(.decimalPad)
                         if let symbol = model.selectedUnit?.rawValue {
                             Text(symbol)

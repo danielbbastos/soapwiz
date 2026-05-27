@@ -13,6 +13,8 @@ final class Recipe {
     var superFat: Double = 5
     var fragrancePercentage: Double = 3
 
+    var lyeIngredient: Ingredient?
+
     @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.recipe)
     var ingredients: [RecipeIngredient] = []
 
