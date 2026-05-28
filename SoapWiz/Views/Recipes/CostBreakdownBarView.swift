@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 struct AvailableHeightKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -11,9 +12,13 @@ struct CostBreakdownBarView: View {
     @Bindable var model: RecipeFormViewModel
     @Binding var isExpanded: Bool
     var availableHeight: CGFloat = 0
+    @Query private var settingsRecords: [AppSettings]
+    @Environment(\.modelContext) private var modelContext
     @State private var isSwipeHintPresented = false
     @State private var visibleCardID: AnyHashable?
     @State private var keyboardVisible = false
+
+    private var pvpFactor: Double { settingsRecords.first?.pvpFactor ?? 4.0 }
 
     private static let currencyFormatter: NumberFormatter = {
         let f = NumberFormatter()
@@ -28,10 +33,9 @@ struct CostBreakdownBarView: View {
         let cornerRadius: CGFloat = expanded ? 24 : 20
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         VStack(spacing: 0) {
-            collapsedBar(canExpand: canExpand)
+            collapsedBar(canExpand: canExpand, expanded: expanded)
 
             if expanded {
-                Divider().opacity(0.4)
                 carousel
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -44,19 +48,22 @@ struct CostBreakdownBarView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
     }
 
-    private func collapsedBar(canExpand: Bool) -> some View {
+    private func collapsedBar(canExpand: Bool, expanded: Bool) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "eurosign.circle.fill")
                 .foregroundStyle(.tint)
             VStack(alignment: .leading, spacing: 1) {
-                Text("Cost breakdown")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if !expanded {
+                    Text("Cost breakdown")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
                 HStack(spacing: 6) {
                     Text(summaryText(canExpand: canExpand))
                         .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
-                    if canExpand && isExpanded {
+                    if expanded {
                         Button {
                             isSwipeHintPresented = true
                         } label: {
@@ -84,7 +91,7 @@ struct CostBreakdownBarView: View {
                 Image(systemName: "chevron.up")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                    .rotationEffect(.degrees(expanded ? 180 : 0))
             }
         }
         .padding(.horizontal, 16)
@@ -103,12 +110,42 @@ struct CostBreakdownBarView: View {
             HStack(spacing: 0) {
                 ForEach($model.productDrafts) { $draft in
                     let breakdown = model.breakdownAndCost(for: draft)
-                    ScrollView(.vertical, showsIndicators: false) {
-                        RecipeProductCardView(
-                            draft: $draft,
-                            breakdown: breakdown,
-                            availableUnits: ProductUnit.allCases
-                        )
+                    VStack(spacing: 0) {
+                        ScrollView(.vertical, showsIndicators: false) {
+                            RecipeProductCardView(
+                                draft: $draft,
+                                breakdown: breakdown,
+                                availableUnits: ProductUnit.allCases
+                            )
+                        }
+                        if breakdown.total > 0 {
+                            Divider().opacity(0.4)
+                            HStack {
+                                Text("Total")
+                                    .font(.caption.weight(.semibold))
+                                Spacer()
+                                if let costStr = Self.currencyFormatter.string(from: NSNumber(value: breakdown.total)) {
+                                    Text(costStr)
+                                        .font(.caption.weight(.semibold))
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.top, 8)
+                            .padding(.bottom, 4)
+                            HStack {
+                                Text("RRP")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tint)
+                                Spacer()
+                                if let pvpStr = Self.currencyFormatter.string(from: NSNumber(value: breakdown.total * pvpFactor)) {
+                                    Text(pvpStr)
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.tint)
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.bottom, 8)
+                        }
                     }
                     .containerRelativeFrame(.horizontal)
                     .id(AnyHashable(draft.id))

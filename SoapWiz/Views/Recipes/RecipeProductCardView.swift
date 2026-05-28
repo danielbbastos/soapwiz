@@ -62,18 +62,6 @@ struct RecipeProductCardView: View {
                         groupView(key: group.key, rows: group.rows)
                     }
 
-                    if breakdown.total > 0 {
-                        Divider().padding(.top, 2)
-                        HStack {
-                            Text("Total")
-                                .font(.caption.weight(.semibold))
-                            Spacer()
-                            if let costStr = Self.currencyFormatter.string(from: NSNumber(value: breakdown.total)) {
-                                Text(costStr)
-                                    .font(.caption.weight(.semibold))
-                            }
-                        }
-                    }
                 }
             }
         }
