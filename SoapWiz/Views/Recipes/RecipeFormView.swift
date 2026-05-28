@@ -11,11 +11,16 @@ private let weightUnits = ["g", "oz", "lb", "kg", "%"]
 private let absoluteWeightUnits = ["g", "oz", "lb", "kg"]
 
 struct RecipeFormView: View {
+    private static let lyesPredicate: Predicate<Ingredient> = {
+        let name = IngredientCategory.Name.lyes
+        return #Predicate { $0.category?.name == name }
+    }()
+
     var recipe: Recipe? = nil
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Query(filter: #Predicate<Ingredient> { $0.category?.name == IngredientCategory.Name.lyes })
+    @Query(filter: lyesPredicate)
     private var lyeIngredients: [Ingredient]
 
     @State private var model = RecipeFormViewModel()
