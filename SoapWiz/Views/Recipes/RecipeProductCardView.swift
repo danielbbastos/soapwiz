@@ -7,7 +7,7 @@ private enum BreakdownGroupKey: String, CaseIterable {
         switch self {
         case .oils: "Oils"
         case .additives: "Additives"
-        case .fragrances: "Essential oils"
+        case .fragrances: "Fragrances"
         case .lye: "Lye"
         }
     }

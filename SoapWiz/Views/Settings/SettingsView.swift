@@ -8,7 +8,7 @@ struct SettingsView: View {
     @Query private var settingsRecords: [AppSettings]
     @Environment(\.modelContext) private var modelContext
 
-    private var settings: AppSettings { AppSettings.resolve(in: modelContext) }
+    private var settings: AppSettings { settingsRecords.first ?? AppSettings.resolve(in: modelContext) }
 
     @State private var showPvpInfo = false
 
