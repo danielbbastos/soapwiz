@@ -190,6 +190,7 @@ struct RecipeProductCardView: View {
                 .fontWeight(weight)
             Spacer()
             if let amountStr = Self.amountFormatter.string(from: NSNumber(value: amount)) {
+                // All ingredient amounts in the breakdown are normalised to grams internally.
                 Text("\(amountStr) g")
                     .font(.caption)
                     .foregroundStyle(Color.secondary)

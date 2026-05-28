@@ -438,8 +438,7 @@ final class RecipeFormViewModel {
         productDrafts.append(RecipeProductDraft(unitSymbol: defaultUnitSymbol))
     }
 
-    func breakdownAndCost(for product: RecipeProductDraft) -> ProductCostBreakdown {
-        let batch = wholeBatchBreakdown
+    func breakdownAndCost(for product: RecipeProductDraft, batch: ProductCostBreakdown) -> ProductCostBreakdown {
         let unit = ProductUnit(rawValue: product.unitSymbol)
         if unit == .wholeBatch {
             return scaleBreakdown(batch, by: 1)
@@ -457,6 +456,10 @@ final class RecipeFormViewModel {
         var result = scaleBreakdown(batch, by: min(rawShare, 1))
         result.exceedsBatchWeight = rawShare > 1
         return result
+    }
+
+    func breakdownAndCost(for product: RecipeProductDraft) -> ProductCostBreakdown {
+        breakdownAndCost(for: product, batch: wholeBatchBreakdown)
     }
 
     var wholeBatchBreakdown: ProductCostBreakdown {
@@ -522,10 +525,11 @@ final class RecipeFormViewModel {
 
     private func batchTotalGrams(from batch: ProductCostBreakdown) -> Double {
         let additives = batch.additives.reduce(0) { $0 + $1.ingredientAmount }
-        let fragrances = batch.fragrances.reduce(0) { $0 + $1.ingredientAmount }
         let lye = calculatedLyeAmount ?? 0
         let water = calculatedWaterAmount ?? 0
-        return totalOilGrams + additives + fragrances + lye + water
+        // Fragrances are excluded: their gram amounts are derived from oils/lye/water percentages,
+        // so including them in the denominator would inflate the batch weight and understate product shares.
+        return totalOilGrams + additives + lye + water
     }
 
     private func scaleBreakdown(_ source: ProductCostBreakdown, by factor: Double) -> ProductCostBreakdown {

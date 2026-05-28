@@ -21,15 +21,16 @@ struct CostBreakdownBarView: View {
     }()
 
     var body: some View {
+        let batch = model.wholeBatchBreakdown
         let canExpand = model.hasIngredients
         let expanded = isExpanded && canExpand
         let cornerRadius: CGFloat = expanded ? 24 : 20
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         VStack(spacing: 0) {
-            collapsedBar(canExpand: canExpand, expanded: expanded)
+            collapsedBar(canExpand: canExpand, expanded: expanded, batchTotal: batch.total)
 
             if expanded {
-                carousel
+                carousel(batch: batch)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
@@ -41,7 +42,7 @@ struct CostBreakdownBarView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
     }
 
-    private func collapsedBar(canExpand: Bool, expanded: Bool) -> some View {
+    private func collapsedBar(canExpand: Bool, expanded: Bool, batchTotal: Double) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "eurosign.circle.fill")
                 .foregroundStyle(.tint)
@@ -53,7 +54,7 @@ struct CostBreakdownBarView: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 HStack(spacing: 6) {
-                    Text(summaryText(canExpand: canExpand))
+                    Text(summaryText(canExpand: canExpand, batchTotal: batchTotal))
                         .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
                     if expanded {
@@ -96,13 +97,13 @@ struct CostBreakdownBarView: View {
         }
     }
 
-    private var carousel: some View {
+    private func carousel(batch: ProductCostBreakdown) -> some View {
         let fraction: CGFloat = keyboardVisible ? 0.3 : 0.4
         let maxHeight: CGFloat = availableHeight > 0 ? availableHeight * fraction : 350
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
                 ForEach($model.productDrafts) { $draft in
-                    let breakdown = model.breakdownAndCost(for: draft)
+                    let breakdown = model.breakdownAndCost(for: draft, batch: batch)
                     VStack(spacing: 0) {
                         ScrollView(.vertical, showsIndicators: false) {
                             RecipeProductCardView(
@@ -164,9 +165,8 @@ struct CostBreakdownBarView: View {
         }
     }
 
-    private func summaryText(canExpand: Bool) -> String {
-        let total = model.batchTotalCost
-        let totalText = Self.currencyFormatter.string(from: NSNumber(value: total)) ?? "—"
+    private func summaryText(canExpand: Bool, batchTotal: Double) -> String {
+        let totalText = Self.currencyFormatter.string(from: NSNumber(value: batchTotal)) ?? "—"
         if !canExpand {
             return "\(totalText) · Add ingredients first"
         }

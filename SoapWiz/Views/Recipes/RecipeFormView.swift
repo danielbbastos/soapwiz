@@ -15,7 +15,8 @@ struct RecipeFormView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Query private var allIngredients: [Ingredient]
+    @Query(filter: #Predicate<Ingredient> { $0.category?.name == IngredientCategory.Name.lyes })
+    private var lyeIngredients: [Ingredient]
 
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
@@ -49,10 +50,10 @@ struct RecipeFormView: View {
             }
             .task(id: recipe?.persistentModelID) {
                 if let recipe { model.load(from: recipe) }
-                model.resolveDefaultLyeIngredient(from: allIngredients)
+                model.resolveDefaultLyeIngredient(from: lyeIngredients)
             }
-            .onChange(of: allIngredients) {
-                model.resolveDefaultLyeIngredient(from: allIngredients)
+            .onChange(of: lyeIngredients) {
+                model.resolveDefaultLyeIngredient(from: lyeIngredients)
             }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

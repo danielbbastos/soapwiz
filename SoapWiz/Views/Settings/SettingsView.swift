@@ -36,10 +36,8 @@ struct SettingsView: View {
                             }
                             .buttonStyle(.plain)
                             Spacer()
-                            TextField("4", value: Binding(
-                                get: { settings.pvpFactor },
-                                set: { settings.pvpFactor = $0 }
-                            ), format: .number.precision(.fractionLength(0...2)))
+                            TextField("4", value: Bindable(settings).$pvpFactor,
+                                  format: .number.precision(.fractionLength(0...2)))
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 60)
