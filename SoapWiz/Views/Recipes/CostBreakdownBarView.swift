@@ -1,13 +1,6 @@
 import SwiftUI
 import SwiftData
 
-struct AvailableHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
-    }
-}
-
 struct CostBreakdownBarView: View {
     @Bindable var model: RecipeFormViewModel
     @Binding var isExpanded: Bool

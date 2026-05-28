@@ -1,6 +1,13 @@
 import SwiftUI
 import SwiftData
 
+struct AvailableHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 private let additiveUnits = ["g", "kg", "ml", "L", "oz", "% of batch", "% of liquids", "% of oils"]
 private let fragranceUnits = ["g", "kg", "oz", "% of batch", "% of liquids", "% of oils"]
 
