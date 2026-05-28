@@ -1,6 +1,13 @@
 import SwiftUI
 import SwiftData
 
+struct AvailableHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 private let additiveUnits = ["g", "kg", "ml", "L", "oz", "% of batch", "% of liquids", "% of oils"]
 private let fragranceUnits = ["g", "kg", "oz", "% of batch", "% of liquids", "% of oils"]
 
@@ -28,6 +35,7 @@ struct RecipeIngredientsTabView: View {
     @State private var selectedSectionAPct: Int = 1
     @State private var showSectionAInfo = false
     @State private var costBreakdownExpanded = false
+    @State private var availableHeight: CGFloat = 0
 
     var body: some View {
         Form {
@@ -38,8 +46,15 @@ struct RecipeIngredientsTabView: View {
             extraIngredientsSection
         }
         .scrollClipDisabled()
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .background(
+            GeometryReader { geo in
+                Color.clear.preference(key: AvailableHeightKey.self, value: geo.size.height)
+            }
+        )
+        .onPreferenceChange(AvailableHeightKey.self) { if !costBreakdownExpanded { availableHeight = $0 } }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            CostBreakdownBarView(model: model, isExpanded: $costBreakdownExpanded)
+            CostBreakdownBarView(model: model, isExpanded: $costBreakdownExpanded, availableHeight: availableHeight)
         }
         .sheet(isPresented: $showSectionAInfo) {
             VStack(alignment: .leading, spacing: 12) {
@@ -105,10 +120,10 @@ struct RecipeIngredientsTabView: View {
                     HStack {
                         Text(draft.ingredient.name)
                         Spacer()
-                        TextField("0", text: Binding(
+                        TextField("0", value: Binding(
                             get: { draft.amount },
                             set: { model.userEdited(id: draft.id, amount: $0) }
-                        ))
+                        ), format: .number.precision(.fractionLength(0...1)))
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 60)
@@ -136,10 +151,10 @@ struct RecipeIngredientsTabView: View {
                         Text(draft.ingredient.name)
                             .lineLimit(1)
                         Spacer()
-                        TextField("0", text: Binding(
+                        TextField("0", value: Binding(
                             get: { draft.amount },
                             set: { model.updateAdditive(id: draft.id, amount: $0) }
-                        ))
+                        ), format: .number.precision(.fractionLength(0...1)))
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 55)
@@ -185,7 +200,7 @@ struct RecipeIngredientsTabView: View {
                         Text(draft.ingredient.name)
                             .lineLimit(1)
                         Spacer()
-                        TextField("0", text: Binding(
+                        TextField("0", value: Binding(
                             get: { draft.amount },
                             set: { newVal in
                                 if draft.unit == "% of oils" {
@@ -194,7 +209,7 @@ struct RecipeIngredientsTabView: View {
                                     model.updateFragrance(id: draft.id, amount: newVal)
                                 }
                             }
-                        ))
+                        ), format: .number.precision(.fractionLength(0...1)))
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 55)

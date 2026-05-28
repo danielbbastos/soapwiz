@@ -17,9 +17,8 @@ struct RecipeStats {
 
     init(oilDrafts: [OilIngredientDraft]) {
         let contributions: [(amount: Double, ingredient: Ingredient)] = oilDrafts.compactMap { draft in
-            let raw = draft.amount.replacingOccurrences(of: ",", with: ".")
-            guard let amount = Double(raw), amount > 0 else { return nil }
-            return (amount, draft.ingredient)
+            guard draft.amount > 0 else { return nil }
+            return (draft.amount, draft.ingredient)
         }
 
         self.hasOils = !contributions.isEmpty

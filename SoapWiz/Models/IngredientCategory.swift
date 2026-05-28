@@ -9,6 +9,7 @@ final class IngredientCategory {
         static let fats = "Fats"
         static let fragrances = "Fragrances"
         static let additives = "Additives"
+        static let lyes = "Lyes"
         static let others = "Others"
     }
 

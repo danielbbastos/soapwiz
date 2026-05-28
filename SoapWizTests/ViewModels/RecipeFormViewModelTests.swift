@@ -67,7 +67,7 @@ struct RecipeFormViewModelTests {
         let model = RecipeFormViewModel()
         model.name = "Test Recipe"
         model.addOil(ingredient)
-        model.oilDrafts[0].amount = "45"
+        model.oilDrafts[0].amount = 45
 
         let recipe = model.save(context: ctx)
 
@@ -77,36 +77,20 @@ struct RecipeFormViewModelTests {
         #expect(allRI.count == 1)
     }
 
-    @Test func saveConvertsCommaDecimalSeparator() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
-        ctx.insert(ingredient)
-
-        let model = RecipeFormViewModel()
-        model.name = "Test Recipe"
-        model.addOil(ingredient)
-        model.oilDrafts[0].amount = "33,5"
-
-        let recipe = model.save(context: ctx)
-
-        #expect(recipe.ingredients[0].percentage == 33.5)
-    }
-
     // MARK: - Percentage distribution
 
     @Test func addOil_First_Gets100Percent() {
         let model = RecipeFormViewModel()
         model.addOil(Ingredient(name: "Coconut Oil"))
-        #expect(model.oilDrafts[0].amount == model.formatPercentage(100))
+        #expect(model.oilDrafts[0].amount == 100)
     }
 
     @Test func addOil_Second_SplitsEqually() {
         let model = RecipeFormViewModel()
         model.addOil(Ingredient(name: "Coconut Oil"))
         model.addOil(Ingredient(name: "Olive Oil"))
-        #expect(model.oilDrafts[0].amount == model.formatPercentage(50))
-        #expect(model.oilDrafts[1].amount == model.formatPercentage(50))
+        #expect(model.oilDrafts[0].amount == 50)
+        #expect(model.oilDrafts[1].amount == 50)
     }
 
     @Test func addOil_Third_SplitsEqually() {
@@ -114,9 +98,9 @@ struct RecipeFormViewModelTests {
         model.addOil(Ingredient(name: "A"))
         model.addOil(Ingredient(name: "B"))
         model.addOil(Ingredient(name: "C"))
-        let share = model.formatPercentage(100.0 / 3.0)
-        #expect(model.oilDrafts[0].amount == share)
-        #expect(model.oilDrafts[1].amount == share)
+        // Share is rounded to 1 decimal: 100/3 → 33.3
+        #expect(model.oilDrafts[0].amount == 33.3)
+        #expect(model.oilDrafts[1].amount == 33.3)
         #expect(abs(model.totalPercentage - 100) < 0.1) // last ingredient absorbs rounding
     }
 
@@ -126,11 +110,11 @@ struct RecipeFormViewModelTests {
         model.addOil(Ingredient(name: "B"))
 
         let id = model.oilDrafts[0].id
-        model.userEdited(id: id, amount: "60")
+        model.userEdited(id: id, amount: 60)
 
-        #expect(model.oilDrafts[0].amount == "60")
+        #expect(model.oilDrafts[0].amount == 60)
         #expect(model.oilDrafts[0].isLocked == true)
-        #expect(model.oilDrafts[1].amount == model.formatPercentage(40))
+        #expect(model.oilDrafts[1].amount == 40)
         #expect(model.oilDrafts[1].isLocked == false)
     }
 
@@ -139,27 +123,27 @@ struct RecipeFormViewModelTests {
         model.weightUnit = "g"
         model.addOil(Ingredient(name: "A"))
         model.addOil(Ingredient(name: "B"))
-        model.oilDrafts[0].amount = "300"
-        model.oilDrafts[1].amount = "200"
+        model.oilDrafts[0].amount = 300
+        model.oilDrafts[1].amount = 200
 
-        model.userEdited(id: model.oilDrafts[0].id, amount: "400")
+        model.userEdited(id: model.oilDrafts[0].id, amount: 400)
 
-        #expect(model.oilDrafts[0].amount == "400")
+        #expect(model.oilDrafts[0].amount == 400)
         #expect(model.oilDrafts[0].isLocked == false)
-        #expect(model.oilDrafts[1].amount == "200")
+        #expect(model.oilDrafts[1].amount == 200)
     }
 
     @Test func addOil_AfterLock_DistributesRemainingToUnlocked() {
         let model = RecipeFormViewModel()
         model.addOil(Ingredient(name: "A"))
         model.addOil(Ingredient(name: "B"))
-        model.userEdited(id: model.oilDrafts[0].id, amount: "60")
+        model.userEdited(id: model.oilDrafts[0].id, amount: 60)
 
         model.addOil(Ingredient(name: "C"))
 
-        #expect(model.oilDrafts[0].amount == "60")
-        #expect(model.oilDrafts[1].amount == model.formatPercentage(20))
-        #expect(model.oilDrafts[2].amount == model.formatPercentage(20))
+        #expect(model.oilDrafts[0].amount == 60)
+        #expect(model.oilDrafts[1].amount == 20)
+        #expect(model.oilDrafts[2].amount == 20)
     }
 
     @Test func removeOil_Redistributes() {
@@ -170,8 +154,8 @@ struct RecipeFormViewModelTests {
 
         model.removeOil(at: IndexSet(integer: 2))
 
-        #expect(model.oilDrafts[0].amount == model.formatPercentage(50))
-        #expect(model.oilDrafts[1].amount == model.formatPercentage(50))
+        #expect(model.oilDrafts[0].amount == 50)
+        #expect(model.oilDrafts[1].amount == 50)
     }
 
     @Test func removeOil_AllRemainingLocked_TotalsUnchanged() {
@@ -179,13 +163,13 @@ struct RecipeFormViewModelTests {
         model.addOil(Ingredient(name: "A"))
         model.addOil(Ingredient(name: "B"))
         model.addOil(Ingredient(name: "C"))
-        model.userEdited(id: model.oilDrafts[0].id, amount: "60")
-        model.userEdited(id: model.oilDrafts[1].id, amount: "40")
+        model.userEdited(id: model.oilDrafts[0].id, amount: 60)
+        model.userEdited(id: model.oilDrafts[1].id, amount: 40)
 
         model.removeOil(at: IndexSet(integer: 2))
 
-        #expect(model.oilDrafts[0].amount == "60")
-        #expect(model.oilDrafts[1].amount == "40")
+        #expect(model.oilDrafts[0].amount == 60)
+        #expect(model.oilDrafts[1].amount == 40)
         #expect(abs(model.totalPercentage - 100) < 0.1)
     }
 
@@ -204,12 +188,12 @@ struct RecipeFormViewModelTests {
     @Test func addOil_WhenLockedSumExceeds100_GetsZero() {
         let model = RecipeFormViewModel()
         model.addOil(Ingredient(name: "A"))
-        model.userEdited(id: model.oilDrafts[0].id, amount: "100")
+        model.userEdited(id: model.oilDrafts[0].id, amount: 100)
 
         model.addOil(Ingredient(name: "B"))
 
-        #expect(model.oilDrafts[0].amount == "100")
-        #expect(model.oilDrafts[1].amount == model.formatPercentage(0))
+        #expect(model.oilDrafts[0].amount == 100)
+        #expect(model.oilDrafts[1].amount == 0)
     }
 
     // MARK: - Edit mode
@@ -235,13 +219,13 @@ struct RecipeFormViewModelTests {
         #expect(model.weightUnit == "oz")
         #expect(model.oilWeightUnit == "lb")
         #expect(model.lyeType == "NaOH")
-        #expect(Double(model.lyePurity.replacingOccurrences(of: ",", with: ".")) == 95)
-        #expect(Double(model.waterParts.replacingOccurrences(of: ",", with: ".")) == 3)
-        #expect(Double(model.superFat.replacingOccurrences(of: ",", with: ".")) == 8)
-        #expect(!model.totalOilWeight.isEmpty)
+        #expect(model.lyePurity == 95)
+        #expect(model.waterParts == 3)
+        #expect(model.superFat == 8)
+        #expect(model.totalOilWeight > 0)
     }
 
-    @Test func load_ZeroTotalOilWeight_LeavesFieldEmpty() throws {
+    @Test func load_ZeroTotalOilWeight_LeavesFieldZero() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let recipe = Recipe(name: "Test", desc: "")
@@ -251,7 +235,7 @@ struct RecipeFormViewModelTests {
         let model = RecipeFormViewModel()
         model.load(from: recipe)
 
-        #expect(model.totalOilWeight.isEmpty)
+        #expect(model.totalOilWeight == 0)
     }
 
     @Test func load_PopulatesIngredientDrafts() throws {
@@ -270,7 +254,7 @@ struct RecipeFormViewModelTests {
 
         #expect(model.oilDrafts.count == 1)
         #expect(model.oilDrafts[0].ingredient.name == "Coconut Oil")
-        #expect(Double(model.oilDrafts[0].amount.replacingOccurrences(of: ",", with: ".")) == 75)
+        #expect(model.oilDrafts[0].amount == 75)
     }
 
     @Test func save_EditMode_UpdatesInPlace_RecipeCountStaysOne() throws {
@@ -282,7 +266,7 @@ struct RecipeFormViewModelTests {
         let model = RecipeFormViewModel()
         model.load(from: recipe)
         model.name = "Updated"
-        model.lyePurity = "95"
+        model.lyePurity = 95
         model.save(context: ctx)
 
         let all = try ctx.fetch(FetchDescriptor<Recipe>())
@@ -325,34 +309,37 @@ struct RecipeFormViewModelTests {
 
         let result = model.breakdownAndCost(for: draft)
 
-        #expect(result.breakdown.isEmpty)
+        #expect(result.oils.isEmpty)
+        #expect(result.additives.isEmpty)
+        #expect(result.fragrances.isEmpty)
+        #expect(result.lye.isEmpty)
         #expect(result.total == 0)
     }
 
-    @Test func breakdownAndCost_ZeroSize_AllAmountsZero() {
+    @Test func breakdownAndCost_ZeroSize_ReturnsEmpty() {
         let model = RecipeFormViewModel()
+        model.totalOilWeight = 100
         model.addOil(Ingredient(name: "Olive Oil"))
         var draft = RecipeProductDraft(unitSymbol: "g")
-        draft.size = "0"
+        draft.size = 0
 
         let result = model.breakdownAndCost(for: draft)
 
-        #expect(result.breakdown[0].ingredientAmount == 0)
-        #expect(result.breakdown[0].cost == 0)
+        #expect(result.oils.isEmpty)
         #expect(result.total == 0)
     }
 
     @Test func breakdownAndCost_NoBatches_AmountsComputedCostZero() {
         let model = RecipeFormViewModel()
+        model.totalOilWeight = 100
         model.addOil(Ingredient(name: "Olive Oil"))
         var draft = RecipeProductDraft(unitSymbol: "g")
-        draft.size = "100"
+        draft.size = 100
 
         let result = model.breakdownAndCost(for: draft)
 
-        // 100% of 100g = 100g, but no batches → cost = 0
-        #expect(result.breakdown[0].ingredientAmount == 100)
-        #expect(result.breakdown[0].cost == 0)
+        #expect(result.oils[0].ingredientAmount == 100)
+        #expect(result.oils[0].cost == 0)
         #expect(result.total == 0)
     }
 
@@ -366,15 +353,16 @@ struct RecipeFormViewModelTests {
         ctx.insert(batch)
 
         let model = RecipeFormViewModel()
+        model.totalOilWeight = 100
         model.addOil(ingredient)
         var draft = RecipeProductDraft(unitSymbol: "g")
-        draft.size = "100"
+        draft.size = 100
 
         let result = model.breakdownAndCost(for: draft)
 
-        // 100% of 100g = 100g; cost/g = 10/500 = 0.02; total = 100 × 0.02 = 2.0
-        #expect(result.breakdown[0].ingredientAmount == 100)
-        #expect(result.breakdown[0].cost == 2.0)
+        // 100g product / 100g batch = full batch. Oil = 100g × €0.02/g = €2.00
+        #expect(result.oils[0].ingredientAmount == 100)
+        #expect(result.oils[0].cost == 2.0)
         #expect(result.total == 2.0)
     }
 
@@ -383,23 +371,23 @@ struct RecipeFormViewModelTests {
         _ = container
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let batch1 = IngredientBatch.mock(quantity: 500, totalPrice: 10.0)  // €0.020/g
+        let batch1 = IngredientBatch.mock(quantity: 500, totalPrice: 10.0)
         batch1.ingredient = ingredient
         ctx.insert(batch1)
-        let batch2 = IngredientBatch.mock(quantity: 250, totalPrice: 7.5)   // €0.030/g
+        let batch2 = IngredientBatch.mock(quantity: 250, totalPrice: 7.5)
         batch2.ingredient = ingredient
         ctx.insert(batch2)
 
         let model = RecipeFormViewModel()
+        model.totalOilWeight = 100
         model.addOil(ingredient)
         var draft = RecipeProductDraft(unitSymbol: "g")
-        draft.size = "100"
+        draft.size = 100
 
         let result = model.breakdownAndCost(for: draft)
 
-        // Weighted avg = (10 + 7.5) / (500 + 250) = 17.5/750 ≈ €0.02333/g
         let expected = 100 * (17.5 / 750.0)
-        #expect(abs(result.breakdown[0].cost - expected) < 0.0001)
+        #expect(abs(result.oils[0].cost - expected) < 0.0001)
         #expect(abs(result.total - expected) < 0.0001)
     }
 
@@ -419,29 +407,116 @@ struct RecipeFormViewModelTests {
         ctx.insert(b2)
 
         let model = RecipeFormViewModel()
+        model.totalOilWeight = 200
         model.addOil(ing1)
         model.addOil(ing2) // each gets 50%
         var draft = RecipeProductDraft(unitSymbol: "g")
-        draft.size = "200"
+        draft.size = 200
 
         let result = model.breakdownAndCost(for: draft)
 
-        // ing1: 50% of 200g = 100g × €0.01 = €1.00
-        // ing2: 50% of 200g = 100g × €0.04 = €4.00
-        #expect(result.breakdown.count == 2)
+        #expect(result.oils.count == 2)
         #expect(abs(result.total - 5.0) < 0.0001)
     }
 
-    @Test func breakdownAndCost_CommaDecimalSize_ParsesCorrectly() {
+    @Test func breakdownAndCost_PartsOfBatch_DividesBatchCost() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredient = Ingredient(name: "Coconut Oil")
+        ctx.insert(ingredient)
+        let batch = IngredientBatch.mock(quantity: 500, totalPrice: 10.0)
+        batch.ingredient = ingredient
+        ctx.insert(batch)
+
         let model = RecipeFormViewModel()
-        model.addOil(Ingredient(name: "Olive Oil"))
-        var draft = RecipeProductDraft(unitSymbol: "g")
-        draft.size = "100,5"
+        model.totalOilWeight = 1000
+        model.addOil(ingredient)
+        var draft = RecipeProductDraft(unitSymbol: ProductUnit.partsOfBatch.rawValue)
+        draft.size = 10
 
         let result = model.breakdownAndCost(for: draft)
 
-        // 100% of 100.5g = 100.5g
-        #expect(result.breakdown[0].ingredientAmount == 100.5)
+        // 1000g oils × €0.02/g = €20 batch cost. 1/10 = €2.
+        #expect(abs(result.total - 2.0) < 0.0001)
+    }
+
+    @Test func breakdownAndCost_ExceedingBatchWeight_ClampsAtBatchTotal() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredient = Ingredient(name: "Coconut Oil")
+        ctx.insert(ingredient)
+        let batch = IngredientBatch.mock(quantity: 500, totalPrice: 10.0)
+        batch.ingredient = ingredient
+        ctx.insert(batch)
+
+        let model = RecipeFormViewModel()
+        model.totalOilWeight = 100
+        model.addOil(ingredient)
+
+        var draft = RecipeProductDraft(unitSymbol: "kg")
+        draft.size = 5  // 5000g vs 100g batch
+
+        let result = model.breakdownAndCost(for: draft)
+
+        #expect(result.exceedsBatchWeight == true)
+        #expect(abs(result.total - model.batchTotalCost) < 0.0001)
+    }
+
+    @Test func init_AddsDefaultProductOnePartOfBatch() {
+        let model = RecipeFormViewModel()
+        #expect(model.productDrafts.count == 1)
+        #expect(model.productDrafts[0].size == 1)
+        #expect(model.productDrafts[0].unitSymbol == ProductUnit.partsOfBatch.rawValue)
+    }
+
+    @Test func batchTotalCost_IncludesAllCategories() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Coconut Oil")
+        oil.sapValue = 0.2
+        ctx.insert(oil)
+        let oilBatch = IngredientBatch.mock(quantity: 1000, totalPrice: 10.0)
+        oilBatch.ingredient = oil
+        ctx.insert(oilBatch)
+        let lye = Ingredient(name: "Sodium Hydroxide")
+        ctx.insert(lye)
+        let lyeBatch = IngredientBatch.mock(quantity: 1000, totalPrice: 8.0)
+        lyeBatch.ingredient = lye
+        ctx.insert(lyeBatch)
+
+        let model = RecipeFormViewModel()
+        model.totalOilWeight = 1000
+        model.lyePurity = 100
+        model.superFat = 0
+        model.addOil(oil)
+        model.lyeIngredient = lye
+
+        // Oils: 1000g × €0.01 = €10
+        // Lye: 1000 × 0.2 × 1 / 1 = 200g × €0.008 = €1.60
+        #expect(abs(model.batchTotalCost - 11.60) < 0.001)
+    }
+
+    @Test func resolveDefaultLyeIngredient_PicksSodiumHydroxide() {
+        let lyeCategory = IngredientCategory(name: IngredientCategory.Name.lyes)
+        let naoh = Ingredient(name: "Sodium Hydroxide (Lye)", category: lyeCategory, unit: "g")
+        let other = Ingredient(name: "Other Lye", category: lyeCategory, unit: "g")
+
+        let model = RecipeFormViewModel()
+        model.resolveDefaultLyeIngredient(from: [other, naoh])
+
+        #expect(model.lyeIngredient?.name == "Sodium Hydroxide (Lye)")
+    }
+
+    @Test func resolveDefaultLyeIngredient_DoesNotOverrideExisting() {
+        let lyeCategory = IngredientCategory(name: IngredientCategory.Name.lyes)
+        let naoh = Ingredient(name: "Sodium Hydroxide", category: lyeCategory, unit: "g")
+        let custom = Ingredient(name: "Custom Lye", category: lyeCategory, unit: "g")
+
+        let model = RecipeFormViewModel()
+        model.lyeIngredient = custom
+        model.resolveDefaultLyeIngredient(from: [naoh, custom])
+
+        #expect(model.lyeIngredient === custom)
     }
 
     // MARK: - Additives
@@ -475,9 +550,9 @@ struct RecipeFormViewModelTests {
         model.addAdditive(Ingredient(name: "Salt"))
         let id = model.additiveDrafts[0].id
 
-        model.updateAdditive(id: id, amount: "5")
+        model.updateAdditive(id: id, amount: 5)
 
-        #expect(model.additiveDrafts[0].amount == "5")
+        #expect(model.additiveDrafts[0].amount == 5)
     }
 
     @Test func updateAdditive_Unit() {
@@ -521,9 +596,9 @@ struct RecipeFormViewModelTests {
         model.addFragrance(Ingredient(name: "Lavender EO"))
         let id = model.fragranceDrafts[0].id
 
-        model.updateFragrance(id: id, amount: "10")
+        model.updateFragrance(id: id, amount: 10)
 
-        #expect(model.fragranceDrafts[0].amount == "10")
+        #expect(model.fragranceDrafts[0].amount == 10)
     }
 
     @Test func updateFragrance_Unit() {
@@ -547,9 +622,9 @@ struct RecipeFormViewModelTests {
         let model = RecipeFormViewModel()
         model.name = "Test"
         model.addAdditive(additive)
-        model.updateAdditive(id: model.additiveDrafts[0].id, amount: "5", unit: "g")
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 5, unit: "g")
         model.addFragrance(fragrance)
-        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: "10", unit: "ml")
+        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 10, unit: "ml")
         let recipe = model.save(context: ctx)
         _ = recipe
 
@@ -581,7 +656,7 @@ struct RecipeFormViewModelTests {
 
         #expect(model.additiveDrafts.count == 1)
         #expect(model.additiveDrafts[0].ingredient.name == "Salt")
-        #expect(Double(model.additiveDrafts[0].amount.replacingOccurrences(of: ",", with: ".")) == 5)
+        #expect(model.additiveDrafts[0].amount == 5)
         #expect(model.additiveDrafts[0].unit == "g")
     }
 
@@ -592,8 +667,8 @@ struct RecipeFormViewModelTests {
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
         model.addOil(oil)
-        model.totalOilWeight = "1000"
-        model.lyePurity = "0"
+        model.totalOilWeight = 1000
+        model.lyePurity = 0
 
         #expect(model.oilAmountCalculations == nil)
     }
@@ -603,8 +678,8 @@ struct RecipeFormViewModelTests {
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
         model.addOil(oil)
-        model.totalOilWeight = "1000"
-        model.lyePurity = "101"
+        model.totalOilWeight = 1000
+        model.lyePurity = 101
 
         #expect(model.oilAmountCalculations == nil)
     }
@@ -627,19 +702,20 @@ struct RecipeFormViewModelTests {
         let model = RecipeFormViewModel()
         model.weightUnit = "g"
         model.addOil(ing1)
-        model.oilDrafts[0].amount = "300"  // 300g → 75% of 400g total
+        model.oilDrafts[0].amount = 300  // 300g
         model.addOil(ing2)
-        model.oilDrafts[1].amount = "100"  // 100g → 25% of 400g total
+        model.oilDrafts[1].amount = 100  // 100g — batch total 400g
 
         var draft = RecipeProductDraft(unitSymbol: "g")
-        draft.size = "200"
+        draft.size = 200
 
         let result = model.breakdownAndCost(for: draft)
 
-        // ing1: 75% of 200g = 150g × €0.01 = €1.50
-        // ing2: 25% of 200g = 50g × €0.04 = €2.00
-        #expect(abs(result.breakdown[0].ingredientAmount - 150) < 0.001)
-        #expect(abs(result.breakdown[1].ingredientAmount - 50) < 0.001)
+        // 200g / 400g batch = 0.5 share
+        // ing1: 300 × 0.5 = 150g × €0.01 = €1.50
+        // ing2: 100 × 0.5 =  50g × €0.04 = €2.00
+        #expect(abs(result.oils[0].ingredientAmount - 150) < 0.001)
+        #expect(abs(result.oils[1].ingredientAmount - 50) < 0.001)
         #expect(abs(result.total - 3.5) < 0.001)
     }
 
@@ -666,7 +742,7 @@ struct RecipeFormViewModelTests {
     @Test func oilAmountCalculations_PercentageMode_ZeroTotalWeight_ReturnsNil() {
         let model = RecipeFormViewModel()
         // weightUnit defaults to "%"
-        model.totalOilWeight = ""
+        model.totalOilWeight = 0
         model.addOil(Ingredient(name: "Coconut Oil"))
         #expect(model.oilAmountCalculations == nil)
     }
@@ -676,10 +752,10 @@ struct RecipeFormViewModelTests {
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
         model.addOil(oil)   // gets 100%
-        model.totalOilWeight = "1000"
+        model.totalOilWeight = 1000
         model.oilWeightUnit = "g"
-        model.lyePurity = "100"
-        model.superFat = "0"
+        model.lyePurity = 100
+        model.superFat = 0
 
         let calcs = try #require(model.oilAmountCalculations)
         #expect(calcs.count == 1)
@@ -693,10 +769,10 @@ struct RecipeFormViewModelTests {
         let oil = Ingredient(name: "Unknown Oil")
         oil.sapValue = nil
         model.addOil(oil)
-        model.totalOilWeight = "1000"
+        model.totalOilWeight = 1000
         model.oilWeightUnit = "g"
-        model.lyePurity = "99"
-        model.superFat = "5"
+        model.lyePurity = 99
+        model.superFat = 5
 
         let calcs = model.oilAmountCalculations
         #expect(calcs != nil)
@@ -708,10 +784,10 @@ struct RecipeFormViewModelTests {
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
         model.addOil(oil)
-        model.totalOilWeight = "1"
+        model.totalOilWeight = 1
         model.oilWeightUnit = "kg"
-        model.lyePurity = "100"
-        model.superFat = "0"
+        model.lyePurity = 100
+        model.superFat = 0
 
         let calcs = model.oilAmountCalculations
         // unit is just a label — value stays as 1 (kg)
@@ -724,9 +800,9 @@ struct RecipeFormViewModelTests {
         oil.sapValue = 0.2
         model.weightUnit = "g"
         model.addOil(oil)
-        model.oilDrafts[0].amount = "500"
-        model.lyePurity = "100"
-        model.superFat = "0"
+        model.oilDrafts[0].amount = 500
+        model.lyePurity = 100
+        model.superFat = 0
 
         let calcs = model.oilAmountCalculations
         #expect(calcs?.count == 1)
@@ -739,7 +815,7 @@ struct RecipeFormViewModelTests {
         let model = RecipeFormViewModel()
         model.weightUnit = "g"
         model.addOil(Ingredient(name: "Coconut Oil"))
-        // amount stays "" — treated as 0
+        // amount stays 0 — treated as zero
         #expect(model.oilAmountCalculations == nil)
     }
 
@@ -751,11 +827,11 @@ struct RecipeFormViewModelTests {
         oilB.sapValue = 0.1
         model.weightUnit = "g"
         model.addOil(oilA)
-        model.oilDrafts[0].amount = "500"
+        model.oilDrafts[0].amount = 500
         model.addOil(oilB)
-        model.oilDrafts[1].amount = "500"
-        model.lyePurity = "100"
-        model.superFat = "0"
+        model.oilDrafts[1].amount = 500
+        model.lyePurity = 100
+        model.superFat = 0
 
         // lye_A = 500 * 0.2 = 100, lye_B = 500 * 0.1 = 50 → total = 150
         let lye = model.calculatedLyeAmount
@@ -773,10 +849,10 @@ struct RecipeFormViewModelTests {
         oil.sapValue = 0.2
         model.weightUnit = "g"
         model.addOil(oil)
-        model.oilDrafts[0].amount = "500"
-        model.lyePurity = "100"
-        model.superFat = "0"
-        model.waterParts = "2"
+        model.oilDrafts[0].amount = 500
+        model.lyePurity = 100
+        model.superFat = 0
+        model.waterParts = 2
 
         // lye = 100, water = 100 * 2 = 200
         let water = model.calculatedWaterAmount
@@ -798,11 +874,11 @@ struct RecipeFormViewModelTests {
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
         model.addOil(oil)
-        model.totalOilWeight = "1000"
+        model.totalOilWeight = 1000
         model.oilWeightUnit = "g"
-        model.lyePurity = "100"
-        model.superFat = "0"
-        // waterParts = "1.5" (default), lye ratio is always 1
+        model.lyePurity = 100
+        model.superFat = 0
+        // waterParts = 1.5 (default)
 
         let rows = model.calculatedAmountRows
         // 1 oil row + oils total + NaOH + Water + Batch total = 5
@@ -814,11 +890,11 @@ struct RecipeFormViewModelTests {
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
         model.addOil(oil)
-        model.totalOilWeight = "1000"
+        model.totalOilWeight = 1000
         model.oilWeightUnit = "g"
-        model.lyePurity = "100"
-        model.superFat = "0"
-        model.waterParts = "1.5"
+        model.lyePurity = 100
+        model.superFat = 0
+        model.waterParts = 1.5
 
         let rows = try #require(model.calculatedAmountRows)
         // oil=1000, lye=200, water=300 → batch=1500
@@ -846,21 +922,21 @@ struct RecipeFormViewModelTests {
 
         #expect(model.fragranceDrafts.count == 1)
         #expect(model.fragranceDrafts[0].ingredient.name == "Lavender EO")
-        #expect(Double(model.fragranceDrafts[0].amount.replacingOccurrences(of: ",", with: ".")) == 10)
+        #expect(model.fragranceDrafts[0].amount == 10)
         #expect(model.fragranceDrafts[0].unit == "ml")
     }
 
     // MARK: - Extra ingredient data
 
-    private func makeModelWithOils(oils: Double = 1000, waterParts: String = "1.5") -> RecipeFormViewModel {
+    private func makeModelWithOils(oils: Double = 1000, waterParts: Double = 1.5) -> RecipeFormViewModel {
         let model = RecipeFormViewModel()
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
         model.addOil(oil)
-        model.totalOilWeight = String(oils)
+        model.totalOilWeight = oils
         model.oilWeightUnit = "g"
-        model.lyePurity = "100"
-        model.superFat = "0"
+        model.lyePurity = 100
+        model.superFat = 0
         model.waterParts = waterParts
         return model
     }
@@ -875,7 +951,7 @@ struct RecipeFormViewModelTests {
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
         model.addOil(oil)
-        model.totalOilWeight = ""
+        model.totalOilWeight = 0
 
         #expect(model.extraIngredientData == nil)
     }
@@ -915,7 +991,7 @@ struct RecipeFormViewModelTests {
 
     @Test func extraIngredientData_CitricAcid_NaOHSubRow_DividedByLyeConcentration() throws {
         // waterParts = 1.5 → lyeConc = 1 / 2.5 = 0.4
-        let model = makeModelWithOils(oils: 1000, waterParts: "1.5")
+        let model = makeModelWithOils(oils: 1000, waterParts: 1.5)
         let data = try #require(model.extraIngredientData)
         let naoh = try #require(data.sectionA[1].naohLyeSolution)
         // citric_1pct = 10, naoh_pure = 10 * 0.625 = 6.25, displayed = 6.25 / 0.4 = 15.625
@@ -926,8 +1002,8 @@ struct RecipeFormViewModelTests {
 
     @Test func extraIngredientData_CitricAcid_NaOHSubRow_ScalesWithLyeConcentration() throws {
         // waterParts = 1.0 → lyeConc = 0.5; same citric but higher displayed (less concentrated lye)
-        let modelA = makeModelWithOils(oils: 1000, waterParts: "1.5") // lyeConc = 0.4
-        let modelB = makeModelWithOils(oils: 1000, waterParts: "1.0") // lyeConc = 0.5
+        let modelA = makeModelWithOils(oils: 1000, waterParts: 1.5) // lyeConc = 0.4
+        let modelB = makeModelWithOils(oils: 1000, waterParts: 1.0) // lyeConc = 0.5
         let dataA = try #require(modelA.extraIngredientData)
         let dataB = try #require(modelB.extraIngredientData)
         let naohA = try #require(dataA.sectionA[1].naohLyeSolution)
@@ -938,7 +1014,7 @@ struct RecipeFormViewModelTests {
 
     @Test func extraIngredientData_EOFO_ComputesCorrectly() throws {
         let model = makeModelWithOils(oils: 1000)
-        // fragrancePercentage defaults to "3" → 1000 × 0.03 = 30
+        // fragrancePercentage defaults to 3 → 1000 × 0.03 = 30
         let data = try #require(model.extraIngredientData)
         let row = data.sectionB[0]
         #expect(row.label == "EO / Fragrance Oil")
@@ -949,7 +1025,7 @@ struct RecipeFormViewModelTests {
 
     @Test func extraIngredientData_AscorbicAcid_ComputesValueAndNaOH() throws {
         // waterParts = 1.5 → lyeConc = 0.4
-        let model = makeModelWithOils(oils: 1000, waterParts: "1.5")
+        let model = makeModelWithOils(oils: 1000, waterParts: 1.5)
         let data = try #require(model.extraIngredientData)
         let row = data.sectionB[1]
         #expect(row.label == "Ascorbic Acid")
@@ -962,7 +1038,7 @@ struct RecipeFormViewModelTests {
 
     @Test func extraIngredientData_LacticAcid_ComputesValueAndNaOH() throws {
         // waterParts = 1.5 → lyeConc = 0.4
-        let model = makeModelWithOils(oils: 1000, waterParts: "1.5")
+        let model = makeModelWithOils(oils: 1000, waterParts: 1.5)
         let data = try #require(model.extraIngredientData)
         let row = data.sectionB[2]
         #expect(row.label == "Lactic Acid")
@@ -975,7 +1051,7 @@ struct RecipeFormViewModelTests {
 
     @Test func extraIngredientData_TetrasodiumEDTA_UsesBatchTotal() throws {
         // oils = 1000, lye = 200, water = 300 → batchTotal = 1500
-        let model = makeModelWithOils(oils: 1000, waterParts: "1.5")
+        let model = makeModelWithOils(oils: 1000, waterParts: 1.5)
         let data = try #require(model.extraIngredientData)
         let row = data.sectionB[3]
         #expect(row.label == "Tetrasodium EDTA")

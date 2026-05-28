@@ -23,7 +23,8 @@ struct SoapWizApp: App {
             Provider.self,
             Recipe.self,
             RecipeIngredient.self,
-            RecipeProduct.self
+            RecipeProduct.self,
+            AppSettings.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -46,6 +47,7 @@ struct SoapWizApp: App {
         }
 
         DataSeeder.seed(into: container.mainContext)
+        _ = AppSettings.resolve(in: container.mainContext)
         return container
     }()
 

@@ -11,10 +11,17 @@ private let weightUnits = ["g", "oz", "lb", "kg", "%"]
 private let absoluteWeightUnits = ["g", "oz", "lb", "kg"]
 
 struct RecipeFormView: View {
+    private static let lyesPredicate: Predicate<Ingredient> = {
+        let name = IngredientCategory.Name.lyes
+        return #Predicate { $0.category?.name == name }
+    }()
+
     var recipe: Recipe? = nil
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Query(filter: lyesPredicate)
+    private var lyeIngredients: [Ingredient]
 
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
@@ -35,13 +42,23 @@ struct RecipeFormView: View {
                 .pickerStyle(.segmented)
                 .shadow(color: .black.opacity(0.12), radius: 4, y: 1)
                 .padding(.horizontal)
-                .padding(.vertical, 8)
+                .padding(.bottom, 8)
             }
             .navigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
             .navigationBarTitleDisplayMode(.inline)
+            .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)) { note in
+                guard let field = note.object as? UITextField,
+                      field.keyboardType == .decimalPad else { return }
+                Task { @MainActor in
+                    field.selectedTextRange = field.textRange(from: field.endOfDocument, to: field.endOfDocument)
+                }
+            }
             .task(id: recipe?.persistentModelID) {
-                guard let recipe else { return }
-                model.load(from: recipe)
+                if let recipe { model.load(from: recipe) }
+                model.resolveDefaultLyeIngredient(from: lyeIngredients)
+            }
+            .onChange(of: lyeIngredients) {
+                model.resolveDefaultLyeIngredient(from: lyeIngredients)
             }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -115,7 +132,7 @@ private extension RecipeFormView {
                 HStack {
                     Text("Total oil weight")
                     Spacer()
-                    TextField("0", text: $model.totalOilWeight)
+                    TextField("0", value: $model.totalOilWeight, format: .number.precision(.fractionLength(0...1)))
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 80)
@@ -148,10 +165,20 @@ private extension RecipeFormView {
                 Text("NaOH")
                     .foregroundStyle(.secondary)
             }
+            NavigationLink {
+                LyeIngredientPickerView(selected: $model.lyeIngredient)
+            } label: {
+                HStack {
+                    Text("Lye ingredient")
+                    Spacer()
+                    Text(model.lyeIngredient?.name ?? "Select…")
+                        .foregroundStyle(.secondary)
+                }
+            }
             HStack {
                 Text("Lye purity")
                 Spacer()
-                TextField("99", text: $model.lyePurity)
+                TextField("99", value: $model.lyePurity, format: .number.precision(.fractionLength(0...1)))
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 60)
@@ -161,7 +188,7 @@ private extension RecipeFormView {
             HStack {
                 Text("Water to lye ratio")
                 Spacer()
-                TextField("1.5", text: $model.waterParts)
+                TextField("1.5", value: $model.waterParts, format: .number.precision(.fractionLength(0...1)))
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
                     .frame(width: 30)
@@ -175,7 +202,7 @@ private extension RecipeFormView {
             HStack {
                 Text("Super Fat")
                 Spacer()
-                TextField("5", text: $model.superFat)
+                TextField("5", value: $model.superFat, format: .number.precision(.fractionLength(0...1)))
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 60)
@@ -197,7 +224,7 @@ private extension RecipeFormView {
                 }
                 .buttonStyle(.plain)
                 Spacer()
-                TextField("3", text: $model.fragrancePercentage)
+                TextField("3", value: $model.fragrancePercentage, format: .number.precision(.fractionLength(0...1)))
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 60)

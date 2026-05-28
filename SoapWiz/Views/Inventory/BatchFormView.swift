@@ -28,7 +28,7 @@ struct BatchFormView: View {
                     HStack {
                         Text("Quantity\(model.ingredient.unit.isEmpty ? "" : " (\(model.ingredient.unit))")")
                         Spacer()
-                        TextField("0", text: $model.quantityText)
+                        TextField("0", text: $model.quantityText.decimalOnly())
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
@@ -36,7 +36,7 @@ struct BatchFormView: View {
                     HStack {
                         Text("Total Price")
                         Spacer()
-                        TextField("0.00", text: $model.totalPriceText)
+                        TextField("0.00", text: $model.totalPriceText.decimalOnly())
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.trailing)
                             .frame(width: 100)
