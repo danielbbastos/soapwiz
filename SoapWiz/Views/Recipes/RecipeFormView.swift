@@ -117,7 +117,7 @@ private extension RecipeFormView {
     }
 
     var weightSection: some View {
-        Section("Weight & unit") {
+        Section("Oils weight & unit") {
             HStack {
                 Text("Measurement unit")
                 Spacer()

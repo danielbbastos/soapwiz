@@ -109,7 +109,8 @@ struct CostBreakdownBarView: View {
                             RecipeProductCardView(
                                 draft: $draft,
                                 breakdown: breakdown,
-                                availableUnits: ProductUnit.allCases
+                                availableUnits: ProductUnit.allCases,
+                                model: model
                             )
                         }
                         if breakdown.total > 0 {
