@@ -36,7 +36,7 @@ struct IngredientDetailViewModelTests {
         #expect(model.sortedPurchases.last === older)
     }
 
-    @Test func totalRemainingSumsAllPurchasees() throws {
+    @Test func totalRemainingSumsAllPurchases() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")

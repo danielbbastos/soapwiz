@@ -58,7 +58,7 @@ struct ProviderTests {
         #expect(purchase.provider?.name == "Acme Co.")
     }
 
-    @Test func deleteAllowedWhenNoPurchasees() throws {
+    @Test func deleteAllowedWhenNoPurchases() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
@@ -89,7 +89,7 @@ struct ProviderTests {
         #expect(purchase.provider == nil)
     }
 
-    @Test func purchaseesCountReflectsLinkedPurchasees() throws {
+    @Test func purchaseesCountReflectsLinkedPurchases() throws {
         let container = try makeContainer()
         let context = container.mainContext
 

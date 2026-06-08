@@ -18,10 +18,10 @@ When context reaches 70%, run `/compact` preserving: current task, modified file
 
 **SoapWiz** is an iOS app for soap makers. Features built incrementally:
 
-1. **Ingredient inventory** — add ingredients, track quantities per batch.
-2. **Batch tracking** — each ingredient purchase is a separate batch with its own quantity, price, dates, and metadata. Total remaining is the sum across all batches.
+1. **Ingredient inventory** — add ingredients, track quantities per purchase.
+2. **Purchase tracking** — each ingredient purchase is a separate record with its own quantity, price, dates, and metadata. Total remaining is the sum across all purchases.
 3. **Soap formulas** *(planned)* — create recipes specifying ingredient amounts.
-4. **Formula execution** *(planned)* — using a formula deducts ingredient quantities from batches.
+4. **Formula execution** *(planned)* — using a formula deducts ingredient quantities from purchases.
 
 **Stack:** Swift, SwiftUI, SwiftData, iOS 18+. iOS 26 Liquid Glass features are gated with `#available(iOS 26, *)`. No external dependencies.
 
@@ -52,17 +52,17 @@ xcodebuild -project SoapWiz.xcodeproj \
 ```
 SoapWiz/                        ← source root (auto-synced by Xcode)
 ├── Models/
-│   ├── Ingredient.swift        ← @Model: name, category, unit, batches[]
-│   └── IngredientBatch.swift   ← @Model: provider, dates, qty, price, badge…
+│   ├── Ingredient.swift          ← @Model: name, category, unit, purchases[]
+│   └── IngredientPurchase.swift  ← @Model: provider, dates, qty, price, badge…
 ├── Views/
 │   └── Inventory/
 │       ├── IngredientListView.swift   ← root view, @Query list, FAB, bulk delete
 │       ├── IngredientRowView.swift
-│       ├── IngredientDetailView.swift ← summary + batch list
-│       ├── BatchRowView.swift
-│       ├── BatchDetailView.swift
+│       ├── IngredientDetailView.swift ← summary + purchase list
+│       ├── PurchaseRowView.swift
+│       ├── PurchaseDetailView.swift
 │       ├── IngredientFormView.swift   ← add/edit ingredient sheet
-│       └── BatchFormView.swift        ← add/edit batch sheet
+│       └── PurchaseFormView.swift     ← add/edit purchase sheet
 └── SoapWizApp.swift            ← @main, ModelContainer setup
 ```
 
@@ -73,19 +73,19 @@ SoapWiz/                        ← source root (auto-synced by Xcode)
 |---|---|---|
 | `name` | `String` | |
 | `category` | `String` | |
-| `unit` | `String` | Base unit for all batches (e.g. "g", "ml") |
-| `batches` | `[IngredientBatch]` | `@Relationship(deleteRule: .cascade)` |
-| `totalRemaining` | `Double` | Computed — sum of `batch.remainingAmount` |
+| `unit` | `String` | Base unit for all purchases (e.g. "g", "ml") |
+| `purchases` | `[IngredientPurchase]` | `@Relationship(deleteRule: .cascade)` |
+| `totalRemaining` | `Double` | Computed — sum of `purchase.remainingAmount` |
 
-### `IngredientBatch`
+### `IngredientPurchase`
 | Property | Type | Notes |
 |---|---|---|
 | `ingredient` | `Ingredient?` | Back-reference (set via relationship) |
 | `provider` | `String` | |
 | `dateOfPurchase` | `Date` | |
-| `quantity` | `Double` | Original amount in this batch |
+| `quantity` | `Double` | Original amount in this purchase |
 | `totalPrice` | `Double` | Full price paid |
-| `badge` | `String` | Lot/batch identifier |
+| `badge` | `String` | Lot identifier |
 | `journalCode` | `String` | Internal reference |
 | `expiryDate` | `Date?` | |
 | `openingDate` | `Date?` | |
@@ -98,7 +98,7 @@ SoapWiz/                        ← source root (auto-synced by Xcode)
 - Root view is `IngredientListView`, wrapped in `NavigationStack`.
 - `ModelContainer` is configured once in `SoapWizApp` and injected via `.modelContainer()`.
 - FAB (floating `+` button) is used consistently across list views. It hides when `editMode == .active`.
-- `BatchFormView` accepts an optional `batch` parameter — `nil` = create, non-nil = edit.
+- `PurchaseFormView` accepts an optional `purchase` parameter — `nil` = create, non-nil = edit.
 - `IngredientFormView` accepts an optional `ingredient` parameter — same pattern.
 
 ## Git Workflow
@@ -125,9 +125,9 @@ Build output path: `~/Library/Developer/Xcode/DerivedData/SoapWiz-*/Build/Produc
 
 ## ⚠️ Common Mistakes
 
-- **Forgetting the cascade delete rule** on `Ingredient.batches` — orphaned batches accumulate silently.
+- **Forgetting the cascade delete rule** on `Ingredient.purchases` — orphaned purchases accumulate silently.
 - **Mutating SwiftData models off `@MainActor`** — all model access must stay on the main thread. The project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` globally.
 - **Using `@State` for persisted data** — use `@Query` for anything that lives in SwiftData.
-- **Sorting `ingredient.batches` directly in views** — batches are unordered in SwiftData; always sort before display (currently by `dateOfPurchase` descending).
+- **Sorting `ingredient.purchases` directly in views** — purchases are unordered in SwiftData; always sort before display (currently by `dateOfPurchase` descending).
 - **Discarding `ModelContainer` in tests** — never do `let ctx = try makeContainer().mainContext`; the container is released immediately and `ctx.insert()` hangs on a dead backing store. Always store the container: `let (container, ctx) = try makeContext(); _ = container`.
 - **Hardcoding locale-sensitive strings in test assertions** — never hardcode `"123.5"` when testing formatted numbers; use the same formatter the production code uses so the test passes on any locale.

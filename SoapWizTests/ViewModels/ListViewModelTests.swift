@@ -46,7 +46,7 @@ struct ListViewModelTests {
         #expect(remaining.isEmpty)
     }
 
-    @Test func storageLocationDeleteBlockedWhenPurchaseesAssigned() throws {
+    @Test func storageLocationDeleteBlockedWhenPurchasesAssigned() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
@@ -67,7 +67,7 @@ struct ListViewModelTests {
         #expect(model.deleteBlockedLocation === location)
     }
 
-    @Test func providerDeleteBlockedWhenPurchaseesAssigned() throws {
+    @Test func providerDeleteBlockedWhenPurchasesAssigned() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")

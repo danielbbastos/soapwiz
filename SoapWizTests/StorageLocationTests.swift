@@ -57,7 +57,7 @@ struct StorageLocationTests {
         #expect(purchase.storageLocation?.name == "Shelf B")
     }
 
-    @Test func deleteAllowedWhenNoPurchasees() throws {
+    @Test func deleteAllowedWhenNoPurchases() throws {
         let container = try makeContainer()
         let context = container.mainContext
 

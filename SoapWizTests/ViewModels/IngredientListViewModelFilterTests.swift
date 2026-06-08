@@ -250,15 +250,15 @@ struct IngredientListViewModelFilterTests {
         #expect(results.first?.name == "A")
     }
 
-    @Test func expiryFilterNoExpiryMatchesIngredientWithNoPurchasees() throws {
+    @Test func expiryFilterNoExpiryMatchesIngredientWithNoPurchases() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let noPurchasees = Ingredient(name: "A")
-        ctx.insert(noPurchasees)
+        let noPurchases = Ingredient(name: "A")
+        ctx.insert(noPurchases)
 
         let model = IngredientListViewModel()
         model.expiryFilter = .noExpiry
-        #expect(model.filtered([noPurchasees]).count == 1)
+        #expect(model.filtered([noPurchases]).count == 1)
     }
 
     // MARK: - Combined filters

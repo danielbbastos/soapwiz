@@ -19,7 +19,7 @@ struct IngredientExpiryTests {
         )
     }
 
-    @Test func returnsNilWhenNoPurchasees() throws {
+    @Test func returnsNilWhenNoPurchases() throws {
         let container = try makeContainer()
         let ingredient = Ingredient(name: "Test")
         container.mainContext.insert(ingredient)
@@ -73,7 +73,7 @@ struct IngredientExpiryTests {
         #expect(abs(result.timeIntervalSince(soon)) < 1)
     }
 
-    @Test func returnsNearestWhenMultiplePurchaseesExpiring() throws {
+    @Test func returnsNearestWhenMultiplePurchasesExpiring() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Test")
