@@ -6,8 +6,8 @@ struct IngredientDetailView: View {
 
     @State private var model: IngredientDetailViewModel
 
-    init(ingredient: Ingredient, autoAddBatch: Bool = false) {
-        _model = State(initialValue: IngredientDetailViewModel(ingredient: ingredient, showingAddBatch: autoAddBatch))
+    init(ingredient: Ingredient, autoAddPurchase: Bool = false) {
+        _model = State(initialValue: IngredientDetailViewModel(ingredient: ingredient, showingAddPurchase: autoAddPurchase))
     }
 
     var body: some View {
@@ -25,7 +25,7 @@ struct IngredientDetailView: View {
                         Text("\(model.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(symbol)")
                             .foregroundStyle(model.totalRemaining > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
                     }
-                    LabeledContent("Batches", value: "\(model.ingredient.batches.count)")
+                    LabeledContent("Purchases", value: "\(model.ingredient.purchases.count)")
                     if let sap = model.ingredient.sapValue {
                         LabeledContent("SAP Value (NaOH)") {
                             Text("\(sap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))) g/g")
@@ -40,14 +40,14 @@ struct IngredientDetailView: View {
                     }
                 }
 
-                Section("Batches") {
-                    if model.sortedBatches.isEmpty {
-                        Text("No batches yet. Tap + to add one.")
+                Section("Purchases") {
+                    if model.sortedPurchases.isEmpty {
+                        Text("No purchases yet. Tap + to add one.")
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(model.sortedBatches) { batch in
-                            NavigationLink(destination: BatchDetailView(batch: batch)) {
-                                BatchRowView(batch: batch, unit: model.ingredient.unit)
+                        ForEach(model.sortedPurchases) { purchase in
+                            NavigationLink(destination: PurchaseDetailView(purchase: purchase)) {
+                                PurchaseRowView(purchase: purchase, unit: model.ingredient.unit)
                             }
                         }
                         .onDelete { model.delete(at: $0, context: modelContext) }
@@ -62,10 +62,10 @@ struct IngredientDetailView: View {
                 }
             }
 
-            FloatingActionButton { model.showingAddBatch = true }
+            FloatingActionButton { model.showingAddPurchase = true }
         }
-        .sheet(isPresented: $model.showingAddBatch) {
-            BatchFormView(ingredient: model.ingredient)
+        .sheet(isPresented: $model.showingAddPurchase) {
+            PurchaseFormView(ingredient: model.ingredient)
         }
         .sheet(isPresented: $model.showingEditIngredient) {
             IngredientFormView(ingredient: model.ingredient)

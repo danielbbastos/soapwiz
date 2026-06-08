@@ -52,7 +52,7 @@ struct IngredientListView: View {
                 .navigationDestination(for: Ingredient.self) { ingredient in
                     IngredientDetailView(
                         ingredient: ingredient,
-                        autoAddBatch: model.pendingIngredient?.persistentModelID == ingredient.persistentModelID
+                        autoAddPurchase: model.pendingIngredient?.persistentModelID == ingredient.persistentModelID
                     )
                     .onAppear { model.pendingIngredient = nil }
                 }
@@ -88,10 +88,10 @@ struct IngredientListView: View {
             Button("Delete", role: .destructive) { model.confirmDelete(context: modelContext) }
             Button("Cancel", role: .cancel) { model.confirmingDelete = [] }
         } message: {
-            let batchCount = model.confirmingDelete.reduce(0) { $0 + $1.batches.count }
+            let purchaseCount = model.confirmingDelete.reduce(0) { $0 + $1.purchases.count }
             let ingredientWord = model.confirmingDelete.count == 1 ? "ingredient" : "ingredients"
-            let batchWord = batchCount == 1 ? "batch" : "batches"
-            Text("Deleting \(model.confirmingDelete.count) \(ingredientWord) will also delete \(batchCount) \(batchWord).")
+            let purchaseWord = purchaseCount == 1 ? "purchase" : "purchases"
+            Text("Deleting \(model.confirmingDelete.count) \(ingredientWord) will also delete \(purchaseCount) \(purchaseWord).")
         }
         .sheet(isPresented: $model.showingAddIngredient, onDismiss: {
             if let ingredient = model.pendingIngredient {

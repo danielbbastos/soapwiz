@@ -1,35 +1,35 @@
 import SwiftUI
 
-struct BatchDetailView: View {
-    let batch: IngredientBatch
+struct PurchaseDetailView: View {
+    let purchase: IngredientPurchase
 
-    @State private var model: BatchDetailViewModel
+    @State private var model: PurchaseDetailViewModel
     @State private var showingEdit = false
     @FocusState private var amountFocused: Bool
 
-    init(batch: IngredientBatch) {
-        self.batch = batch
-        _model = State(initialValue: BatchDetailViewModel(batch: batch))
+    init(purchase: IngredientPurchase) {
+        self.purchase = purchase
+        _model = State(initialValue: PurchaseDetailViewModel(purchase: purchase))
     }
 
-    private var unit: String { batch.ingredient?.unit ?? "" }
+    private var unit: String { purchase.ingredient?.unit ?? "" }
 
     var body: some View {
         List {
             Section("Purchase") {
-                LabeledContent("Provider", value: batch.provider?.name ?? "—")
-                LabeledContent("Date", value: batch.dateOfPurchase.formatted(date: .long, time: .omitted))
+                LabeledContent("Provider", value: purchase.provider?.name ?? "—")
+                LabeledContent("Date", value: purchase.dateOfPurchase.formatted(date: .long, time: .omitted))
                 LabeledContent(
                     "Quantity",
-                    value: "\(batch.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)"
+                    value: "\(purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)"
                 )
                 LabeledContent(
                     "Total Price",
-                    value: batch.totalPrice.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
+                    value: purchase.totalPrice.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
                 )
                 LabeledContent(
                     "Price / \(unit.isEmpty ? "unit" : unit)",
-                    value: batch.pricePerUnit.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
+                    value: purchase.pricePerUnit.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
                 )
             }
 
@@ -69,10 +69,10 @@ struct BatchDetailView: View {
 
                             Button { model.startEditing() } label: {
                                 ZStack {
-                                    Text("\(batch.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
+                                    Text("\(purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
                                         .hidden()
-                                    Text("\(batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
-                                        .foregroundStyle(batch.remainingAmount > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
+                                    Text("\(purchase.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
+                                        .foregroundStyle(purchase.remainingAmount > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
                                 }
                             }
                             .buttonStyle(.plain)
@@ -90,29 +90,29 @@ struct BatchDetailView: View {
                 .onChange(of: model.isEditingAmount) {
                     if model.isEditingAmount { amountFocused = true }
                 }
-                LabeledContent("Storage Location", value: batch.storageLocation?.name ?? "—")
+                LabeledContent("Storage Location", value: purchase.storageLocation?.name ?? "—")
             }
 
             Section("Identification") {
-                LabeledContent("Badge", value: batch.badge.isEmpty ? "—" : batch.badge)
-                LabeledContent("Journal Code", value: batch.journalCode.isEmpty ? "—" : batch.journalCode)
+                LabeledContent("Badge", value: purchase.badge.isEmpty ? "—" : purchase.badge)
+                LabeledContent("Journal Code", value: purchase.journalCode.isEmpty ? "—" : purchase.journalCode)
             }
 
             Section("Dates") {
-                if let expiry = batch.expiryDate {
+                if let expiry = purchase.expiryDate {
                     LabeledContent("Expiry Date", value: expiry.formatted(date: .long, time: .omitted))
                 }
-                if let opening = batch.openingDate {
+                if let opening = purchase.openingDate {
                     LabeledContent("Opening Date", value: opening.formatted(date: .long, time: .omitted))
                 }
-                if batch.expiryDate == nil && batch.openingDate == nil {
+                if purchase.expiryDate == nil && purchase.openingDate == nil {
                     Text("No dates recorded")
                         .foregroundStyle(.secondary)
                 }
             }
         }
         .onDisappear { model.isEditingAmount = false }
-        .navigationTitle("Batch Details")
+        .navigationTitle("Purchase Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -120,8 +120,8 @@ struct BatchDetailView: View {
             }
         }
         .sheet(isPresented: $showingEdit) {
-            if let ingredient = batch.ingredient {
-                BatchFormView(ingredient: ingredient, batch: batch)
+            if let ingredient = purchase.ingredient {
+                PurchaseFormView(ingredient: ingredient, purchase: purchase)
             }
         }
     }

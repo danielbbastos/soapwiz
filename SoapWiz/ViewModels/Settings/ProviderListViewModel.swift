@@ -11,7 +11,7 @@ final class ProviderListViewModel {
     func delete(at offsets: IndexSet, in providers: [Provider], context: ModelContext) {
         for index in offsets {
             let provider = providers[index]
-            if provider.batches.isEmpty {
+            if provider.purchases.isEmpty {
                 context.delete(provider)
             } else {
                 deleteBlockedProvider = provider

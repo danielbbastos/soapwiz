@@ -342,7 +342,7 @@ struct RecipeDetailView: View {
                     }
                 }
             } else {
-                Text("No cost data — add batch prices in Inventory")
+                Text("No cost data — add purchase prices in Inventory")
                     .foregroundStyle(.secondary)
             }
 

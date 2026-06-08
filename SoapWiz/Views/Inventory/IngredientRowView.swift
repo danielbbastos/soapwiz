@@ -20,7 +20,7 @@ struct IngredientRowView: View {
             Spacer()
             VStack(alignment: .trailing, spacing: 4) {
                 HStack(spacing: 6) {
-                    if ingredient.hasExpiredBatch {
+                    if ingredient.hasExpiredPurchase {
                         Button {
                             showingExpiryPopover = true
                         } label: {
@@ -29,7 +29,7 @@ struct IngredientRowView: View {
                         }
                         .buttonStyle(.borderless)
                         .popover(isPresented: $showingExpiryPopover) {
-                            Text("This ingredient has an expired batch.")
+                            Text("This ingredient has an expired purchase.")
                                 .padding()
                                 .presentationCompactAdaptation(.popover)
                         }

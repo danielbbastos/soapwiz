@@ -14,14 +14,14 @@ final class Ingredient {
     var density: Double?
     var fattyAcidProfile: FattyAcidProfile?
 
-    @Relationship(deleteRule: .cascade, inverse: \IngredientBatch.ingredient)
-    var batches: [IngredientBatch] = []
+    @Relationship(deleteRule: .cascade, inverse: \IngredientPurchase.ingredient)
+    var purchases: [IngredientPurchase] = []
 
     @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.ingredient)
     var recipeIngredients: [RecipeIngredient] = []
 
     var totalRemaining: Double {
-        batches.reduce(0) { $0 + $1.remainingAmount }
+        purchases.reduce(0) { $0 + $1.remainingAmount }
     }
 
     var isLowStock: Bool {
@@ -29,15 +29,15 @@ final class Ingredient {
         return totalRemaining <= threshold
     }
 
-    var hasExpiredBatch: Bool {
+    var hasExpiredPurchase: Bool {
         let now = Date.now
-        return batches.contains { ($0.expiryDate ?? .distantFuture) < now }
+        return purchases.contains { ($0.expiryDate ?? .distantFuture) < now }
     }
 
     var nearestUpcomingExpiry: Date? {
         let now = Date.now
         guard let cutoff = Calendar.current.date(byAdding: .month, value: 1, to: now) else { return nil }
-        return batches
+        return purchases
             .compactMap(\.expiryDate)
             .filter { $0 > now && $0 <= cutoff }
             .min()

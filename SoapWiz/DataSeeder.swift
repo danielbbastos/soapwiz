@@ -27,10 +27,10 @@ extension DataSeeder {
         let kohSapValue: Double?
         let density: Double?
         let fattyAcidProfile: FattyAcidProfile?
-        let batches: [BatchSeed]
+        let purchases: [PurchaseSeed]
     }
 
-    private struct BatchSeed: Decodable {
+    private struct PurchaseSeed: Decodable {
         let provider: String
         let dateOfPurchase: String
         let quantity: Double
@@ -140,21 +140,21 @@ extension DataSeeder {
             ingredient.fattyAcidProfile = ingredientSeed.fattyAcidProfile
             context.insert(ingredient)
 
-            for batchSeed in ingredientSeed.batches {
-                let batch = IngredientBatch(
-                    provider: providerMap[batchSeed.provider],
-                    dateOfPurchase: formatter.date(from: batchSeed.dateOfPurchase) ?? .now,
-                    quantity: batchSeed.quantity,
-                    totalPrice: batchSeed.totalPrice,
-                    badge: batchSeed.badge,
-                    journalCode: batchSeed.journalCode,
-                    expiryDate: batchSeed.expiryDate.flatMap { formatter.date(from: $0) },
-                    openingDate: batchSeed.openingDate.flatMap { formatter.date(from: $0) },
-                    storageLocation: storageMap[batchSeed.storageLocation]
+            for purchaseSeed in ingredientSeed.purchases {
+                let purchase = IngredientPurchase(
+                    provider: providerMap[purchaseSeed.provider],
+                    dateOfPurchase: formatter.date(from: purchaseSeed.dateOfPurchase) ?? .now,
+                    quantity: purchaseSeed.quantity,
+                    totalPrice: purchaseSeed.totalPrice,
+                    badge: purchaseSeed.badge,
+                    journalCode: purchaseSeed.journalCode,
+                    expiryDate: purchaseSeed.expiryDate.flatMap { formatter.date(from: $0) },
+                    openingDate: purchaseSeed.openingDate.flatMap { formatter.date(from: $0) },
+                    storageLocation: storageMap[purchaseSeed.storageLocation]
                 )
-                batch.remainingAmount = batchSeed.remainingAmount
-                ingredient.batches.append(batch)
-                context.insert(batch)
+                purchase.remainingAmount = purchaseSeed.remainingAmount
+                ingredient.purchases.append(purchase)
+                context.insert(purchase)
             }
         }
     }

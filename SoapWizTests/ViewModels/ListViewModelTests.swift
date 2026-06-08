@@ -9,7 +9,7 @@ import SwiftUI
 struct ListViewModelTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientPurchase.self, IngredientCategory.self, StorageLocation.self, Provider.self])
         return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
     }
 
@@ -46,20 +46,20 @@ struct ListViewModelTests {
         #expect(remaining.isEmpty)
     }
 
-    @Test func storageLocationDeleteBlockedWhenBatchesAssigned() throws {
+    @Test func storageLocationDeleteBlockedWhenPurchasesAssigned() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let location = StorageLocation(name: "Shelf A")
         ctx.insert(location)
-        let batch = IngredientBatch(
+        let purchase = IngredientPurchase(
             dateOfPurchase: .now, quantity: 100, totalPrice: 10,
             badge: "", journalCode: "", expiryDate: nil, openingDate: nil,
             storageLocation: location
         )
-        ctx.insert(batch)
-        ingredient.batches.append(batch)
+        ctx.insert(purchase)
+        ingredient.purchases.append(purchase)
         try ctx.save()
 
         let model = StorageLocationListViewModel()
@@ -67,20 +67,20 @@ struct ListViewModelTests {
         #expect(model.deleteBlockedLocation === location)
     }
 
-    @Test func providerDeleteBlockedWhenBatchesAssigned() throws {
+    @Test func providerDeleteBlockedWhenPurchasesAssigned() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let provider = Provider(name: "Acme")
         ctx.insert(provider)
-        let batch = IngredientBatch(
+        let purchase = IngredientPurchase(
             provider: provider,
             dateOfPurchase: .now, quantity: 100, totalPrice: 10,
             badge: "", journalCode: "", expiryDate: nil, openingDate: nil
         )
-        ctx.insert(batch)
-        ingredient.batches.append(batch)
+        ctx.insert(purchase)
+        ingredient.purchases.append(purchase)
         try ctx.save()
 
         let model = ProviderListViewModel()

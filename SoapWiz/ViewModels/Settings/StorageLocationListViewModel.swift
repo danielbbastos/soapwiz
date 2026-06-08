@@ -11,7 +11,7 @@ final class StorageLocationListViewModel {
     func delete(at offsets: IndexSet, in locations: [StorageLocation], context: ModelContext) {
         for index in offsets {
             let location = locations[index]
-            if location.batches.isEmpty {
+            if location.purchases.isEmpty {
                 context.delete(location)
             } else {
                 deleteBlockedLocation = location

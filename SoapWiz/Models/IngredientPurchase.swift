@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class IngredientBatch {
+final class IngredientPurchase {
     var ingredient: Ingredient?
     var provider: Provider?
     var dateOfPurchase: Date

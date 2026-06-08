@@ -3,12 +3,12 @@ import Foundation
 import SwiftData
 @testable import SoapWiz
 
-@Suite("BatchFormViewModel", .serialized)
+@Suite("PurchaseFormViewModel", .serialized)
 @MainActor
-struct BatchFormViewModelTests {
+struct PurchaseFormViewModelTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientPurchase.self, IngredientCategory.self, StorageLocation.self, Provider.self])
         return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
     }
 
@@ -17,7 +17,7 @@ struct BatchFormViewModelTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let model = BatchFormViewModel(ingredient: ingredient)
+        let model = PurchaseFormViewModel(ingredient: ingredient)
         #expect(!model.isValid)
         model.quantityText = "100"
         #expect(model.isValid)
@@ -28,7 +28,7 @@ struct BatchFormViewModelTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let model = BatchFormViewModel(ingredient: ingredient)
+        let model = PurchaseFormViewModel(ingredient: ingredient)
         model.quantityText = "100"
         model.totalPriceText = "25"
         #expect(model.pricePerUnit == 0.25)
@@ -39,32 +39,32 @@ struct BatchFormViewModelTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let model = BatchFormViewModel(ingredient: ingredient)
+        let model = PurchaseFormViewModel(ingredient: ingredient)
         model.totalPriceText = "25"
         #expect(model.pricePerUnit == 0)
     }
 
-    @Test func saveInsertsNewBatchLinkedToIngredient() throws {
+    @Test func saveInsertsNewPurchaseLinkedToIngredient() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let model = BatchFormViewModel(ingredient: ingredient)
+        let model = PurchaseFormViewModel(ingredient: ingredient)
         model.quantityText = "100"
         model.totalPriceText = "25"
         model.save(context: ctx)
         try ctx.save()
-        #expect(ingredient.batches.count == 1)
-        #expect(ingredient.batches.first?.quantity == 100)
-        #expect(ingredient.batches.first?.remainingAmount == 100)
+        #expect(ingredient.purchases.count == 1)
+        #expect(ingredient.purchases.first?.quantity == 100)
+        #expect(ingredient.purchases.first?.remainingAmount == 100)
     }
 
-    @Test func saveUpdatesExistingBatch() throws {
+    @Test func saveUpdatesExistingPurchase() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let batch = IngredientBatch(
+        let purchase = IngredientPurchase(
             dateOfPurchase: .now,
             quantity: 50,
             totalPrice: 10,
@@ -73,11 +73,11 @@ struct BatchFormViewModelTests {
             expiryDate: nil,
             openingDate: nil
         )
-        ctx.insert(batch)
-        ingredient.batches.append(batch)
-        let model = BatchFormViewModel(ingredient: ingredient, batch: batch)
+        ctx.insert(purchase)
+        ingredient.purchases.append(purchase)
+        let model = PurchaseFormViewModel(ingredient: ingredient, purchase: purchase)
         model.quantityText = "75"
         model.save(context: ctx)
-        #expect(batch.quantity == 75)
+        #expect(purchase.quantity == 75)
     }
 }
