@@ -75,8 +75,8 @@ final class IngredientListViewModel {
             switch expiryFilter {
             case .all:           matchesExpiry = true
             case .expiringSoon:  matchesExpiry = ingredient.nearestUpcomingExpiry != nil
-            case .expired:       matchesExpiry = ingredient.hasExpiredBatch
-            case .noExpiry:      matchesExpiry = ingredient.batches.allSatisfy { $0.expiryDate == nil }
+            case .expired:       matchesExpiry = ingredient.hasExpiredPurchase
+            case .noExpiry:      matchesExpiry = ingredient.purchases.allSatisfy { $0.expiryDate == nil }
             }
 
             return matchesSearch && matchesCategory && matchesStock && matchesUnit && matchesExpiry
@@ -84,7 +84,7 @@ final class IngredientListViewModel {
     }
 
     func delete(_ ingredient: Ingredient, context: ModelContext) {
-        if ingredient.batches.isEmpty {
+        if ingredient.purchases.isEmpty {
             context.delete(ingredient)
         } else {
             confirmingDelete = [ingredient]
@@ -93,7 +93,7 @@ final class IngredientListViewModel {
 
     func deleteSelected(in ingredients: [Ingredient], context: ModelContext) {
         let targets = selection.compactMap { id in ingredients.first { $0.persistentModelID == id } }
-        if targets.contains(where: { !$0.batches.isEmpty }) {
+        if targets.contains(where: { !$0.purchases.isEmpty }) {
             confirmingDelete = targets
         } else {
             targets.forEach { context.delete($0) }

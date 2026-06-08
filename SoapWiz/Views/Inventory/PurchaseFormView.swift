@@ -1,17 +1,17 @@
 import SwiftUI
 import SwiftData
 
-struct BatchFormView: View {
+struct PurchaseFormView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \Provider.name) private var providers: [Provider]
     @Query(sort: \StorageLocation.name) private var storageLocations: [StorageLocation]
 
-    @State private var model: BatchFormViewModel
+    @State private var model: PurchaseFormViewModel
 
-    init(ingredient: Ingredient, batch: IngredientBatch? = nil) {
-        _model = State(initialValue: BatchFormViewModel(ingredient: ingredient, batch: batch))
+    init(ingredient: Ingredient, purchase: IngredientPurchase? = nil) {
+        _model = State(initialValue: PurchaseFormViewModel(ingredient: ingredient, purchase: purchase))
     }
 
     var body: some View {
@@ -74,7 +74,7 @@ struct BatchFormView: View {
                     }
                 }
             }
-            .navigationTitle(model.isEditing ? "Edit Batch" : "New Batch")
+            .navigationTitle(model.isEditing ? "Edit Purchase" : "New Purchase")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

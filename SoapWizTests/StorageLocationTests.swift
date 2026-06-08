@@ -8,15 +8,15 @@ import SwiftData
 struct StorageLocationTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientPurchase.self, IngredientCategory.self, StorageLocation.self, Provider.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         return try ModelContainer(for: schema, configurations: [config])
     }
 
-    private func makeBatch(in context: ModelContext, location: StorageLocation? = nil) -> IngredientBatch {
+    private func makePurchase(in context: ModelContext, location: StorageLocation? = nil) -> IngredientPurchase {
         let ingredient = Ingredient(name: "Olive Oil")
         context.insert(ingredient)
-        let batch = IngredientBatch(
+        let purchase = IngredientPurchase(
             dateOfPurchase: .now,
             quantity: 100,
             totalPrice: 10,
@@ -26,9 +26,9 @@ struct StorageLocationTests {
             openingDate: nil,
             storageLocation: location
         )
-        context.insert(batch)
-        ingredient.batches.append(batch)
-        return batch
+        context.insert(purchase)
+        ingredient.purchases.append(purchase)
+        return purchase
     }
 
     @Test func createLocation() throws {
@@ -50,14 +50,14 @@ struct StorageLocationTests {
 
         let location = StorageLocation(name: "Shelf A")
         context.insert(location)
-        let batch = makeBatch(in: context, location: location)
+        let purchase = makePurchase(in: context, location: location)
         try context.save()
 
         location.name = "Shelf B"
-        #expect(batch.storageLocation?.name == "Shelf B")
+        #expect(purchase.storageLocation?.name == "Shelf B")
     }
 
-    @Test func deleteAllowedWhenNoBatches() throws {
+    @Test func deleteAllowedWhenNoPurchasees() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
@@ -65,7 +65,7 @@ struct StorageLocationTests {
         context.insert(location)
         try context.save()
 
-        #expect(location.batches.isEmpty)
+        #expect(location.purchases.isEmpty)
         context.delete(location)
         try context.save()
 
@@ -73,18 +73,18 @@ struct StorageLocationTests {
         #expect(remaining.isEmpty)
     }
 
-    @Test func deletingLocationNullifiesBatchLocation() throws {
+    @Test func deletingLocationNullifiesPurchaseLocation() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
         let location = StorageLocation(name: "Fridge")
         context.insert(location)
-        let batch = makeBatch(in: context, location: location)
+        let purchase = makePurchase(in: context, location: location)
         try context.save()
 
         context.delete(location)
         try context.save()
 
-        #expect(batch.storageLocation == nil)
+        #expect(purchase.storageLocation == nil)
     }
 }

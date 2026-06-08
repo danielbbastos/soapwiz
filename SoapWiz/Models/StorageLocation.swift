@@ -6,8 +6,8 @@ final class StorageLocation {
     var name: String
     var locationDescription: String
 
-    @Relationship(deleteRule: .nullify, inverse: \IngredientBatch.storageLocation)
-    var batches: [IngredientBatch] = []
+    @Relationship(deleteRule: .nullify, inverse: \IngredientPurchase.storageLocation)
+    var purchases: [IngredientPurchase] = []
 
     init(name: String, locationDescription: String = "") {
         self.name = name

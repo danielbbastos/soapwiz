@@ -8,7 +8,7 @@ import SwiftData
 struct RecipeFormViewModelTests {
 
     private func makeContext() throws -> (ModelContainer, ModelContext) {
-        let schema = Schema([Recipe.self, RecipeIngredient.self, RecipeProduct.self, Ingredient.self, IngredientBatch.self, IngredientCategory.self])
+        let schema = Schema([Recipe.self, RecipeIngredient.self, RecipeProduct.self, Ingredient.self, IngredientPurchase.self, IngredientCategory.self])
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
         return (container, container.mainContext)
     }
@@ -348,7 +348,7 @@ struct RecipeFormViewModelTests {
         _ = container
         let ingredient = Ingredient(name: "Coconut Oil")
         ctx.insert(ingredient)
-        let batch = IngredientBatch.mock(quantity: 500, totalPrice: 10.0)
+        let batch = IngredientPurchase.mock(quantity: 500, totalPrice: 10.0)
         batch.ingredient = ingredient
         ctx.insert(batch)
 
@@ -371,10 +371,10 @@ struct RecipeFormViewModelTests {
         _ = container
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let batch1 = IngredientBatch.mock(quantity: 500, totalPrice: 10.0)
+        let batch1 = IngredientPurchase.mock(quantity: 500, totalPrice: 10.0)
         batch1.ingredient = ingredient
         ctx.insert(batch1)
-        let batch2 = IngredientBatch.mock(quantity: 250, totalPrice: 7.5)
+        let batch2 = IngredientPurchase.mock(quantity: 250, totalPrice: 7.5)
         batch2.ingredient = ingredient
         ctx.insert(batch2)
 
@@ -396,13 +396,13 @@ struct RecipeFormViewModelTests {
         _ = container
         let ing1 = Ingredient(name: "Coconut Oil")
         ctx.insert(ing1)
-        let b1 = IngredientBatch.mock(quantity: 1000, totalPrice: 10.0)  // €0.01/g
+        let b1 = IngredientPurchase.mock(quantity: 1000, totalPrice: 10.0)  // €0.01/g
         b1.ingredient = ing1
         ctx.insert(b1)
 
         let ing2 = Ingredient(name: "Shea Butter")
         ctx.insert(ing2)
-        let b2 = IngredientBatch.mock(quantity: 500, totalPrice: 20.0)   // €0.04/g
+        let b2 = IngredientPurchase.mock(quantity: 500, totalPrice: 20.0)   // €0.04/g
         b2.ingredient = ing2
         ctx.insert(b2)
 
@@ -424,7 +424,7 @@ struct RecipeFormViewModelTests {
         _ = container
         let ingredient = Ingredient(name: "Coconut Oil")
         ctx.insert(ingredient)
-        let batch = IngredientBatch.mock(quantity: 500, totalPrice: 10.0)
+        let batch = IngredientPurchase.mock(quantity: 500, totalPrice: 10.0)
         batch.ingredient = ingredient
         ctx.insert(batch)
 
@@ -445,7 +445,7 @@ struct RecipeFormViewModelTests {
         _ = container
         let ingredient = Ingredient(name: "Coconut Oil")
         ctx.insert(ingredient)
-        let batch = IngredientBatch.mock(quantity: 500, totalPrice: 10.0)
+        let batch = IngredientPurchase.mock(quantity: 500, totalPrice: 10.0)
         batch.ingredient = ingredient
         ctx.insert(batch)
 
@@ -475,12 +475,12 @@ struct RecipeFormViewModelTests {
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2
         ctx.insert(oil)
-        let oilBatch = IngredientBatch.mock(quantity: 1000, totalPrice: 10.0)
+        let oilBatch = IngredientPurchase.mock(quantity: 1000, totalPrice: 10.0)
         oilBatch.ingredient = oil
         ctx.insert(oilBatch)
         let lye = Ingredient(name: "Sodium Hydroxide")
         ctx.insert(lye)
-        let lyeBatch = IngredientBatch.mock(quantity: 1000, totalPrice: 8.0)
+        let lyeBatch = IngredientPurchase.mock(quantity: 1000, totalPrice: 8.0)
         lyeBatch.ingredient = lye
         ctx.insert(lyeBatch)
 
@@ -689,13 +689,13 @@ struct RecipeFormViewModelTests {
         _ = container
         let ing1 = Ingredient(name: "Coconut Oil")
         ctx.insert(ing1)
-        let b1 = IngredientBatch.mock(quantity: 1000, totalPrice: 10.0)  // €0.01/g
+        let b1 = IngredientPurchase.mock(quantity: 1000, totalPrice: 10.0)  // €0.01/g
         b1.ingredient = ing1
         ctx.insert(b1)
 
         let ing2 = Ingredient(name: "Olive Oil")
         ctx.insert(ing2)
-        let b2 = IngredientBatch.mock(quantity: 500, totalPrice: 20.0)   // €0.04/g
+        let b2 = IngredientPurchase.mock(quantity: 500, totalPrice: 20.0)   // €0.04/g
         b2.ingredient = ing2
         ctx.insert(b2)
 
@@ -1192,7 +1192,7 @@ struct RecipeFormViewModelTests {
         _ = container
         let additive = Ingredient(name: "Sodium Lactate")
         ctx.insert(additive)
-        let batch = IngredientBatch.mock(quantity: 1000, totalPrice: 10.0) // €0.01/g
+        let batch = IngredientPurchase.mock(quantity: 1000, totalPrice: 10.0) // €0.01/g
         batch.ingredient = additive
         ctx.insert(batch)
         let oil = Ingredient(name: "Olive Oil")
@@ -1397,12 +1397,12 @@ struct RecipeFormViewModelTests {
 
 // MARK: - Mocks
 
-extension IngredientBatch {
+extension IngredientPurchase {
     static func mock(
         quantity: Double = 500,
         totalPrice: Double = 10.0
-    ) -> IngredientBatch {
-        IngredientBatch(
+    ) -> IngredientPurchase {
+        IngredientPurchase(
             dateOfPurchase: Date(),
             quantity: quantity,
             totalPrice: totalPrice,

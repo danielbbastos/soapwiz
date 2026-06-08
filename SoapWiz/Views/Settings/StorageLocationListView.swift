@@ -28,7 +28,7 @@ struct StorageLocationListView: View {
                                         Text(location.name)
                                             .foregroundStyle(.primary)
                                         Spacer()
-                                        Text("\(location.batches.count)")
+                                        Text("\(location.purchases.count)")
                                             .foregroundStyle(.secondary)
                                             .font(.subheadline)
                                     }
@@ -67,10 +67,10 @@ struct StorageLocationListView: View {
         ) { _ in
             Button("OK", role: .cancel) { model.deleteBlockedLocation = nil }
         } message: { location in
-            let count = location.batches.count
+            let count = location.purchases.count
             Text(
-                "\"\(location.name)\" is assigned to \(count) batch\(count == 1 ? "" : "es"). " +
-                "Remove the location from those batches first."
+                "\"\(location.name)\" is assigned to \(count) purchase\(count == 1 ? "" : "s"). " +
+                "Remove the location from those purchases first."
             )
         }
     }

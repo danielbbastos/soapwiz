@@ -8,15 +8,15 @@ import SwiftData
 struct ProviderTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientPurchase.self, IngredientCategory.self, StorageLocation.self, Provider.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         return try ModelContainer(for: schema, configurations: [config])
     }
 
-    private func makeBatch(in context: ModelContext, provider: Provider? = nil) -> IngredientBatch {
+    private func makePurchase(in context: ModelContext, provider: Provider? = nil) -> IngredientPurchase {
         let ingredient = Ingredient(name: "Olive Oil")
         context.insert(ingredient)
-        let batch = IngredientBatch(
+        let purchase = IngredientPurchase(
             provider: provider,
             dateOfPurchase: .now,
             quantity: 100,
@@ -26,9 +26,9 @@ struct ProviderTests {
             expiryDate: nil,
             openingDate: nil
         )
-        context.insert(batch)
-        ingredient.batches.append(batch)
-        return batch
+        context.insert(purchase)
+        ingredient.purchases.append(purchase)
+        return purchase
     }
 
     @Test func createProvider() throws {
@@ -51,14 +51,14 @@ struct ProviderTests {
 
         let provider = Provider(name: "Acme")
         context.insert(provider)
-        let batch = makeBatch(in: context, provider: provider)
+        let purchase = makePurchase(in: context, provider: provider)
         try context.save()
 
         provider.name = "Acme Co."
-        #expect(batch.provider?.name == "Acme Co.")
+        #expect(purchase.provider?.name == "Acme Co.")
     }
 
-    @Test func deleteAllowedWhenNoBatches() throws {
+    @Test func deleteAllowedWhenNoPurchasees() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
@@ -66,7 +66,7 @@ struct ProviderTests {
         context.insert(provider)
         try context.save()
 
-        #expect(provider.batches.isEmpty)
+        #expect(provider.purchases.isEmpty)
         context.delete(provider)
         try context.save()
 
@@ -74,32 +74,32 @@ struct ProviderTests {
         #expect(remaining.isEmpty)
     }
 
-    @Test func deletingProviderNullifiesBatchProvider() throws {
+    @Test func deletingProviderNullifiesPurchaseProvider() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
         let provider = Provider(name: "Acme")
         context.insert(provider)
-        let batch = makeBatch(in: context, provider: provider)
+        let purchase = makePurchase(in: context, provider: provider)
         try context.save()
 
         context.delete(provider)
         try context.save()
 
-        #expect(batch.provider == nil)
+        #expect(purchase.provider == nil)
     }
 
-    @Test func batchesCountReflectsLinkedBatches() throws {
+    @Test func purchaseesCountReflectsLinkedPurchasees() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
         let provider = Provider(name: "Acme")
         context.insert(provider)
-        _ = makeBatch(in: context, provider: provider)
-        _ = makeBatch(in: context, provider: provider)
-        _ = makeBatch(in: context, provider: nil)
+        _ = makePurchase(in: context, provider: provider)
+        _ = makePurchase(in: context, provider: provider)
+        _ = makePurchase(in: context, provider: nil)
         try context.save()
 
-        #expect(provider.batches.count == 2)
+        #expect(provider.purchases.count == 2)
     }
 }

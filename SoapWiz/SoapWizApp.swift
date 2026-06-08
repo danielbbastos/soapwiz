@@ -17,7 +17,7 @@ struct SoapWizApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Ingredient.self,
-            IngredientBatch.self,
+            IngredientPurchase.self,
             IngredientCategory.self,
             StorageLocation.self,
             Provider.self,

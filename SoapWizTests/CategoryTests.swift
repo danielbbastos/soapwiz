@@ -8,7 +8,7 @@ import SwiftData
 struct CategoryTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self])
+        let schema = Schema([Ingredient.self, IngredientPurchase.self, IngredientCategory.self])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         return try ModelContainer(for: schema, configurations: [config])
     }

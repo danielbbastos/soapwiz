@@ -589,10 +589,10 @@ final class RecipeFormViewModel {
     }
 
     private func weightedCostPerUnit(for ingredient: Ingredient) -> Double {
-        let batches = ingredient.batches.filter { $0.quantity > 0 }
-        guard !batches.isEmpty else { return 0 }
-        let totalCost = batches.reduce(0.0) { $0 + $1.totalPrice }
-        let totalQty = batches.reduce(0.0) { $0 + $1.quantity }
+        let purchases = ingredient.purchases.filter { $0.quantity > 0 }
+        guard !purchases.isEmpty else { return 0 }
+        let totalCost = purchases.reduce(0.0) { $0 + $1.totalPrice }
+        let totalQty = purchases.reduce(0.0) { $0 + $1.quantity }
         return totalQty > 0 ? totalCost / totalQty : 0
     }
 

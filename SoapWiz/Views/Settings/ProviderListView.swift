@@ -28,7 +28,7 @@ struct ProviderListView: View {
                                         Text(provider.name)
                                             .foregroundStyle(.primary)
                                         Spacer()
-                                        Text("\(provider.batches.count)")
+                                        Text("\(provider.purchases.count)")
                                             .foregroundStyle(.secondary)
                                             .font(.subheadline)
                                     }
@@ -67,10 +67,10 @@ struct ProviderListView: View {
         ) { _ in
             Button("OK", role: .cancel) { model.deleteBlockedProvider = nil }
         } message: { provider in
-            let count = provider.batches.count
+            let count = provider.purchases.count
             Text(
-                "\"\(provider.name)\" is assigned to \(count) batch\(count == 1 ? "" : "es"). " +
-                "Remove the provider from those batches first."
+                "\"\(provider.name)\" is assigned to \(count) purchase\(count == 1 ? "" : "s"). " +
+                "Remove the provider from those purchases first."
             )
         }
     }

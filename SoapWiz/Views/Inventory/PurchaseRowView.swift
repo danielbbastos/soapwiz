@@ -1,11 +1,11 @@
 import SwiftUI
 
-struct BatchRowView: View {
-    let batch: IngredientBatch
+struct PurchaseRowView: View {
+    let purchase: IngredientPurchase
     let unit: String
 
     private var expiryLabel: (text: String, color: Color)? {
-        guard let expiry = batch.expiryDate else { return nil }
+        guard let expiry = purchase.expiryDate else { return nil }
         let now = Date.now
         let formatted = expiry.formatted(.dateTime.day().month(.abbreviated).year())
         if expiry < now {
@@ -20,7 +20,7 @@ struct BatchRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(batch.provider?.name ?? "Unknown Provider")
+                Text(purchase.provider?.name ?? "Unknown Provider")
                     .font(.headline)
                 Spacer()
                 if let label = expiryLabel {
@@ -30,12 +30,12 @@ struct BatchRowView: View {
                 }
             }
             HStack {
-                Text("\(batch.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) / \(batch.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
+                Text("\(purchase.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) / \(purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
                     .font(.subheadline)
-                    .foregroundStyle(batch.remainingAmount > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+                    .foregroundStyle(purchase.remainingAmount > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
                 Spacer()
-                if !batch.badge.isEmpty {
-                    Text(batch.badge)
+                if !purchase.badge.isEmpty {
+                    Text(purchase.badge)
                         .font(.caption)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 2)

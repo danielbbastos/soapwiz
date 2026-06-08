@@ -9,12 +9,12 @@ import SwiftUI
 struct IngredientListViewModelFilterTests {
 
     private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([Ingredient.self, IngredientBatch.self, IngredientCategory.self, StorageLocation.self, Provider.self])
+        let schema = Schema([Ingredient.self, IngredientPurchase.self, IngredientCategory.self, StorageLocation.self, Provider.self])
         return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
     }
 
-    private func makeBatch(quantity: Double = 100, remaining: Double? = nil, expiryDate: Date? = nil) -> IngredientBatch {
-        let batch = IngredientBatch(
+    private func makePurchase(quantity: Double = 100, remaining: Double? = nil, expiryDate: Date? = nil) -> IngredientPurchase {
+        let purchase = IngredientPurchase(
             dateOfPurchase: .now,
             quantity: quantity,
             totalPrice: 10,
@@ -24,9 +24,9 @@ struct IngredientListViewModelFilterTests {
             openingDate: nil
         )
         if let remaining {
-            batch.remainingAmount = remaining
+            purchase.remainingAmount = remaining
         }
-        return batch
+        return purchase
     }
 
     // MARK: - No filters
@@ -121,7 +121,7 @@ struct IngredientListViewModelFilterTests {
         let container = try makeContainer()
         let ctx = container.mainContext
         let withStock = Ingredient(name: "A")
-        withStock.batches.append(makeBatch(quantity: 100, remaining: 50))
+        withStock.purchases.append(makePurchase(quantity: 100, remaining: 50))
         let withoutStock = Ingredient(name: "B")
         ctx.insert(withStock); ctx.insert(withoutStock)
 
@@ -137,7 +137,7 @@ struct IngredientListViewModelFilterTests {
         let ctx = container.mainContext
         let lowStock = Ingredient(name: "A")
         lowStock.lowStockThreshold = 30
-        lowStock.batches.append(makeBatch(quantity: 100, remaining: 20))
+        lowStock.purchases.append(makePurchase(quantity: 100, remaining: 20))
         ctx.insert(lowStock)
 
         let model = IngredientListViewModel()
@@ -149,9 +149,9 @@ struct IngredientListViewModelFilterTests {
         let container = try makeContainer()
         let ctx = container.mainContext
         let depleted = Ingredient(name: "A")
-        depleted.batches.append(makeBatch(quantity: 100, remaining: 0))
+        depleted.purchases.append(makePurchase(quantity: 100, remaining: 0))
         let withStock = Ingredient(name: "B")
-        withStock.batches.append(makeBatch(quantity: 100, remaining: 50))
+        withStock.purchases.append(makePurchase(quantity: 100, remaining: 50))
         ctx.insert(depleted); ctx.insert(withStock)
 
         let model = IngredientListViewModel()
@@ -166,9 +166,9 @@ struct IngredientListViewModelFilterTests {
         let ctx = container.mainContext
         let lowStock = Ingredient(name: "A")
         lowStock.lowStockThreshold = 30
-        lowStock.batches.append(makeBatch(quantity: 100, remaining: 20))
+        lowStock.purchases.append(makePurchase(quantity: 100, remaining: 20))
         let wellStocked = Ingredient(name: "B")
-        wellStocked.batches.append(makeBatch(quantity: 100, remaining: 80))
+        wellStocked.purchases.append(makePurchase(quantity: 100, remaining: 80))
         ctx.insert(lowStock); ctx.insert(wellStocked)
 
         let model = IngredientListViewModel()
@@ -203,9 +203,9 @@ struct IngredientListViewModelFilterTests {
         let soon = try #require(Calendar.current.date(byAdding: .day, value: 15, to: .now))
         let far = try #require(Calendar.current.date(byAdding: .year, value: 2, to: .now))
         let expiringSoon = Ingredient(name: "A")
-        expiringSoon.batches.append(makeBatch(expiryDate: soon))
+        expiringSoon.purchases.append(makePurchase(expiryDate: soon))
         let expiringLater = Ingredient(name: "B")
-        expiringLater.batches.append(makeBatch(expiryDate: far))
+        expiringLater.purchases.append(makePurchase(expiryDate: far))
         ctx.insert(expiringSoon); ctx.insert(expiringLater)
 
         let model = IngredientListViewModel()
@@ -221,9 +221,9 @@ struct IngredientListViewModelFilterTests {
         let past = try #require(Calendar.current.date(byAdding: .day, value: -1, to: .now))
         let future = try #require(Calendar.current.date(byAdding: .year, value: 1, to: .now))
         let expired = Ingredient(name: "A")
-        expired.batches.append(makeBatch(expiryDate: past))
+        expired.purchases.append(makePurchase(expiryDate: past))
         let notExpired = Ingredient(name: "B")
-        notExpired.batches.append(makeBatch(expiryDate: future))
+        notExpired.purchases.append(makePurchase(expiryDate: future))
         ctx.insert(expired); ctx.insert(notExpired)
 
         let model = IngredientListViewModel()
@@ -238,9 +238,9 @@ struct IngredientListViewModelFilterTests {
         let ctx = container.mainContext
         let future = try #require(Calendar.current.date(byAdding: .year, value: 1, to: .now))
         let noExpiry = Ingredient(name: "A")
-        noExpiry.batches.append(makeBatch(expiryDate: nil))
+        noExpiry.purchases.append(makePurchase(expiryDate: nil))
         let hasExpiry = Ingredient(name: "B")
-        hasExpiry.batches.append(makeBatch(expiryDate: future))
+        hasExpiry.purchases.append(makePurchase(expiryDate: future))
         ctx.insert(noExpiry); ctx.insert(hasExpiry)
 
         let model = IngredientListViewModel()
@@ -250,15 +250,15 @@ struct IngredientListViewModelFilterTests {
         #expect(results.first?.name == "A")
     }
 
-    @Test func expiryFilterNoExpiryMatchesIngredientWithNoBatches() throws {
+    @Test func expiryFilterNoExpiryMatchesIngredientWithNoPurchasees() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let noBatches = Ingredient(name: "A")
-        ctx.insert(noBatches)
+        let noPurchasees = Ingredient(name: "A")
+        ctx.insert(noPurchasees)
 
         let model = IngredientListViewModel()
         model.expiryFilter = .noExpiry
-        #expect(model.filtered([noBatches]).count == 1)
+        #expect(model.filtered([noPurchasees]).count == 1)
     }
 
     // MARK: - Combined filters

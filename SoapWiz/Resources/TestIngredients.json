@@ -28,18 +28,18 @@
       "unit": "ml",
       "sapValue": 0.134,
       "density": 0.911,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2026-03-10",
-          "quantity": 5489,
-          "totalPrice": 18.5,
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-04-07",
+          "quantity": 5040,
+          "totalPrice": 15.2,
           "badge": "OLV-001",
           "journalCode": "J-001",
-          "expiryDate": "2027-03-10",
-          "openingDate": "2026-03-15",
-          "remainingAmount": 3513,
-          "storageLocation": "Shelf A1"
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-04-06",
+          "openingDate": "2026-04-17",
+          "remainingAmount": 341
         }
       ],
       "kohSapValue": 0.188,
@@ -60,18 +60,18 @@
       "unit": "g",
       "sapValue": 0.19,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-02-20",
-          "quantity": 3000,
-          "totalPrice": 14.0,
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-03-16",
+          "quantity": 2188,
+          "totalPrice": 10.13,
           "badge": "COC-001",
           "journalCode": "J-002",
-          "expiryDate": "2028-02-20",
-          "openingDate": "2026-02-25",
-          "remainingAmount": 1800,
-          "storageLocation": "Shelf A1"
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-03-15",
+          "openingDate": "2026-03-21",
+          "remainingAmount": 1105
         }
       ],
       "kohSapValue": 0.266,
@@ -92,18 +92,18 @@
       "unit": "g",
       "sapValue": 0.141,
       "density": null,
-      "batches": [
+      "purchases": [
         {
           "provider": "New Directions",
-          "dateOfPurchase": "2026-01-15",
-          "quantity": 4000,
-          "totalPrice": 20.0,
+          "dateOfPurchase": "2026-03-25",
+          "quantity": 6304,
+          "totalPrice": 36.26,
           "badge": "PLM-001",
           "journalCode": "J-003",
-          "expiryDate": "2027-01-15",
-          "openingDate": "2026-01-20",
-          "remainingAmount": 2500,
-          "storageLocation": "Shelf A2"
+          "storageLocation": "Shelf B1",
+          "expiryDate": "2028-03-24",
+          "openingDate": null,
+          "remainingAmount": 6304
         }
       ],
       "kohSapValue": 0.197,
@@ -124,18 +124,18 @@
       "unit": "g",
       "sapValue": 0.128,
       "density": null,
-      "batches": [
+      "purchases": [
         {
           "provider": "Plena Natura",
-          "dateOfPurchase": "2026-04-01",
-          "quantity": 1000,
-          "totalPrice": 9.0,
+          "dateOfPurchase": "2026-03-19",
+          "quantity": 765,
+          "totalPrice": 8.34,
           "badge": "CST-001",
           "journalCode": "J-004",
-          "expiryDate": "2028-04-01",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2028-03-18",
           "openingDate": "2026-04-05",
-          "remainingAmount": 850,
-          "storageLocation": "Shelf A2"
+          "remainingAmount": 0
         }
       ],
       "kohSapValue": 0.18,
@@ -156,18 +156,30 @@
       "unit": "g",
       "sapValue": 0.136,
       "density": null,
-      "batches": [
+      "purchases": [
         {
           "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-03-01",
-          "quantity": 2000,
-          "totalPrice": 16.0,
+          "dateOfPurchase": "2026-05-04",
+          "quantity": 2457,
+          "totalPrice": 21.3,
           "badge": "ALM-001",
           "journalCode": "J-005",
-          "expiryDate": "2027-09-01",
-          "openingDate": "2026-03-05",
-          "remainingAmount": 1400,
-          "storageLocation": "Shelf A2"
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-05-03",
+          "openingDate": "2026-05-23",
+          "remainingAmount": 1225
+        },
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2025-12-18",
+          "quantity": 2848,
+          "totalPrice": 24.77,
+          "badge": "ALM-002",
+          "journalCode": "J-006",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2027-12-18",
+          "openingDate": "2025-12-23",
+          "remainingAmount": 1663
         }
       ],
       "kohSapValue": 0.19,
@@ -188,18 +200,18 @@
       "unit": "ml",
       "sapValue": 0.133,
       "density": 0.914,
-      "batches": [
+      "purchases": [
         {
-          "provider": "New Directions",
-          "dateOfPurchase": "2026-02-10",
-          "quantity": 1641,
-          "totalPrice": 14.5,
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-04-29",
+          "quantity": 1042,
+          "totalPrice": 8.76,
           "badge": "AVO-001",
-          "journalCode": "J-006",
-          "expiryDate": "2027-02-10",
-          "openingDate": "2026-02-15",
-          "remainingAmount": 985,
-          "storageLocation": "Shelf B1"
+          "journalCode": "J-007",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2028-04-28",
+          "openingDate": "2026-05-20",
+          "remainingAmount": 765
         }
       ],
       "kohSapValue": 0.187,
@@ -220,18 +232,18 @@
       "unit": "g",
       "sapValue": 0.134,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Amazon",
-          "dateOfPurchase": "2026-04-10",
-          "quantity": 3000,
-          "totalPrice": 8.0,
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-03-25",
+          "quantity": 3131,
+          "totalPrice": 8.1,
           "badge": "SUN-001",
-          "journalCode": "J-007",
-          "expiryDate": "2027-04-10",
-          "openingDate": "2026-04-12",
-          "remainingAmount": 2800,
-          "storageLocation": "Shelf A1"
+          "journalCode": "J-008",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-03-24",
+          "openingDate": "2026-04-15",
+          "remainingAmount": 2645
         }
       ],
       "kohSapValue": 0.188,
@@ -252,18 +264,30 @@
       "unit": "g",
       "sapValue": 0.069,
       "density": null,
-      "batches": [
+      "purchases": [
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-04-19",
+          "quantity": 201,
+          "totalPrice": 9.42,
+          "badge": "JJB-001",
+          "journalCode": "J-009",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2028-04-18",
+          "openingDate": "2026-04-27",
+          "remainingAmount": 119
+        },
         {
           "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-01-20",
-          "quantity": 500,
-          "totalPrice": 22.0,
-          "badge": "JJB-001",
-          "journalCode": "J-008",
-          "expiryDate": "2028-01-20",
-          "openingDate": "2026-01-25",
-          "remainingAmount": 380,
-          "storageLocation": "Shelf B1"
+          "dateOfPurchase": "2025-12-03",
+          "quantity": 433,
+          "totalPrice": 21.91,
+          "badge": "JJB-002",
+          "journalCode": "J-010",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2027-12-03",
+          "openingDate": "2025-12-11",
+          "remainingAmount": 253
         }
       ],
       "kohSapValue": 0.097,
@@ -284,18 +308,30 @@
       "unit": "g",
       "sapValue": 0.126,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "New Directions",
-          "dateOfPurchase": "2026-03-15",
-          "quantity": 1000,
-          "totalPrice": 10.0,
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-04-15",
+          "quantity": 441,
+          "totalPrice": 4.93,
           "badge": "GRP-001",
-          "journalCode": "J-009",
-          "expiryDate": "2027-03-15",
+          "journalCode": "J-011",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-04-14",
           "openingDate": null,
-          "remainingAmount": 1000,
-          "storageLocation": "Shelf A2"
+          "remainingAmount": 441
+        },
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2025-12-16",
+          "quantity": 519,
+          "totalPrice": 5.68,
+          "badge": "GRP-002",
+          "journalCode": "J-012",
+          "storageLocation": "Shelf B1",
+          "expiryDate": null,
+          "openingDate": "2026-01-04",
+          "remainingAmount": 279
         }
       ],
       "kohSapValue": 0.177,
@@ -316,18 +352,18 @@
       "unit": "g",
       "sapValue": 0.136,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-02-05",
-          "quantity": 250,
-          "totalPrice": 18.0,
-          "badge": "ARG-001",
-          "journalCode": "J-010",
-          "expiryDate": "2028-02-05",
-          "openingDate": "2026-02-10",
-          "remainingAmount": 200,
-          "storageLocation": "Shelf B1"
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-04-06",
+          "quantity": 1091,
+          "totalPrice": 20.0,
+          "badge": "AO-001",
+          "journalCode": "J-013",
+          "storageLocation": "Shelf A1",
+          "expiryDate": null,
+          "openingDate": "2026-04-27",
+          "remainingAmount": 606
         }
       ],
       "kohSapValue": 0.19,
@@ -348,18 +384,30 @@
       "unit": "g",
       "sapValue": 0.135,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2026-04-20",
-          "quantity": 1000,
-          "totalPrice": 11.0,
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-03-30",
+          "quantity": 1375,
+          "totalPrice": 16.77,
           "badge": "APR-001",
-          "journalCode": "J-011",
-          "expiryDate": "2027-10-20",
-          "openingDate": null,
-          "remainingAmount": 1000,
-          "storageLocation": "Shelf A2"
+          "journalCode": "J-014",
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-03-29",
+          "openingDate": "2026-04-04",
+          "remainingAmount": 702
+        },
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-01-02",
+          "quantity": 592,
+          "totalPrice": 6.19,
+          "badge": "APR-002",
+          "journalCode": "J-015",
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-01-02",
+          "openingDate": "2026-01-09",
+          "remainingAmount": 0
         }
       ],
       "kohSapValue": 0.189,
@@ -380,18 +428,18 @@
       "unit": "g",
       "sapValue": 0.135,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Amazon",
-          "dateOfPurchase": "2026-03-25",
-          "quantity": 500,
-          "totalPrice": 13.0,
-          "badge": "HMP-001",
-          "journalCode": "J-012",
-          "expiryDate": "2026-09-25",
-          "openingDate": "2026-04-01",
-          "remainingAmount": 420,
-          "storageLocation": "Fridge"
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-03-22",
+          "quantity": 1233,
+          "totalPrice": 26.09,
+          "badge": "HSO-001",
+          "journalCode": "J-016",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-03-21",
+          "openingDate": "2026-04-18",
+          "remainingAmount": 0
         }
       ],
       "kohSapValue": 0.189,
@@ -412,18 +460,30 @@
       "unit": "g",
       "sapValue": 0.128,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "New Directions",
-          "dateOfPurchase": "2026-01-10",
-          "quantity": 2000,
-          "totalPrice": 12.0,
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-03-19",
+          "quantity": 2570,
+          "totalPrice": 15.3,
           "badge": "RCB-001",
-          "journalCode": "J-013",
-          "expiryDate": "2027-01-10",
-          "openingDate": "2026-01-15",
-          "remainingAmount": 1200,
-          "storageLocation": "Shelf A1"
+          "journalCode": "J-017",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2028-03-18",
+          "openingDate": "2026-04-17",
+          "remainingAmount": 0
+        },
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2025-12-17",
+          "quantity": 2480,
+          "totalPrice": 14.56,
+          "badge": "RCB-002",
+          "journalCode": "J-018",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2027-12-17",
+          "openingDate": null,
+          "remainingAmount": 2480
         }
       ],
       "kohSapValue": 0.18,
@@ -444,18 +504,30 @@
       "unit": "ml",
       "sapValue": 0.136,
       "density": 0.924,
-      "batches": [
+      "purchases": [
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-04-08",
+          "quantity": 1051,
+          "totalPrice": 8.39,
+          "badge": "SFF-001",
+          "journalCode": "J-019",
+          "storageLocation": "Shelf B1",
+          "expiryDate": "2028-04-07",
+          "openingDate": "2026-05-08",
+          "remainingAmount": 287
+        },
         {
           "provider": "Amazon",
-          "dateOfPurchase": "2026-02-28",
-          "quantity": 1082,
-          "totalPrice": 9.5,
-          "badge": "SFF-001",
-          "journalCode": "J-014",
-          "expiryDate": "2027-02-28",
-          "openingDate": null,
-          "remainingAmount": 1082,
-          "storageLocation": "Shelf A2"
+          "dateOfPurchase": "2025-11-26",
+          "quantity": 479,
+          "totalPrice": 4.0,
+          "badge": "SFF-002",
+          "journalCode": "J-020",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2027-11-26",
+          "openingDate": "2025-12-08",
+          "remainingAmount": 156
         }
       ],
       "kohSapValue": 0.19,
@@ -476,20 +548,7 @@
       "unit": "ml",
       "sapValue": 0.133,
       "density": 0.919,
-      "batches": [
-        {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2026-03-05",
-          "quantity": 1088,
-          "totalPrice": 10.5,
-          "badge": "SSM-001",
-          "journalCode": "J-015",
-          "expiryDate": "2027-03-05",
-          "openingDate": "2026-03-10",
-          "remainingAmount": 816,
-          "storageLocation": "Shelf B1"
-        }
-      ],
+      "purchases": [],
       "kohSapValue": 0.187,
       "fattyAcidProfile": {
         "lauric": 0,
@@ -508,18 +567,18 @@
       "unit": "g",
       "sapValue": 0.124,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Amazon",
-          "dateOfPurchase": "2026-04-05",
-          "quantity": 3000,
-          "totalPrice": 7.0,
-          "badge": "CNL-001",
-          "journalCode": "J-016",
-          "expiryDate": "2027-04-05",
-          "openingDate": null,
-          "remainingAmount": 3000,
-          "storageLocation": "Shelf A1"
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-04-26",
+          "quantity": 602,
+          "totalPrice": 13.72,
+          "badge": "CO-001",
+          "journalCode": "J-021",
+          "storageLocation": "Shelf A2",
+          "expiryDate": null,
+          "openingDate": "2026-05-25",
+          "remainingAmount": 0
         }
       ],
       "kohSapValue": 0.174,
@@ -540,18 +599,30 @@
       "unit": "g",
       "sapValue": 0.139,
       "density": null,
-      "batches": [
+      "purchases": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-04-07",
+          "quantity": 356,
+          "totalPrice": 15.02,
+          "badge": "MCD-001",
+          "journalCode": "J-022",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2028-04-06",
+          "openingDate": null,
+          "remainingAmount": 356
+        },
         {
           "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-01-25",
-          "quantity": 500,
-          "totalPrice": 20.0,
-          "badge": "MCD-001",
-          "journalCode": "J-017",
-          "expiryDate": "2028-01-25",
-          "openingDate": "2026-02-01",
-          "remainingAmount": 350,
-          "storageLocation": "Shelf B1"
+          "dateOfPurchase": "2025-12-14",
+          "quantity": 402,
+          "totalPrice": 19.87,
+          "badge": "MCD-002",
+          "journalCode": "J-023",
+          "storageLocation": "Shelf B1",
+          "expiryDate": "2027-12-14",
+          "openingDate": "2026-01-01",
+          "remainingAmount": 146
         }
       ],
       "kohSapValue": 0.195,
@@ -572,18 +643,18 @@
       "unit": "g",
       "sapValue": 0.132,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "New Directions",
-          "dateOfPurchase": "2026-02-15",
-          "quantity": 500,
-          "totalPrice": 8.0,
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-05-07",
+          "quantity": 223,
+          "totalPrice": 3.68,
           "badge": "NEM-001",
-          "journalCode": "J-018",
-          "expiryDate": "2027-02-15",
-          "openingDate": "2026-03-01",
-          "remainingAmount": 450,
-          "storageLocation": "Shelf A2"
+          "journalCode": "J-024",
+          "storageLocation": "Shelf A1",
+          "expiryDate": null,
+          "openingDate": null,
+          "remainingAmount": 223
         }
       ],
       "kohSapValue": 0.185,
@@ -604,18 +675,18 @@
       "unit": "g",
       "sapValue": 0.175,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-03-20",
-          "quantity": 500,
-          "totalPrice": 16.0,
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-03-22",
+          "quantity": 488,
+          "totalPrice": 17.09,
           "badge": "BBS-001",
-          "journalCode": "J-019",
-          "expiryDate": "2028-03-20",
-          "openingDate": null,
-          "remainingAmount": 500,
-          "storageLocation": "Shelf A2"
+          "journalCode": "J-025",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-03-21",
+          "openingDate": "2026-04-05",
+          "remainingAmount": 385
         }
       ],
       "kohSapValue": 0.246,
@@ -636,18 +707,30 @@
       "unit": "g",
       "sapValue": 0.156,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "New Directions",
-          "dateOfPurchase": "2026-01-05",
-          "quantity": 2000,
-          "totalPrice": 15.0,
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-03-26",
+          "quantity": 3181,
+          "totalPrice": 22.49,
           "badge": "PKO-001",
-          "journalCode": "J-020",
-          "expiryDate": "2027-01-05",
-          "openingDate": "2026-01-10",
-          "remainingAmount": 1600,
-          "storageLocation": "Shelf A1"
+          "journalCode": "J-026",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-03-25",
+          "openingDate": "2026-04-16",
+          "remainingAmount": 0
+        },
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-01-07",
+          "quantity": 2999,
+          "totalPrice": 20.17,
+          "badge": "PKO-002",
+          "journalCode": "J-027",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-01-07",
+          "openingDate": "2026-01-27",
+          "remainingAmount": 574
         }
       ],
       "kohSapValue": 0.219,
@@ -668,18 +751,18 @@
       "unit": "g",
       "sapValue": 0.12,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-04-15",
-          "quantity": 250,
-          "totalPrice": 19.0,
-          "badge": "TMN-001",
-          "journalCode": "J-021",
-          "expiryDate": "2028-04-15",
-          "openingDate": null,
-          "remainingAmount": 250,
-          "storageLocation": "Shelf B1"
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-03-18",
+          "quantity": 586,
+          "totalPrice": 11.3,
+          "badge": "TO-001",
+          "journalCode": "J-028",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2028-03-17",
+          "openingDate": "2026-04-15",
+          "remainingAmount": 0
         }
       ],
       "kohSapValue": 0.169,
@@ -700,20 +783,7 @@
       "unit": "g",
       "sapValue": 0.119,
       "density": null,
-      "batches": [
-        {
-          "provider": "New Directions",
-          "dateOfPurchase": "2026-03-28",
-          "quantity": 250,
-          "totalPrice": 17.0,
-          "badge": "MDF-001",
-          "journalCode": "J-022",
-          "expiryDate": "2028-03-28",
-          "openingDate": null,
-          "remainingAmount": 250,
-          "storageLocation": "Shelf B1"
-        }
-      ],
+      "purchases": [],
       "kohSapValue": 0.167,
       "fattyAcidProfile": {
         "lauric": 0,
@@ -732,18 +802,18 @@
       "unit": "g",
       "sapValue": 0.133,
       "density": null,
-      "batches": [
+      "purchases": [
         {
           "provider": "Amazon",
-          "dateOfPurchase": "2026-02-22",
-          "quantity": 500,
-          "totalPrice": 11.0,
+          "dateOfPurchase": "2026-03-23",
+          "quantity": 411,
+          "totalPrice": 10.02,
           "badge": "PKN-001",
-          "journalCode": "J-023",
-          "expiryDate": "2027-02-22",
-          "openingDate": "2026-03-01",
-          "remainingAmount": 400,
-          "storageLocation": "Fridge"
+          "journalCode": "J-029",
+          "storageLocation": "Shelf B1",
+          "expiryDate": "2028-03-22",
+          "openingDate": "2026-04-12",
+          "remainingAmount": 221
         }
       ],
       "kohSapValue": 0.187,
@@ -764,18 +834,18 @@
       "unit": "g",
       "sapValue": 0.135,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Amazon",
-          "dateOfPurchase": "2026-04-08",
-          "quantity": 2000,
-          "totalPrice": 6.5,
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-04-12",
+          "quantity": 952,
+          "totalPrice": 3.55,
           "badge": "SOY-001",
-          "journalCode": "J-024",
-          "expiryDate": "2027-04-08",
-          "openingDate": null,
-          "remainingAmount": 2000,
-          "storageLocation": "Shelf A1"
+          "journalCode": "J-030",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2028-04-11",
+          "openingDate": "2026-05-06",
+          "remainingAmount": 0
         }
       ],
       "kohSapValue": 0.19,
@@ -796,18 +866,18 @@
       "unit": "g",
       "sapValue": 0.136,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Amazon",
-          "dateOfPurchase": "2026-01-30",
-          "quantity": 2000,
-          "totalPrice": 7.5,
-          "badge": "CRN-001",
-          "journalCode": "J-025",
-          "expiryDate": "2027-01-30",
-          "openingDate": "2026-02-05",
-          "remainingAmount": 1500,
-          "storageLocation": "Shelf A1"
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-04-24",
+          "quantity": 737,
+          "totalPrice": 14.41,
+          "badge": "CO-001",
+          "journalCode": "J-031",
+          "storageLocation": "Shelf B1",
+          "expiryDate": "2028-04-23",
+          "openingDate": null,
+          "remainingAmount": 737
         }
       ],
       "kohSapValue": 0.19,
@@ -828,18 +898,42 @@
       "unit": "g",
       "sapValue": 0.069,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2026-02-01",
-          "quantity": 500,
-          "totalPrice": 12.0,
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-05-01",
+          "quantity": 423,
+          "totalPrice": 10.79,
           "badge": "BWX-001",
-          "journalCode": "J-026",
-          "expiryDate": null,
-          "openingDate": "2026-02-10",
-          "remainingAmount": 380,
-          "storageLocation": "Shelf B1"
+          "journalCode": "J-032",
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-04-30",
+          "openingDate": "2026-05-15",
+          "remainingAmount": 194
+        },
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2025-11-24",
+          "quantity": 395,
+          "totalPrice": 10.11,
+          "badge": "BWX-002",
+          "journalCode": "J-033",
+          "storageLocation": "Shelf B1",
+          "expiryDate": "2027-11-24",
+          "openingDate": "2025-12-13",
+          "remainingAmount": 184
+        },
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2025-08-03",
+          "quantity": 373,
+          "totalPrice": 8.96,
+          "badge": "BWX-003",
+          "journalCode": "J-034",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2027-08-03",
+          "openingDate": "2025-08-12",
+          "remainingAmount": 184
         }
       ],
       "kohSapValue": 0.097,
@@ -860,18 +954,42 @@
       "unit": "g",
       "sapValue": 0.033,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-03-10",
-          "quantity": 200,
-          "totalPrice": 8.5,
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-04-02",
+          "quantity": 156,
+          "totalPrice": 6.57,
           "badge": "CDW-001",
-          "journalCode": "J-027",
+          "journalCode": "J-035",
+          "storageLocation": "Fridge",
           "expiryDate": null,
           "openingDate": null,
-          "remainingAmount": 200,
-          "storageLocation": "Shelf B1"
+          "remainingAmount": 156
+        },
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2025-12-10",
+          "quantity": 122,
+          "totalPrice": 4.62,
+          "badge": "CDW-002",
+          "journalCode": "J-036",
+          "storageLocation": "Fridge",
+          "expiryDate": "2027-12-10",
+          "openingDate": "2025-12-28",
+          "remainingAmount": 20
+        },
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2025-09-01",
+          "quantity": 280,
+          "totalPrice": 11.52,
+          "badge": "CDW-003",
+          "journalCode": "J-037",
+          "storageLocation": "Fridge",
+          "expiryDate": "2027-09-01",
+          "openingDate": "2025-09-14",
+          "remainingAmount": 101
         }
       ],
       "kohSapValue": 0.046,
@@ -892,18 +1010,30 @@
       "unit": "g",
       "sapValue": 0.138,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2026-04-01",
-          "quantity": 2000,
-          "totalPrice": 6.0,
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-05-02",
+          "quantity": 1007,
+          "totalPrice": 3.06,
           "badge": "LRD-001",
-          "journalCode": "J-028",
-          "expiryDate": "2026-10-01",
-          "openingDate": "2026-04-05",
-          "remainingAmount": 1700,
-          "storageLocation": "Fridge"
+          "journalCode": "J-038",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2028-05-01",
+          "openingDate": "2026-05-23",
+          "remainingAmount": 0
+        },
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2025-11-30",
+          "quantity": 1493,
+          "totalPrice": 4.28,
+          "badge": "LRD-002",
+          "journalCode": "J-039",
+          "storageLocation": "Fridge",
+          "expiryDate": null,
+          "openingDate": "2025-12-24",
+          "remainingAmount": 350
         }
       ],
       "kohSapValue": 0.194,
@@ -924,18 +1054,18 @@
       "unit": "g",
       "sapValue": 0.14,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2026-03-15",
-          "quantity": 2000,
-          "totalPrice": 8.0,
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-04-07",
+          "quantity": 1963,
+          "totalPrice": 7.75,
           "badge": "TLW-001",
-          "journalCode": "J-029",
-          "expiryDate": "2026-09-15",
-          "openingDate": "2026-03-20",
-          "remainingAmount": 1500,
-          "storageLocation": "Fridge"
+          "journalCode": "J-040",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-04-06",
+          "openingDate": "2026-04-14",
+          "remainingAmount": 0
         }
       ],
       "kohSapValue": 0.196,
@@ -956,18 +1086,42 @@
       "unit": "g",
       "sapValue": 0.128,
       "density": null,
-      "batches": [
+      "purchases": [
         {
           "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-02-10",
-          "quantity": 1000,
-          "totalPrice": 11.0,
+          "dateOfPurchase": "2026-04-09",
+          "quantity": 866,
+          "totalPrice": 10.53,
           "badge": "SHA-001",
-          "journalCode": "J-030",
-          "expiryDate": "2028-02-10",
-          "openingDate": "2026-02-15",
-          "remainingAmount": 700,
-          "storageLocation": "Shelf A2"
+          "journalCode": "J-041",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-04-08",
+          "openingDate": null,
+          "remainingAmount": 866
+        },
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-11-26",
+          "quantity": 919,
+          "totalPrice": 11.23,
+          "badge": "SHA-002",
+          "journalCode": "J-042",
+          "storageLocation": "Shelf B1",
+          "expiryDate": "2027-11-26",
+          "openingDate": "2025-12-12",
+          "remainingAmount": 51
+        },
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2025-07-30",
+          "quantity": 871,
+          "totalPrice": 10.92,
+          "badge": "SHA-003",
+          "journalCode": "J-043",
+          "storageLocation": "Fridge",
+          "expiryDate": "2027-07-30",
+          "openingDate": "2025-08-04",
+          "remainingAmount": 1
         }
       ],
       "kohSapValue": 0.179,
@@ -988,18 +1142,42 @@
       "unit": "g",
       "sapValue": 0.137,
       "density": null,
-      "batches": [
+      "purchases": [
         {
           "provider": "New Directions",
-          "dateOfPurchase": "2026-01-20",
-          "quantity": 1000,
-          "totalPrice": 13.0,
+          "dateOfPurchase": "2026-03-18",
+          "quantity": 376,
+          "totalPrice": 5.51,
           "badge": "CCB-001",
-          "journalCode": "J-031",
-          "expiryDate": "2028-01-20",
-          "openingDate": "2026-01-25",
-          "remainingAmount": 650,
-          "storageLocation": "Shelf A2"
+          "journalCode": "J-044",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-03-17",
+          "openingDate": "2026-04-13",
+          "remainingAmount": 26
+        },
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-01-07",
+          "quantity": 410,
+          "totalPrice": 5.8,
+          "badge": "CCB-002",
+          "journalCode": "J-045",
+          "storageLocation": "Shelf A2",
+          "expiryDate": null,
+          "openingDate": "2026-01-26",
+          "remainingAmount": 166
+        },
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-08-29",
+          "quantity": 545,
+          "totalPrice": 9.02,
+          "badge": "CCB-003",
+          "journalCode": "J-046",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2027-08-29",
+          "openingDate": "2025-09-08",
+          "remainingAmount": 296
         }
       ],
       "kohSapValue": 0.192,
@@ -1020,18 +1198,30 @@
       "unit": "g",
       "sapValue": 0.128,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-04-12",
-          "quantity": 500,
-          "totalPrice": 9.0,
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-03-21",
+          "quantity": 688,
+          "totalPrice": 13.66,
           "badge": "MNG-001",
-          "journalCode": "J-032",
-          "expiryDate": "2028-04-12",
+          "journalCode": "J-047",
+          "storageLocation": "Shelf B1",
+          "expiryDate": "2028-03-20",
           "openingDate": null,
-          "remainingAmount": 500,
-          "storageLocation": "Shelf A2"
+          "remainingAmount": 688
+        },
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-12-10",
+          "quantity": 725,
+          "totalPrice": 15.2,
+          "badge": "MNG-002",
+          "journalCode": "J-048",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2027-12-10",
+          "openingDate": "2025-12-17",
+          "remainingAmount": 0
         }
       ],
       "kohSapValue": 0.18,
@@ -1052,18 +1242,42 @@
       "unit": "g",
       "sapValue": null,
       "density": null,
-      "batches": [
+      "purchases": [
         {
           "provider": "Amazon",
-          "dateOfPurchase": "2026-03-01",
-          "quantity": 1000,
-          "totalPrice": 8.0,
+          "dateOfPurchase": "2026-03-21",
+          "quantity": 1173,
+          "totalPrice": 9.09,
           "badge": "LYE-001",
-          "journalCode": "J-033",
-          "expiryDate": null,
-          "openingDate": "2026-03-05",
-          "remainingAmount": 720,
-          "storageLocation": "Shelf B1"
+          "journalCode": "J-049",
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-03-20",
+          "openingDate": "2026-04-08",
+          "remainingAmount": 0
+        },
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2025-11-21",
+          "quantity": 762,
+          "totalPrice": 5.7,
+          "badge": "LYE-002",
+          "journalCode": "J-050",
+          "storageLocation": "Fridge",
+          "expiryDate": "2027-11-21",
+          "openingDate": "2025-12-10",
+          "remainingAmount": 375
+        },
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2025-07-18",
+          "quantity": 1203,
+          "totalPrice": 9.16,
+          "badge": "LYE-003",
+          "journalCode": "J-051",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2027-07-18",
+          "openingDate": "2025-08-12",
+          "remainingAmount": 204
         }
       ]
     },
@@ -1073,18 +1287,30 @@
       "unit": "ml",
       "sapValue": null,
       "density": 1.13,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-02-01",
-          "quantity": 250,
-          "totalPrice": 5.5,
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-04-26",
+          "quantity": 201,
+          "totalPrice": 4.35,
           "badge": "NLT-001",
-          "journalCode": "J-034",
-          "expiryDate": "2028-02-01",
-          "openingDate": "2026-02-10",
-          "remainingAmount": 200,
-          "storageLocation": "Shelf B1"
+          "journalCode": "J-052",
+          "storageLocation": "Shelf A2",
+          "expiryDate": null,
+          "openingDate": "2026-04-30",
+          "remainingAmount": 15
+        },
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2025-12-22",
+          "quantity": 137,
+          "totalPrice": 3.08,
+          "badge": "NLT-002",
+          "journalCode": "J-053",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2027-12-22",
+          "openingDate": "2026-01-06",
+          "remainingAmount": 76
         }
       ]
     },
@@ -1094,18 +1320,30 @@
       "unit": "ml",
       "sapValue": null,
       "density": 1.26,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2026-01-15",
-          "quantity": 500,
-          "totalPrice": 4.0,
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-03-23",
+          "quantity": 792,
+          "totalPrice": 6.57,
           "badge": "GLY-001",
-          "journalCode": "J-035",
-          "expiryDate": null,
-          "openingDate": "2026-01-20",
-          "remainingAmount": 350,
-          "storageLocation": "Shelf B1"
+          "journalCode": "J-054",
+          "storageLocation": "Shelf B1",
+          "expiryDate": "2028-03-22",
+          "openingDate": "2026-04-02",
+          "remainingAmount": 344
+        },
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2025-12-29",
+          "quantity": 427,
+          "totalPrice": 3.89,
+          "badge": "GLY-002",
+          "journalCode": "J-055",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2027-12-29",
+          "openingDate": "2026-01-28",
+          "remainingAmount": 0
         }
       ]
     },
@@ -1115,18 +1353,30 @@
       "unit": "g",
       "sapValue": null,
       "density": null,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-03-08",
-          "quantity": 100,
-          "totalPrice": 4.5,
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-04-17",
+          "quantity": 57,
+          "totalPrice": 2.69,
           "badge": "TIO-001",
-          "journalCode": "J-036",
+          "journalCode": "J-056",
+          "storageLocation": "Fridge",
           "expiryDate": null,
-          "openingDate": null,
-          "remainingAmount": 100,
-          "storageLocation": "Shelf B1"
+          "openingDate": "2026-05-08",
+          "remainingAmount": 0
+        },
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-01-06",
+          "quantity": 104,
+          "totalPrice": 4.28,
+          "badge": "TIO-002",
+          "journalCode": "J-057",
+          "storageLocation": "Shelf A1",
+          "expiryDate": null,
+          "openingDate": "2026-01-31",
+          "remainingAmount": 10
         }
       ]
     },
@@ -1136,18 +1386,42 @@
       "unit": "ml",
       "sapValue": null,
       "density": 0.88,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2026-02-20",
-          "quantity": 100,
-          "totalPrice": 12.0,
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-05-02",
+          "quantity": 95,
+          "totalPrice": 12.32,
           "badge": "LVD-001",
-          "journalCode": "J-037",
-          "expiryDate": "2028-02-20",
-          "openingDate": "2026-03-01",
-          "remainingAmount": 85,
-          "storageLocation": "Shelf B1"
+          "journalCode": "J-058",
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-05-01",
+          "openingDate": "2026-05-24",
+          "remainingAmount": 34
+        },
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2025-12-03",
+          "quantity": 74,
+          "totalPrice": 10.05,
+          "badge": "LVD-002",
+          "journalCode": "J-059",
+          "storageLocation": "Shelf B1",
+          "expiryDate": "2027-12-03",
+          "openingDate": "2025-12-07",
+          "remainingAmount": 0
+        },
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2025-09-09",
+          "quantity": 82,
+          "totalPrice": 11.24,
+          "badge": "LVD-003",
+          "journalCode": "J-060",
+          "storageLocation": "Fridge",
+          "expiryDate": "2027-09-09",
+          "openingDate": "2025-09-19",
+          "remainingAmount": 17
         }
       ]
     },
@@ -1157,18 +1431,30 @@
       "unit": "ml",
       "sapValue": null,
       "density": 0.9,
-      "batches": [
+      "purchases": [
         {
           "provider": "Aroma Zone",
-          "dateOfPurchase": "2026-01-10",
-          "quantity": 50,
-          "totalPrice": 9.0,
+          "dateOfPurchase": "2026-04-27",
+          "quantity": 25,
+          "totalPrice": 5.57,
           "badge": "PPM-001",
-          "journalCode": "J-038",
-          "expiryDate": "2028-01-10",
-          "openingDate": "2026-01-15",
-          "remainingAmount": 38,
-          "storageLocation": "Shelf B1"
+          "journalCode": "J-061",
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-04-26",
+          "openingDate": "2026-05-25",
+          "remainingAmount": 11
+        },
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2025-12-11",
+          "quantity": 36,
+          "totalPrice": 7.87,
+          "badge": "PPM-002",
+          "journalCode": "J-062",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2027-12-11",
+          "openingDate": "2026-01-01",
+          "remainingAmount": 19
         }
       ]
     },
@@ -1178,18 +1464,30 @@
       "unit": "ml",
       "sapValue": null,
       "density": 0.92,
-      "batches": [
+      "purchases": [
         {
-          "provider": "Plena Natura",
-          "dateOfPurchase": "2026-04-18",
-          "quantity": 50,
-          "totalPrice": 7.5,
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-04-19",
+          "quantity": 55,
+          "totalPrice": 8.38,
           "badge": "EUC-001",
-          "journalCode": "J-039",
+          "journalCode": "J-063",
+          "storageLocation": "Fridge",
           "expiryDate": "2028-04-18",
-          "openingDate": null,
-          "remainingAmount": 50,
-          "storageLocation": "Shelf B1"
+          "openingDate": "2026-04-25",
+          "remainingAmount": 32
+        },
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2025-12-05",
+          "quantity": 65,
+          "totalPrice": 10.79,
+          "badge": "EUC-002",
+          "journalCode": "J-064",
+          "storageLocation": "Shelf A1",
+          "expiryDate": null,
+          "openingDate": "2025-12-29",
+          "remainingAmount": 5
         }
       ]
     }

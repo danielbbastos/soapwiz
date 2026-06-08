@@ -3,7 +3,7 @@ import SwiftData
 
 @MainActor
 @Observable
-final class BatchFormViewModel {
+final class PurchaseFormViewModel {
     var selectedProvider: Provider?
     var dateOfPurchase: Date = Date()
     var quantityText: String = ""
@@ -17,31 +17,31 @@ final class BatchFormViewModel {
     var selectedLocation: StorageLocation?
 
     let ingredient: Ingredient
-    let batch: IngredientBatch?
+    let purchase: IngredientPurchase?
 
-    init(ingredient: Ingredient, batch: IngredientBatch? = nil) {
+    init(ingredient: Ingredient, purchase: IngredientPurchase? = nil) {
         self.ingredient = ingredient
-        self.batch = batch
-        if let batch {
-            selectedProvider = batch.provider
-            dateOfPurchase = batch.dateOfPurchase
-            quantityText = batch.quantity.formatted(.number.precision(.fractionLength(0...2)))
-            totalPriceText = batch.totalPrice.formatted(.number.precision(.fractionLength(0...2)))
-            badge = batch.badge
-            journalCode = batch.journalCode
-            if let expiry = batch.expiryDate {
+        self.purchase = purchase
+        if let purchase {
+            selectedProvider = purchase.provider
+            dateOfPurchase = purchase.dateOfPurchase
+            quantityText = purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))
+            totalPriceText = purchase.totalPrice.formatted(.number.precision(.fractionLength(0...2)))
+            badge = purchase.badge
+            journalCode = purchase.journalCode
+            if let expiry = purchase.expiryDate {
                 hasExpiryDate = true
                 expiryDate = expiry
             }
-            if let opening = batch.openingDate {
+            if let opening = purchase.openingDate {
                 hasOpeningDate = true
                 openingDate = opening
             }
-            selectedLocation = batch.storageLocation
+            selectedLocation = purchase.storageLocation
         }
     }
 
-    var isEditing: Bool { batch != nil }
+    var isEditing: Bool { purchase != nil }
     var quantity: Double { Double(quantityText) ?? 0 }
     var totalPrice: Double { Double(totalPriceText) ?? 0 }
     var pricePerUnit: Double {
@@ -51,18 +51,18 @@ final class BatchFormViewModel {
     var isValid: Bool { quantity > 0 }
 
     func save(context: ModelContext) {
-        if let batch {
-            batch.provider = selectedProvider
-            batch.dateOfPurchase = dateOfPurchase
-            batch.quantity = quantity
-            batch.totalPrice = totalPrice
-            batch.badge = badge
-            batch.journalCode = journalCode
-            batch.expiryDate = hasExpiryDate ? expiryDate : nil
-            batch.openingDate = hasOpeningDate ? openingDate : nil
-            batch.storageLocation = selectedLocation
+        if let purchase {
+            purchase.provider = selectedProvider
+            purchase.dateOfPurchase = dateOfPurchase
+            purchase.quantity = quantity
+            purchase.totalPrice = totalPrice
+            purchase.badge = badge
+            purchase.journalCode = journalCode
+            purchase.expiryDate = hasExpiryDate ? expiryDate : nil
+            purchase.openingDate = hasOpeningDate ? openingDate : nil
+            purchase.storageLocation = selectedLocation
         } else {
-            let newBatch = IngredientBatch(
+            let newPurchase = IngredientPurchase(
                 provider: selectedProvider,
                 dateOfPurchase: dateOfPurchase,
                 quantity: quantity,
@@ -73,8 +73,8 @@ final class BatchFormViewModel {
                 openingDate: hasOpeningDate ? openingDate : nil,
                 storageLocation: selectedLocation
             )
-            context.insert(newBatch)
-            ingredient.batches.append(newBatch)
+            context.insert(newPurchase)
+            ingredient.purchases.append(newPurchase)
         }
     }
 }
