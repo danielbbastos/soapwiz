@@ -16,9 +16,12 @@ struct IngredientAmountDraft: Identifiable {
     var isLocked: Bool = false
 }
 
-struct FragranceIndicator {
-    let currentText: String
-    let targetText: String?
+struct FragranceTarget {
+    /// e.g. "45 g (3%)"
+    let text: String
+    /// The configured fragrance percentage, for the explanatory tooltip.
+    let percentage: Double
+    /// Whether the entered fragrance total exceeds the recommended target.
     let isOverTarget: Bool
 }
 
@@ -26,6 +29,7 @@ struct RecipeProductDraft: Identifiable {
     let id = UUID()
     var size: Double = 0
     var unitSymbol: String = ""
+    var modelID: PersistentIdentifier? = nil
 }
 
 struct IngredientProductBreakdown {
@@ -134,6 +138,19 @@ final class RecipeFormViewModel {
         weightUnitIsPercentage ? oilWeightUnit : weightUnit
     }
 
+    /// Default unit for new fragrance rows: percentage-of-oils when the recipe is
+    /// measured in percentages, otherwise the recipe's oil weight unit.
+    var defaultFragranceUnit: String {
+        weightUnitIsPercentage ? "% of oils" : weightUnit
+    }
+
+    /// Default unit for new additive rows. Additives are conventionally entered
+    /// as a weight, so they default to grams in percentage mode (rather than
+    /// "% of oils") to avoid silently applying a percentage of the oils.
+    var defaultAdditiveUnit: String {
+        weightUnitIsPercentage ? "g" : weightUnit
+    }
+
     var oilAmountCalculations: [OilAmountCalculation]? {
         guard !oilDrafts.isEmpty else { return nil }
         guard lyePurity > 0 && lyePurity <= 100 else { return nil }
@@ -195,72 +212,26 @@ final class RecipeFormViewModel {
 
     var fragranceTargetPercentage: Double { fragrancePercentage }
 
-    var fragranceIndicator: FragranceIndicator? {
+    /// Recommended fragrance load shown beside the fragrance section header — but
+    /// only when fragrances are entered in an absolute mass unit. For percentage
+    /// units (% of oils / batch / liquids) it isn't shown: the user is either
+    /// already working in % of oils, or deliberately using a different base.
+    var fragranceTarget: FragranceTarget? {
         guard !fragranceDrafts.isEmpty else { return nil }
-
         let units = Set(fragranceDrafts.map(\.unit))
-        let unit = units.count == 1 ? fragranceDrafts[0].unit : nil
+        guard units.count == 1, let unit = fragranceDrafts.first?.unit,
+              MassUnitConverter.isMass(unit) else { return nil }
+        guard totalOilBatchWeight > 0 else { return nil }
 
-        let percentageUnits: Set<String> = ["% of oils", "% of batch", "% of liquids"]
-
-        if let unit, percentageUnits.contains(unit) {
-            let sumPct = fragranceDrafts.reduce(0) { $0 + $1.amount }
-            let targetPct = fragranceTargetPercentage
-
-            let base: Double?
-            switch unit {
-            case "% of oils":
-                base = totalOilWeight > 0 ? totalOilWeight : nil
-            case "% of batch":
-                if let calcs = oilAmountCalculations,
-                   let lye = calculatedLyeAmount,
-                   let water = calculatedWaterAmount {
-                    base = calcs.reduce(0.0) { $0 + $1.weight } + lye + water
-                } else { base = nil }
-            case "% of liquids":
-                if let lye = calculatedLyeAmount, let water = calculatedWaterAmount {
-                    base = lye + water
-                } else { base = nil }
-            default: base = nil
-            }
-
-            if let base, base > 0 {
-                let fmt = { (v: Double) -> String in
-                    "\(v.formatted(.number.precision(.fractionLength(0...2)))) g"
-                }
-                let currentGrams = sumPct / 100 * base
-                if unit == "% of oils" {
-                    let targetGrams = targetPct / 100 * base
-                    return FragranceIndicator(
-                        currentText: fmt(currentGrams),
-                        targetText: fmt(targetGrams),
-                        isOverTarget: currentGrams > targetGrams * 1.005
-                    )
-                } else {
-                    return FragranceIndicator(currentText: fmt(currentGrams), targetText: nil, isOverTarget: false)
-                }
-            } else {
-                let sumText = formatPercentage(sumPct) + "%"
-                return FragranceIndicator(currentText: sumText, targetText: nil, isOverTarget: false)
-            }
-        }
-
-        let absoluteUnits: Set<String> = ["g", "kg", "oz"]
-        if let unit, absoluteUnits.contains(unit), unit == oilWeightUnit {
-            guard totalOilWeight > 0 else { return nil }
-            let target = totalOilWeight * fragranceTargetPercentage / 100
-            let sum = fragranceDrafts.reduce(0) { $0 + $1.amount }
-            let fmt = { (v: Double) -> String in
-                v.formatted(.number.precision(.fractionLength(0...2)))
-            }
-            return FragranceIndicator(
-                currentText: fmt(sum),
-                targetText: "\(fmt(target)) \(unit)",
-                isOverTarget: sum > target * 1.005
-            )
-        }
-
-        return nil
+        let targetInOilUnit = totalOilBatchWeight * fragranceTargetPercentage / 100
+        let target = MassUnitConverter.convert(targetInOilUnit, from: displayWeightUnit, to: unit) ?? targetInOilUnit
+        let amountText = target.formatted(.number.precision(.fractionLength(0...2)))
+        let enteredSum = fragranceDrafts.reduce(0) { $0 + $1.amount }
+        return FragranceTarget(
+            text: "\(amountText) \(unit) (\(formatPercentage(fragranceTargetPercentage))%)",
+            percentage: fragranceTargetPercentage,
+            isOverTarget: target > 0 && enteredSum > target * 1.005
+        )
     }
 
     private var lyeConcentration: Double {
@@ -336,7 +307,7 @@ final class RecipeFormViewModel {
             .map { IngredientAmountDraft(ingredient: $0.ingredient, amount: $0.additiveAmount, unit: $0.additiveUnit) }
 
         productDrafts = recipe.products.map {
-            RecipeProductDraft(size: $0.size, unitSymbol: $0.unitSymbol)
+            RecipeProductDraft(size: $0.size, unitSymbol: $0.unitSymbol, modelID: $0.persistentModelID)
         }
         if productDrafts.isEmpty {
             productDrafts = [Self.defaultProductDraft()]
@@ -369,7 +340,7 @@ final class RecipeFormViewModel {
         guard !additiveDrafts.contains(where: {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
-        additiveDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: "g"))
+        additiveDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: defaultAdditiveUnit))
     }
 
     func removeAdditive(at offsets: IndexSet) {
@@ -386,9 +357,9 @@ final class RecipeFormViewModel {
         guard !fragranceDrafts.contains(where: {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
-        let unit = fragranceUnitIsPercentageOfOils ? "% of oils" : "g"
+        let unit = fragranceUnitIsPercentageOfOils ? "% of oils" : defaultFragranceUnit
         fragranceDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: unit))
-        if fragranceUnitIsPercentageOfOils { redistributeFragrancePercentages() }
+        if unit == "% of oils" { redistributeFragrancePercentages() }
     }
 
     func removeFragrance(at offsets: IndexSet) {
@@ -451,7 +422,7 @@ final class RecipeFormViewModel {
         }
         guard let unit, let perUnit = unit.gramsPerUnit else { return ProductCostBreakdown() }
         let productGrams = perUnit * size
-        let batchGrams = batchTotalGrams(from: batch)
+        let batchGrams = gramsForCost(batchTotalWeight(from: batch))
         let rawShare = batchGrams > 0 ? productGrams / batchGrams : 0
         var result = scaleBreakdown(batch, by: min(rawShare, 1))
         result.exceedsBatchWeight = rawShare > 1
@@ -477,59 +448,65 @@ final class RecipeFormViewModel {
         !oilDrafts.isEmpty || !additiveDrafts.isEmpty || !fragranceDrafts.isEmpty
     }
 
+    // All breakdown amounts are expressed in the batch (oils) unit for display;
+    // cost is always derived from the gram-equivalent so it stays correct
+    // regardless of the chosen oil weight unit.
+
     private var oilBatchBreakdown: [IngredientProductBreakdown] {
         guard let calcs = oilAmountCalculations else { return [] }
         return calcs.map { calc in
-            let costPer = weightedCostPerUnit(for: calc.ingredient)
-            return IngredientProductBreakdown(
+            IngredientProductBreakdown(
                 ingredient: calc.ingredient,
                 ingredientAmount: calc.weight,
-                cost: calc.weight * costPer
+                cost: gramsForCost(calc.weight) * weightedCostPerUnit(for: calc.ingredient)
             )
         }
     }
 
     private var additiveBatchBreakdown: [IngredientProductBreakdown] {
-        additiveDrafts.compactMap { draft in
-            guard draft.amount > 0, let grams = massGrams(amount: draft.amount, unitSymbol: draft.unit) else { return nil }
-            let costPer = weightedCostPerUnit(for: draft.ingredient)
-            return IngredientProductBreakdown(
-                ingredient: draft.ingredient,
-                ingredientAmount: grams,
-                cost: grams * costPer
-            )
-        }
+        breakdown(for: additiveDrafts)
     }
 
     private var fragranceBatchBreakdown: [IngredientProductBreakdown] {
-        fragranceDrafts.compactMap { draft in
-            guard draft.amount > 0, let grams = fragranceGrams(amount: draft.amount, unit: draft.unit) else { return nil }
-            let costPer = weightedCostPerUnit(for: draft.ingredient)
+        breakdown(for: fragranceDrafts)
+    }
+
+    /// Breakdown rows for additive/fragrance drafts, with amounts in the batch
+    /// (oils) unit and cost derived from the gram-equivalent.
+    private func breakdown(for drafts: [IngredientAmountDraft]) -> [IngredientProductBreakdown] {
+        drafts.compactMap { draft in
+            guard draft.amount > 0,
+                  let batchAmount = amountInBatchUnit(amount: draft.amount, unit: draft.unit) else { return nil }
             return IngredientProductBreakdown(
                 ingredient: draft.ingredient,
-                ingredientAmount: grams,
-                cost: grams * costPer
+                ingredientAmount: batchAmount,
+                cost: gramsForCost(batchAmount) * weightedCostPerUnit(for: draft.ingredient)
             )
         }
     }
 
     private var lyeBatchBreakdown: [IngredientProductBreakdown] {
-        guard let ingredient = lyeIngredient, let grams = calculatedLyeAmount, grams > 0 else { return [] }
-        let costPer = weightedCostPerUnit(for: ingredient)
-        return [IngredientProductBreakdown(ingredient: ingredient, ingredientAmount: grams, cost: grams * costPer)]
+        guard let ingredient = lyeIngredient, let amount = calculatedLyeAmount, amount > 0 else { return [] }
+        return [IngredientProductBreakdown(
+            ingredient: ingredient,
+            ingredientAmount: amount,
+            cost: gramsForCost(amount) * weightedCostPerUnit(for: ingredient)
+        )]
     }
 
-    private var totalOilGrams: Double {
+    /// Total oil weight in the batch (oils) unit.
+    private var totalOilBatchWeight: Double {
         oilAmountCalculations?.reduce(0) { $0 + $1.weight } ?? 0
     }
 
-    private func batchTotalGrams(from batch: ProductCostBreakdown) -> Double {
+    /// Total batch weight in the batch (oils) unit (fragrances excluded — their
+    /// amounts are derived from oils/lye/water percentages, so including them in
+    /// the denominator would inflate the batch weight and understate product shares).
+    private func batchTotalWeight(from batch: ProductCostBreakdown) -> Double {
         let additives = batch.additives.reduce(0) { $0 + $1.ingredientAmount }
         let lye = calculatedLyeAmount ?? 0
         let water = calculatedWaterAmount ?? 0
-        // Fragrances are excluded: their gram amounts are derived from oils/lye/water percentages,
-        // so including them in the denominator would inflate the batch weight and understate product shares.
-        return totalOilGrams + additives + lye + water
+        return totalOilBatchWeight + additives + lye + water
     }
 
     private func scaleBreakdown(_ source: ProductCostBreakdown, by factor: Double) -> ProductCostBreakdown {
@@ -550,28 +527,50 @@ final class RecipeFormViewModel {
         return ProductCostBreakdown(oils: oils, additives: additives, fragrances: fragrances, lye: lye, total: total)
     }
 
-    private func massGrams(amount: Double, unitSymbol: String) -> Double? {
-        switch unitSymbol {
-        case "g": amount
-        case "kg": amount * 1000
-        case "oz": amount * 28.3495
-        case "lb": amount * 453.592
-        default: nil
-        }
+    /// Grams equivalent of an amount already expressed in the batch (oils) unit,
+    /// used for cost. Falls back to the amount unchanged if the unit isn't a mass.
+    private func gramsForCost(_ batchAmount: Double) -> Double {
+        MassUnitConverter.convert(batchAmount, from: displayWeightUnit, to: "g") ?? batchAmount
     }
 
-    private func fragranceGrams(amount: Double, unit: String) -> Double? {
-        if let grams = massGrams(amount: amount, unitSymbol: unit) { return grams }
-        let pct = amount / 100
+    /// The amount and unit to present for a cost-breakdown row. Additives and
+    /// fragrances (`usesEnteredUnit`) are shown in the unit the user picked when
+    /// that's a mass unit; percentage entries, oils, and lye use the oil weight
+    /// unit. Breakdown amounts are stored in the oil weight unit, so mass units
+    /// are converted back; gram conversion is reserved for inventory math.
+    func displayedAmount(for row: IngredientProductBreakdown, usesEnteredUnit: Bool) -> (amount: Double, unit: String) {
+        if usesEnteredUnit, let unit = enteredUnit(for: row.ingredient), MassUnitConverter.isMass(unit) {
+            let value = MassUnitConverter.convert(row.ingredientAmount, from: displayWeightUnit, to: unit) ?? row.ingredientAmount
+            return (value, unit)
+        }
+        return (row.ingredientAmount, displayWeightUnit)
+    }
+
+    private func enteredUnit(for ingredient: Ingredient) -> String? {
+        let id = ingredient.persistentModelID
+        if let additive = additiveDrafts.first(where: { $0.ingredient.persistentModelID == id }) { return additive.unit }
+        if let fragrance = fragranceDrafts.first(where: { $0.ingredient.persistentModelID == id }) { return fragrance.unit }
+        return nil
+    }
+
+    /// Expresses an ingredient amount in the batch (oils) unit. Mass units convert
+    /// directly; percentages resolve against the relevant batch quantity (already
+    /// in the oils unit). Volume units (ml, L) return nil — they need a density to
+    /// convert and are omitted from the breakdown for now.
+    private func amountInBatchUnit(amount: Double, unit: String) -> Double? {
+        if let converted = MassUnitConverter.convert(amount, from: unit, to: displayWeightUnit) {
+            return converted
+        }
+        let fraction = amount / 100
         switch unit {
         case "% of oils":
-            return totalOilGrams > 0 ? totalOilGrams * pct : nil
+            return totalOilBatchWeight > 0 ? totalOilBatchWeight * fraction : nil
         case "% of batch":
             guard let lye = calculatedLyeAmount, let water = calculatedWaterAmount else { return nil }
-            return (totalOilGrams + lye + water) * pct
+            return (totalOilBatchWeight + lye + water) * fraction
         case "% of liquids":
             guard let lye = calculatedLyeAmount, let water = calculatedWaterAmount else { return nil }
-            return (lye + water) * pct
+            return (lye + water) * fraction
         default: return nil
         }
     }

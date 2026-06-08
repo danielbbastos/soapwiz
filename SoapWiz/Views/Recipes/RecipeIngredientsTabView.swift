@@ -8,8 +8,19 @@ struct AvailableHeightKey: PreferenceKey {
     }
 }
 
-private let additiveUnits = ["g", "kg", "ml", "L", "oz", "% of batch", "% of liquids", "% of oils"]
-private let fragranceUnits = ["g", "kg", "oz", "% of batch", "% of liquids", "% of oils"]
+private let additiveUnits = ["g", "kg", "oz", "lb", "ml", "L", "% of batch", "% of liquids", "% of oils"]
+private let fragranceUnits = ["g", "kg", "oz", "lb", "% of batch", "% of liquids", "% of oils"]
+
+/// Label style with a tighter gap between the icon and title than the default.
+private struct TightLabelStyle: LabelStyle {
+    var spacing: CGFloat = 4
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: spacing) {
+            configuration.icon
+            configuration.title
+        }
+    }
+}
 
 private enum PickerSection: String, Identifiable {
     case oils, additives, fragrances
@@ -34,6 +45,7 @@ struct RecipeIngredientsTabView: View {
     @State private var extraIngredientsExpanded = false
     @State private var selectedSectionAPct: Int = 1
     @State private var showSectionAInfo = false
+    @State private var showFragranceInfo = false
     @State private var costBreakdownExpanded = false
     @State private var availableHeight: CGFloat = 0
 
@@ -106,6 +118,7 @@ struct RecipeIngredientsTabView: View {
                         activePicker = .oils
                     } label: {
                         Label("Add oil", systemImage: "plus")
+                            .labelStyle(TightLabelStyle())
                     }
                     Spacer()
                     if model.weightUnitIsPercentage && !model.oilDrafts.isEmpty {
@@ -145,6 +158,7 @@ struct RecipeIngredientsTabView: View {
                     activePicker = .additives
                 } label: {
                     Label("Add additive", systemImage: "plus")
+                        .labelStyle(TightLabelStyle())
                 }
                 ForEach(model.additiveDrafts) { draft in
                     HStack {
@@ -154,7 +168,7 @@ struct RecipeIngredientsTabView: View {
                         TextField("0", value: Binding(
                             get: { draft.amount },
                             set: { model.updateAdditive(id: draft.id, amount: $0) }
-                        ), format: .number.precision(.fractionLength(0...1)))
+                        ), format: .number.precision(.fractionLength(0...3)))
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 55)
@@ -183,15 +197,29 @@ struct RecipeIngredientsTabView: View {
                         activePicker = .fragrances
                     } label: {
                         Label("Add fragrance", systemImage: "plus")
+                            .labelStyle(TightLabelStyle())
                     }
                     Spacer()
-                    if let indicator = model.fragranceIndicator {
-                        if let target = indicator.targetText {
-                            Text("\(indicator.currentText) / \(target)")
-                                .foregroundStyle(indicator.isOverTarget ? Color.red : Color.green)
-                        } else {
-                            Text(indicator.currentText)
-                                .foregroundStyle(.secondary)
+                    if let target = model.fragranceTarget {
+                        HStack(spacing: 4) {
+                            Text(target.text)
+                                .foregroundStyle(target.isOverTarget ? Color.red : Color.secondary)
+                            Button {
+                                showFragranceInfo = true
+                            } label: {
+                                Image(systemName: "info.circle")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .popover(isPresented: $showFragranceInfo) {
+                                Text("Recommended fragrance load: \(model.formatPercentage(target.percentage))% of total oils, set on the Config tab.")
+                                    .font(.footnote)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 10)
+                                    .frame(maxWidth: 240)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .presentationCompactAdaptation(.popover)
+                            }
                         }
                     }
                 }
@@ -209,7 +237,7 @@ struct RecipeIngredientsTabView: View {
                                     model.updateFragrance(id: draft.id, amount: newVal)
                                 }
                             }
-                        ), format: .number.precision(.fractionLength(0...1)))
+                        ), format: .number.precision(.fractionLength(0...3)))
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 55)

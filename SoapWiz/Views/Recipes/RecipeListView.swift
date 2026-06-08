@@ -21,17 +21,22 @@ struct RecipeListView: View {
                     } else {
                         List {
                             ForEach(recipes) { recipe in
-                                RecipeRowView(recipe: recipe)
-                                    .swipeActions(edge: .trailing) {
-                                        Button("Delete", role: .destructive) {
-                                            model.delete(recipe, context: modelContext)
-                                        }
+                                NavigationLink(value: recipe) {
+                                    RecipeRowView(recipe: recipe)
+                                }
+                                .swipeActions(edge: .trailing) {
+                                    Button("Delete", role: .destructive) {
+                                        model.delete(recipe, context: modelContext)
                                     }
+                                }
                             }
                         }
                     }
                 }
                 .navigationTitle("Recipes")
+                .navigationDestination(for: Recipe.self) { recipe in
+                    RecipeDetailView(recipe: recipe)
+                }
                 .navigationDestination(for: Bool.self) { _ in
                     RecipeFormView(onSave: { _ in
                         navigationPath = NavigationPath()

@@ -1100,6 +1100,299 @@ struct RecipeFormViewModelTests {
         #expect(abs(data2000.sectionA[0].val1 - data1000.sectionA[0].val1 * 2) < 0.001)
         #expect(abs(data2000.sectionB[0].minValue - data1000.sectionB[0].minValue * 2) < 0.001)
     }
+
+    // MARK: - Default ingredient unit
+
+    @Test func defaultFragranceUnit_PercentageMode_IsPercentageOfOils() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        #expect(model.defaultFragranceUnit == "% of oils")
+    }
+
+    @Test func defaultFragranceUnit_AbsoluteMode_MatchesWeightUnit() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "oz"
+        #expect(model.defaultFragranceUnit == "oz")
+    }
+
+    @Test func defaultAdditiveUnit_PercentageMode_IsGrams() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        #expect(model.defaultAdditiveUnit == "g")
+    }
+
+    @Test func defaultAdditiveUnit_AbsoluteMode_MatchesWeightUnit() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "oz"
+        #expect(model.defaultAdditiveUnit == "oz")
+    }
+
+    @Test func addAdditive_PercentageMode_DefaultsToGrams() {
+        // Additives are weight-conventional, so they default to grams rather than
+        // silently applying a percentage of the oils.
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.addAdditive(Ingredient(name: "Salt"))
+        #expect(model.additiveDrafts[0].unit == "g")
+    }
+
+    @Test func addAdditive_AbsoluteMode_DefaultsToWeightUnit() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "oz"
+        model.addAdditive(Ingredient(name: "Salt"))
+        #expect(model.additiveDrafts[0].unit == "oz")
+    }
+
+    @Test func addFragrance_PercentageMode_DefaultsToPercentageOfOils() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.addFragrance(Ingredient(name: "Lavender EO"))
+        #expect(model.fragranceDrafts[0].unit == "% of oils")
+    }
+
+    @Test func addFragrance_AbsoluteMode_DefaultsToWeightUnit() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "kg"
+        model.addFragrance(Ingredient(name: "Lavender EO"))
+        #expect(model.fragranceDrafts[0].unit == "kg")
+    }
+
+    // MARK: - Breakdown unit consistency (non-gram oil unit)
+
+    @Test func wholeBatchBreakdown_KgOilUnit_ExpressesAllAmountsInOilUnit() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil")
+        ctx.insert(oil)
+        let additive = Ingredient(name: "Sodium Lactate")
+        ctx.insert(additive)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "kg"
+        model.totalOilWeight = 1          // 1 kg of oils
+        model.lyePurity = 100
+        model.superFat = 0
+        model.addOil(oil)                 // 100%
+        model.addAdditive(additive)
+        // additive entered in grams while oils are in kg
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 500, unit: "g")
+
+        let breakdown = model.wholeBatchBreakdown
+
+        // Oil amount stays in the oil unit (1 kg)
+        #expect(abs(breakdown.oils[0].ingredientAmount - 1) < 1e-6)
+        // 500 g additive expressed in the oil unit → 0.5 kg
+        let additiveRow = try #require(breakdown.additives.first)
+        #expect(abs(additiveRow.ingredientAmount - 0.5) < 1e-6)
+    }
+
+    @Test func wholeBatchBreakdown_KgOilUnit_CostUsesGramEquivalent() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let additive = Ingredient(name: "Sodium Lactate")
+        ctx.insert(additive)
+        let batch = IngredientBatch.mock(quantity: 1000, totalPrice: 10.0) // €0.01/g
+        batch.ingredient = additive
+        ctx.insert(batch)
+        let oil = Ingredient(name: "Olive Oil")
+        ctx.insert(oil)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "kg"
+        model.totalOilWeight = 1
+        model.addOil(oil)
+        model.addAdditive(additive)
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 500, unit: "g")
+
+        let additiveRow = try #require(model.wholeBatchBreakdown.additives.first)
+        // 0.5 kg = 500 g × €0.01/g = €5.00 — cost is independent of the display unit
+        #expect(abs(additiveRow.cost - 5.0) < 1e-6)
+    }
+
+    @Test func displayedAmount_MassUnitAdditive_ShowsEnteredUnit() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil")
+        ctx.insert(oil)
+        let additive = Ingredient(name: "Titanium Dioxide")
+        ctx.insert(additive)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "g"
+        model.totalOilWeight = 1000
+        model.addOil(oil)
+        model.addAdditive(additive)
+        // Entered as 2 oz while the oil unit is grams.
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 2, unit: "oz")
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: true)
+        #expect(display.unit == "oz")
+        #expect(abs(display.amount - 2) < 1e-6)
+    }
+
+    @Test func displayedAmount_PercentageAdditive_ShowsOilWeightUnit() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil")
+        ctx.insert(oil)
+        let additive = Ingredient(name: "Sodium Lactate")
+        ctx.insert(additive)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "kg"
+        model.totalOilWeight = 1
+        model.addOil(oil)
+        model.addAdditive(additive)
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 2, unit: "% of oils")
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: true)
+        // 2% of 1 kg oils = 0.02 kg, shown in the oil weight unit
+        #expect(display.unit == "kg")
+        #expect(abs(display.amount - 0.02) < 1e-6)
+    }
+
+    @Test func displayedAmount_Oil_ShowsOilWeightUnit() throws {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "g"
+        model.totalOilWeight = 1000
+        model.addOil(Ingredient(name: "Olive Oil"))
+
+        let row = try #require(model.wholeBatchBreakdown.oils.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: false)
+        #expect(display.unit == "g")
+        #expect(abs(display.amount - 1000) < 1e-6)
+    }
+
+    @Test func displayedAmount_OilRow_IgnoresAdditiveUnitForSameIngredient() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let shared = Ingredient(name: "Coconut Oil")
+        ctx.insert(shared)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "g"
+        model.totalOilWeight = 1000
+        model.addOil(shared)        // 100% oil
+        model.addAdditive(shared)   // same ingredient also added as an additive
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 2, unit: "oz")
+
+        let oilRow = try #require(model.wholeBatchBreakdown.oils.first)
+        let display = model.displayedAmount(for: oilRow, usesEnteredUnit: false)
+        // Oil row stays in the oil weight unit, not the additive's "oz".
+        #expect(display.unit == "g")
+    }
+
+    @Test func breakdownAndCost_FixedSize_KgOilUnit_SharesCorrectly() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil")
+        ctx.insert(oil)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "kg"
+        model.totalOilWeight = 1          // 1 kg = 1000 g batch (no lye/additives)
+        model.lyePurity = 100
+        model.superFat = 0
+        model.addOil(oil)
+
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = 500                  // 500 g of a 1000 g batch → half
+
+        let result = model.breakdownAndCost(for: draft)
+
+        // Oil amount in the oil unit: 1 kg × 0.5 = 0.5 kg
+        #expect(abs(result.oils[0].ingredientAmount - 0.5) < 1e-6)
+    }
+
+    // MARK: - Fragrance target
+
+    private func makeModelWithOilsAndFragrance(fragranceUnit: String) -> RecipeFormViewModel {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "g"
+        model.totalOilWeight = 1000
+        model.fragrancePercentage = 3
+        model.addOil(Ingredient(name: "Olive Oil"))          // 100% → 1000 g oils
+        model.addFragrance(Ingredient(name: "Lavender EO"))
+        model.updateFragrance(id: model.fragranceDrafts[0].id, unit: fragranceUnit)
+        return model
+    }
+
+    @Test func fragranceTarget_MassUnit_ShowsTargetTotalAndPercentage() throws {
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: "g")
+        let target = try #require(model.fragranceTarget)
+        #expect(target.percentage == 3)
+        // 3% of 1000 g oils = 30 g
+        #expect(target.text.contains("30"))
+        #expect(target.text.contains("g"))
+        #expect(target.text.contains("3%"))
+    }
+
+    @Test func fragranceTarget_OzUnit_ConvertsTargetToThatUnit() throws {
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: "oz")
+        let target = try #require(model.fragranceTarget)
+        #expect(target.text.contains("oz"))
+        #expect(target.text.contains("3%"))
+    }
+
+    @Test func fragranceTarget_EnteredOverTarget_SetsFlag() throws {
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: "g")
+        // Target is 3% of 1000 g = 30 g; enter 60 g.
+        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 60)
+        let target = try #require(model.fragranceTarget)
+        #expect(target.isOverTarget == true)
+    }
+
+    @Test func fragranceTarget_EnteredUnderTarget_FlagFalse() throws {
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: "g")
+        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 20)
+        let target = try #require(model.fragranceTarget)
+        #expect(target.isOverTarget == false)
+    }
+
+    @Test func fragranceTarget_PercentageUnit_ReturnsNil() {
+        // Default unit in percentage mode is "% of oils".
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.totalOilWeight = 1000
+        model.addOil(Ingredient(name: "Olive Oil"))
+        model.addFragrance(Ingredient(name: "Lavender EO"))
+        #expect(model.fragranceTarget == nil)
+    }
+
+    @Test func fragranceTarget_MixedUnits_ReturnsNil() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.totalOilWeight = 1000
+        model.addOil(Ingredient(name: "Olive Oil"))
+        model.addFragrance(Ingredient(name: "A"))
+        model.addFragrance(Ingredient(name: "B"))
+        model.updateFragrance(id: model.fragranceDrafts[0].id, unit: "g")
+        model.updateFragrance(id: model.fragranceDrafts[1].id, unit: "oz")
+        #expect(model.fragranceTarget == nil)
+    }
+
+    @Test func fragranceTarget_NoFragrances_ReturnsNil() {
+        let model = makeModelWithOils()
+        #expect(model.fragranceTarget == nil)
+    }
+
+    @Test func fragranceTarget_NoOils_ReturnsNil() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.addFragrance(Ingredient(name: "Lavender EO"))
+        model.updateFragrance(id: model.fragranceDrafts[0].id, unit: "g")
+        #expect(model.fragranceTarget == nil)
+    }
 }
 
 // MARK: - Mocks

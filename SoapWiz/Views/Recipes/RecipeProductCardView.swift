@@ -11,12 +11,19 @@ private enum BreakdownGroupKey: String, CaseIterable {
         case .lye: "Lye"
         }
     }
+
+    /// Only additives and fragrances carry a user-chosen unit; oils and lye are
+    /// always shown in the oil weight unit.
+    var usesEnteredUnit: Bool {
+        self == .additives || self == .fragrances
+    }
 }
 
 struct RecipeProductCardView: View {
     @Binding var draft: RecipeProductDraft
     let breakdown: ProductCostBreakdown
     let availableUnits: [ProductUnit]
+    let model: RecipeFormViewModel
 
     @State private var collapsedGroups: Set<BreakdownGroupKey> = []
     @State private var isUnitPickerPresented = false
@@ -162,7 +169,8 @@ struct RecipeProductCardView: View {
                         .transition(.identity)
                 } else {
                     ForEach(rows, id: \.ingredient.persistentModelID) { row in
-                        breakdownRow(name: row.ingredient.name, amount: row.ingredientAmount, cost: row.cost)
+                        let display = model.displayedAmount(for: row, usesEnteredUnit: key.usesEnteredUnit)
+                        breakdownRow(name: row.ingredient.name, amount: display.amount, unit: display.unit, cost: row.cost)
                     }
                     .transition(.identity)
                 }
@@ -174,13 +182,14 @@ struct RecipeProductCardView: View {
     }
 
     private func summaryRow(name: String, rows: [IngredientProductBreakdown]) -> some View {
+        // Collapsed group total uses the oil weight unit, since rows may mix units.
         let totalAmount = rows.reduce(0) { $0 + $1.ingredientAmount }
         let totalCost = rows.reduce(0) { $0 + $1.cost }
-        return breakdownRow(name: name, amount: totalAmount, cost: totalCost, emphasized: true)
+        return breakdownRow(name: name, amount: totalAmount, unit: model.displayWeightUnit, cost: totalCost, emphasized: true)
     }
 
     @ViewBuilder
-    private func breakdownRow(name: String, amount: Double, cost: Double, emphasized: Bool = false) -> some View {
+    private func breakdownRow(name: String, amount: Double, unit: String, cost: Double, emphasized: Bool = false) -> some View {
         let style = emphasized ? Color.primary : Color.secondary
         let weight: Font.Weight = emphasized ? .semibold : .regular
         HStack {
@@ -190,8 +199,7 @@ struct RecipeProductCardView: View {
                 .fontWeight(weight)
             Spacer()
             if let amountStr = Self.amountFormatter.string(from: NSNumber(value: amount)) {
-                // All ingredient amounts in the breakdown are normalised to grams internally.
-                Text("\(amountStr) g")
+                Text("\(amountStr) \(unit)")
                     .font(.caption)
                     .foregroundStyle(Color.secondary)
             }
