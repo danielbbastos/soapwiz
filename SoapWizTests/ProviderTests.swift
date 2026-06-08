@@ -89,7 +89,7 @@ struct ProviderTests {
         #expect(purchase.provider == nil)
     }
 
-    @Test func purchaseesCountReflectsLinkedPurchases() throws {
+    @Test func purchasesCountReflectsLinkedPurchases() throws {
         let container = try makeContainer()
         let context = container.mainContext
 
