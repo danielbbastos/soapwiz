@@ -1103,23 +1103,37 @@ struct RecipeFormViewModelTests {
 
     // MARK: - Default ingredient unit
 
-    @Test func defaultIngredientUnit_PercentageMode_IsPercentageOfOils() {
+    @Test func defaultFragranceUnit_PercentageMode_IsPercentageOfOils() {
         let model = RecipeFormViewModel()
         model.weightUnit = "%"
-        #expect(model.defaultIngredientUnit == "% of oils")
+        #expect(model.defaultFragranceUnit == "% of oils")
     }
 
-    @Test func defaultIngredientUnit_AbsoluteMode_MatchesWeightUnit() {
+    @Test func defaultFragranceUnit_AbsoluteMode_MatchesWeightUnit() {
         let model = RecipeFormViewModel()
         model.weightUnit = "oz"
-        #expect(model.defaultIngredientUnit == "oz")
+        #expect(model.defaultFragranceUnit == "oz")
     }
 
-    @Test func addAdditive_PercentageMode_DefaultsToPercentageOfOils() {
+    @Test func defaultAdditiveUnit_PercentageMode_IsGrams() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        #expect(model.defaultAdditiveUnit == "g")
+    }
+
+    @Test func defaultAdditiveUnit_AbsoluteMode_MatchesWeightUnit() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "oz"
+        #expect(model.defaultAdditiveUnit == "oz")
+    }
+
+    @Test func addAdditive_PercentageMode_DefaultsToGrams() {
+        // Additives are weight-conventional, so they default to grams rather than
+        // silently applying a percentage of the oils.
         let model = RecipeFormViewModel()
         model.weightUnit = "%"
         model.addAdditive(Ingredient(name: "Salt"))
-        #expect(model.additiveDrafts[0].unit == "% of oils")
+        #expect(model.additiveDrafts[0].unit == "g")
     }
 
     @Test func addAdditive_AbsoluteMode_DefaultsToWeightUnit() {
@@ -1328,6 +1342,21 @@ struct RecipeFormViewModelTests {
         let target = try #require(model.fragranceTarget)
         #expect(target.text.contains("oz"))
         #expect(target.text.contains("3%"))
+    }
+
+    @Test func fragranceTarget_EnteredOverTarget_SetsFlag() throws {
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: "g")
+        // Target is 3% of 1000 g = 30 g; enter 60 g.
+        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 60)
+        let target = try #require(model.fragranceTarget)
+        #expect(target.isOverTarget == true)
+    }
+
+    @Test func fragranceTarget_EnteredUnderTarget_FlagFalse() throws {
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: "g")
+        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 20)
+        let target = try #require(model.fragranceTarget)
+        #expect(target.isOverTarget == false)
     }
 
     @Test func fragranceTarget_PercentageUnit_ReturnsNil() {

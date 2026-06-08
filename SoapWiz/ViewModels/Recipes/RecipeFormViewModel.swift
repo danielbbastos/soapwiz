@@ -21,6 +21,8 @@ struct FragranceTarget {
     let text: String
     /// The configured fragrance percentage, for the explanatory tooltip.
     let percentage: Double
+    /// Whether the entered fragrance total exceeds the recommended target.
+    let isOverTarget: Bool
 }
 
 struct RecipeProductDraft: Identifiable {
@@ -136,10 +138,17 @@ final class RecipeFormViewModel {
         weightUnitIsPercentage ? oilWeightUnit : weightUnit
     }
 
-    /// Default unit for new additive/fragrance rows: percentage-of-oils when the
-    /// recipe is measured in percentages, otherwise the recipe's oil weight unit.
-    var defaultIngredientUnit: String {
+    /// Default unit for new fragrance rows: percentage-of-oils when the recipe is
+    /// measured in percentages, otherwise the recipe's oil weight unit.
+    var defaultFragranceUnit: String {
         weightUnitIsPercentage ? "% of oils" : weightUnit
+    }
+
+    /// Default unit for new additive rows. Additives are conventionally entered
+    /// as a weight, so they default to grams in percentage mode (rather than
+    /// "% of oils") to avoid silently applying a percentage of the oils.
+    var defaultAdditiveUnit: String {
+        weightUnitIsPercentage ? "g" : weightUnit
     }
 
     var oilAmountCalculations: [OilAmountCalculation]? {
@@ -217,9 +226,11 @@ final class RecipeFormViewModel {
         let targetInOilUnit = totalOilBatchWeight * fragranceTargetPercentage / 100
         let target = MassUnitConverter.convert(targetInOilUnit, from: displayWeightUnit, to: unit) ?? targetInOilUnit
         let amountText = target.formatted(.number.precision(.fractionLength(0...2)))
+        let enteredSum = fragranceDrafts.reduce(0) { $0 + $1.amount }
         return FragranceTarget(
             text: "\(amountText) \(unit) (\(formatPercentage(fragranceTargetPercentage))%)",
-            percentage: fragranceTargetPercentage
+            percentage: fragranceTargetPercentage,
+            isOverTarget: target > 0 && enteredSum > target * 1.005
         )
     }
 
@@ -329,7 +340,7 @@ final class RecipeFormViewModel {
         guard !additiveDrafts.contains(where: {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
-        additiveDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: defaultIngredientUnit))
+        additiveDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: defaultAdditiveUnit))
     }
 
     func removeAdditive(at offsets: IndexSet) {
@@ -346,7 +357,7 @@ final class RecipeFormViewModel {
         guard !fragranceDrafts.contains(where: {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
-        let unit = fragranceUnitIsPercentageOfOils ? "% of oils" : defaultIngredientUnit
+        let unit = fragranceUnitIsPercentageOfOils ? "% of oils" : defaultFragranceUnit
         fragranceDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: unit))
         if unit == "% of oils" { redistributeFragrancePercentages() }
     }

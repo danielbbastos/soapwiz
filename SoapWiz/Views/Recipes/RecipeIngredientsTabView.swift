@@ -203,7 +203,7 @@ struct RecipeIngredientsTabView: View {
                     if let target = model.fragranceTarget {
                         HStack(spacing: 4) {
                             Text(target.text)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(target.isOverTarget ? Color.red : Color.secondary)
                             Button {
                                 showFragranceInfo = true
                             } label: {
