@@ -94,6 +94,11 @@ enum IngredientUnitConverter {
             return Result(value: out, density: nil, usedDefaultDensity: false)
         }
 
+        // A non-positive density can't describe a real ingredient and would make a
+        // volume↔mass crossing divide by zero (or yield zero mass); reject it
+        // rather than returning an infinite or meaningless value.
+        if let density, density <= 0 { return nil }
+
         let usedDefault = density == nil
         let d = density ?? defaultDensity
 

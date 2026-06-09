@@ -127,6 +127,16 @@ struct IngredientUnitConverterTests {
         #expect(abs(back.value - 250) < 1e-9)
     }
 
+    @Test func convert_ZeroDensity_ReturnsNil() {
+        // Would otherwise divide by zero (mass→volume) or yield zero mass (volume→mass).
+        #expect(IngredientUnitConverter.convert(100, from: "g", to: "ml", density: 0) == nil)
+        #expect(IngredientUnitConverter.convert(100, from: "ml", to: "g", density: 0) == nil)
+    }
+
+    @Test func convert_NegativeDensity_ReturnsNil() {
+        #expect(IngredientUnitConverter.convert(100, from: "ml", to: "g", density: -0.5) == nil)
+    }
+
     @Test func convert_UnknownUnit_ReturnsNil() {
         #expect(IngredientUnitConverter.convert(1, from: "un", to: "g", density: 0.92) == nil)
         #expect(IngredientUnitConverter.convert(1, from: "% of oils", to: "g", density: 0.92) == nil)
