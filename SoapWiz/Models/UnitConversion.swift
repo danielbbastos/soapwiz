@@ -57,7 +57,6 @@ enum IngredientUnitConverter {
         symbol == "ml" || symbol == "L"
     }
 
-    /// Amount expressed in millilitres for a known volume unit, or `nil` otherwise.
     private static func milliliters(_ amount: Double, from symbol: String) -> Double? {
         switch symbol {
         case "ml": amount
@@ -66,7 +65,6 @@ enum IngredientUnitConverter {
         }
     }
 
-    /// Converts an amount in millilitres into a known volume unit, or `nil` otherwise.
     private static func fromMilliliters(_ ml: Double, to symbol: String) -> Double? {
         switch symbol {
         case "ml": ml
