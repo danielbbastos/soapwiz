@@ -36,4 +36,17 @@ extension View {
             self.background(.ultraThinMaterial, in: shape)
         }
     }
+
+    /// Regular Liquid Glass button style on iOS 26 (light/translucent with a
+    /// tinted label), falling back to `.bordered` on earlier versions. For
+    /// call-to-action buttons on the navigation layer that shouldn't dominate
+    /// with a solid fill.
+    @ViewBuilder
+    func glassButtonStyleIOS26() -> some View {
+        if #available(iOS 26, *) {
+            self.buttonStyle(.glass)
+        } else {
+            self.buttonStyle(.bordered)
+        }
+    }
 }

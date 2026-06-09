@@ -1,0 +1,75 @@
+import SwiftUI
+import SwiftData
+
+/// Prompts for how many batches to make and creates one. Insufficient stock is
+/// surfaced inline — the affected ingredients and shortfalls are listed and
+/// creation is blocked until the count is reduced or stock is replenished.
+struct CreateBatchSheet: View {
+    let recipe: Recipe
+    let lyeCandidates: [Ingredient]
+    /// Called with the created batch so the caller can navigate to it.
+    let onCreated: (Batch) -> Void
+
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    @State private var model: BatchProductionViewModel
+
+    init(recipe: Recipe, lyeCandidates: [Ingredient], onCreated: @escaping (Batch) -> Void) {
+        self.recipe = recipe
+        self.lyeCandidates = lyeCandidates
+        self.onCreated = onCreated
+        _model = State(initialValue: BatchProductionViewModel(recipe: recipe, lyeCandidates: lyeCandidates))
+    }
+
+    private func amountText(_ amount: Double, unit: String) -> String {
+        "\(amount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)"
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Stepper(value: $model.batchCount, in: 1...999) {
+                        LabeledContent("Batches", value: "\(model.batchCount)")
+                    }
+                }
+
+                let requirements = model.requirements
+                let shortages = requirements.filter(\.isShort)
+                if requirements.isEmpty {
+                    Section {
+                        Text("This recipe has no ingredients to consume.")
+                            .foregroundStyle(.secondary)
+                    }
+                } else if !shortages.isEmpty {
+                    Section("Not enough stock") {
+                        ForEach(shortages) { req in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(req.ingredient.name)
+                                Text("Need \(amountText(req.required, unit: req.unit)), have \(amountText(req.available, unit: req.unit))")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Create Batch")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create") {
+                        if let batch = model.create(context: context) {
+                            dismiss()
+                            onCreated(batch)
+                        }
+                    }
+                    .disabled(!model.canCreate)
+                }
+            }
+        }
+    }
+}

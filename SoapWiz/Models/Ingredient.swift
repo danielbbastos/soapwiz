@@ -20,6 +20,12 @@ final class Ingredient {
     @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.ingredient)
     var recipeIngredients: [RecipeIngredient] = []
 
+    /// Batch line items that consumed this ingredient. Deleting the ingredient
+    /// nullifies the line item's back-link (`.nullify`) rather than deleting it —
+    /// batch history is an immutable record that must outlive the ingredient.
+    @Relationship(deleteRule: .nullify, inverse: \BatchLineItem.ingredient)
+    var batchLineItems: [BatchLineItem] = []
+
     var totalRemaining: Double {
         purchases.reduce(0) { $0 + $1.remainingAmount }
     }
