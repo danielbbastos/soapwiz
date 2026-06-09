@@ -102,11 +102,6 @@ struct OilContributionCardView: View {
                 Text(totalValue, format: .number.precision(.fractionLength(1)))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
-                Button(action: onClose) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
             }
 
             if contributions.isEmpty {
@@ -134,5 +129,19 @@ struct OilContributionCardView: View {
             RoundedRectangle(cornerRadius: 10)
                 .strokeBorder(quality.color.opacity(0.25), lineWidth: 1)
         )
+        .overlay(alignment: .topTrailing) {
+            Button(action: onClose) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.secondary)
+                    // A background circle masks the border so the button reads as
+                    // sitting cleanly on the edge rather than floating over a line.
+                    .background(Circle().fill(Color(.systemBackground)))
+            }
+            .buttonStyle(.plain)
+            // Straddle the top-right corner, centred on the border.
+            .offset(x: 9, y: -9)
+        }
     }
 }
