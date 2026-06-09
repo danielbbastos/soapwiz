@@ -64,7 +64,7 @@ struct IngredientFormView: View {
                             HStack {
                                 Text("Density")
                                 Spacer()
-                                TextField("1.0", text: $model.density.decimalOnly())
+                                TextField("0.92", text: $model.density.decimalOnly())
                                     .keyboardType(.decimalPad)
                                     .multilineTextAlignment(.trailing)
                                     .frame(width: 80)
