@@ -32,9 +32,12 @@ struct IngredientDetailView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
-                    if let dens = model.ingredient.density {
+                    if IngredientUnitConverter.isVolume(model.ingredient.unit) {
                         LabeledContent("Density") {
-                            Text("\(dens.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))) g/ml")
+                            let stored = model.ingredient.density
+                            let value = stored ?? IngredientUnitConverter.defaultDensity
+                            let source = stored == nil ? "default" : "custom"
+                            Text("\(value.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))) g/ml (\(source))")
                                 .foregroundStyle(.secondary)
                         }
                     }
