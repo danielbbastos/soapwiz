@@ -14,6 +14,8 @@ struct RecipeDetailView: View {
     @State private var batchTotalExpanded = false
     @State private var expandedProducts: [PersistentIdentifier: Bool] = [:]
     @State private var showInGrams = false
+    @State private var showCreateBatch = false
+    @State private var createdBatch: Batch?
 
     /// The unit the summaries (calculated amounts + cost breakdown) are shown in:
     /// the recipe's oil weight unit, or grams when the user toggles it.
@@ -56,9 +58,29 @@ struct RecipeDetailView: View {
         }
         .navigationTitle(recipe.name)
         .navigationBarTitleDisplayMode(.large)
+        .safeAreaInset(edge: .bottom) {
+            Button {
+                showCreateBatch = true
+            } label: {
+                Label("Create Batch", systemImage: "hammer.fill")
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.tint)
+            }
+            .glassButtonStyleIOS26()
+            .controlSize(.large)
+            .padding(.bottom, 8)
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Edit") { showEdit = true }
+            }
+        }
+        .navigationDestination(item: $createdBatch) { batch in
+            BatchDetailView(batch: batch)
+        }
+        .sheet(isPresented: $showCreateBatch) {
+            CreateBatchSheet(recipe: recipe, lyeCandidates: lyeIngredients) { batch in
+                createdBatch = batch
             }
         }
         .sheet(isPresented: $showEdit, onDismiss: {

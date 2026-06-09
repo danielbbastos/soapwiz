@@ -2,8 +2,8 @@ import SwiftData
 
 @Model
 final class Recipe {
-    var name: String
-    var desc: String
+    var name: String = ""
+    var desc: String = ""
     var weightUnit: String = "g"
     var totalOilWeight: Double = 0
     var oilWeightUnit: String = "g"
@@ -21,6 +21,12 @@ final class Recipe {
 
     @Relationship(deleteRule: .cascade, inverse: \RecipeProduct.recipe)
     var products: [RecipeProduct] = []
+
+    /// Batches made from this recipe. Deleting the recipe nullifies each batch's
+    /// back-link (`.nullify`) rather than deleting it — batch history is an
+    /// immutable record that must outlive the recipe.
+    @Relationship(deleteRule: .nullify, inverse: \Batch.recipe)
+    var batches: [Batch] = []
 
     init(name: String, desc: String = "") {
         self.name = name
