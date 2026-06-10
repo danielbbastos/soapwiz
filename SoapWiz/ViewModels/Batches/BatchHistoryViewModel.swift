@@ -4,9 +4,8 @@ import SwiftData
 /// Display logic for the batch history list and batch detail. Everything here
 /// reads the snapshot persisted at creation — never the live recipe or
 /// inventory — so history stays immutable.
-@Observable
-final class BatchHistoryViewModel {
-    /// Newest first, matching the `@Query` sort used by the history list.
+enum BatchHistoryViewModel {
+    /// Newest first, the order the history list displays.
     static func sortedNewestFirst(_ batches: [Batch]) -> [Batch] {
         batches.sorted { $0.dateCreated > $1.dateCreated }
     }
