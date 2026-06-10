@@ -118,7 +118,7 @@ extension DataSeeder {
             recipe.lyePurity = 99
             recipe.waterParts = 1.5
             recipe.superFat = 5
-            recipe.fragrancePercentage = seed.fragrance?.1 ?? 3
+            recipe.fragrancePercentage = seed.fragrance?.1 ?? 0
             recipe.lyeIngredient = ingredient(named: "Sodium Hydroxide (Lye)")
             context.insert(recipe)
 
