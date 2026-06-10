@@ -162,7 +162,7 @@ struct IngredientDetail: View {
     var body: some View {
         VStack {
             IngredientHeader(name: ingredient.name, category: ingredient.category)
-            BatchListView(batches: ingredient.batches)
+            PurchaseListView(purchases: ingredient.purchases)
         }
     }
 }

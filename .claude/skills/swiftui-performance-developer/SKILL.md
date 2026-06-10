@@ -73,26 +73,26 @@ For List/ForEach performance, each element must produce a **constant number** of
 
 ```swift
 // BAD — conditional produces 0 or 1 views; forces full rebuild to count rows
-ForEach(batches) { batch in
-    if batch.isExpired {
-        BatchRow(batch: batch)
+ForEach(purchases) { purchase in
+    if purchase.isExpired {
+        PurchaseRow(purchase: purchase)
     }
 }
 
 // BAD — AnyView hides structure and view count
-ForEach(batches) { batch in
-    AnyView(conditionalContent(for: batch))
+ForEach(purchases) { purchase in
+    AnyView(conditionalContent(for: purchase))
 }
 
 // GOOD — pre-filter; always 1 view per element
-ForEach(expiredBatches) { batch in
-    BatchRow(batch: batch)
+ForEach(expiredPurchases) { purchase in
+    PurchaseRow(purchase: purchase)
 }
 
 // GOOD — constant count with conditional visibility
-ForEach(batches) { batch in
-    BatchRow(batch: batch)
-        .opacity(batch.isExpired ? 1 : 0)
+ForEach(purchases) { purchase in
+    PurchaseRow(purchase: purchase)
+        .opacity(purchase.isExpired ? 1 : 0)
 }
 ```
 
@@ -112,7 +112,7 @@ ForEach(items, id: \.id) { item in Row(item) }
 ```swift
 // BAD — allocates a formatter every render
 var body: some View {
-    Text(batch.dateOfPurchase, formatter: DateFormatter())
+    Text(purchase.dateOfPurchase, formatter: DateFormatter())
 }
 
 // GOOD — cached static formatter
@@ -127,11 +127,11 @@ private static let dateFormatter: DateFormatter = {
 
 ```swift
 // BAD — re-sorts every body evaluation
-ForEach(ingredient.batches.sorted { $0.dateOfPurchase > $1.dateOfPurchase }) { ... }
+ForEach(ingredient.purchases.sorted { $0.dateOfPurchase > $1.dateOfPurchase }) { ... }
 
 // GOOD — sort once, outside body
-private var sortedBatches: [IngredientBatch] {
-    ingredient.batches.sorted { $0.dateOfPurchase > $1.dateOfPurchase }
+private var sortedPurchases: [IngredientPurchase] {
+    ingredient.purchases.sorted { $0.dateOfPurchase > $1.dateOfPurchase }
 }
 ```
 

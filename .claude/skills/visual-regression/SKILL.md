@@ -15,7 +15,7 @@ Run on-demand visual regression tests for SoapWiz without a dedicated testing pi
 /visual-regression <screen>
 ```
 
-Where `<screen>` is one of: `inventory`, `ingredient-detail`, `batch-detail`, `settings`, `categories`, `storage-locations`
+Where `<screen>` is one of: `inventory`, `ingredient-detail`, `purchase-detail`, `recipes`, `recipe-detail`, `history`, `batch-detail`, `settings`, `categories`, `providers`, `storage-locations`
 
 ## Project Context
 
@@ -54,14 +54,21 @@ python .claude/skills/visual-regression/scripts/app_launcher.py \
 ### Step 4 — Navigate to target screen
 Use `app_launcher.py --open-url` for deep links when available, or `navigator.py` to tap through the UI.
 
+The app root is a tab bar with four tabs: **Inventory · Recipes · History · Settings**.
+
 | Screen | Navigation |
 |---|---|
-| `inventory` | App root — already on screen |
+| `inventory` | App root — Inventory tab is selected by default |
+| `ingredient-detail` | Inventory → tap first ingredient |
+| `purchase-detail` | Ingredient detail → tap first purchase |
+| `recipes` | Tap "Recipes" tab |
+| `recipe-detail` | Recipes → tap first recipe |
+| `history` | Tap "History" tab (batch list) |
+| `batch-detail` | History → tap first batch |
 | `settings` | Tap "Settings" tab |
 | `categories` | Settings → tap "Categories" row |
+| `providers` | Settings → tap "Providers" row |
 | `storage-locations` | Settings → tap "Storage Locations" row |
-| `ingredient-detail` | Inventory → tap first ingredient |
-| `batch-detail` | Ingredient detail → tap first batch |
 
 Use `screen_mapper.py` to verify what's on screen if navigation fails.
 
@@ -84,7 +91,7 @@ Read the screenshot with the Read tool (multimodal). Analyse for:
 - Count badges showing stale/incorrect values
 
 **iOS 26 / Liquid Glass specifics:**
-- Glass tab bar rendering at top on iPad (expected — not a bug)
+- Tab bar renders at the **bottom**, even on iPad — `ContentView` forces a compact horizontal size class and `.tabBarOnly` style (a top/floating tab bar would be a regression)
 - EditButton glass pill visible in toolbar when list has items
 - FAB hidden correctly when edit mode is active
 

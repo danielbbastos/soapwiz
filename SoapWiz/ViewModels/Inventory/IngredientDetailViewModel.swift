@@ -18,6 +18,10 @@ final class IngredientDetailViewModel {
         ingredient.purchases.sorted { $0.dateOfPurchase > $1.dateOfPurchase }
     }
 
+    var usageEntries: [UsageEntry] {
+        UsageHistory.entries(for: ingredient)
+    }
+
     var totalRemaining: Double { ingredient.totalRemaining }
 
     func delete(at offsets: IndexSet, context: ModelContext) {

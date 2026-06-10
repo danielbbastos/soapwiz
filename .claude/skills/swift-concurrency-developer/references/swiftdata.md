@@ -119,10 +119,10 @@ Always delete through the `ModelContext` — never nil out relationships manuall
 
 ```swift
 // ✅ CORRECT — context handles cascade
-modelContext.delete(ingredient)  // Cascades to ingredient.batches automatically
+modelContext.delete(ingredient)  // Cascades to ingredient.purchases automatically
 
-// ❌ WRONG — orphans batches
-ingredient.batches = []  // Batches remain in the store as orphans
+// ❌ WRONG — orphans purchases
+ingredient.purchases = []  // Purchases remain in the store as orphans
 ```
 
 ## Common Errors

@@ -5,6 +5,10 @@ import SwiftData
 /// stay correct even if the purchase is later edited, depleted, or deleted, so
 /// this stores copied values rather than a live link.
 struct BatchPurchaseDraw: Codable, Hashable {
+    /// `uuid` of the purchase drawn from. Unlike the copied display values
+    /// below, this is a stable pointer: it lets the purchase detail screen
+    /// find the draws made against it without relying on badge uniqueness.
+    var purchaseUUID: UUID?
     /// Lot identifier of the purchase drawn from, as it was at the time.
     var purchaseBadge: String
     /// Amount drawn from this purchase, in the ingredient's inventory unit.

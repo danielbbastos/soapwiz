@@ -89,11 +89,18 @@ For expensive init, defer creation entirely:
 
 ```
 SoapWiz/
-├── Models/              # SwiftData @Model entities (Ingredient, IngredientBatch, etc.)
-├── ViewModels/          # @Observable @MainActor ViewModels
+├── Models/              # SwiftData @Model entities (Ingredient, IngredientPurchase, Recipe, Batch, etc.)
+├── ViewModels/          # @Observable @MainActor ViewModels (Inventory/, Recipes/, Batches/, Settings/)
 ├── Views/
-│   ├── Inventory/       # Ingredient list, detail, batch views
-│   └── Settings/        # Settings, categories, storage locations
+│   ├── ContentView.swift  # Root TabView: Inventory · Recipes · History · Settings
+│   ├── Inventory/       # Ingredient list, detail, purchase views
+│   ├── Recipes/         # Recipe list, form, detail, stats
+│   ├── Batches/         # Batch history list, detail, create-batch sheet
+│   ├── Settings/        # Settings, categories, providers, storage locations
+│   └── Components/      # FloatingActionButton, View+iOS26
+├── Navigation/          # AppNavigation (@Observable tab/path state)
+├── Extensions/
+├── DataSeeder.swift     # Seeds demo data into an empty store
 └── SoapWizApp.swift     # @main, ModelContainer setup
 ```
 

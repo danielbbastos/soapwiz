@@ -3,6 +3,10 @@ import SwiftData
 
 @Model
 final class IngredientPurchase {
+    /// Stable identity for batch draw snapshots to point back at. Badges and
+    /// journal codes are user-entered and can be empty or duplicated, so they
+    /// can't serve as the link.
+    var uuid: UUID = UUID()
     var ingredient: Ingredient?
     var provider: Provider?
     var dateOfPurchase: Date
