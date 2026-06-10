@@ -9,6 +9,9 @@ struct ContentView: View {
             Tab("Recipes", systemImage: "function") {
                 RecipeListView()
             }
+            Tab("History", systemImage: "clock.arrow.circlepath") {
+                BatchListView()
+            }
             Tab("Settings", systemImage: "gearshape") {
                 SettingsView()
             }
