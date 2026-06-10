@@ -83,6 +83,15 @@ final class BatchProductionViewModel {
         !requirements.isEmpty && shortages.isEmpty
     }
 
+    /// What the current `batchCount` would cost, computed from the same FIFO
+    /// plan `create(context:)` applies — the preview always matches the charge.
+    /// Inventory is not touched.
+    var estimatedCost: Double {
+        requirements.reduce(0) { total, req in
+            total + plannedDraws(for: req).reduce(0) { $0 + $1.drawn * $1.purchase.pricePerUnit }
+        }
+    }
+
     /// Deducts inventory FIFO and persists an immutable `Batch` snapshot. Returns
     /// `nil` without mutating anything when stock is insufficient — the stock
     /// check across every ingredient happens before any purchase is touched.
@@ -103,19 +112,31 @@ final class BatchProductionViewModel {
         return batch
     }
 
-    /// Drains `req` from its ingredient's purchases oldest first, building the
-    /// snapshot line item and decrementing `remainingAmount` as it goes.
-    private func deduct(_ req: BatchRequirement, batch: Batch, context: ModelContext) -> BatchLineItem {
+    /// FIFO plan for draining `req` from its ingredient's purchases oldest
+    /// first: which purchases to draw from and how much. Pure — inventory is
+    /// only mutated when `deduct` applies the plan.
+    private func plannedDraws(for req: BatchRequirement) -> [(purchase: IngredientPurchase, drawn: Double)] {
         let purchases = req.ingredient.purchases.sorted { $0.dateOfPurchase < $1.dateOfPurchase }
         var remaining = req.required
-        var draws: [BatchPurchaseDraw] = []
-        var cost = 0.0
+        var plan: [(purchase: IngredientPurchase, drawn: Double)] = []
 
         for purchase in purchases where remaining > 1e-9 {
             guard purchase.remainingAmount > 0 else { continue }
             let drawn = min(remaining, purchase.remainingAmount)
-            purchase.remainingAmount -= drawn
             remaining -= drawn
+            plan.append((purchase, drawn))
+        }
+        return plan
+    }
+
+    /// Drains `req` from its ingredient's purchases oldest first, building the
+    /// snapshot line item and decrementing `remainingAmount` as it goes.
+    private func deduct(_ req: BatchRequirement, batch: Batch, context: ModelContext) -> BatchLineItem {
+        var draws: [BatchPurchaseDraw] = []
+        var cost = 0.0
+
+        for (purchase, drawn) in plannedDraws(for: req) {
+            purchase.remainingAmount -= drawn
             let drawCost = drawn * purchase.pricePerUnit
             cost += drawCost
             draws.append(BatchPurchaseDraw(

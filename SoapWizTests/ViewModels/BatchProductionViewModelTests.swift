@@ -242,6 +242,93 @@ struct BatchProductionViewModelTests {
         #expect(abs(batch.totalCost - batch.lineItems.reduce(0) { $0 + $1.cost }) < 1e-6)
     }
 
+    // MARK: - Estimated cost
+
+    @Test func estimatedCost_NoIngredients_ReturnsZero() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Empty")
+        ctx.insert(recipe)
+
+        let model = BatchProductionViewModel(recipe: recipe, lyeCandidates: [])
+
+        #expect(model.estimatedCost == 0)
+    }
+
+    @Test func estimatedCost_SpansMultiplePurchases_UsesFIFOPrices() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Coconut Oil", unit: "g")
+        ctx.insert(oil)
+        // Oldest first: 600 g @ €0.01/g, then 600 g @ €0.02/g.
+        purchase(ctx, for: oil, quantity: 600, totalPrice: 6, daysAgo: 10)
+        purchase(ctx, for: oil, quantity: 600, totalPrice: 12, daysAgo: 2)
+        let recipe = makeRecipe(ctx, oil: oil, oilWeight: 1000)
+
+        let model = BatchProductionViewModel(recipe: recipe, lyeCandidates: [])
+
+        // 600 × 0.01 + 400 × 0.02 = 6 + 8 = 14
+        #expect(abs(model.estimatedCost - 14) < 1e-6)
+    }
+
+    @Test func estimatedCost_MatchesCreatedBatchTotalCost() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil", unit: "g")
+        ctx.insert(oil)
+        purchase(ctx, for: oil, quantity: 600, totalPrice: 6, daysAgo: 10)
+        purchase(ctx, for: oil, quantity: 600, totalPrice: 12, daysAgo: 2)
+        let additive = Ingredient(name: "Sodium Lactate", unit: "g")
+        ctx.insert(additive)
+        purchase(ctx, for: additive, quantity: 200, totalPrice: 4, daysAgo: 1)
+
+        let recipe = makeRecipe(ctx, oil: oil, oilWeight: 1000)
+        let ai = RecipeIngredient(ingredient: additive, percentage: 0, role: .additive)
+        ai.additiveAmount = 200
+        ai.additiveUnit = "g"
+        ai.recipe = recipe
+        ctx.insert(ai)
+
+        let model = BatchProductionViewModel(recipe: recipe, lyeCandidates: [])
+        let estimate = model.estimatedCost
+        let batch = try #require(model.create(context: ctx))
+
+        #expect(abs(estimate - batch.totalCost) < 1e-6)
+    }
+
+    @Test func estimatedCost_MultipleBatches_ScalesWithCount() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil", unit: "g")
+        ctx.insert(oil)
+        purchase(ctx, for: oil, quantity: 2500, totalPrice: 25, daysAgo: 1) // €0.01/g
+        let recipe = makeRecipe(ctx, oil: oil, oilWeight: 1000)
+
+        let model = BatchProductionViewModel(recipe: recipe, lyeCandidates: [])
+        #expect(abs(model.estimatedCost - 10) < 1e-6)
+
+        model.batchCount = 2
+        #expect(abs(model.estimatedCost - 20) < 1e-6)
+    }
+
+    @Test func estimatedCost_DoesNotMutateInventory() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil", unit: "g")
+        ctx.insert(oil)
+        let p1 = purchase(ctx, for: oil, quantity: 600, totalPrice: 6, daysAgo: 10)
+        let p2 = purchase(ctx, for: oil, quantity: 600, totalPrice: 12, daysAgo: 2)
+        let recipe = makeRecipe(ctx, oil: oil, oilWeight: 1000)
+
+        let model = BatchProductionViewModel(recipe: recipe, lyeCandidates: [])
+        _ = model.estimatedCost
+        _ = model.estimatedCost
+
+        #expect(abs(p1.remainingAmount - 600) < 1e-6)
+        #expect(abs(p2.remainingAmount - 600) < 1e-6)
+        #expect(try ctx.fetch(FetchDescriptor<Batch>()).isEmpty)
+    }
+
     // MARK: - Snapshot immutability
 
     @Test func snapshot_EditingRecipeAfterwards_DoesNotChangeBatch() throws {

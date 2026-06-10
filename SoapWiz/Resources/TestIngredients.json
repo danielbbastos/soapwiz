@@ -40,6 +40,18 @@
           "expiryDate": "2028-04-06",
           "openingDate": "2026-04-17",
           "remainingAmount": 341
+        },
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-05-28",
+          "quantity": 5000,
+          "totalPrice": 15.5,
+          "badge": "OLV-002",
+          "journalCode": "J-065",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-05-27",
+          "openingDate": null,
+          "remainingAmount": 5000
         }
       ],
       "kohSapValue": 0.188,
@@ -136,6 +148,18 @@
           "expiryDate": "2028-03-18",
           "openingDate": "2026-04-05",
           "remainingAmount": 0
+        },
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-05-26",
+          "quantity": 800,
+          "totalPrice": 8.9,
+          "badge": "CST-002",
+          "journalCode": "J-066",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2028-05-25",
+          "openingDate": null,
+          "remainingAmount": 800
         }
       ],
       "kohSapValue": 0.18,
@@ -1278,6 +1302,18 @@
           "expiryDate": "2027-07-18",
           "openingDate": "2025-08-12",
           "remainingAmount": 204
+        },
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-05-30",
+          "quantity": 2000,
+          "totalPrice": 14.8,
+          "badge": "LYE-004",
+          "journalCode": "J-067",
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-05-29",
+          "openingDate": null,
+          "remainingAmount": 2000
         }
       ]
     },
@@ -1422,6 +1458,18 @@
           "expiryDate": "2027-09-09",
           "openingDate": "2025-09-19",
           "remainingAmount": 17
+        },
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-06-01",
+          "quantity": 100,
+          "totalPrice": 13.4,
+          "badge": "LVD-004",
+          "journalCode": "J-068",
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-05-31",
+          "openingDate": null,
+          "remainingAmount": 100
         }
       ]
     },

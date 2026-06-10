@@ -21,6 +21,13 @@ struct CreateBatchSheet: View {
         _model = State(initialValue: BatchProductionViewModel(recipe: recipe, lyeCandidates: lyeCandidates))
     }
 
+    private static let currencyFormatter: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.locale = .autoupdatingCurrent
+        return f
+    }()
+
     private func amountText(_ amount: Double, unit: String) -> String {
         "\(amount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)"
     }
@@ -28,14 +35,22 @@ struct CreateBatchSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                let requirements = model.requirements
+                let shortages = requirements.filter(\.isShort)
+                let estimatedCost = model.estimatedCost
+
                 Section {
                     Stepper(value: $model.batchCount, in: 1...999) {
                         LabeledContent("Batches", value: "\(model.batchCount)")
                     }
+                    if shortages.isEmpty && estimatedCost > 0 {
+                        LabeledContent(
+                            "Estimated cost",
+                            value: Self.currencyFormatter.string(from: NSNumber(value: estimatedCost)) ?? "—"
+                        )
+                    }
                 }
 
-                let requirements = model.requirements
-                let shortages = requirements.filter(\.isShort)
                 if requirements.isEmpty {
                     Section {
                         Text("This recipe has no ingredients to consume.")

@@ -5,13 +5,15 @@ import SwiftData
 /// are created from a recipe's detail screen, not from here.
 struct BatchListView: View {
     @Query private var batches: [Batch]
+    @Environment(AppNavigation.self) private var navigation
 
     private var sortedBatches: [Batch] {
         BatchHistoryViewModel.sortedNewestFirst(batches)
     }
 
     var body: some View {
-        NavigationStack {
+        @Bindable var navigation = navigation
+        NavigationStack(path: $navigation.historyPath) {
             Group {
                 if batches.isEmpty {
                     ContentUnavailableView(
