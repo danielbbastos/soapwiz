@@ -17,10 +17,10 @@ struct BatchRowView: View {
             HStack {
                 Text(batch.dateCreated.formatted(date: .abbreviated, time: .shortened))
                 Spacer()
-                Text("\(batch.batchCount) ×")
+                Text("^[\(batch.batchCount) batch](inflect: true)")
                     .monospacedDigit()
                 if batch.totalCost > 0 {
-                    Text(Self.currencyFormatter.string(from: NSNumber(value: batch.totalCost)) ?? "—")
+                    Text("\(Self.currencyFormatter.string(from: NSNumber(value: batch.totalCost)) ?? "—") total")
                         .monospacedDigit()
                 }
             }

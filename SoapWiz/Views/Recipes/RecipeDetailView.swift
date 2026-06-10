@@ -4,6 +4,8 @@ import SwiftData
 struct RecipeDetailView: View {
     let recipe: Recipe
 
+    @Environment(AppNavigation.self) private var navigation
+
     @Query(filter: RecipeDetailView.lyesPredicate)
     private var lyeIngredients: [Ingredient]
     @Query private var settingsRecords: [AppSettings]
@@ -15,7 +17,6 @@ struct RecipeDetailView: View {
     @State private var expandedProducts: [PersistentIdentifier: Bool] = [:]
     @State private var showInGrams = false
     @State private var showCreateBatch = false
-    @State private var createdBatch: Batch?
 
     /// The unit the summaries (calculated amounts + cost breakdown) are shown in:
     /// the recipe's oil weight unit, or grams when the user toggles it.
@@ -75,12 +76,9 @@ struct RecipeDetailView: View {
                 Button("Edit") { showEdit = true }
             }
         }
-        .navigationDestination(item: $createdBatch) { batch in
-            BatchDetailView(batch: batch)
-        }
         .sheet(isPresented: $showCreateBatch) {
             CreateBatchSheet(recipe: recipe, lyeCandidates: lyeIngredients) { batch in
-                createdBatch = batch
+                navigation.showBatch(batch)
             }
         }
         .sheet(isPresented: $showEdit, onDismiss: {
@@ -358,9 +356,15 @@ struct RecipeDetailView: View {
                         Text("Batch total")
                             .fontWeight(.semibold)
                         Spacer()
-                        Text(formatCurrency(batchTotal))
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text(formatCurrency(batchTotal))
+                                .fontWeight(.semibold)
+                                .monospacedDigit()
+                            Text("RRP \(formatCurrency(batchTotal * pvpFactor))")
+                                .font(.caption)
+                                .foregroundStyle(.tint)
+                                .monospacedDigit()
+                        }
                     }
                 }
             } else {
