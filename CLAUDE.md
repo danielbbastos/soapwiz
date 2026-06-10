@@ -18,10 +18,11 @@ When context reaches 70%, run `/compact` preserving: current task, modified file
 
 **SoapWiz** is an iOS app for soap makers. Features built incrementally:
 
-1. **Ingredient inventory** — add ingredients, track quantities per purchase.
+1. **Ingredient inventory** — add ingredients, track quantities per purchase, low-stock and expiry warnings.
 2. **Purchase tracking** — each ingredient purchase is a separate record with its own quantity, price, dates, and metadata. Total remaining is the sum across all purchases.
-3. **Soap formulas** *(planned)* — create recipes specifying ingredient amounts.
-4. **Formula execution** *(planned)* — using a formula deducts ingredient quantities from purchases.
+3. **Recipes** — soap formulas with lye calculation (NaOH/KOH, purity, superfat, water parts), fragrance %, end products, cost breakdown, and soap property stats from fatty-acid profiles.
+4. **Batches** — making a batch from a recipe deducts ingredient quantities from purchases (FIFO) and records an immutable production snapshot with costs (History tab).
+5. **Settings** — manage categories, providers, storage locations, and app-wide settings.
 
 **Stack:** Swift, SwiftUI, SwiftData, iOS 18+. iOS 26 Liquid Glass features are gated with `#available(iOS 26, *)`. No external dependencies.
 
@@ -34,14 +35,14 @@ open SoapWiz.xcodeproj
 ```bash
 xcodebuild -project SoapWiz.xcodeproj \
   -scheme SoapWiz \
-  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
   build
 ```
 
 ```bash
 xcodebuild -project SoapWiz.xcodeproj \
   -scheme SoapWiz \
-  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
   test
 ```
 
@@ -51,19 +52,27 @@ xcodebuild -project SoapWiz.xcodeproj \
 
 ```
 SoapWiz/                        ← source root (auto-synced by Xcode)
-├── Models/
-│   ├── Ingredient.swift          ← @Model: name, category, unit, purchases[]
-│   └── IngredientPurchase.swift  ← @Model: provider, dates, qty, price, badge…
+├── Models/                     ← SwiftData @Model entities + value types
+│   ├── Ingredient.swift           ← name, code, category, unit, sap values, density, purchases[]
+│   ├── IngredientPurchase.swift   ← one purchase: provider, dates, qty, price, remainingAmount
+│   ├── Recipe.swift               ← soap formula: lye, water, superfat, ingredients[], products[]
+│   ├── RecipeIngredient.swift / RecipeProduct.swift
+│   ├── Batch.swift                ← immutable production run (recipeName copy, totalCost)
+│   ├── BatchLineItem.swift        ← per-batch snapshot of consumed ingredient + cost
+│   ├── IngredientCategory.swift / Provider.swift / StorageLocation.swift / AppSettings.swift
+│   ├── IngredientUnit.swift / ProductUnit.swift / UnitConversion.swift  ← unit enums + conversion
+│   └── FattyAcidProfile.swift / SoapPropertyRanges.swift                ← soap chemistry
+├── ViewModels/                 ← @Observable @MainActor, one per screen
+│   └── Inventory/  Recipes/  Batches/  Settings/
 ├── Views/
-│   └── Inventory/
-│       ├── IngredientListView.swift   ← root view, @Query list, FAB, bulk delete
-│       ├── IngredientRowView.swift
-│       ├── IngredientDetailView.swift ← summary + purchase list
-│       ├── PurchaseRowView.swift
-│       ├── PurchaseDetailView.swift
-│       ├── IngredientFormView.swift   ← add/edit ingredient sheet
-│       └── PurchaseFormView.swift     ← add/edit purchase sheet
-└── SoapWizApp.swift            ← @main, ModelContainer setup
+│   ├── ContentView.swift          ← root TabView: Inventory · Recipes · History · Settings
+│   ├── Inventory/  Recipes/  Batches/  Settings/
+│   └── Components/                ← FloatingActionButton, View+iOS26
+├── Navigation/
+│   └── AppNavigation.swift        ← @Observable tab/navigation state, injected via .environment
+├── Extensions/                 ← e.g. Binding+DecimalOnly
+├── DataSeeder.swift            ← seeds demo data into an empty store
+└── SoapWizApp.swift            ← @main, ModelContainer (full schema), dev-only store reset on schema change
 ```
 
 ## Data Model
@@ -72,16 +81,24 @@ SoapWiz/                        ← source root (auto-synced by Xcode)
 | Property | Type | Notes |
 |---|---|---|
 | `name` | `String` | |
-| `category` | `String` | |
+| `code` | `String` | Internal reference code |
+| `category` | `IngredientCategory?` | Relationship |
 | `unit` | `String` | Base unit for all purchases (e.g. "g", "ml") |
+| `lowStockThreshold` | `Double?` | Drives computed `isLowStock` |
+| `sapValue` / `kohSapValue` | `Double?` | Saponification values for lye calculation |
+| `density` | `Double?` | Volume↔mass conversion |
+| `fattyAcidProfile` | `FattyAcidProfile?` | Drives soap property stats |
 | `purchases` | `[IngredientPurchase]` | `@Relationship(deleteRule: .cascade)` |
+| `recipeIngredients` | `[RecipeIngredient]` | `.cascade` |
+| `batchLineItems` | `[BatchLineItem]` | `.nullify` — batch history outlives the ingredient |
 | `totalRemaining` | `Double` | Computed — sum of `purchase.remainingAmount` |
+| `isLowStock` / `hasExpiredPurchase` / `nearestUpcomingExpiry` | | Computed warnings |
 
 ### `IngredientPurchase`
 | Property | Type | Notes |
 |---|---|---|
 | `ingredient` | `Ingredient?` | Back-reference (set via relationship) |
-| `provider` | `String` | |
+| `provider` | `Provider?` | Relationship |
 | `dateOfPurchase` | `Date` | |
 | `quantity` | `Double` | Original amount in this purchase |
 | `totalPrice` | `Double` | Full price paid |
@@ -90,12 +107,23 @@ SoapWiz/                        ← source root (auto-synced by Xcode)
 | `expiryDate` | `Date?` | |
 | `openingDate` | `Date?` | |
 | `remainingAmount` | `Double` | Starts equal to `quantity`; decremented on use |
-| `storageLocation` | `String` | |
+| `storageLocation` | `StorageLocation?` | Relationship |
 | `pricePerUnit` | `Double` | Computed — `totalPrice / quantity` |
+
+### Other models (summary)
+
+- **`Recipe`** — soap formula: `weightUnit`, `totalOilWeight`+`oilWeightUnit`, `lyeType`/`lyePurity`, `waterParts`, `superFat`, `fragrancePercentage`; `lyeIngredient` (`.nullify`), `ingredients[]` and `products[]` (`.cascade`), `batches[]` (`.nullify` — batch history outlives the recipe).
+- **`RecipeIngredient` / `RecipeProduct`** — line items of a recipe (ingredient amounts; end products).
+- **`Batch`** — immutable production run: `recipeName` (stored copy), `dateCreated`, `batchCount`, `totalCost`; `lineItems[]` (`.cascade`); soft link back to `recipe`.
+- **`BatchLineItem`** — snapshot of one ingredient consumed by a batch, with cost at the time of making.
+- **`IngredientCategory` / `Provider` / `StorageLocation`** — lookup entities managed in Settings.
+- **`AppSettings`** — singleton, resolved at launch via `AppSettings.resolve(in:)`.
 
 ## Key Patterns
 
-- Root view is `IngredientListView`, wrapped in `NavigationStack`.
+- Root view is `ContentView`: a `TabView` with Inventory, Recipes, History (batches), and Settings tabs. Tab/navigation state lives in `AppNavigation` (`@Observable`), injected via `.environment()`.
+- Each tab's list view is wrapped in its own `NavigationStack`.
+- ViewModels are `@Observable @MainActor`, one per screen, under `ViewModels/<Feature>/`.
 - `ModelContainer` is configured once in `SoapWizApp` and injected via `.modelContainer()`.
 - FAB (floating `+` button) is used consistently across list views. It hides when `editMode == .active`.
 - `PurchaseFormView` accepts an optional `purchase` parameter — `nil` = create, non-nil = edit.
@@ -110,6 +138,7 @@ SoapWiz/                        ← source root (auto-synced by Xcode)
 ## Simulator Testing
 
 Available simulator: **iPad (A16)** — ID `34E90319-8EDC-4B0F-BA5F-81650ED7AAE3`  
+Available simulator: **iPad Air 11-inch (M2)** — ID `BD145A0B-D38F-48F7-87CB-735E850987FF`  
 Available simulator: **iPhone 15 Pro** — use for `xcodebuild test`
 
 **⚠️ Always uninstall before reinstalling when the SwiftData schema has changed.** Reinstalling over an existing app with an incompatible schema causes a crash on launch. The correct sequence is:

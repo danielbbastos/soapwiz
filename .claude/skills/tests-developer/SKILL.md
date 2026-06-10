@@ -21,10 +21,10 @@ struct IngredientTests {
     private let sut: Ingredient  // System Under Test
 
     init() {
-        self.sut = Ingredient(name: "Lye", category: "Lye", unit: "g")
+        self.sut = Ingredient(name: "Lye", unit: "g")  // category is IngredientCategory?, defaults to nil
     }
 
-    @Test func totalRemainingIsZeroWhenNoBatches() {
+    @Test func totalRemaining_NoPurchases_ReturnsZero() {
         #expect(sut.totalRemaining == 0)
     }
 }
@@ -53,7 +53,7 @@ Use `.serialized` when tests within a suite share a `ModelContainer` or other st
 Use the pattern `testFeature_Condition_ExpectedBehavior`:
 
 ```swift
-@Test func totalRemaining_NoBatches_ReturnsZero() { ... }
+@Test func totalRemaining_NoPurchases_ReturnsZero() { ... }
 @Test func pricePerUnit_ZeroQuantity_ReturnsZero() { ... }
 @Test func remainingAmount_AfterUse_Decrements() { ... }
 ```
@@ -71,10 +71,10 @@ When adding or changing code, write tests for:
 ```swift
 @Test func pricePerUnit_CalculatesCorrectly() {
     // Arrange
-    let batch = IngredientBatch(quantity: 500, totalPrice: 10.0, ...)
+    let purchase = IngredientPurchase(dateOfPurchase: .now, quantity: 500, totalPrice: 10.0, ...)
 
     // Act
-    let result = batch.pricePerUnit
+    let result = purchase.pricePerUnit
 
     // Assert
     #expect(result == 0.02)
@@ -140,21 +140,21 @@ struct IngredientPersistenceTests {
 
     init() throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        container = try ModelContainer(for: Ingredient.self, IngredientBatch.self, configurations: config)
+        container = try ModelContainer(for: Ingredient.self, IngredientPurchase.self, configurations: config)
         context = ModelContext(container)
     }
 
-    @Test func cascadeDelete_RemovesBatches() throws {
-        let ingredient = Ingredient(name: "Lye", category: "Lye", unit: "g")
-        let batch = IngredientBatch(quantity: 100, ...)
-        ingredient.batches.append(batch)
+    @Test func cascadeDelete_RemovesPurchases() throws {
+        let ingredient = Ingredient(name: "Lye", unit: "g")
+        let purchase = IngredientPurchase(dateOfPurchase: .now, quantity: 100, ...)
+        ingredient.purchases.append(purchase)
         context.insert(ingredient)
         try context.save()
 
         context.delete(ingredient)
         try context.save()
 
-        let remaining = try context.fetch(FetchDescriptor<IngredientBatch>())
+        let remaining = try context.fetch(FetchDescriptor<IngredientPurchase>())
         #expect(remaining.isEmpty)
     }
 }
@@ -169,22 +169,22 @@ Create static `.mock()` factory methods as extensions **at the bottom of the tes
 extension Ingredient {
     static func mock(
         name: String = "Lye",
-        category: String = "Lye",
+        category: IngredientCategory? = nil,
         unit: String = "g"
     ) -> Ingredient {
         Ingredient(name: name, category: category, unit: unit)
     }
 }
 
-extension IngredientBatch {
+extension IngredientPurchase {
     static func mock(
         quantity: Double = 500,
         totalPrice: Double = 10.0,
         remainingAmount: Double? = nil
-    ) -> IngredientBatch {
-        let batch = IngredientBatch(quantity: quantity, totalPrice: totalPrice, ...)
-        if let remaining = remainingAmount { batch.remainingAmount = remaining }
-        return batch
+    ) -> IngredientPurchase {
+        let purchase = IngredientPurchase(dateOfPurchase: .now, quantity: quantity, totalPrice: totalPrice, ...)
+        if let remaining = remainingAmount { purchase.remainingAmount = remaining }
+        return purchase
     }
 }
 ```

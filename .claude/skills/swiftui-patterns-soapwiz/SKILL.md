@@ -38,16 +38,25 @@ if editMode?.wrappedValue != .active {
 
 ## Relationships & Deletion
 
-- `Ingredient.batches` has `deleteRule: .cascade` — always declare this or orphaned batches accumulate silently.
-- Batches are unordered in SwiftData. Always sort before display:
+- `Ingredient.purchases` has `deleteRule: .cascade` — always declare this or orphaned purchases accumulate silently.
+- History records use `.nullify`: `Ingredient.batchLineItems` and `Recipe.batches` must outlive the ingredient/recipe they reference — never cascade them.
+- Relationship arrays are unordered in SwiftData. Always sort before display:
 
 ```swift
-ingredient.batches.sorted { $0.dateOfPurchase > $1.dateOfPurchase }
+ingredient.purchases.sorted { $0.dateOfPurchase > $1.dateOfPurchase }
 ```
+
+## Naming: Purchase vs Batch
+
+- **`IngredientPurchase`** ("purchase") = one inventory acquisition of an ingredient.
+- **`Batch`** ("batch") = one production run made from a `Recipe`, with immutable `BatchLineItem` cost snapshots.
+- Never use "batch" to mean an inventory purchase — that naming was retired in SW-73.
 
 ## Navigation
 
-- Root view is `IngredientListView` inside a `NavigationStack`.
+- Root view is `ContentView`: a `TabView` with Inventory, Recipes, History (batches), and Settings tabs.
+- Tab/navigation state lives in `AppNavigation` (`@Observable`), injected via `.environment()`.
+- Each tab root wraps its content in its own `NavigationStack`.
 - Use `NavigationLink` for push navigation; sheets for forms/creation flows.
 
 ## Common Anti-Patterns to Avoid
