@@ -140,6 +140,7 @@ final class BatchProductionViewModel {
             let drawCost = drawn * purchase.pricePerUnit
             cost += drawCost
             draws.append(BatchPurchaseDraw(
+                purchaseUUID: purchase.uuid,
                 purchaseBadge: purchase.badge,
                 amountDrawn: drawn,
                 pricePerUnit: purchase.pricePerUnit,

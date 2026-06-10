@@ -56,6 +56,17 @@ struct IngredientDetailView: View {
                         .onDelete { model.delete(at: $0, context: modelContext) }
                     }
                 }
+
+                Section("Usage") {
+                    if model.usageEntries.isEmpty {
+                        Text("Not used in any batch yet.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(model.usageEntries) { entry in
+                            UsageEntryRow(entry: entry)
+                        }
+                    }
+                }
             }
             .navigationTitle(model.ingredient.name)
             .navigationBarTitleDisplayMode(.large)

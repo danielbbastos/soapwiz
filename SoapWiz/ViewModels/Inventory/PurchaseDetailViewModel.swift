@@ -20,6 +20,10 @@ final class PurchaseDetailViewModel {
         purchase.remainingAmount != originalAmount || purchase.openingDate != originalOpeningDate
     }
 
+    var usageEntries: [UsageEntry] {
+        UsageHistory.entries(for: purchase)
+    }
+
     func undo() {
         purchase.remainingAmount = originalAmount
         purchase.openingDate = originalOpeningDate

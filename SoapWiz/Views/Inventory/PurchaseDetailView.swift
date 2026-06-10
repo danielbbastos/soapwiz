@@ -93,6 +93,17 @@ struct PurchaseDetailView: View {
                 LabeledContent("Storage Location", value: purchase.storageLocation?.name ?? "—")
             }
 
+            Section("Usage") {
+                if model.usageEntries.isEmpty {
+                    Text("Not used in any batch yet.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(model.usageEntries) { entry in
+                        UsageEntryRow(entry: entry)
+                    }
+                }
+            }
+
             Section("Identification") {
                 LabeledContent("Badge", value: purchase.badge.isEmpty ? "—" : purchase.badge)
                 LabeledContent("Journal Code", value: purchase.journalCode.isEmpty ? "—" : purchase.journalCode)
