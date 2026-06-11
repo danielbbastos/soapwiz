@@ -1476,6 +1476,152 @@ struct RecipeFormViewModelTests {
         #expect(abs(display.amount - 50) < 1e-6)
     }
 
+    // MARK: - Extra ingredient suggestions
+
+    /// 1000 g of oils (SAP 0.2, 0% superfat) → base lye of 200 g at 100% purity.
+    private func makeNaohModel(purity: Double = 100) -> RecipeFormViewModel {
+        let model = RecipeFormViewModel()
+        let oil = Ingredient(name: "Coconut Oil", unit: "g")
+        oil.sapValue = 0.2
+        model.weightUnit = "%"
+        model.oilWeightUnit = "g"
+        model.totalOilWeight = 1000
+        model.lyePurity = purity
+        model.superFat = 0
+        model.addOil(oil)
+        return model
+    }
+
+    @Test func matchedExtraIngredient_LabelContainsIngredientName() {
+        let model = RecipeFormViewModel()
+        let citric = Ingredient(name: "Citric Acid", unit: "g")
+        let match = model.matchedExtraIngredient(label: "Citric Acid Powder", in: [citric])
+        #expect(match === citric)
+    }
+
+    @Test func matchedExtraIngredient_IngredientNameContainsLabel() {
+        let model = RecipeFormViewModel()
+        let ascorbic = Ingredient(name: "Ascorbic Acid (Vitamin C)", unit: "g")
+        let match = model.matchedExtraIngredient(label: "Ascorbic Acid", in: [ascorbic])
+        #expect(match === ascorbic)
+    }
+
+    @Test func matchedExtraIngredient_NoMatch_ReturnsNil() {
+        let model = RecipeFormViewModel()
+        let citric = Ingredient(name: "Citric Acid", unit: "g")
+        #expect(model.matchedExtraIngredient(label: "EO / Fragrance Oil", in: [citric]) == nil)
+    }
+
+    @Test func matchedExtraIngredient_EmptyInventory_ReturnsNil() {
+        let model = RecipeFormViewModel()
+        #expect(model.matchedExtraIngredient(label: "Citric Acid Powder", in: []) == nil)
+    }
+
+    @Test func toggleExtra_AddsAdditiveDraftInBatchUnit() {
+        let model = makeNaohModel()
+        let citric = Ingredient(name: "Citric Acid", unit: "g")
+
+        model.toggleExtra(citric, amount: 10)
+
+        #expect(model.additiveDrafts.count == 1)
+        #expect(model.additiveDrafts[0].ingredient === citric)
+        #expect(model.additiveDrafts[0].amount == 10)
+        #expect(model.additiveDrafts[0].unit == model.displayWeightUnit)
+    }
+
+    @Test func toggleExtra_Twice_RemovesDraft() {
+        let model = makeNaohModel()
+        let citric = Ingredient(name: "Citric Acid", unit: "g")
+
+        model.toggleExtra(citric, amount: 10)
+        model.toggleExtra(citric, amount: 10)
+
+        #expect(model.additiveDrafts.isEmpty)
+    }
+
+    @Test func isExtraAdded_ManuallyAddedAdditive_IsTrue() {
+        let model = RecipeFormViewModel()
+        let citric = Ingredient(name: "Citric Acid", unit: "g")
+        model.addAdditive(citric)
+        #expect(model.isExtraAdded(citric) == true)
+    }
+
+    @Test func isExtraAdded_NotAdded_IsFalse() {
+        let model = RecipeFormViewModel()
+        #expect(model.isExtraAdded(Ingredient(name: "Citric Acid", unit: "g")) == false)
+    }
+
+    // MARK: - Acid lye compensation
+
+    @Test func calculatedLyeAmount_CitricAcidAdditive_AddsNeutralizationLye() throws {
+        let model = makeNaohModel()
+        model.toggleExtra(Ingredient(name: "Citric Acid", unit: "g"), amount: 10)
+
+        // 200 base + 10 g × 0.625 = 206.25
+        let lye = try #require(model.calculatedLyeAmount)
+        #expect(abs(lye - 206.25) < 1e-9)
+    }
+
+    @Test func calculatedLyeAmount_AscorbicAcid_MatchesExtrasTableFigure() throws {
+        let model = makeNaohModel()
+        model.toggleExtra(Ingredient(name: "Ascorbic Acid", unit: "g"), amount: 5)
+
+        // 200 base + 5 g × 0.2020 = 201.01; with waterParts 1.5 the combined
+        // lye+water increase (1.01 + 1.515) equals the extras table's 2.525 g
+        // lye-solution figure.
+        let lye = try #require(model.calculatedLyeAmount)
+        #expect(abs(lye - 201.01) < 1e-9)
+        let water = try #require(model.calculatedWaterAmount)
+        #expect(abs(water - 201.01 * 1.5) < 1e-9)
+    }
+
+    @Test func calculatedLyeAmount_LacticAcidVolumeDraft_ConvertsViaDensity() throws {
+        let model = makeNaohModel()
+        let lactic = Ingredient(name: "Lactic Acid", unit: "ml")
+        lactic.density = 1.2
+        model.toggleExtra(lactic, amount: 0)
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 10, unit: "ml")
+
+        // 10 ml × 1.2 g/ml = 12 g × 0.5920 = 7.104 extra
+        let lye = try #require(model.calculatedLyeAmount)
+        #expect(abs(lye - 207.104) < 1e-9)
+    }
+
+    @Test func calculatedLyeAmount_KOHRecipe_NoCompensation() throws {
+        let model = makeNaohModel()
+        model.lyeType = "KOH"
+        model.toggleExtra(Ingredient(name: "Citric Acid", unit: "g"), amount: 10)
+
+        let lye = try #require(model.calculatedLyeAmount)
+        #expect(abs(lye - 200) < 1e-9)
+    }
+
+    @Test func calculatedLyeAmount_LowerPurity_ScalesCompensation() throws {
+        // Purity 50%: base 400, citric compensation 10 × 0.625 / 0.5 = 12.5
+        let model = makeNaohModel(purity: 50)
+        model.toggleExtra(Ingredient(name: "Citric Acid", unit: "g"), amount: 10)
+
+        let lye = try #require(model.calculatedLyeAmount)
+        #expect(abs(lye - 412.5) < 1e-9)
+    }
+
+    @Test func calculatedLyeAmount_PercentUnitAcid_NoCompensationNoRecursion() throws {
+        let model = makeNaohModel()
+        model.addAdditive(Ingredient(name: "Citric Acid", unit: "g"))
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 5, unit: "% of batch")
+
+        let lye = try #require(model.calculatedLyeAmount)
+        #expect(abs(lye - 200) < 1e-9)
+    }
+
+    @Test func calculatedLyeAmount_NonAcidAdditive_NoCompensation() throws {
+        let model = makeNaohModel()
+        model.toggleExtra(Ingredient(name: "Sea Salt", unit: "g"), amount: 10)
+
+        let lye = try #require(model.calculatedLyeAmount)
+        #expect(abs(lye - 200) < 1e-9)
+    }
+
     // MARK: - Fragrance target
 
     private func makeModelWithOilsAndFragrance(fragranceUnit: String) -> RecipeFormViewModel {

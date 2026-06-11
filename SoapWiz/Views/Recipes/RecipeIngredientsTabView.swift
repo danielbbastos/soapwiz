@@ -37,6 +37,7 @@ private enum PickerSection: String, Identifiable {
 
 struct RecipeIngredientsTabView: View {
     @Bindable var model: RecipeFormViewModel
+    @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
     @State private var activePicker: PickerSection?
     @State private var oilsExpanded = true
     @State private var additivesExpanded = true
@@ -386,19 +387,61 @@ struct RecipeIngredientsTabView: View {
     }
 
     private func extraSectionARow(label: String, weight: Double, isSubrow: Bool) -> some View {
-        HStack(spacing: 8) {
-            Text(label)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .lineLimit(1)
-            Text(formatWeight(weight))
-                .monospacedDigit()
+        let match = isSubrow ? nil : model.matchedExtraIngredient(label: label, in: inventory)
+        return extraRow(ingredient: match, amount: weight) {
+            HStack(spacing: 8) {
+                if !isSubrow {
+                    extraToggleIcon(label: label, ingredient: match)
+                }
+                Text(label)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(1)
+                Text(formatWeight(weight))
+                    .monospacedDigit()
+            }
+            .padding(.leading, isSubrow ? 32 : 16)
+            .padding(.trailing, 16)
+            .padding(.vertical, 10)
+            .font(.footnote)
+            .foregroundStyle(isSubrow ? Color.secondary : Color.primary)
+            .italic(isSubrow)
         }
-        .padding(.leading, isSubrow ? 32 : 16)
-        .padding(.trailing, 16)
-        .padding(.vertical, 10)
-        .font(.footnote)
-        .foregroundStyle(isSubrow ? Color.secondary : Color.primary)
-        .italic(isSubrow)
+    }
+
+    /// Wraps an extras row in a toggle button when its label matched an
+    /// inventory ingredient, so tapping anywhere on the row checks or unchecks
+    /// the suggestion. Unmatched (or sub-) rows render as-is.
+    @ViewBuilder
+    private func extraRow<Content: View>(
+        ingredient: Ingredient?, amount: Double, @ViewBuilder content: () -> Content
+    ) -> some View {
+        if let ingredient {
+            Button {
+                model.toggleExtra(ingredient, amount: amount)
+            } label: {
+                content()
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        } else {
+            content()
+        }
+    }
+
+    /// Checkmark state for an extras row; the dashed placeholder explains how
+    /// to enable rows with no matching inventory ingredient.
+    @ViewBuilder
+    private func extraToggleIcon(label: String, ingredient: Ingredient?) -> some View {
+        if let ingredient {
+            let isAdded = model.isExtraAdded(ingredient)
+            Image(systemName: isAdded ? "checkmark.circle.fill" : "circle")
+                .foregroundStyle(isAdded ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+        } else {
+            InfoPopoverIcon(
+                text: "Not in inventory. Add an ingredient matching “\(label)” to include it in the recipe cost.",
+                systemImage: "circle.dashed"
+            )
+        }
     }
 
     private func extraSectionB(rows: [ExtraSectionBRow]) -> some View {
@@ -415,21 +458,25 @@ struct RecipeIngredientsTabView: View {
     }
 
     private func extraSectionBRow(_ row: ExtraSectionBRow) -> some View {
-        HStack(spacing: 8) {
-            Text(row.label)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .lineLimit(1)
-            if let max = row.maxValue {
-                Text("\(formatWeight(row.minValue)) – \(formatWeight(max))")
-                    .monospacedDigit()
-            } else {
-                Text(formatWeight(row.minValue))
-                    .monospacedDigit()
+        let match = model.matchedExtraIngredient(label: row.label, in: inventory)
+        return extraRow(ingredient: match, amount: row.minValue) {
+            HStack(spacing: 8) {
+                extraToggleIcon(label: row.label, ingredient: match)
+                Text(row.label)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(1)
+                if let max = row.maxValue {
+                    Text("\(formatWeight(row.minValue)) – \(formatWeight(max))")
+                        .monospacedDigit()
+                } else {
+                    Text(formatWeight(row.minValue))
+                        .monospacedDigit()
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .font(.footnote)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .font(.footnote)
     }
 
     private func extraSectionBSubRow(_ label: String, value: Double) -> some View {
