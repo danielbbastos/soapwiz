@@ -18,10 +18,14 @@ final class IngredientCategory {
     @Relationship(deleteRule: .nullify, inverse: \Ingredient.category)
     var ingredients: [Ingredient] = []
 
-    var ingredientRole: RecipeIngredientRole {
+    /// The recipe section this category's ingredients can be picked for, or
+    /// `nil` when they aren't recipe line items (lye is configured separately
+    /// in the recipe's lye settings, never as an additive).
+    var ingredientRole: RecipeIngredientRole? {
         switch name {
         case Name.oils, Name.waxes, Name.fats: return .oil
         case Name.fragrances: return .fragrance
+        case Name.lyes: return nil
         default: return .additive
         }
     }
