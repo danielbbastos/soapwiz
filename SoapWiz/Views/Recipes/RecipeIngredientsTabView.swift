@@ -9,7 +9,7 @@ struct AvailableHeightKey: PreferenceKey {
 }
 
 private let additiveUnits = ["g", "kg", "oz", "lb", "ml", "L", "% of batch", "% of liquids", "% of oils"]
-private let fragranceUnits = ["g", "kg", "oz", "lb", "% of batch", "% of liquids", "% of oils"]
+private let fragranceUnits = ["g", "oz", "ml", "% of batch", "% of liquids", "% of oils"]
 
 /// Label style with a tighter gap between the icon and title than the default.
 private struct TightLabelStyle: LabelStyle {

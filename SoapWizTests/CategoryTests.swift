@@ -68,6 +68,28 @@ struct CategoryTests {
         #expect(category.ingredients.count == 1)
     }
 
+    // MARK: - Recipe role mapping
+
+    @Test func ingredientRole_OilWaxFatCategories_AreOil() {
+        #expect(IngredientCategory(name: IngredientCategory.Name.oils).ingredientRole == .oil)
+        #expect(IngredientCategory(name: IngredientCategory.Name.waxes).ingredientRole == .oil)
+        #expect(IngredientCategory(name: IngredientCategory.Name.fats).ingredientRole == .oil)
+    }
+
+    @Test func ingredientRole_Fragrances_IsFragrance() {
+        #expect(IngredientCategory(name: IngredientCategory.Name.fragrances).ingredientRole == .fragrance)
+    }
+
+    @Test func ingredientRole_Lyes_IsNil() {
+        // Lye is configured in the recipe's lye settings, never picked as an additive.
+        #expect(IngredientCategory(name: IngredientCategory.Name.lyes).ingredientRole == nil)
+    }
+
+    @Test func ingredientRole_AdditivesAndOthers_AreAdditive() {
+        #expect(IngredientCategory(name: IngredientCategory.Name.additives).ingredientRole == .additive)
+        #expect(IngredientCategory(name: IngredientCategory.Name.others).ingredientRole == .additive)
+    }
+
     @Test func deletingCategoryNullifiesIngredientCategory() throws {
         let container = try makeContainer()
         let context = container.mainContext

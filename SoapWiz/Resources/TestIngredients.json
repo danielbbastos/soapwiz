@@ -1538,6 +1538,195 @@
           "remainingAmount": 5
         }
       ]
+    },
+    {
+      "name": "Kaolin Clay",
+      "category": "Additives",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "purchases": [
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-03-14",
+          "quantity": 500,
+          "totalPrice": 5.9,
+          "badge": "KAO-001",
+          "journalCode": "J-069",
+          "storageLocation": "Shelf B1",
+          "expiryDate": null,
+          "openingDate": "2026-03-20",
+          "remainingAmount": 410
+        }
+      ]
+    },
+    {
+      "name": "Bentonite Clay",
+      "category": "Additives",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "purchases": [
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-02-02",
+          "quantity": 500,
+          "totalPrice": 6.5,
+          "badge": "BEN-001",
+          "journalCode": "J-070",
+          "storageLocation": "Shelf B1",
+          "expiryDate": null,
+          "openingDate": "2026-02-10",
+          "remainingAmount": 355
+        }
+      ]
+    },
+    {
+      "name": "Activated Charcoal",
+      "category": "Additives",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "purchases": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-04-08",
+          "quantity": 250,
+          "totalPrice": 7.2,
+          "badge": "CHA-001",
+          "journalCode": "J-071",
+          "storageLocation": "Shelf A2",
+          "expiryDate": null,
+          "openingDate": "2026-04-12",
+          "remainingAmount": 215
+        }
+      ]
+    },
+    {
+      "name": "Colloidal Oatmeal",
+      "category": "Additives",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "purchases": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-05-03",
+          "quantity": 400,
+          "totalPrice": 6.8,
+          "badge": "OAT-001",
+          "journalCode": "J-072",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2027-05-03",
+          "openingDate": null,
+          "remainingAmount": 400
+        }
+      ]
+    },
+    {
+      "name": "Honey",
+      "category": "Additives",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "purchases": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-01-19",
+          "quantity": 350,
+          "totalPrice": 4.95,
+          "badge": "HON-001",
+          "journalCode": "J-073",
+          "storageLocation": "Shelf A2",
+          "expiryDate": "2028-01-19",
+          "openingDate": "2026-02-01",
+          "remainingAmount": 290
+        }
+      ]
+    },
+    {
+      "name": "Sugar",
+      "category": "Additives",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "purchases": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-05-21",
+          "quantity": 1000,
+          "totalPrice": 1.45,
+          "badge": "SUG-001",
+          "journalCode": "J-074",
+          "storageLocation": "Shelf B1",
+          "expiryDate": null,
+          "openingDate": null,
+          "remainingAmount": 1000
+        }
+      ]
+    },
+    {
+      "name": "Sea Salt",
+      "category": "Additives",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "purchases": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-05-21",
+          "quantity": 1000,
+          "totalPrice": 2.1,
+          "badge": "SAL-001",
+          "journalCode": "J-075",
+          "storageLocation": "Shelf B1",
+          "expiryDate": null,
+          "openingDate": null,
+          "remainingAmount": 940
+        }
+      ]
+    },
+    {
+      "name": "Citric Acid",
+      "category": "Additives",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "purchases": [
+        {
+          "provider": "Aroma Zone",
+          "dateOfPurchase": "2026-04-26",
+          "quantity": 500,
+          "totalPrice": 4.6,
+          "badge": "CIT-001",
+          "journalCode": "J-076",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-04-26",
+          "openingDate": "2026-05-02",
+          "remainingAmount": 455
+        }
+      ]
+    },
+    {
+      "name": "Rosemary Oleoresin (ROE)",
+      "category": "Additives",
+      "unit": "ml",
+      "sapValue": null,
+      "density": 0.92,
+      "purchases": [
+        {
+          "provider": "Plena Natura",
+          "dateOfPurchase": "2026-03-30",
+          "quantity": 50,
+          "totalPrice": 8.9,
+          "badge": "ROE-001",
+          "journalCode": "J-077",
+          "storageLocation": "Fridge",
+          "expiryDate": "2027-03-30",
+          "openingDate": "2026-04-05",
+          "remainingAmount": 42
+        }
+      ]
     }
   ]
 }

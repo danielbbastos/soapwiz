@@ -422,18 +422,13 @@ struct RecipeDetailView: View {
                         Text(row.ingredient.name)
                             .font(.footnote)
                         Spacer()
-                        VStack(alignment: .trailing, spacing: 1) {
-                            Text(amountText(display.amount, unit: display.unit))
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
-                            if let note = display.conversionNote {
-                                Text(note)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
-                                    .monospacedDigit()
-                            }
+                        if let note = display.conversionNote {
+                            InfoPopoverIcon(text: note)
                         }
+                        Text(amountText(display.amount, unit: display.unit))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
                         if row.cost > 0 {
                             Text(formatCurrency(row.cost))
                                 .font(.footnote)

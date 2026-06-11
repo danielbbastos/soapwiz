@@ -13,3 +13,6 @@ Scripts/
 
 # Plans
 plans/
+
+# Local xcodebuild derived data
+build/
