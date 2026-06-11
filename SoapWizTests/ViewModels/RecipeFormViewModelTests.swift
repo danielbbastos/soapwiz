@@ -1313,6 +1313,145 @@ struct RecipeFormViewModelTests {
         #expect(abs(result.oils[0].ingredientAmount - 0.5) < 1e-6)
     }
 
+    // MARK: - Volume-unit ingredients (density conversion)
+
+    /// Oils in grams plus one additive entered as a volume, with optional
+    /// ingredient density and an optional purchase to give it a cost.
+    private func makeModelWithVolumeAdditive(
+        ctx: ModelContext,
+        amount: Double,
+        unit: String,
+        density: Double?,
+        purchase: IngredientPurchase? = nil
+    ) -> RecipeFormViewModel {
+        let oil = Ingredient(name: "Olive Oil", unit: "g")
+        ctx.insert(oil)
+        let additive = Ingredient(name: "Glycerin", unit: "ml")
+        additive.density = density
+        ctx.insert(additive)
+        if let purchase {
+            purchase.ingredient = additive
+            ctx.insert(purchase)
+        }
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "g"
+        model.totalOilWeight = 1000
+        model.addOil(oil)
+        model.addAdditive(additive)
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: amount, unit: unit)
+        return model
+    }
+
+    @Test func wholeBatchBreakdown_VolumeAdditive_CustomDensity_ConvertsToMass() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 100, unit: "ml", density: 1.26)
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        // 100 ml × 1.26 g/ml = 126 g in the batch (oils) unit
+        #expect(abs(row.ingredientAmount - 126) < 1e-6)
+    }
+
+    @Test func wholeBatchBreakdown_VolumeAdditive_NoDensity_UsesDefaultDensity() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 1.2, unit: "L", density: nil)
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        // 1.2 L = 1200 ml × 0.92 g/ml (default) = 1104 g
+        #expect(abs(row.ingredientAmount - 1104) < 1e-6)
+    }
+
+    @Test func wholeBatchBreakdown_VolumeAdditive_ComputesCostFromMassEquivalent() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let purchase = IngredientPurchase.mock(quantity: 1000, totalPrice: 10.0) // €0.01/unit
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 100, unit: "ml", density: 1.26, purchase: purchase)
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        // 126 g equivalent × €0.01 = €1.26
+        #expect(abs(row.cost - 1.26) < 1e-6)
+    }
+
+    @Test func wholeBatchBreakdown_VolumeAdditive_NonPositiveDensity_IsOmitted() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 100, unit: "ml", density: 0)
+
+        #expect(model.wholeBatchBreakdown.additives.isEmpty)
+    }
+
+    @Test func displayedAmount_VolumeAdditive_ShowsEnteredVolumeWithCustomDensityNote() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 100, unit: "ml", density: 1.26)
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: true)
+
+        #expect(display.unit == "ml")
+        #expect(abs(display.amount - 100) < 1e-6)
+        let mass = 126.0.formatted(.number.precision(.fractionLength(0...2)))
+        let density = 1.26.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
+        #expect(display.conversionNote == "≈ \(mass) g (density \(density) g/ml, custom)")
+    }
+
+    @Test func displayedAmount_VolumeAdditive_DefaultDensity_NoteSaysDefault() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 1.2, unit: "L", density: nil)
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: true)
+
+        #expect(display.unit == "L")
+        #expect(abs(display.amount - 1.2) < 1e-6)
+        let note = try #require(display.conversionNote)
+        #expect(note.contains("default"))
+        #expect(note.contains("g/ml"))
+    }
+
+    @Test func displayedAmount_MassAdditive_HasNoConversionNote() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil", unit: "g")
+        ctx.insert(oil)
+        let additive = Ingredient(name: "Salt", unit: "g")
+        ctx.insert(additive)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "g"
+        model.totalOilWeight = 1000
+        model.addOil(oil)
+        model.addAdditive(additive)
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 2, unit: "oz")
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: true)
+
+        #expect(display.unit == "oz")
+        #expect(display.conversionNote == nil)
+    }
+
+    @Test func displayedAmount_VolumeAdditive_ScaledProduct_ScalesEnteredVolume() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 100, unit: "ml", density: 1.26)
+        var draft = RecipeProductDraft(unitSymbol: ProductUnit.partsOfBatch.rawValue)
+        draft.size = 2
+
+        let result = model.breakdownAndCost(for: draft)
+
+        let row = try #require(result.additives.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: true)
+        // Half the batch → half the entered volume, converted back through the same density.
+        #expect(display.unit == "ml")
+        #expect(abs(display.amount - 50) < 1e-6)
+    }
+
     // MARK: - Fragrance target
 
     private func makeModelWithOilsAndFragrance(fragranceUnit: String) -> RecipeFormViewModel {

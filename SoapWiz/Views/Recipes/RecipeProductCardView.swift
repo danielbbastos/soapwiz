@@ -170,7 +170,13 @@ struct RecipeProductCardView: View {
                 } else {
                     ForEach(rows, id: \.ingredient.persistentModelID) { row in
                         let display = model.displayedAmount(for: row, usesEnteredUnit: key.usesEnteredUnit)
-                        breakdownRow(name: row.ingredient.name, amount: display.amount, unit: display.unit, cost: row.cost)
+                        breakdownRow(
+                            name: row.ingredient.name,
+                            amount: display.amount,
+                            unit: display.unit,
+                            cost: row.cost,
+                            note: display.conversionNote
+                        )
                     }
                     .transition(.identity)
                 }
@@ -189,7 +195,7 @@ struct RecipeProductCardView: View {
     }
 
     @ViewBuilder
-    private func breakdownRow(name: String, amount: Double, unit: String, cost: Double, emphasized: Bool = false) -> some View {
+    private func breakdownRow(name: String, amount: Double, unit: String, cost: Double, emphasized: Bool = false, note: String? = nil) -> some View {
         let style = emphasized ? Color.primary : Color.secondary
         let weight: Font.Weight = emphasized ? .semibold : .regular
         HStack {
@@ -199,9 +205,17 @@ struct RecipeProductCardView: View {
                 .fontWeight(weight)
             Spacer()
             if let amountStr = Self.amountFormatter.string(from: NSNumber(value: amount)) {
-                Text("\(amountStr) \(unit)")
-                    .font(.caption)
-                    .foregroundStyle(Color.secondary)
+                VStack(alignment: .trailing, spacing: 1) {
+                    Text("\(amountStr) \(unit)")
+                        .font(.caption)
+                        .foregroundStyle(Color.secondary)
+                    if let note {
+                        Text(note)
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                            .monospacedDigit()
+                    }
+                }
             }
             if cost > 0, let costStr = Self.currencyFormatter.string(from: NSNumber(value: cost)) {
                 Text(costStr)
