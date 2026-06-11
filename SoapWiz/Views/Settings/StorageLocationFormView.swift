@@ -24,14 +24,18 @@ struct StorageLocationFormView: View {
                             .foregroundStyle(.red)
                     }
                 }
+                .listRowBackground(Color.cardBackground)
 
                 Section("Description") {
                     TextField("Optional (e.g. temperature-controlled)", text: $model.locationDescription, axis: .vertical)
                         .lineLimit(3...6)
                 }
+                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle(model.isEditing ? "Edit Location" : "New Location")
             .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle(model.isEditing ? "Edit Location" : "New Location")
+            .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

@@ -6,10 +6,10 @@ struct RecipeRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(recipe.name)
-                .font(.headline)
+                .font(.body.weight(.medium))
             if !recipe.desc.isEmpty {
                 Text(recipe.desc)
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }

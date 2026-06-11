@@ -48,6 +48,7 @@ struct RecipeDetailView: View {
                     Text(recipe.desc)
                         .foregroundStyle(.secondary)
                 }
+                .listRowBackground(Color.cardBackground)
             }
 
             oilsSection
@@ -58,7 +59,9 @@ struct RecipeDetailView: View {
             costSection(batch: batch)
         }
         .navigationTitle(recipe.name)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        .warmNavigationTitle(recipe.name)
+        .warmBackground()
         .safeAreaInset(edge: .bottom) {
             Button {
                 showCreateBatch = true
@@ -126,6 +129,7 @@ struct RecipeDetailView: View {
                 }
             }
         }
+        .listRowBackground(Color.cardBackground)
     }
 
     private func oilAmountText(_ draft: OilIngredientDraft, batchWeight: Double?) -> String {
@@ -160,6 +164,7 @@ struct RecipeDetailView: View {
                     }
                 }
             }
+            .listRowBackground(Color.cardBackground)
         }
     }
 
@@ -180,6 +185,7 @@ struct RecipeDetailView: View {
                     }
                 }
             }
+            .listRowBackground(Color.cardBackground)
         }
     }
 
@@ -229,6 +235,7 @@ struct RecipeDetailView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .listRowBackground(Color.cardBackground)
     }
 
     // MARK: - Soap properties
@@ -287,6 +294,7 @@ struct RecipeDetailView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .listRowBackground(Color.cardBackground)
     }
 
     // MARK: - Cost
@@ -383,6 +391,7 @@ struct RecipeDetailView: View {
                 }
             }
         }
+        .listRowBackground(Color.cardBackground)
     }
 
     private func productDisclosureLabel(_ draft: RecipeProductDraft, breakdown: ProductCostBreakdown) -> some View {

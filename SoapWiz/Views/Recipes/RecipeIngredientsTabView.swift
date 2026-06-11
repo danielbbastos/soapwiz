@@ -291,7 +291,7 @@ struct RecipeIngredientsTabView: View {
         .font(.footnote)
         .fontWeight(.medium)
         .foregroundStyle(.secondary)
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(Color.cardBackground)
     }
 
     private func amountRow(_ label: String, weight: Double, pct: Double, summary: Bool) -> some View {
@@ -383,7 +383,7 @@ struct RecipeIngredientsTabView: View {
         .font(.footnote)
         .fontWeight(.medium)
         .foregroundStyle(.secondary)
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(Color.cardBackground)
     }
 
     private func extraSectionARow(label: String, weight: Double, isSubrow: Bool) -> some View {

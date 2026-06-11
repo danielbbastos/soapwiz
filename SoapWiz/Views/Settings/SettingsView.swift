@@ -24,6 +24,7 @@ struct SettingsView: View {
                         LabeledContent("Providers", value: "\(providers.count)")
                     }
                 }
+                .listRowBackground(Color.cardBackground)
                 if let settings {
                     Section("Pricing") {
                         HStack {
@@ -42,6 +43,7 @@ struct SettingsView: View {
                             .multilineTextAlignment(.trailing)
                             .frame(width: 60)
                         }
+                        .listRowBackground(Color.cardBackground)
                     }
                     .sheet(isPresented: $showPvpInfo) {
                         VStack(alignment: .leading, spacing: 12) {
@@ -59,6 +61,9 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
+            .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle("Settings")
+            .warmBackground()
         }
     }
 }

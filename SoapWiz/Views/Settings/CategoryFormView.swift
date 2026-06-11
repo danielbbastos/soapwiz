@@ -24,9 +24,12 @@ struct CategoryFormView: View {
                             .foregroundStyle(.red)
                     }
                 }
+                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle(model.isEditing ? "Edit Category" : "New Category")
             .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle(model.isEditing ? "Edit Category" : "New Category")
+            .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

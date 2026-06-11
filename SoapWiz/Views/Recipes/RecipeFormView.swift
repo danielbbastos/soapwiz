@@ -32,7 +32,8 @@ struct RecipeFormView: View {
 
     var body: some View {
         currentTab
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .scrollContentBackground(.hidden)
+            .background(Color.warmBackground.ignoresSafeArea())
             .safeAreaInset(edge: .top, spacing: 0) {
                 tabPicker
                     .shadow(color: .black.opacity(0.12), radius: 4, y: 1)
@@ -41,6 +42,7 @@ struct RecipeFormView: View {
             }
             .navigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
             .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
             .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)) { note in
                 guard let field = note.object as? UITextField,
                       field.keyboardType == .decimalPad else { return }

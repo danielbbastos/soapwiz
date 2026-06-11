@@ -32,6 +32,7 @@ struct PurchaseDetailView: View {
                     value: purchase.pricePerUnit.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
                 )
             }
+            .listRowBackground(Color.cardBackground)
 
             Section("Stock") {
                 HStack {
@@ -92,6 +93,7 @@ struct PurchaseDetailView: View {
                 }
                 LabeledContent("Storage Location", value: purchase.storageLocation?.name ?? "—")
             }
+            .listRowBackground(Color.cardBackground)
 
             Section("Usage") {
                 if model.usageEntries.isEmpty {
@@ -103,11 +105,13 @@ struct PurchaseDetailView: View {
                     }
                 }
             }
+            .listRowBackground(Color.cardBackground)
 
             Section("Identification") {
                 LabeledContent("Badge", value: purchase.badge.isEmpty ? "—" : purchase.badge)
                 LabeledContent("Journal Code", value: purchase.journalCode.isEmpty ? "—" : purchase.journalCode)
             }
+            .listRowBackground(Color.cardBackground)
 
             Section("Dates") {
                 if let expiry = purchase.expiryDate {
@@ -121,10 +125,13 @@ struct PurchaseDetailView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .listRowBackground(Color.cardBackground)
         }
         .onDisappear { model.isEditingAmount = false }
         .navigationTitle("Purchase Details")
         .navigationBarTitleDisplayMode(.inline)
+        .warmNavigationTitle("Purchase Details")
+        .warmBackground()
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Edit") { showingEdit = true }

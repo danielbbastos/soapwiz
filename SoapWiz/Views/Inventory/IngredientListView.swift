@@ -43,12 +43,16 @@ struct IngredientListView: View {
                                         model.delete(ingredient, context: modelContext)
                                     }
                                 }
+                                .listRowBackground(Color.cardBackground)
                             }
                         }
                         .environment(\.editMode, $model.editMode)
                     }
                 }
                 .navigationTitle("Inventory")
+                .navigationBarTitleDisplayMode(.inline)
+                .warmNavigationTitle("Inventory")
+                .warmBackground()
                 .navigationDestination(for: Ingredient.self) { ingredient in
                     IngredientDetailView(
                         ingredient: ingredient,

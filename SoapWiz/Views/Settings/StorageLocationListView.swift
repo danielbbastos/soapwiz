@@ -41,11 +41,14 @@ struct StorageLocationListView: View {
                             }
                         }
                         .onDelete { model.delete(at: $0, in: locations, context: modelContext) }
+                        .listRowBackground(Color.cardBackground)
                     }
                 }
             }
             .navigationTitle("Storage Locations")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle("Storage Locations")
+            .warmBackground()
 
             if editMode?.wrappedValue != .active {
                 FloatingActionButton { model.showingAddLocation = true }

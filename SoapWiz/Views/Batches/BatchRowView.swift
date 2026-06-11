@@ -13,7 +13,7 @@ struct BatchRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(batch.recipeName)
-                .font(.headline)
+                .font(.body.weight(.medium))
             HStack {
                 Text(batch.dateCreated.formatted(date: .abbreviated, time: .shortened))
                 Spacer()
@@ -24,7 +24,7 @@ struct BatchRowView: View {
                         .monospacedDigit()
                 }
             }
-            .font(.caption)
+            .font(.subheadline)
             .foregroundStyle(.secondary)
         }
         .padding(.vertical, 2)

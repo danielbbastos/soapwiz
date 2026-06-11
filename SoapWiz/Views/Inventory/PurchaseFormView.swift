@@ -48,11 +48,13 @@ struct PurchaseFormView: View {
                         }
                     }
                 }
+                .listRowBackground(Color.cardBackground)
 
                 Section("Identification") {
                     TextField("Badge / Lot Number", text: $model.badge)
                     TextField("Journal Code", text: $model.journalCode)
                 }
+                .listRowBackground(Color.cardBackground)
 
                 Section("Dates") {
                     Toggle("Has Expiry Date", isOn: $model.hasExpiryDate)
@@ -64,6 +66,7 @@ struct PurchaseFormView: View {
                         DatePicker("Opening Date", selection: $model.openingDate, displayedComponents: .date)
                     }
                 }
+                .listRowBackground(Color.cardBackground)
 
                 Section("Storage") {
                     Picker("Location", selection: $model.selectedLocation) {
@@ -73,9 +76,12 @@ struct PurchaseFormView: View {
                         }
                     }
                 }
+                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle(model.isEditing ? "Edit Purchase" : "New Purchase")
             .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle(model.isEditing ? "Edit Purchase" : "New Purchase")
+            .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

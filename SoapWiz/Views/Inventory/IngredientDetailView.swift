@@ -42,6 +42,7 @@ struct IngredientDetailView: View {
                         }
                     }
                 }
+                .listRowBackground(Color.cardBackground)
 
                 Section("Purchases") {
                     if model.sortedPurchases.isEmpty {
@@ -56,6 +57,7 @@ struct IngredientDetailView: View {
                         .onDelete { model.delete(at: $0, context: modelContext) }
                     }
                 }
+                .listRowBackground(Color.cardBackground)
 
                 Section("Usage") {
                     if model.usageEntries.isEmpty {
@@ -67,9 +69,12 @@ struct IngredientDetailView: View {
                         }
                     }
                 }
+                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle(model.ingredient.name)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle(model.ingredient.name)
+            .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Edit") { model.showingEditIngredient = true }
