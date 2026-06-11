@@ -41,8 +41,9 @@ struct IngredientProductBreakdown {
 struct BreakdownAmountDisplay {
     let amount: Double
     let unit: String
-    /// Density note for rows whose entered unit crossed volume↔mass, e.g.
-    /// "≈ 1104 g (density 0.92 g/ml, default)". `nil` when no density was used.
+    /// Explanation of the volume↔mass crossing behind the amount, shown in an
+    /// info popover, e.g. "100 ml ≈ 126 g, converted using the ingredient's
+    /// density of 1.26 g/ml.". `nil` when no density was used.
     let conversionNote: String?
 }
 
@@ -559,21 +560,23 @@ final class RecipeFormViewModel {
             return BreakdownAmountDisplay(
                 amount: result.value,
                 unit: unit,
-                conversionNote: conversionNote(batchAmount: row.ingredientAmount, result: result)
+                conversionNote: conversionNote(unit: unit, batchAmount: row.ingredientAmount, result: result)
             )
         }
         return BreakdownAmountDisplay(amount: row.ingredientAmount, unit: displayWeightUnit, conversionNote: nil)
     }
 
-    /// "≈ 1104 g (density 0.92 g/ml, default)" — keeps the mass the cost is based
-    /// on and the density behind it visible next to a volume-entered amount.
-    /// Format matches the ingredient detail density row.
-    private func conversionNote(batchAmount: Double, result: IngredientUnitConverter.Result) -> String? {
+    /// Explains the volume↔mass crossing behind a breakdown row — the mass the
+    /// cost is based on and the density used — for the row's info popover.
+    private func conversionNote(unit: String, batchAmount: Double, result: IngredientUnitConverter.Result) -> String? {
         guard let density = result.density else { return nil }
-        let amount = batchAmount.formatted(.number.precision(.fractionLength(0...2)))
+        let volume = result.value.formatted(.number.precision(.fractionLength(0...2)))
+        let mass = batchAmount.formatted(.number.precision(.fractionLength(0...2)))
         let densityText = density.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
-        let source = result.usedDefaultDensity ? "default" : "custom"
-        return "≈ \(amount) \(displayWeightUnit) (density \(densityText) g/ml, \(source))"
+        if result.usedDefaultDensity {
+            return "\(volume) \(unit) ≈ \(mass) \(displayWeightUnit), converted using the default density of \(densityText) g/ml. Set a density on the ingredient for a more accurate conversion."
+        }
+        return "\(volume) \(unit) ≈ \(mass) \(displayWeightUnit), converted using the ingredient's density of \(densityText) g/ml."
     }
 
     private func enteredUnit(for ingredient: Ingredient) -> String? {

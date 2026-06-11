@@ -205,17 +205,12 @@ struct RecipeProductCardView: View {
                 .fontWeight(weight)
             Spacer()
             if let amountStr = Self.amountFormatter.string(from: NSNumber(value: amount)) {
-                VStack(alignment: .trailing, spacing: 1) {
-                    Text("\(amountStr) \(unit)")
-                        .font(.caption)
-                        .foregroundStyle(Color.secondary)
-                    if let note {
-                        Text(note)
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                            .monospacedDigit()
-                    }
+                if let note {
+                    InfoPopoverIcon(text: note)
                 }
+                Text("\(amountStr) \(unit)")
+                    .font(.caption)
+                    .foregroundStyle(Color.secondary)
             }
             if cost > 0, let costStr = Self.currencyFormatter.string(from: NSNumber(value: cost)) {
                 Text(costStr)

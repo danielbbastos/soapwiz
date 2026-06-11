@@ -1393,9 +1393,10 @@ struct RecipeFormViewModelTests {
 
         #expect(display.unit == "ml")
         #expect(abs(display.amount - 100) < 1e-6)
+        let volume = 100.0.formatted(.number.precision(.fractionLength(0...2)))
         let mass = 126.0.formatted(.number.precision(.fractionLength(0...2)))
         let density = 1.26.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
-        #expect(display.conversionNote == "≈ \(mass) g (density \(density) g/ml, custom)")
+        #expect(display.conversionNote == "\(volume) ml ≈ \(mass) g, converted using the ingredient's density of \(density) g/ml.")
     }
 
     @Test func displayedAmount_VolumeAdditive_DefaultDensity_NoteSaysDefault() throws {
@@ -1409,8 +1410,9 @@ struct RecipeFormViewModelTests {
         #expect(display.unit == "L")
         #expect(abs(display.amount - 1.2) < 1e-6)
         let note = try #require(display.conversionNote)
-        #expect(note.contains("default"))
+        #expect(note.contains("default density"))
         #expect(note.contains("g/ml"))
+        #expect(note.contains("Set a density on the ingredient"))
     }
 
     @Test func displayedAmount_MassAdditive_HasNoConversionNote() throws {
@@ -1434,6 +1436,28 @@ struct RecipeFormViewModelTests {
 
         #expect(display.unit == "oz")
         #expect(display.conversionNote == nil)
+    }
+
+    @Test func wholeBatchBreakdown_VolumeFragrance_ConvertsToMass() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil", unit: "g")
+        ctx.insert(oil)
+        let fragrance = Ingredient(name: "Lavender EO", unit: "ml")
+        fragrance.density = 0.89
+        ctx.insert(fragrance)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "g"
+        model.totalOilWeight = 1000
+        model.addOil(oil)
+        model.addFragrance(fragrance)
+        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 30, unit: "ml")
+
+        let row = try #require(model.wholeBatchBreakdown.fragrances.first)
+        // 30 ml × 0.89 g/ml = 26.7 g in the batch (oils) unit
+        #expect(abs(row.ingredientAmount - 26.7) < 1e-6)
     }
 
     @Test func displayedAmount_VolumeAdditive_ScaledProduct_ScalesEnteredVolume() throws {
