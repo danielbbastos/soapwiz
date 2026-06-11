@@ -1587,6 +1587,17 @@ struct RecipeFormViewModelTests {
         #expect(abs(lye - 207.104) < 1e-9)
     }
 
+    @Test func calculatedLyeAmount_PartialAcidName_StillCompensates() throws {
+        // "Citric" matches the extras row via bidirectional containment, so the
+        // same rule must drive the factor lookup — a toggled match always
+        // carries its lye compensation.
+        let model = makeNaohModel()
+        model.toggleExtra(Ingredient(name: "Citric", unit: "g"), amount: 10)
+
+        let lye = try #require(model.calculatedLyeAmount)
+        #expect(abs(lye - 206.25) < 1e-9)
+    }
+
     @Test func calculatedLyeAmount_KOHRecipe_NoCompensation() throws {
         let model = makeNaohModel()
         model.lyeType = "KOH"

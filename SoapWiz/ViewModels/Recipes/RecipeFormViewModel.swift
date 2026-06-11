@@ -206,7 +206,7 @@ final class RecipeFormViewModel {
         return additiveDrafts.reduce(0) { sum, draft in
             guard draft.amount > 0,
                   let factor = Self.naohPerGramOfAcid
-                      .first(where: { draft.ingredient.name.lowercased().contains($0.acid) })?.factor,
+                      .first(where: { Self.namesMatch(draft.ingredient.name, $0.acid) })?.factor,
                   let batchAmount = IngredientUnitConverter.convert(
                       draft.amount, from: draft.unit, to: displayWeightUnit, density: draft.ingredient.density
                   )?.value
@@ -448,16 +448,20 @@ final class RecipeFormViewModel {
 
     // MARK: - Extra ingredient suggestions
 
+    /// Case-insensitive containment in either direction — the single matching
+    /// rule for extras labels and acid factors, so an ingredient the UI offers
+    /// as an acid match always gets its lye compensation too.
+    private static func namesMatch(_ a: String, _ b: String) -> Bool {
+        let a = a.lowercased(), b = b.lowercased()
+        guard !a.isEmpty, !b.isEmpty else { return false }
+        return a.contains(b) || b.contains(a)
+    }
+
     /// Inventory ingredient matching an extras-table label, by case-insensitive
     /// containment either way ("Citric Acid Powder" ↔ "Citric Acid",
     /// "Sodium Lactate (60%)" ↔ "Sodium Lactate").
     func matchedExtraIngredient(label: String, in inventory: [Ingredient]) -> Ingredient? {
-        let target = label.lowercased()
-        return inventory.first { ingredient in
-            let name = ingredient.name.lowercased()
-            guard !name.isEmpty else { return false }
-            return target.contains(name) || name.contains(target)
-        }
+        inventory.first { Self.namesMatch(label, $0.name) }
     }
 
     /// Whether the ingredient is already among the additive drafts — drives the
