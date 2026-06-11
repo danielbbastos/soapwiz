@@ -49,7 +49,10 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("RRP Factor")
                                 .font(.headline)
-                            Text("A multiplier applied to the total ingredient cost of a product to estimate its recommended retail price (RRP — Recommended Retail Price).\n\nFor example, a factor of 4 means a product costing €2.50 to make would be priced at €10.00.")
+                            Text("A multiplier applied to the total ingredient cost of a product to estimate "
+                                 + "its recommended retail price (RRP — Recommended Retail Price)."
+                                 + "\n\nFor example, a factor of 4 means a product costing €2.50 to make "
+                                 + "would be priced at €10.00.")
                                 .font(.body)
                                 .foregroundStyle(.secondary)
                         }

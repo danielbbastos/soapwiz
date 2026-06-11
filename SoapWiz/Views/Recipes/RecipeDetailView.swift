@@ -296,22 +296,24 @@ struct RecipeDetailView: View {
         }
         .listRowBackground(Color.cardBackground)
     }
+}
 
-    // MARK: - Cost
+// MARK: - Cost
 
-    private static let currencyFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.locale = .autoupdatingCurrent
-        return f
+private extension RecipeDetailView {
+    static let currencyFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = .autoupdatingCurrent
+        return formatter
     }()
 
     private static let amountFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.locale = .autoupdatingCurrent
-        f.minimumFractionDigits = 0
-        f.maximumFractionDigits = 2
-        return f
+        let formatter = NumberFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        return formatter
     }()
 
     private var pvpFactor: Double { settingsRecords.first?.pvpFactor ?? 4.0 }

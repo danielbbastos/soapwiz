@@ -22,10 +22,10 @@ struct CreateBatchSheet: View {
     }
 
     private static let currencyFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.locale = .autoupdatingCurrent
-        return f
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = .autoupdatingCurrent
+        return formatter
     }()
 
     private func amountText(_ amount: Double, unit: String) -> String {
