@@ -1364,15 +1364,15 @@ struct RecipeFormViewModelTests {
         #expect(abs(row.ingredientAmount - 1104) < 1e-6)
     }
 
-    @Test func wholeBatchBreakdown_VolumeAdditive_ComputesCostFromMassEquivalent() throws {
+    @Test func wholeBatchBreakdown_VolumeAdditive_PricesPerInventoryVolume() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let purchase = IngredientPurchase.mock(quantity: 1000, totalPrice: 10.0) // €0.01/unit
+        let purchase = IngredientPurchase.mock(quantity: 1000, totalPrice: 10.0) // 1000 ml for €10 → €0.01/ml
         let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 100, unit: "ml", density: 1.26, purchase: purchase)
 
         let row = try #require(model.wholeBatchBreakdown.additives.first)
-        // 126 g equivalent × €0.01 = €1.26
-        #expect(abs(row.cost - 1.26) < 1e-6)
+        // The ingredient is stocked in ml, so 100 ml used × €0.01/ml = €1.00
+        #expect(abs(row.cost - 1.0) < 1e-6)
     }
 
     @Test func wholeBatchBreakdown_VolumeAdditive_NonPositiveDensity_IsOmitted() throws {
@@ -1474,6 +1474,123 @@ struct RecipeFormViewModelTests {
         // Half the batch → half the entered volume, converted back through the same density.
         #expect(display.unit == "ml")
         #expect(abs(display.amount - 50) < 1e-6)
+    }
+
+    // MARK: - Volume-inventory ingredients entered in mass units
+
+    @Test func wholeBatchBreakdown_MassEnteredVolumeInventory_PricesPerInventoryVolume() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let purchase = IngredientPurchase.mock(quantity: 1000, totalPrice: 10.0) // 1000 ml for €10 → €0.01/ml
+        // Stocked in ml (density 1.26 g/ml) but entered in the recipe as 126 g.
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 126, unit: "g", density: 1.26, purchase: purchase)
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        // 126 g ÷ 1.26 g/ml = 100 ml used × €0.01/ml = €1.00
+        #expect(abs(row.cost - 1.0) < 1e-6)
+    }
+
+    @Test func wholeBatchBreakdown_KgInventoryAdditive_PricesPerInventoryUnit() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil", unit: "g")
+        ctx.insert(oil)
+        let additive = Ingredient(name: "Sodium Lactate", unit: "kg")
+        ctx.insert(additive)
+        let purchase = IngredientPurchase.mock(quantity: 2, totalPrice: 20.0) // 2 kg for €20 → €10/kg
+        purchase.ingredient = additive
+        ctx.insert(purchase)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "g"
+        model.totalOilWeight = 1000
+        model.addOil(oil)
+        model.addAdditive(additive)
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 500, unit: "g")
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        // 500 g = 0.5 kg × €10/kg = €5.00
+        #expect(abs(row.cost - 5.0) < 1e-6)
+    }
+
+    @Test func wholeBatchBreakdown_VolumeInventoryOil_PricesPerInventoryVolume() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = Ingredient(name: "Olive Oil", unit: "ml")
+        oil.density = 0.9
+        ctx.insert(oil)
+        let purchase = IngredientPurchase.mock(quantity: 1000, totalPrice: 10.0) // 1000 ml for €10 → €0.01/ml
+        purchase.ingredient = oil
+        ctx.insert(purchase)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "g"
+        model.totalOilWeight = 900
+        model.addOil(oil)
+
+        let row = try #require(model.wholeBatchBreakdown.oils.first)
+        // 900 g ÷ 0.9 g/ml = 1000 ml used × €0.01/ml = €10.00
+        #expect(abs(row.cost - 10.0) < 1e-6)
+    }
+
+    @Test func displayedAmount_MassEnteredVolumeInventory_NoteShowsVolumeEquivalent() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 126, unit: "g", density: 1.26)
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: true)
+
+        #expect(display.unit == "g")
+        #expect(abs(display.amount - 126) < 1e-6)
+        let mass = 126.0.formatted(.number.precision(.fractionLength(0...2)))
+        let volume = 100.0.formatted(.number.precision(.fractionLength(0...2)))
+        let density = 1.26.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
+        #expect(display.conversionNote == "\(mass) g ≈ \(volume) ml, converted using the ingredient's density of \(density) g/ml.")
+    }
+
+    @Test func displayedAmount_MassEnteredVolumeInventory_DefaultDensity_NoteSaysDefault() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 92, unit: "g", density: nil)
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: true)
+
+        let note = try #require(display.conversionNote)
+        #expect(note.contains("default density"))
+        #expect(note.contains("Set a density on the ingredient"))
+    }
+
+    @Test func displayedAmount_PercentageEnteredVolumeInventory_NoteShowsVolumeEquivalent() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 10, unit: "% of oils", density: 1.0)
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: true)
+
+        // 10% of 1000 g oils = 100 g, shown in the oil weight unit with the ml equivalent.
+        #expect(display.unit == "g")
+        #expect(abs(display.amount - 100) < 1e-6)
+        let note = try #require(display.conversionNote)
+        #expect(note.contains("ml"))
+        #expect(note.contains("≈"))
+    }
+
+    @Test func displayedAmount_MassEnteredVolumeInventory_NonPositiveDensity_HasNoNote() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithVolumeAdditive(ctx: ctx, amount: 50, unit: "g", density: 0)
+
+        let row = try #require(model.wholeBatchBreakdown.additives.first)
+        let display = model.displayedAmount(for: row, usesEnteredUnit: true)
+
+        // A non-positive density can't back a conversion; the amount stands alone.
+        #expect(display.unit == "g")
+        #expect(display.conversionNote == nil)
     }
 
     // MARK: - Extra ingredient suggestions
