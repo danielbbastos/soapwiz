@@ -184,7 +184,35 @@ final class RecipeFormViewModel {
     }
 
     var calculatedLyeAmount: Double? {
-        oilAmountCalculations.map { $0.reduce(0) { $0 + $1.lye } }
+        oilAmountCalculations.map { $0.reduce(0) { $0 + $1.lye } + acidNeutralizationLye }
+    }
+
+    /// g of pure NaOH consumed per gram of acid (anhydrous neutralization
+    /// factors, matching the extras table's lye-solution figures).
+    private static let naohPerGramOfAcid: [(acid: String, factor: Double)] = [
+        ("citric acid", 0.625),
+        ("ascorbic acid", 0.2020),
+        ("lactic acid", 0.5920),
+    ]
+
+    /// Extra lye consumed by acid additives: amount × factor / purity. Water
+    /// follows automatically via `waterParts`, so lye + water together equal the
+    /// lye-solution amount the extras table shows. NaOH only — the factors are
+    /// NaOH-specific. Percentage-unit drafts are skipped: "% of batch" and
+    /// "% of liquids" resolve against the lye amount this value feeds, which
+    /// would recurse.
+    private var acidNeutralizationLye: Double {
+        guard lyeType == "NaOH", lyePurity > 0 else { return 0 }
+        return additiveDrafts.reduce(0) { sum, draft in
+            guard draft.amount > 0,
+                  let factor = Self.naohPerGramOfAcid
+                      .first(where: { Self.namesMatch(draft.ingredient.name, $0.acid) })?.factor,
+                  let batchAmount = IngredientUnitConverter.convert(
+                      draft.amount, from: draft.unit, to: displayWeightUnit, density: draft.ingredient.density
+                  )?.value
+            else { return sum }
+            return sum + batchAmount * factor / (lyePurity / 100)
+        }
     }
 
     var calculatedWaterAmount: Double? {
@@ -416,6 +444,43 @@ final class RecipeFormViewModel {
 
     func addProduct(defaultUnitSymbol: String) {
         productDrafts.append(RecipeProductDraft(unitSymbol: defaultUnitSymbol))
+    }
+
+    // MARK: - Extra ingredient suggestions
+
+    /// Case-insensitive containment in either direction — the single matching
+    /// rule for extras labels and acid factors, so an ingredient the UI offers
+    /// as an acid match always gets its lye compensation too.
+    private static func namesMatch(_ a: String, _ b: String) -> Bool {
+        let a = a.lowercased(), b = b.lowercased()
+        guard !a.isEmpty, !b.isEmpty else { return false }
+        return a.contains(b) || b.contains(a)
+    }
+
+    /// Inventory ingredient matching an extras-table label, by case-insensitive
+    /// containment either way ("Citric Acid Powder" ↔ "Citric Acid",
+    /// "Sodium Lactate (60%)" ↔ "Sodium Lactate").
+    func matchedExtraIngredient(label: String, in inventory: [Ingredient]) -> Ingredient? {
+        inventory.first { Self.namesMatch(label, $0.name) }
+    }
+
+    /// Whether the ingredient is already among the additive drafts — drives the
+    /// checkmark on its extras row, including additives the user added manually.
+    func isExtraAdded(_ ingredient: Ingredient) -> Bool {
+        additiveDrafts.contains { $0.ingredient.persistentModelID == ingredient.persistentModelID }
+    }
+
+    /// Adds the suggested extras amount (already in the batch unit) as a regular
+    /// additive draft so cost, products, and batch creation all pick it up — or
+    /// removes the ingredient's draft when it is already present.
+    func toggleExtra(_ ingredient: Ingredient, amount: Double) {
+        if let idx = additiveDrafts.firstIndex(where: {
+            $0.ingredient.persistentModelID == ingredient.persistentModelID
+        }) {
+            additiveDrafts.remove(at: idx)
+        } else {
+            additiveDrafts.append(IngredientAmountDraft(ingredient: ingredient, amount: amount, unit: displayWeightUnit))
+        }
     }
 
     func breakdownAndCost(for product: RecipeProductDraft, batch: ProductCostBreakdown) -> ProductCostBreakdown {

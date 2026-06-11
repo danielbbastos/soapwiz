@@ -3,6 +3,7 @@ import SwiftUI
 /// A small info icon that reveals a short explanatory popover when tapped.
 struct InfoPopoverIcon: View {
     let text: String
+    var systemImage: String = "info.circle"
 
     @State private var isPresented = false
 
@@ -10,7 +11,7 @@ struct InfoPopoverIcon: View {
         Button {
             isPresented = true
         } label: {
-            Image(systemName: "info.circle")
+            Image(systemName: systemImage)
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }

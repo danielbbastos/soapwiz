@@ -34,15 +34,10 @@ struct RecipeFormView: View {
         currentTab
             .background(Color(.systemGroupedBackground).ignoresSafeArea())
             .safeAreaInset(edge: .top, spacing: 0) {
-                Picker("Tab", selection: $selectedTab) {
-                    ForEach(RecipeTab.allCases, id: \.self) { tab in
-                        Text(tab.rawValue).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .shadow(color: .black.opacity(0.12), radius: 4, y: 1)
-                .padding(.horizontal)
-                .padding(.bottom, 8)
+                tabPicker
+                    .shadow(color: .black.opacity(0.12), radius: 4, y: 1)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
             }
             .navigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
             .navigationBarTitleDisplayMode(.inline)
@@ -78,6 +73,25 @@ struct RecipeFormView: View {
         case .config: configTab
         case .ingredients: ingredientsTab
         case .stats: statsTab
+        }
+    }
+
+    /// The segmented control gets an opaque fill shaped to the control itself,
+    /// so scrolled content never shows through the pill while the header band
+    /// around it keeps the system's scroll-under glass effect.
+    @ViewBuilder
+    private var tabPicker: some View {
+        let picker = Picker("Tab", selection: $selectedTab) {
+            ForEach(RecipeTab.allCases, id: \.self) { tab in
+                Text(tab.rawValue).tag(tab)
+            }
+        }
+        .pickerStyle(.segmented)
+
+        if #available(iOS 26, *) {
+            picker.background(Color(.systemGroupedBackground), in: .capsule)
+        } else {
+            picker.background(Color(.systemGroupedBackground), in: .rect(cornerRadius: 8))
         }
     }
 }
