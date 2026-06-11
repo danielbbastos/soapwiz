@@ -38,6 +38,14 @@ struct IngredientProductBreakdown {
     let cost: Double
 }
 
+struct BreakdownAmountDisplay {
+    let amount: Double
+    let unit: String
+    /// Density note for rows whose entered unit crossed volume↔mass, e.g.
+    /// "≈ 1104 g (density 0.92 g/ml, default)". `nil` when no density was used.
+    let conversionNote: String?
+}
+
 struct ProductCostBreakdown {
     var oils: [IngredientProductBreakdown] = []
     var additives: [IngredientProductBreakdown] = []
@@ -476,7 +484,9 @@ final class RecipeFormViewModel {
     private func breakdown(for drafts: [IngredientAmountDraft]) -> [IngredientProductBreakdown] {
         drafts.compactMap { draft in
             guard draft.amount > 0,
-                  let batchAmount = amountInBatchUnit(amount: draft.amount, unit: draft.unit) else { return nil }
+                  let batchAmount = amountInBatchUnit(
+                      amount: draft.amount, unit: draft.unit, density: draft.ingredient.density
+                  ) else { return nil }
             return IngredientProductBreakdown(
                 ingredient: draft.ingredient,
                 ingredientAmount: batchAmount,
@@ -528,22 +538,42 @@ final class RecipeFormViewModel {
     }
 
     /// Grams equivalent of an amount already expressed in the batch (oils) unit,
-    /// used for cost. Falls back to the amount unchanged if the unit isn't a mass.
+    /// used for cost. Falls back to the amount unchanged if the unit isn't
+    /// convertible. No density is passed: the batch unit is always a mass, so the
+    /// crossing never needs one.
     private func gramsForCost(_ batchAmount: Double) -> Double {
-        MassUnitConverter.convert(batchAmount, from: displayWeightUnit, to: "g") ?? batchAmount
+        IngredientUnitConverter.convert(batchAmount, from: displayWeightUnit, to: "g", density: nil)?.value ?? batchAmount
     }
 
     /// The amount and unit to present for a cost-breakdown row. Additives and
     /// fragrances (`usesEnteredUnit`) are shown in the unit the user picked when
-    /// that's a mass unit; percentage entries, oils, and lye use the oil weight
-    /// unit. Breakdown amounts are stored in the oil weight unit, so mass units
-    /// are converted back; gram conversion is reserved for inventory math.
-    func displayedAmount(for row: IngredientProductBreakdown, usesEnteredUnit: Bool) -> (amount: Double, unit: String) {
-        if usesEnteredUnit, let unit = enteredUnit(for: row.ingredient), MassUnitConverter.isMass(unit) {
-            let value = MassUnitConverter.convert(row.ingredientAmount, from: displayWeightUnit, to: unit) ?? row.ingredientAmount
-            return (value, unit)
+    /// that's a mass or volume unit; percentage entries, oils, and lye use the
+    /// oil weight unit. Breakdown amounts are stored in the oil weight unit, so
+    /// entered units are converted back — volume units via the ingredient's
+    /// density, surfaced in `conversionNote` alongside the mass equivalent.
+    func displayedAmount(for row: IngredientProductBreakdown, usesEnteredUnit: Bool) -> BreakdownAmountDisplay {
+        if usesEnteredUnit, let unit = enteredUnit(for: row.ingredient),
+           let result = IngredientUnitConverter.convert(
+               row.ingredientAmount, from: displayWeightUnit, to: unit, density: row.ingredient.density
+           ) {
+            return BreakdownAmountDisplay(
+                amount: result.value,
+                unit: unit,
+                conversionNote: conversionNote(batchAmount: row.ingredientAmount, result: result)
+            )
         }
-        return (row.ingredientAmount, displayWeightUnit)
+        return BreakdownAmountDisplay(amount: row.ingredientAmount, unit: displayWeightUnit, conversionNote: nil)
+    }
+
+    /// "≈ 1104 g (density 0.92 g/ml, default)" — keeps the mass the cost is based
+    /// on and the density behind it visible next to a volume-entered amount.
+    /// Format matches the ingredient detail density row.
+    private func conversionNote(batchAmount: Double, result: IngredientUnitConverter.Result) -> String? {
+        guard let density = result.density else { return nil }
+        let amount = batchAmount.formatted(.number.precision(.fractionLength(0...2)))
+        let densityText = density.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
+        let source = result.usedDefaultDensity ? "default" : "custom"
+        return "≈ \(amount) \(displayWeightUnit) (density \(densityText) g/ml, \(source))"
     }
 
     private func enteredUnit(for ingredient: Ingredient) -> String? {
@@ -553,13 +583,14 @@ final class RecipeFormViewModel {
         return nil
     }
 
-    /// Expresses an ingredient amount in the batch (oils) unit. Mass units convert
-    /// directly; percentages resolve against the relevant batch quantity (already
-    /// in the oils unit). Volume units (ml, L) return nil — they need a density to
-    /// convert and are omitted from the breakdown for now.
-    private func amountInBatchUnit(amount: Double, unit: String) -> Double? {
-        if let converted = MassUnitConverter.convert(amount, from: unit, to: displayWeightUnit) {
-            return converted
+    /// Expresses an ingredient amount in the batch (oils) unit. Mass and volume
+    /// units flow through the shared converter — volume entries (ml, L) cross to
+    /// mass via the ingredient's density (default fallback when none is recorded);
+    /// percentages resolve against the relevant batch quantity (already in the
+    /// oils unit).
+    private func amountInBatchUnit(amount: Double, unit: String, density: Double?) -> Double? {
+        if let converted = IngredientUnitConverter.convert(amount, from: unit, to: displayWeightUnit, density: density) {
+            return converted.value
         }
         let fraction = amount / 100
         switch unit {

@@ -401,13 +401,6 @@ struct RecipeDetailView: View {
         }
     }
 
-    /// Amount text for a cost-breakdown row, shown in the unit the user selected
-    /// (percentage entries and oils/lye use the oil weight unit).
-    private func breakdownRowAmountText(_ row: IngredientProductBreakdown, usesEnteredUnit: Bool) -> String {
-        let display = model.displayedAmount(for: row, usesEnteredUnit: usesEnteredUnit)
-        return amountText(display.amount, unit: display.unit)
-    }
-
     private func productBreakdownRows(_ breakdown: ProductCostBreakdown) -> some View {
         let groups: [(name: String, usesEnteredUnit: Bool, rows: [IngredientProductBreakdown])] = [
             ("Oils", false, breakdown.oils),
@@ -424,14 +417,23 @@ struct RecipeDetailView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 2)
                 ForEach(group.rows, id: \.ingredient.persistentModelID) { row in
+                    let display = model.displayedAmount(for: row, usesEnteredUnit: group.usesEnteredUnit)
                     HStack(spacing: 8) {
                         Text(row.ingredient.name)
                             .font(.footnote)
                         Spacer()
-                        Text(breakdownRowAmountText(row, usesEnteredUnit: group.usesEnteredUnit))
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text(amountText(display.amount, unit: display.unit))
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                            if let note = display.conversionNote {
+                                Text(note)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                                    .monospacedDigit()
+                            }
+                        }
                         if row.cost > 0 {
                             Text(formatCurrency(row.cost))
                                 .font(.footnote)
