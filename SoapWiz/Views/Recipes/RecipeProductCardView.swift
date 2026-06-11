@@ -213,6 +213,7 @@ struct RecipeProductCardView: View {
                         Text(note)
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
+                            .monospacedDigit()
                     }
                 }
             }
