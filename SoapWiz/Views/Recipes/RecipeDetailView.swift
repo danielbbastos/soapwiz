@@ -63,7 +63,7 @@ struct RecipeDetailView: View {
             Button {
                 showCreateBatch = true
             } label: {
-                Label("Create Batch", systemImage: "hammer.fill")
+                Label("Create Batch", systemImage: "bubbles.and.sparkles.fill")
                     .fontWeight(.semibold)
                     .foregroundStyle(.tint)
             }
