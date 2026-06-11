@@ -532,7 +532,7 @@ final class RecipeFormViewModel {
             IngredientProductBreakdown(
                 ingredient: calc.ingredient,
                 ingredientAmount: calc.weight,
-                cost: gramsForCost(calc.weight) * weightedCostPerUnit(for: calc.ingredient)
+                cost: cost(ofBatchAmount: calc.weight, for: calc.ingredient)
             )
         }
     }
@@ -556,7 +556,7 @@ final class RecipeFormViewModel {
             return IngredientProductBreakdown(
                 ingredient: draft.ingredient,
                 ingredientAmount: batchAmount,
-                cost: gramsForCost(batchAmount) * weightedCostPerUnit(for: draft.ingredient)
+                cost: cost(ofBatchAmount: batchAmount, for: draft.ingredient)
             )
         }
     }
@@ -566,7 +566,7 @@ final class RecipeFormViewModel {
         return [IngredientProductBreakdown(
             ingredient: ingredient,
             ingredientAmount: amount,
-            cost: gramsForCost(amount) * weightedCostPerUnit(for: ingredient)
+            cost: cost(ofBatchAmount: amount, for: ingredient)
         )]
     }
 
@@ -611,6 +611,18 @@ final class RecipeFormViewModel {
         IngredientUnitConverter.convert(batchAmount, from: displayWeightUnit, to: "g", density: nil)?.value ?? batchAmount
     }
 
+    /// Cost of an amount expressed in the batch (oils) unit: the amount is
+    /// converted into the ingredient's inventory unit — volume inventories cross
+    /// via the ingredient's density, mirroring batch creation — and priced at
+    /// the purchase-weighted cost per inventory unit. Falls back to the gram
+    /// equivalent when the units aren't convertible (e.g. "un").
+    private func cost(ofBatchAmount batchAmount: Double, for ingredient: Ingredient) -> Double {
+        let inInventoryUnit = IngredientUnitConverter
+            .convert(batchAmount, from: displayWeightUnit, to: ingredient.unit, density: ingredient.density)?
+            .value ?? gramsForCost(batchAmount)
+        return inInventoryUnit * weightedCostPerUnit(for: ingredient)
+    }
+
     /// The amount and unit to present for a cost-breakdown row. Additives and
     /// fragrances (`usesEnteredUnit`) are shown in the unit the user picked when
     /// that's a mass or volume unit; percentage entries, oils, and lye use the
@@ -622,26 +634,56 @@ final class RecipeFormViewModel {
            let result = IngredientUnitConverter.convert(
                row.ingredientAmount, from: displayWeightUnit, to: unit, density: row.ingredient.density
            ) {
-            return BreakdownAmountDisplay(
-                amount: result.value,
-                unit: unit,
-                conversionNote: conversionNote(unit: unit, batchAmount: row.ingredientAmount, result: result)
-            )
+            let note: String?
+            if let density = result.density {
+                note = conversionNote(
+                    amount: result.value, unit: unit,
+                    equivalent: row.ingredientAmount, equivalentUnit: displayWeightUnit,
+                    density: density, usedDefaultDensity: result.usedDefaultDensity
+                )
+            } else {
+                note = inventoryUnitNote(for: row.ingredient, amount: result.value, unit: unit)
+            }
+            return BreakdownAmountDisplay(amount: result.value, unit: unit, conversionNote: note)
         }
-        return BreakdownAmountDisplay(amount: row.ingredientAmount, unit: displayWeightUnit, conversionNote: nil)
+        return BreakdownAmountDisplay(
+            amount: row.ingredientAmount,
+            unit: displayWeightUnit,
+            conversionNote: inventoryUnitNote(for: row.ingredient, amount: row.ingredientAmount, unit: displayWeightUnit)
+        )
     }
 
-    /// Explains the volume↔mass crossing behind a breakdown row — the mass the
-    /// cost is based on and the density used — for the row's info popover.
-    private func conversionNote(unit: String, batchAmount: Double, result: IngredientUnitConverter.Result) -> String? {
-        guard let density = result.density else { return nil }
-        let volume = result.value.formatted(.number.precision(.fractionLength(0...2)))
-        let mass = batchAmount.formatted(.number.precision(.fractionLength(0...2)))
+    /// Note for a row shown in a mass unit while the ingredient is stocked in a
+    /// volume unit: the displayed mass crosses to the inventory volume the cost
+    /// is priced on, e.g. "15 g ≈ 16.3 ml". `nil` when no crossing happens.
+    private func inventoryUnitNote(for ingredient: Ingredient, amount: Double, unit: String) -> String? {
+        guard IngredientUnitConverter.isVolume(ingredient.unit),
+              let result = IngredientUnitConverter.convert(
+                  amount, from: unit, to: ingredient.unit, density: ingredient.density
+              ),
+              let density = result.density else { return nil }
+        return conversionNote(
+            amount: amount, unit: unit,
+            equivalent: result.value, equivalentUnit: ingredient.unit,
+            density: density, usedDefaultDensity: result.usedDefaultDensity
+        )
+    }
+
+    /// Explains the volume↔mass crossing behind a breakdown row — the displayed
+    /// amount, its equivalent on the other side of the crossing, and the density
+    /// used — for the row's info popover.
+    private func conversionNote(
+        amount: Double, unit: String,
+        equivalent: Double, equivalentUnit: String,
+        density: Double, usedDefaultDensity: Bool
+    ) -> String {
+        let amountText = amount.formatted(.number.precision(.fractionLength(0...2)))
+        let equivalentText = equivalent.formatted(.number.precision(.fractionLength(0...2)))
         let densityText = density.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
-        if result.usedDefaultDensity {
-            return "\(volume) \(unit) ≈ \(mass) \(displayWeightUnit), converted using the default density of \(densityText) g/ml. Set a density on the ingredient for a more accurate conversion."
+        if usedDefaultDensity {
+            return "\(amountText) \(unit) ≈ \(equivalentText) \(equivalentUnit), converted using the default density of \(densityText) g/ml. Set a density on the ingredient for a more accurate conversion."
         }
-        return "\(volume) \(unit) ≈ \(mass) \(displayWeightUnit), converted using the ingredient's density of \(densityText) g/ml."
+        return "\(amountText) \(unit) ≈ \(equivalentText) \(equivalentUnit), converted using the ingredient's density of \(densityText) g/ml."
     }
 
     private func enteredUnit(for ingredient: Ingredient) -> String? {
