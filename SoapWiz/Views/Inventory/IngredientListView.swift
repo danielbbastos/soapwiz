@@ -81,7 +81,14 @@ struct IngredientListView: View {
                 }
 
                 if model.editMode == .inactive {
-                    FloatingActionButton { model.showingAddIngredient = true }
+                    ExpandableFloatingActionButton(
+                        primaryAction: { model.showingAddIngredient = true },
+                        secondaryActions: ingredients.isEmpty ? [] : [
+                            FABAction(label: "Bulk Import", systemImage: "shippingbox") {
+                                model.showingBulkImport = true
+                            }
+                        ]
+                    )
                 }
             }
         }
@@ -105,6 +112,9 @@ struct IngredientListView: View {
             IngredientFormView(onSave: { ingredient in
                 model.pendingIngredient = ingredient
             })
+        }
+        .sheet(isPresented: $model.showingBulkImport) {
+            BulkImportView()
         }
         .sheet(isPresented: $model.showingFilters) {
             InventoryFilterView(model: model)
