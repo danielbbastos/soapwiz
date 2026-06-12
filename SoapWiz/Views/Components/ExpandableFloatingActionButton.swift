@@ -2,7 +2,9 @@ import SwiftUI
 
 /// A secondary action revealed when an `ExpandableFloatingActionButton` is expanded.
 struct FABAction: Identifiable {
-    let id = UUID()
+    /// Stable across parent re-renders so `ForEach` doesn't spuriously re-run the
+    /// reveal transition. Labels are unique within a single FAB's action set.
+    var id: String { label }
     let label: String
     let systemImage: String
     let action: () -> Void

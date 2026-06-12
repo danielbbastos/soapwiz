@@ -18,6 +18,7 @@ final class BulkImportFlowViewModel {
     private var carriedJournalCode: String = ""
 
     init(ingredients: [Ingredient]) {
+        precondition(!ingredients.isEmpty, "Bulk import requires at least one ingredient")
         self.ingredients = ingredients
         currentForm = PurchaseFormViewModel(ingredient: ingredients[0])
     }
