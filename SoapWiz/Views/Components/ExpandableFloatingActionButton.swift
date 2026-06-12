@@ -11,9 +11,10 @@ struct FABAction: Identifiable {
 }
 
 /// A floating `+` button that tapping performs the primary action. Long-pressing
-/// grows it sideways into a capsule that holds the primary `+` alongside circular
-/// buttons for each secondary action. Falls back to acting exactly like
-/// `FloatingActionButton` when no secondary actions are supplied.
+/// grows the *same* element sideways into a single capsule: the secondary action
+/// buttons slide out from underneath the `+`, which stays anchored on the right and
+/// casts a slight shadow over them. Falls back to acting like `FloatingActionButton`
+/// when no secondary actions are supplied.
 struct ExpandableFloatingActionButton: View {
     let primaryAction: () -> Void
     let secondaryActions: [FABAction]
@@ -39,26 +40,16 @@ struct ExpandableFloatingActionButton: View {
         }
     }
 
-    @ViewBuilder private var control: some View {
-        if #available(iOS 26, *) {
-            GlassEffectContainer(spacing: 8) {
-                HStack(spacing: 8) {
-                    secondaryButtons
-                    plusButton
-                        .glassEffect(.regular.interactive(), in: .circle)
-                }
-            }
-        } else {
-            HStack(spacing: 4) {
-                secondaryButtons
-                plusButton
-            }
-            .background(
-                Capsule()
-                    .fill(Color.accentColor)
-                    .shadow(radius: 4, y: 2)
-            )
+    /// A single capsule that widens to the left as the secondary buttons appear.
+    /// Because the control is anchored bottom-trailing, growing the `HStack` keeps
+    /// the `+` fixed on the right while the leading edge extends outward.
+    private var control: some View {
+        HStack(spacing: 4) {
+            secondaryButtons
+            plusButton
         }
+        .padding(.horizontal, isExpanded ? 6 : 0)
+        .modifier(UnifiedCapsule(iconColor: iconColor))
     }
 
     @ViewBuilder private var secondaryButtons: some View {
@@ -68,8 +59,10 @@ struct ExpandableFloatingActionButton: View {
                     collapse()
                     item.action()
                 }
-                .modifier(GlassCircle())
-                .transition(.scale.combined(with: .opacity))
+                // Sits a touch lower than the `+` so the `+` reads as raised over it,
+                // and slides out from under the `+` rather than fading in place.
+                .offset(y: 3)
+                .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
     }
@@ -79,6 +72,7 @@ struct ExpandableFloatingActionButton: View {
         // two gestures are exclusive: the long press wins when held, the tap fires
         // only when it doesn't. A plain `Button` would run both.
         icon("plus")
+            .shadow(color: .black.opacity(isExpanded ? 0.18 : 0), radius: 3, x: -2, y: 2)
             .contentShape(.circle)
             .gesture(
                 ExclusiveGesture(
@@ -117,25 +111,31 @@ struct ExpandableFloatingActionButton: View {
     }
 
     private func expand() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.78)) {
             isExpanded = true
         }
     }
 
     private func collapse() {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.78)) {
             isExpanded = false
         }
     }
 }
 
-/// Glass circle styling for the secondary buttons on iOS 26; a tinted circle on older OSes.
-private struct GlassCircle: ViewModifier {
+/// The single background uniting the buttons: one interactive glass capsule on
+/// iOS 26, a solid accent capsule on earlier versions. A capsule collapses to a
+/// circle when it only contains the `+`.
+private struct UnifiedCapsule: ViewModifier {
+    let iconColor: Color
+
     func body(content: Content) -> some View {
         if #available(iOS 26, *) {
-            content.glassEffect(.regular.interactive(), in: .circle)
+            content.glassEffect(.regular.interactive(), in: .capsule)
         } else {
-            content.background(Color.white.opacity(0.18), in: Circle())
+            content
+                .background(Color.accentColor, in: .capsule)
+                .shadow(radius: 4, y: 2)
         }
     }
 }
