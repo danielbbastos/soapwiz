@@ -11,10 +11,10 @@ struct FABAction: Identifiable {
 }
 
 /// A floating `+` button that tapping performs the primary action. Long-pressing
-/// grows the *same* element sideways into a single capsule: the secondary action
-/// buttons slide out from underneath the `+`, which stays anchored on the right and
-/// casts a slight shadow over them. Falls back to acting like `FloatingActionButton`
-/// when no secondary actions are supplied.
+/// grows the *same* element sideways: the secondary action buttons slide out from
+/// underneath the `+` (clipped to a shared capsule), while the `+` stays anchored
+/// on the right as a raised circle casting a shadow over them. Falls back to acting
+/// like `FloatingActionButton` when no secondary actions are supplied.
 struct ExpandableFloatingActionButton: View {
     let primaryAction: () -> Void
     let secondaryActions: [FABAction]
@@ -22,6 +22,15 @@ struct ExpandableFloatingActionButton: View {
     @State private var isExpanded = false
 
     private let diameter: CGFloat = 56
+    private let spacing: CGFloat = 8
+
+    private var secondaryWidth: CGFloat {
+        let count = CGFloat(secondaryActions.count)
+        guard count > 0 else { return 0 }
+        return count * diameter + (count - 1) * spacing
+    }
+    private var expandedWidth: CGFloat { diameter + spacing + secondaryWidth }
+    private var width: CGFloat { isExpanded ? expandedWidth : diameter }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -40,29 +49,49 @@ struct ExpandableFloatingActionButton: View {
         }
     }
 
-    /// A single capsule that widens to the left as the secondary buttons appear.
-    /// Because the control is anchored bottom-trailing, growing the `HStack` keeps
-    /// the `+` fixed on the right while the leading edge extends outward.
     private var control: some View {
-        HStack(spacing: 4) {
-            secondaryButtons
+        ZStack(alignment: .trailing) {
+            // Shared background. The capsule's rounded right end coincides with the
+            // plus circle, so the two read as one element.
+            background
+                .frame(width: width, height: diameter)
+
+            // Secondary buttons, clipped to the capsule so they appear to emerge
+            // from under the plus instead of sliding in from off-screen.
+            secondaryGroup
+                .frame(width: secondaryWidth, height: diameter)
+                .offset(x: isExpanded ? -(diameter + spacing) : 0)
+                .opacity(isExpanded ? 1 : 0)
+                .frame(width: width, height: diameter, alignment: .trailing)
+                .clipShape(.capsule)
+
+            // The plus, raised on top, casts a shadow leftward over the buttons.
             plusButton
+                .frame(width: diameter, height: diameter)
+                .modifier(PlusCircle())
+                .shadow(color: .black.opacity(isExpanded ? 0.22 : 0), radius: 4, x: -3, y: 1)
         }
-        .padding(.horizontal, isExpanded ? 6 : 0)
-        .modifier(UnifiedCapsule(iconColor: iconColor))
+        .frame(width: width, height: diameter, alignment: .trailing)
+        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
     }
 
-    @ViewBuilder private var secondaryButtons: some View {
-        if isExpanded {
+    @ViewBuilder private var background: some View {
+        if #available(iOS 26, *) {
+            Color.clear.glassEffect(.regular, in: .capsule)
+        } else {
+            Capsule()
+                .fill(Color.accentColor)
+                .shadow(radius: 4, y: 2)
+        }
+    }
+
+    private var secondaryGroup: some View {
+        HStack(spacing: spacing) {
             ForEach(secondaryActions) { item in
                 iconButton(systemImage: item.systemImage, accessibility: item.label) {
                     collapse()
                     item.action()
                 }
-                // Sits a touch lower than the `+` so the `+` reads as raised over it,
-                // and slides out from under the `+` rather than fading in place.
-                .offset(y: 3)
-                .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
     }
@@ -72,7 +101,6 @@ struct ExpandableFloatingActionButton: View {
         // two gestures are exclusive: the long press wins when held, the tap fires
         // only when it doesn't. A plain `Button` would run both.
         icon("plus")
-            .shadow(color: .black.opacity(isExpanded ? 0.18 : 0), radius: 3, x: -2, y: 2)
             .contentShape(.circle)
             .gesture(
                 ExclusiveGesture(
@@ -111,31 +139,27 @@ struct ExpandableFloatingActionButton: View {
     }
 
     private func expand() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.78)) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             isExpanded = true
         }
     }
 
     private func collapse() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.78)) {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             isExpanded = false
         }
     }
 }
 
-/// The single background uniting the buttons: one interactive glass capsule on
-/// iOS 26, a solid accent capsule on earlier versions. A capsule collapses to a
-/// circle when it only contains the `+`.
-private struct UnifiedCapsule: ViewModifier {
-    let iconColor: Color
-
+/// The raised circle behind the `+`: interactive glass on iOS 26, a solid accent
+/// circle on earlier versions. Sits on top of the shared capsule so it can cast a
+/// shadow over the revealed secondary buttons.
+private struct PlusCircle: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 26, *) {
-            content.glassEffect(.regular.interactive(), in: .capsule)
+            content.glassEffect(.regular.interactive(), in: .circle)
         } else {
-            content
-                .background(Color.accentColor, in: .capsule)
-                .shadow(radius: 4, y: 2)
+            content.background(Color.accentColor, in: .circle)
         }
     }
 }

@@ -84,7 +84,7 @@ struct IngredientListView: View {
                     ExpandableFloatingActionButton(
                         primaryAction: { model.showingAddIngredient = true },
                         secondaryActions: ingredients.isEmpty ? [] : [
-                            FABAction(label: "Bulk Import", systemImage: "tray.and.arrow.down") {
+                            FABAction(label: "Bulk Import", systemImage: "shippingbox") {
                                 model.showingBulkImport = true
                             }
                         ]
