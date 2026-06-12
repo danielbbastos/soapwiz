@@ -24,6 +24,7 @@ enum ExpiryFilter: String, CaseIterable, Identifiable {
 @Observable
 final class IngredientListViewModel {
     var showingAddIngredient: Bool = false
+    var showingBulkImport: Bool = false
     var showingFilters: Bool = false
     var pendingIngredient: Ingredient?
     var editMode: EditMode = .inactive
