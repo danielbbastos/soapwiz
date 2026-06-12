@@ -10,15 +10,17 @@ struct FABAction: Identifiable {
     let action: () -> Void
 }
 
-/// A floating `+` button whose tap performs the primary action, and whose
-/// long-press expands to reveal labelled secondary actions stacked above it.
-/// Falls back to acting exactly like `FloatingActionButton` when no secondary
-/// actions are supplied.
+/// A floating `+` button that tapping performs the primary action. Long-pressing
+/// grows it sideways into a capsule that holds the primary `+` alongside circular
+/// buttons for each secondary action. Falls back to acting exactly like
+/// `FloatingActionButton` when no secondary actions are supplied.
 struct ExpandableFloatingActionButton: View {
     let primaryAction: () -> Void
     let secondaryActions: [FABAction]
 
     @State private var isExpanded = false
+
+    private let diameter: CGFloat = 56
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
@@ -31,56 +33,87 @@ struct ExpandableFloatingActionButton: View {
                 .accessibilityLabel("Dismiss")
             }
 
-            VStack(alignment: .trailing, spacing: 12) {
-                if isExpanded {
-                    ForEach(secondaryActions) { item in
-                        secondaryButton(item)
-                    }
+            control
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
+        }
+    }
+
+    @ViewBuilder private var control: some View {
+        if #available(iOS 26, *) {
+            GlassEffectContainer(spacing: 8) {
+                HStack(spacing: 8) {
+                    secondaryButtons
+                    plusButton
+                        .glassEffect(.regular.interactive(), in: .circle)
                 }
-                mainButton
             }
-            .padding(.trailing, 20)
-            .padding(.bottom, 20)
+        } else {
+            HStack(spacing: 4) {
+                secondaryButtons
+                plusButton
+            }
+            .background(
+                Capsule()
+                    .fill(Color.accentColor)
+                    .shadow(radius: 4, y: 2)
+            )
         }
     }
 
-    private var mainButton: some View {
-        Button {
-            if isExpanded {
-                collapse()
-            } else {
-                primaryAction()
+    @ViewBuilder private var secondaryButtons: some View {
+        if isExpanded {
+            ForEach(secondaryActions) { item in
+                iconButton(systemImage: item.systemImage, accessibility: item.label) {
+                    collapse()
+                    item.action()
+                }
+                .modifier(GlassCircle())
+                .transition(.scale.combined(with: .opacity))
             }
-        } label: {
-            Image(systemName: "plus")
-                .font(.title2.weight(.semibold))
-                .rotationEffect(.degrees(isExpanded ? 45 : 0))
-                .frame(width: 56, height: 56)
         }
-        .modifier(FABStyle())
-        .simultaneousGesture(
-            LongPressGesture().onEnded { _ in
-                guard !secondaryActions.isEmpty else { return }
-                expand()
-            }
-        )
     }
 
-    private func secondaryButton(_ item: FABAction) -> some View {
-        Button {
-            collapse()
-            item.action()
-        } label: {
-            HStack(spacing: 10) {
-                Text(item.label)
-                    .font(.subheadline.weight(.semibold))
-                Image(systemName: item.systemImage)
-                    .font(.body.weight(.semibold))
-                    .frame(width: 44, height: 44)
-            }
+    private var plusButton: some View {
+        // A long press must expand without also firing the tap on release, so the
+        // two gestures are exclusive: the long press wins when held, the tap fires
+        // only when it doesn't. A plain `Button` would run both.
+        icon("plus")
+            .contentShape(.circle)
+            .gesture(
+                ExclusiveGesture(
+                    LongPressGesture(minimumDuration: 0.35).onEnded { _ in
+                        guard !secondaryActions.isEmpty else { return }
+                        expand()
+                    },
+                    TapGesture().onEnded {
+                        primaryAction()
+                        if isExpanded { collapse() }
+                    }
+                )
+            )
+            .accessibilityElement()
+            .accessibilityLabel("Add")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint(secondaryActions.isEmpty ? "" : "Long press for more actions")
+    }
+
+    private func iconButton(systemImage: String, accessibility: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            icon(systemImage)
         }
-        .modifier(SecondaryFABStyle())
-        .transition(.move(edge: .trailing).combined(with: .opacity))
+        .accessibilityLabel(accessibility)
+    }
+
+    private func icon(_ systemImage: String) -> some View {
+        Image(systemName: systemImage)
+            .font(.title2.weight(.semibold))
+            .foregroundStyle(iconColor)
+            .frame(width: diameter, height: diameter)
+    }
+
+    private var iconColor: Color {
+        if #available(iOS 26, *) { Color.warmInk } else { .white }
     }
 
     private func expand() {
@@ -96,35 +129,13 @@ struct ExpandableFloatingActionButton: View {
     }
 }
 
-private struct FABStyle: ViewModifier {
+/// Glass circle styling for the secondary buttons on iOS 26; a tinted circle on older OSes.
+private struct GlassCircle: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 26, *) {
-            content
-                .glassEffect(.regular.interactive(), in: .circle)
+            content.glassEffect(.regular.interactive(), in: .circle)
         } else {
-            content
-                .foregroundStyle(.white)
-                .background(Color.accentColor)
-                .clipShape(Circle())
-                .shadow(radius: 4, y: 2)
-        }
-    }
-}
-
-private struct SecondaryFABStyle: ViewModifier {
-    func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content
-                .padding(.leading, 16)
-                .foregroundStyle(Color.warmInk)
-                .glassEffect(.regular.interactive(), in: .capsule)
-        } else {
-            content
-                .padding(.leading, 16)
-                .foregroundStyle(.white)
-                .background(Color.accentColor)
-                .clipShape(Capsule())
-                .shadow(radius: 4, y: 2)
+            content.background(Color.white.opacity(0.18), in: Circle())
         }
     }
 }
