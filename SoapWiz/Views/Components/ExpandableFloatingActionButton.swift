@@ -11,24 +11,23 @@ struct FABAction: Identifiable {
 }
 
 /// A floating `+` button that tapping performs the primary action. Long-pressing
-/// grows the *same* element sideways: the secondary action buttons slide out from
-/// underneath the `+` (clipped to a shared capsule), while the `+` stays anchored
-/// on the right as a raised circle casting a shadow over them. Falls back to acting
-/// like `FloatingActionButton` when no secondary actions are supplied.
+/// grows the *same* element sideways: the secondary action buttons (icon + label)
+/// slide out from underneath the `+` (clipped to a shared capsule), while the `+`
+/// stays anchored on the right as a raised circle. Falls back to acting like
+/// `FloatingActionButton` when no secondary actions are supplied.
 struct ExpandableFloatingActionButton: View {
     let primaryAction: () -> Void
     let secondaryActions: [FABAction]
 
     @State private var isExpanded = false
+    /// Natural width of the labelled secondary buttons, measured so the capsule can
+    /// size to whatever the labels need.
+    @State private var secondaryContentWidth: CGFloat = 0
 
     private let diameter: CGFloat = 56
     private let spacing: CGFloat = 8
 
-    private var secondaryWidth: CGFloat {
-        let count = CGFloat(secondaryActions.count)
-        guard count > 0 else { return 0 }
-        return count * diameter + (count - 1) * spacing
-    }
+    private var secondaryWidth: CGFloat { max(secondaryContentWidth, diameter) }
     private var expandedWidth: CGFloat { diameter + spacing + secondaryWidth }
     private var width: CGFloat { isExpanded ? expandedWidth : diameter }
 
@@ -51,49 +50,73 @@ struct ExpandableFloatingActionButton: View {
 
     private var control: some View {
         ZStack(alignment: .trailing) {
-            // Shared background. The capsule's rounded right end coincides with the
-            // plus circle, so the two read as one element.
+            // Shared background, with the element's drop shadow over the list below.
             background
                 .frame(width: width, height: diameter)
+                .shadow(color: .black.opacity(isExpanded ? 0.22 : 0.12),
+                        radius: isExpanded ? 10 : 4,
+                        y: isExpanded ? 5 : 2)
 
             // Secondary buttons, clipped to the capsule so they appear to emerge
             // from under the plus instead of sliding in from off-screen.
             secondaryGroup
-                .frame(width: secondaryWidth, height: diameter)
                 .offset(x: isExpanded ? -(diameter + spacing) : 0)
                 .opacity(isExpanded ? 1 : 0)
                 .frame(width: width, height: diameter, alignment: .trailing)
                 .clipShape(.capsule)
 
-            // The plus, raised on top, casts a shadow leftward over the buttons.
+            // The plus, raised on top when expanded, casting a soft shadow over the
+            // buttons. Collapsed, it is simply the icon sitting on the background.
             plusButton
                 .frame(width: diameter, height: diameter)
-                .modifier(PlusCircle())
-                .shadow(color: .black.opacity(isExpanded ? 0.22 : 0), radius: 4, x: -3, y: 1)
+                .modifier(RaisedPlus(raised: isExpanded))
+                .shadow(color: .black.opacity(isExpanded ? 0.10 : 0), radius: 3, x: -2, y: 1)
         }
         .frame(width: width, height: diameter, alignment: .trailing)
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
+        .onPreferenceChange(FABWidthKey.self) { secondaryContentWidth = $0 }
     }
 
     @ViewBuilder private var background: some View {
         if #available(iOS 26, *) {
-            Color.clear.glassEffect(.regular, in: .capsule)
+            Color.clear.glassEffect(.regular.interactive(), in: .capsule)
         } else {
-            Capsule()
-                .fill(Color.accentColor)
-                .shadow(radius: 4, y: 2)
+            Capsule().fill(Color.accentColor)
         }
     }
 
     private var secondaryGroup: some View {
         HStack(spacing: spacing) {
             ForEach(secondaryActions) { item in
-                iconButton(systemImage: item.systemImage, accessibility: item.label) {
-                    collapse()
-                    item.action()
-                }
+                secondaryButton(item)
             }
         }
+        .fixedSize()
+        .background(
+            GeometryReader { proxy in
+                Color.clear.preference(key: FABWidthKey.self, value: proxy.size.width)
+            }
+        )
+    }
+
+    private func secondaryButton(_ item: FABAction) -> some View {
+        Button {
+            collapse()
+            item.action()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: item.systemImage)
+                    .font(.title3.weight(.semibold))
+                Text(item.label)
+                    .font(.subheadline.weight(.semibold))
+                    .fixedSize()
+            }
+            .foregroundStyle(iconColor)
+            .padding(.leading, 20)
+            .padding(.trailing, 8)
+            .frame(height: diameter)
+        }
+        .accessibilityLabel(item.label)
     }
 
     private var plusButton: some View {
@@ -120,13 +143,6 @@ struct ExpandableFloatingActionButton: View {
             .accessibilityHint(secondaryActions.isEmpty ? "" : "Long press for more actions")
     }
 
-    private func iconButton(systemImage: String, accessibility: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            icon(systemImage)
-        }
-        .accessibilityLabel(accessibility)
-    }
-
     private func icon(_ systemImage: String) -> some View {
         Image(systemName: systemImage)
             .font(.title2.weight(.semibold))
@@ -151,15 +167,29 @@ struct ExpandableFloatingActionButton: View {
     }
 }
 
-/// The raised circle behind the `+`: interactive glass on iOS 26, a solid accent
-/// circle on earlier versions. Sits on top of the shared capsule so it can cast a
-/// shadow over the revealed secondary buttons.
-private struct PlusCircle: ViewModifier {
+/// Measures the natural width of the labelled secondary buttons.
+private struct FABWidthKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+/// The raised circle behind the `+` while expanded: interactive glass on iOS 26,
+/// a solid accent circle on earlier versions. Collapsed, the `+` needs no circle of
+/// its own — it sits directly on the shared background.
+private struct RaisedPlus: ViewModifier {
+    let raised: Bool
+
     func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content.glassEffect(.regular.interactive(), in: .circle)
+        if raised {
+            if #available(iOS 26, *) {
+                content.glassEffect(.regular.interactive(), in: .circle)
+            } else {
+                content.background(Color.accentColor, in: .circle)
+            }
         } else {
-            content.background(Color.accentColor, in: .circle)
+            content
         }
     }
 }
