@@ -34,11 +34,14 @@ struct CategoryListView: View {
                             }
                         }
                         .onDelete { model.delete(at: $0, in: categories, context: modelContext) }
+                        .listRowBackground(Color.cardBackground)
                     }
                 }
             }
             .navigationTitle("Categories")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle("Categories")
+            .warmBackground()
 
             if editMode?.wrappedValue != .active {
                 FloatingActionButton { model.showingAddCategory = true }

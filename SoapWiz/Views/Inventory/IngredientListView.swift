@@ -43,12 +43,16 @@ struct IngredientListView: View {
                                         model.delete(ingredient, context: modelContext)
                                     }
                                 }
+                                .listRowBackground(Color.cardBackground)
                             }
                         }
                         .environment(\.editMode, $model.editMode)
                     }
                 }
                 .navigationTitle("Inventory")
+                .navigationBarTitleDisplayMode(.inline)
+                .warmNavigationTitle("Inventory")
+                .warmBackground()
                 .navigationDestination(for: Ingredient.self) { ingredient in
                     IngredientDetailView(
                         ingredient: ingredient,
@@ -120,11 +124,11 @@ struct IngredientListView: View {
                         .font(.caption2.bold())
                         .foregroundStyle(.white)
                         .padding(2)
-                        .background(.blue, in: Circle())
+                        .background(Color.accentColor, in: Circle())
                         .offset(x: 6, y: -6)
                 }
             }
         }
-        .foregroundStyle(model.hasActiveFilters ? .blue : .primary)
+        .foregroundStyle(model.hasActiveFilters ? Color.accentColor : .primary)
     }
 }

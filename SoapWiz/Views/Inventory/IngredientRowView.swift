@@ -10,10 +10,10 @@ struct IngredientRowView: View {
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(ingredient.name)
-                    .font(.headline)
+                    .font(.body.weight(.medium))
                 if let categoryName = ingredient.category?.name {
                     Text(categoryName)
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -63,7 +63,7 @@ struct IngredientRowView: View {
                     }
                 }
                 Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
-                    .font(.subheadline)
+                    .font(.subheadline.monospacedDigit())
                     .foregroundStyle(ingredient.totalRemaining > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
             }
         }

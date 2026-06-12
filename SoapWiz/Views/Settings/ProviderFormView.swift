@@ -24,6 +24,7 @@ struct ProviderFormView: View {
                             .foregroundStyle(.red)
                     }
                 }
+                .listRowBackground(Color.cardBackground)
 
                 Section("Website") {
                     TextField("https://…", text: $model.website)
@@ -31,14 +32,18 @@ struct ProviderFormView: View {
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                 }
+                .listRowBackground(Color.cardBackground)
 
                 Section("Notes") {
                     TextField("Optional (e.g. lead time, minimum order)", text: $model.notes, axis: .vertical)
                         .lineLimit(3...6)
                 }
+                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle(model.isEditing ? "Edit Provider" : "New Provider")
             .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle(model.isEditing ? "Edit Provider" : "New Provider")
+            .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

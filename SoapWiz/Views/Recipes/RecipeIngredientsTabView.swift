@@ -73,7 +73,9 @@ struct RecipeIngredientsTabView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Dosage Percentages")
                     .font(.headline)
-                Text("These percentages represent the dosage as a fraction of total oil weight — for example, 1% equals 10 g per 1000 g of oils.\n\nThey are only relevant for **Sodium Lactate** and **Citric Acid Powder**.")
+                Text("These percentages represent the dosage as a fraction of total oil weight — "
+                     + "for example, 1% equals 10 g per 1000 g of oils."
+                     + "\n\nThey are only relevant for **Sodium Lactate** and **Citric Acid Powder**.")
                     .font(.body)
                     .foregroundStyle(.secondary)
             }
@@ -291,7 +293,7 @@ struct RecipeIngredientsTabView: View {
         .font(.footnote)
         .fontWeight(.medium)
         .foregroundStyle(.secondary)
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(Color.cardBackground)
     }
 
     private func amountRow(_ label: String, weight: Double, pct: Double, summary: Bool) -> some View {
@@ -321,11 +323,13 @@ struct RecipeIngredientsTabView: View {
     private func formatPct(_ pct: Double) -> String {
         String(format: "%.1f%%", pct)
     }
+}
 
-    // MARK: - Extra Ingredients
+// MARK: - Extra Ingredients
 
+private extension RecipeIngredientsTabView {
     @ViewBuilder
-    private var extraIngredientsSection: some View {
+    var extraIngredientsSection: some View {
         if let data = model.extraIngredientData {
             Section(header: sectionHeader("Extra Ingredients", expanded: $extraIngredientsExpanded)) {
                 if extraIngredientsExpanded {
@@ -383,7 +387,7 @@ struct RecipeIngredientsTabView: View {
         .font(.footnote)
         .fontWeight(.medium)
         .foregroundStyle(.secondary)
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(Color.cardBackground)
     }
 
     private func extraSectionARow(label: String, weight: Double, isSubrow: Bool) -> some View {

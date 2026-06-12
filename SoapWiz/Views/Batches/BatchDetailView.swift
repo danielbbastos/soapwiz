@@ -36,12 +36,14 @@ struct BatchDetailView: View {
                     LabeledContent("Cost per batch", value: formatCurrency(BatchHistoryViewModel.costPerBatch(of: batch)))
                 }
             }
+            .listRowBackground(Color.cardBackground)
 
             Section("Consumed") {
                 ForEach(sortedLineItems) { item in
                     lineItemRow(item)
                 }
             }
+            .listRowBackground(Color.cardBackground)
 
             Section {
                 if let recipe = batch.recipe {
@@ -53,9 +55,12 @@ struct BatchDetailView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .listRowBackground(Color.cardBackground)
         }
         .navigationTitle("Batch")
         .navigationBarTitleDisplayMode(.inline)
+        .warmNavigationTitle("Batch")
+        .warmBackground()
     }
 
     private func lineItemRow(_ item: BatchLineItem) -> some View {

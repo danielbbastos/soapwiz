@@ -45,10 +45,13 @@ struct LyeIngredientPickerView: View {
                         }
                     }
                 }
+                .listRowBackground(Color.cardBackground)
             }
         }
         .searchable(text: $searchText)
         .navigationTitle("Lye ingredient")
         .navigationBarTitleDisplayMode(.inline)
+        .warmNavigationTitle("Lye ingredient")
+        .warmBackground()
     }
 }

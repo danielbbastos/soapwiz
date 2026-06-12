@@ -29,11 +29,15 @@ struct RecipeListView: View {
                                         model.delete(recipe, context: modelContext)
                                     }
                                 }
+                                .listRowBackground(Color.cardBackground)
                             }
                         }
                     }
                 }
                 .navigationTitle("Recipes")
+                .navigationBarTitleDisplayMode(.inline)
+                .warmNavigationTitle("Recipes")
+                .warmBackground()
                 .navigationDestination(for: Recipe.self) { recipe in
                     RecipeDetailView(recipe: recipe)
                 }

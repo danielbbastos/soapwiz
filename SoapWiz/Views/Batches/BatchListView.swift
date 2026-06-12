@@ -27,11 +27,15 @@ struct BatchListView: View {
                             NavigationLink(value: batch) {
                                 BatchRowView(batch: batch)
                             }
+                            .listRowBackground(Color.cardBackground)
                         }
                     }
                 }
             }
             .navigationTitle("History")
+            .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle("History")
+            .warmBackground()
             .navigationDestination(for: Batch.self) { batch in
                 BatchDetailView(batch: batch)
             }

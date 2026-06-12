@@ -41,11 +41,14 @@ struct ProviderListView: View {
                             }
                         }
                         .onDelete { model.delete(at: $0, in: providers, context: modelContext) }
+                        .listRowBackground(Color.cardBackground)
                     }
                 }
             }
             .navigationTitle("Providers")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle("Providers")
+            .warmBackground()
 
             if editMode?.wrappedValue != .active {
                 FloatingActionButton { model.showingAddProvider = true }

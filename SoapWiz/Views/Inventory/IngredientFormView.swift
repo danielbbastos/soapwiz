@@ -45,6 +45,7 @@ struct IngredientFormView: View {
                         }
                     }
                 }
+                .listRowBackground(Color.cardBackground)
 
                 if model.showsSapValue || model.showsDensity {
                     Section("Properties") {
@@ -73,6 +74,7 @@ struct IngredientFormView: View {
                             }
                         }
                     }
+                    .listRowBackground(Color.cardBackground)
                 }
 
                 Section {
@@ -89,9 +91,12 @@ struct IngredientFormView: View {
                 } footer: {
                     Text("You'll see a warning when stock falls at or below this amount. Leave blank to disable.")
                 }
+                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle(model.isEditing ? "Edit Ingredient" : "New Ingredient")
             .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle(model.isEditing ? "Edit Ingredient" : "New Ingredient")
+            .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

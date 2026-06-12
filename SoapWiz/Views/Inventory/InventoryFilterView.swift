@@ -32,25 +32,9 @@ struct InventoryFilterView: View {
             Form {
                 if !categories.isEmpty {
                     LabeledContent("Category") {
-                        Menu(categoryLabel) {
-                            ForEach(categories) { category in
-                                let id = category.persistentModelID
-                                Button {
-                                    if model.selectedCategories.contains(id) {
-                                        model.selectedCategories.remove(id)
-                                    } else {
-                                        model.selectedCategories.insert(id)
-                                    }
-                                } label: {
-                                    if model.selectedCategories.contains(id) {
-                                        Label(category.name, systemImage: "checkmark")
-                                    } else {
-                                        Text(category.name)
-                                    }
-                                }
-                            }
-                        }
+                        categoryMenu
                     }
+                    .listRowBackground(Color.cardBackground)
                 }
 
                 Picker("Stock Status", selection: $model.stockStatus) {
@@ -59,26 +43,12 @@ struct InventoryFilterView: View {
                     }
                 }
                 .pickerStyle(.menu)
+                .listRowBackground(Color.cardBackground)
 
                 LabeledContent("Unit Type") {
-                    Menu(unitLabel) {
-                        ForEach(IngredientUnit.allCases, id: \.self) { unit in
-                            Button {
-                                if model.selectedUnits.contains(unit) {
-                                    model.selectedUnits.remove(unit)
-                                } else {
-                                    model.selectedUnits.insert(unit)
-                                }
-                            } label: {
-                                if model.selectedUnits.contains(unit) {
-                                    Label("\(unit.label) (\(unit.rawValue))", systemImage: "checkmark")
-                                } else {
-                                    Text("\(unit.label) (\(unit.rawValue))")
-                                }
-                            }
-                        }
-                    }
+                    unitMenu
                 }
+                .listRowBackground(Color.cardBackground)
 
                 Picker("Expiry Date", selection: $model.expiryFilter) {
                     ForEach(ExpiryFilter.allCases) { filter in
@@ -86,9 +56,12 @@ struct InventoryFilterView: View {
                     }
                 }
                 .pickerStyle(.menu)
+                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle("Filters")
+            .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if model.hasActiveFilters {
@@ -98,6 +71,47 @@ struct InventoryFilterView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private var categoryMenu: some View {
+        Menu(categoryLabel) {
+            ForEach(categories) { category in
+                let id = category.persistentModelID
+                Button {
+                    if model.selectedCategories.contains(id) {
+                        model.selectedCategories.remove(id)
+                    } else {
+                        model.selectedCategories.insert(id)
+                    }
+                } label: {
+                    if model.selectedCategories.contains(id) {
+                        Label(category.name, systemImage: "checkmark")
+                    } else {
+                        Text(category.name)
+                    }
+                }
+            }
+        }
+    }
+
+    private var unitMenu: some View {
+        Menu(unitLabel) {
+            ForEach(IngredientUnit.allCases, id: \.self) { unit in
+                Button {
+                    if model.selectedUnits.contains(unit) {
+                        model.selectedUnits.remove(unit)
+                    } else {
+                        model.selectedUnits.insert(unit)
+                    }
+                } label: {
+                    if model.selectedUnits.contains(unit) {
+                        Label("\(unit.label) (\(unit.rawValue))", systemImage: "checkmark")
+                    } else {
+                        Text("\(unit.label) (\(unit.rawValue))")
+                    }
                 }
             }
         }

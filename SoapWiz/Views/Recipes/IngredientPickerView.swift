@@ -55,10 +55,13 @@ struct IngredientPickerView: View {
                     ForEach(filtered, id: \.persistentModelID) { ingredient in
                         ingredientRow(ingredient)
                     }
+                    .listRowBackground(Color.cardBackground)
                 }
             }
             .navigationTitle("Choose Ingredient")
             .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle("Choose Ingredient")
+            .warmBackground()
             .searchable(text: $searchText, prompt: "Search ingredients")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

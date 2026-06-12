@@ -22,10 +22,10 @@ struct CreateBatchSheet: View {
     }
 
     private static let currencyFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.locale = .autoupdatingCurrent
-        return f
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = .autoupdatingCurrent
+        return formatter
     }()
 
     private func amountText(_ amount: Double, unit: String) -> String {
@@ -50,12 +50,14 @@ struct CreateBatchSheet: View {
                         )
                     }
                 }
+                .listRowBackground(Color.cardBackground)
 
                 if requirements.isEmpty {
                     Section {
                         Text("This recipe has no ingredients to consume.")
                             .foregroundStyle(.secondary)
                     }
+                    .listRowBackground(Color.cardBackground)
                 } else if !shortages.isEmpty {
                     Section("Not enough stock") {
                         ForEach(shortages) { req in
@@ -67,10 +69,13 @@ struct CreateBatchSheet: View {
                             }
                         }
                     }
+                    .listRowBackground(Color.cardBackground)
                 }
             }
             .navigationTitle("Create Batch")
             .navigationBarTitleDisplayMode(.inline)
+            .warmNavigationTitle("Create Batch")
+            .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

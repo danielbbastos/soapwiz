@@ -48,6 +48,7 @@ struct RecipeDetailView: View {
                     Text(recipe.desc)
                         .foregroundStyle(.secondary)
                 }
+                .listRowBackground(Color.cardBackground)
             }
 
             oilsSection
@@ -58,7 +59,9 @@ struct RecipeDetailView: View {
             costSection(batch: batch)
         }
         .navigationTitle(recipe.name)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        .warmNavigationTitle(recipe.name)
+        .warmBackground()
         .safeAreaInset(edge: .bottom) {
             Button {
                 showCreateBatch = true
@@ -126,6 +129,7 @@ struct RecipeDetailView: View {
                 }
             }
         }
+        .listRowBackground(Color.cardBackground)
     }
 
     private func oilAmountText(_ draft: OilIngredientDraft, batchWeight: Double?) -> String {
@@ -160,6 +164,7 @@ struct RecipeDetailView: View {
                     }
                 }
             }
+            .listRowBackground(Color.cardBackground)
         }
     }
 
@@ -180,6 +185,7 @@ struct RecipeDetailView: View {
                     }
                 }
             }
+            .listRowBackground(Color.cardBackground)
         }
     }
 
@@ -229,6 +235,7 @@ struct RecipeDetailView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .listRowBackground(Color.cardBackground)
     }
 
     // MARK: - Soap properties
@@ -287,23 +294,26 @@ struct RecipeDetailView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .listRowBackground(Color.cardBackground)
     }
+}
 
-    // MARK: - Cost
+// MARK: - Cost
 
-    private static let currencyFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.locale = .autoupdatingCurrent
-        return f
+private extension RecipeDetailView {
+    static let currencyFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = .autoupdatingCurrent
+        return formatter
     }()
 
     private static let amountFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.locale = .autoupdatingCurrent
-        f.minimumFractionDigits = 0
-        f.maximumFractionDigits = 2
-        return f
+        let formatter = NumberFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        return formatter
     }()
 
     private var pvpFactor: Double { settingsRecords.first?.pvpFactor ?? 4.0 }
@@ -383,6 +393,7 @@ struct RecipeDetailView: View {
                 }
             }
         }
+        .listRowBackground(Color.cardBackground)
     }
 
     private func productDisclosureLabel(_ draft: RecipeProductDraft, breakdown: ProductCostBreakdown) -> some View {

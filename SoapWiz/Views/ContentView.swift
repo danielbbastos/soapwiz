@@ -19,6 +19,7 @@ struct ContentView: View {
             }
         }
         .tabViewStyle(.tabBarOnly)
+        .fontDesign(.rounded)
         .environment(\.horizontalSizeClass, .compact)
         .environment(navigation)
     }
