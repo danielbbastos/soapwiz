@@ -53,9 +53,9 @@ struct ExpandableFloatingActionButton: View {
             // Shared background, with the element's drop shadow over the list below.
             background
                 .frame(width: width, height: diameter)
-                .shadow(color: .black.opacity(isExpanded ? 0.22 : 0.12),
-                        radius: isExpanded ? 10 : 4,
-                        y: isExpanded ? 5 : 2)
+                .shadow(color: .black.opacity(isExpanded ? 0.14 : 0.12),
+                        radius: isExpanded ? 6 : 4,
+                        y: isExpanded ? 3 : 2)
 
             // Secondary buttons, clipped to the capsule so they appear to emerge
             // from under the plus instead of sliding in from off-screen.
