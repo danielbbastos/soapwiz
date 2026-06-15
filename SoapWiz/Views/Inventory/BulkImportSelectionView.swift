@@ -52,6 +52,11 @@ struct BulkImportSelectionView: View {
                             .listRowBackground(Color.cardBackground)
                         }
                     }
+                    .overlay {
+                        if filteredIngredients.isEmpty {
+                            ContentUnavailableView.search(text: searchText)
+                        }
+                    }
                     .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ingredients")
                 }
             }

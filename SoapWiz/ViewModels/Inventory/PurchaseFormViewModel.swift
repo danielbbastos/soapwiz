@@ -11,9 +11,7 @@ final class PurchaseFormViewModel {
     var badge: String = ""
     var journalCode: String = ""
     var hasExpiryDate: Bool = false
-    /// Defaults to one year out so toggling "Has Expiry Date" on lands on a sensible
-    /// future date rather than today. Overwritten when editing a purchase that
-    /// already has an expiry.
+    /// Defaults to one year out; overwritten when editing a purchase that has an expiry.
     var expiryDate: Date = Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date()
     var hasOpeningDate: Bool = false
     var openingDate: Date = Date()
