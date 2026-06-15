@@ -21,20 +21,27 @@ struct BulkImportFlowView: View {
             Form {
                 PurchaseFormFields(model: model.currentForm)
             }
+            // Fresh identity per entry so advancing to the next ingredient resets the
+            // scroll position to the top instead of staying where the last one was.
+            .id(model.position)
             .navigationTitle(model.currentIngredient.name)
             .navigationBarTitleDisplayMode(.inline)
             .warmBackground()
+            .safeAreaInset(edge: .top, spacing: 0) {
+                Text(model.currentIngredient.name)
+                    .font(.title2.weight(.bold))
+                    .fontDesign(.rounded)
+                    .foregroundStyle(Color.warmInk)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+                    .padding(.vertical, 10)
+                    .background(Color.warmBackground)
+            }
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    VStack(spacing: 2) {
-                        Text(model.currentIngredient.name)
-                            .font(.title3.weight(.bold))
-                            .fontDesign(.rounded)
-                            .foregroundStyle(Color.warmInk)
-                        Text(model.progressText)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text(model.progressText)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { onFinish() }

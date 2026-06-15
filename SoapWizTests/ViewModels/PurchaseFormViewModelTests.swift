@@ -59,6 +59,39 @@ struct PurchaseFormViewModelTests {
         #expect(ingredient.purchases.first?.remainingAmount == 100)
     }
 
+    @Test func expiryDate_NewPurchase_DefaultsToOneYearFromToday() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let ingredient = Ingredient(name: "Olive Oil")
+        ctx.insert(ingredient)
+        let model = PurchaseFormViewModel(ingredient: ingredient)
+        let expectedDay = Calendar.current.date(byAdding: .year, value: 1, to: Date())
+        let expected = try #require(expectedDay)
+        #expect(Calendar.current.isDate(model.expiryDate, inSameDayAs: expected))
+    }
+
+    @Test func expiryDate_EditingPurchaseWithExpiry_LoadsStoredDate() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let ingredient = Ingredient(name: "Olive Oil")
+        ctx.insert(ingredient)
+        let stored = try #require(Calendar.current.date(byAdding: .month, value: 3, to: Date()))
+        let purchase = IngredientPurchase(
+            dateOfPurchase: .now,
+            quantity: 50,
+            totalPrice: 10,
+            badge: "",
+            journalCode: "",
+            expiryDate: stored,
+            openingDate: nil
+        )
+        ctx.insert(purchase)
+        ingredient.purchases.append(purchase)
+        let model = PurchaseFormViewModel(ingredient: ingredient, purchase: purchase)
+        #expect(model.hasExpiryDate)
+        #expect(Calendar.current.isDate(model.expiryDate, inSameDayAs: stored))
+    }
+
     @Test func saveUpdatesExistingPurchase() throws {
         let container = try makeContainer()
         let ctx = container.mainContext

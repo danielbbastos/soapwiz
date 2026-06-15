@@ -8,12 +8,18 @@ struct BulkImportSelectionView: View {
     @Query(sort: \Ingredient.name) private var ingredients: [Ingredient]
 
     @State private var selection: Set<PersistentIdentifier> = []
+    @State private var searchText = ""
 
     let onCancel: () -> Void
     let onStart: ([Ingredient]) -> Void
 
     private var selectedIngredients: [Ingredient] {
         ingredients.filter { selection.contains($0.persistentModelID) }
+    }
+
+    private var filteredIngredients: [Ingredient] {
+        guard !searchText.isEmpty else { return ingredients }
+        return ingredients.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
 
     var body: some View {
@@ -27,7 +33,7 @@ struct BulkImportSelectionView: View {
                     )
                 } else {
                     List {
-                        ForEach(ingredients) { ingredient in
+                        ForEach(filteredIngredients) { ingredient in
                             Button {
                                 toggle(ingredient)
                             } label: {
@@ -46,6 +52,7 @@ struct BulkImportSelectionView: View {
                             .listRowBackground(Color.cardBackground)
                         }
                     }
+                    .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ingredients")
                 }
             }
             .navigationTitle("Bulk Import")
