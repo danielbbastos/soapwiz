@@ -3,6 +3,7 @@ import SwiftData
 
 struct RecipeListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppNavigation.self) private var nav
     @Query(sort: \Recipe.name) private var recipes: [Recipe]
 
     @State private var model = RecipeListViewModel()
@@ -46,11 +47,25 @@ struct RecipeListView: View {
                         navigationPath = NavigationPath()
                     })
                 }
+                .navigationDestination(for: RecipeSeed.self) { seed in
+                    RecipeFormView(seed: seed, onSave: { _ in
+                        navigationPath = NavigationPath()
+                    })
+                }
 
                 FloatingActionButton {
                     navigationPath.append(true)
                 }
             }
+        }
+        // Honour a seeded-recipe request from the inventory selection flow: open
+        // the form pre-filled, then consume the request so it doesn't re-fire.
+        // `initial: true` covers the first launch, when this tab is created lazily
+        // *after* the seed is set and a plain change wouldn't fire.
+        .onChange(of: nav.pendingRecipeSeed, initial: true) { _, seed in
+            guard let seed else { return }
+            navigationPath.append(seed)
+            nav.pendingRecipeSeed = nil
         }
     }
 }

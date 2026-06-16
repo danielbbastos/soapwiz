@@ -58,6 +58,58 @@ struct RecipeFormViewModelTests {
         #expect(model.oilDrafts.count == 1)
     }
 
+    @Test func applySeed_RoutesIngredientsToMatchingSections() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oils = IngredientCategory(name: IngredientCategory.Name.oils)
+        let fragrances = IngredientCategory(name: IngredientCategory.Name.fragrances)
+        let additives = IngredientCategory(name: IngredientCategory.Name.additives)
+        let oil = Ingredient(name: "Olive Oil", category: oils, unit: "g")
+        let fragrance = Ingredient(name: "Lavender EO", category: fragrances, unit: "g")
+        let additive = Ingredient(name: "Kaolin Clay", category: additives, unit: "g")
+        [oils, fragrances, additives].forEach { ctx.insert($0) }
+        [oil, fragrance, additive].forEach { ctx.insert($0) }
+
+        let model = RecipeFormViewModel()
+        model.applySeed([oil, fragrance, additive])
+
+        #expect(model.oilDrafts.map(\.ingredient.name) == ["Olive Oil"])
+        #expect(model.fragranceDrafts.map(\.ingredient.name) == ["Lavender EO"])
+        #expect(model.additiveDrafts.map(\.ingredient.name) == ["Kaolin Clay"])
+    }
+
+    @Test func applySeed_SkipsLyeAndUncategorised() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let lyes = IngredientCategory(name: IngredientCategory.Name.lyes)
+        let lye = Ingredient(name: "Sodium Hydroxide", category: lyes, unit: "g")
+        let uncategorised = Ingredient(name: "Mystery", unit: "g")
+        ctx.insert(lyes)
+        [lye, uncategorised].forEach { ctx.insert($0) }
+
+        let model = RecipeFormViewModel()
+        model.applySeed([lye, uncategorised])
+
+        #expect(model.oilDrafts.isEmpty)
+        #expect(model.additiveDrafts.isEmpty)
+        #expect(model.fragranceDrafts.isEmpty)
+    }
+
+    @Test func applySeed_RunsOnce() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oils = IngredientCategory(name: IngredientCategory.Name.oils)
+        let oil = Ingredient(name: "Coconut Oil", category: oils, unit: "g")
+        ctx.insert(oils)
+        ctx.insert(oil)
+
+        let model = RecipeFormViewModel()
+        model.applySeed([oil])
+        model.applySeed([oil])
+
+        #expect(model.oilDrafts.count == 1)
+    }
+
     @Test func saveInsertsRecipeIngredients() throws {
         let (container, ctx) = try makeContext()
         _ = container
