@@ -144,6 +144,7 @@ private extension RecipeFormView {
                 }
                 .pickerStyle(.menu)
                 .labelsHidden()
+                .tint(.primary)
             }
 
             if model.weightUnitIsPercentage {
@@ -160,6 +161,7 @@ private extension RecipeFormView {
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()
+                    .tint(.primary)
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }

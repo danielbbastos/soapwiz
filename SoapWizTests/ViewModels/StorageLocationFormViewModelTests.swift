@@ -47,4 +47,24 @@ struct StorageLocationFormViewModelTests {
         model.save(context: ctx)
         #expect(existing.locationDescription == "new")
     }
+
+    @Test func save_NewLocation_ReturnsInsertedLocation() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let model = StorageLocationFormViewModel()
+        model.name = "  Shelf A  "
+        let saved = model.save(context: ctx)
+        #expect(saved.name == "Shelf A")
+    }
+
+    @Test func save_EditingLocation_ReturnsSameLocation() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = StorageLocation(name: "Shelf A", locationDescription: "old")
+        ctx.insert(existing)
+        let model = StorageLocationFormViewModel(location: existing)
+        model.locationDescription = "new"
+        let saved = model.save(context: ctx)
+        #expect(saved === existing)
+    }
 }

@@ -8,9 +8,11 @@ struct StorageLocationFormView: View {
     @Query(sort: \StorageLocation.name) private var allLocations: [StorageLocation]
 
     @State private var model: StorageLocationFormViewModel
+    let onSave: ((StorageLocation) -> Void)?
 
-    init(location: StorageLocation? = nil) {
+    init(location: StorageLocation? = nil, onSave: ((StorageLocation) -> Void)? = nil) {
         _model = State(initialValue: StorageLocationFormViewModel(location: location))
+        self.onSave = onSave
     }
 
     var body: some View {
@@ -42,7 +44,8 @@ struct StorageLocationFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(model.isEditing ? "Save" : "Add") {
-                        model.save(context: modelContext)
+                        let saved = model.save(context: modelContext)
+                        onSave?(saved)
                         dismiss()
                     }
                     .disabled(!model.isValid(among: allLocations))
