@@ -13,10 +13,17 @@ struct IngredientPickerView: View {
     @State private var searchText = ""
     @State private var selectedCategory: IngredientCategory?
     @State private var pendingSelections: Set<PersistentIdentifier> = []
+    @State private var showingNewIngredient = false
 
     private var categories: [IngredientCategory] {
         guard let role = allowedRole else { return allCategories }
         return allCategories.filter { $0.ingredientRole == role }
+    }
+
+    /// Category to pre-select when creating a new ingredient inline: the chosen
+    /// chip if any, otherwise the first category matching the picker's role.
+    private var defaultCategory: IngredientCategory? {
+        selectedCategory ?? categories.first
     }
 
     private var filtered: [Ingredient] {
@@ -52,6 +59,12 @@ struct IngredientPickerView: View {
                     Divider()
                 }
                 List {
+                    Button {
+                        showingNewIngredient = true
+                    } label: {
+                        Label("Add new ingredient", systemImage: "plus")
+                    }
+                    .listRowBackground(Color.cardBackground)
                     ForEach(filtered, id: \.persistentModelID) { ingredient in
                         ingredientRow(ingredient)
                     }
@@ -63,6 +76,11 @@ struct IngredientPickerView: View {
             .warmNavigationTitle("Choose Ingredient")
             .warmBackground()
             .searchable(text: $searchText, prompt: "Search ingredients")
+            .sheet(isPresented: $showingNewIngredient) {
+                IngredientFormView(defaultCategory: defaultCategory) { newIngredient in
+                    pendingSelections.insert(newIngredient.persistentModelID)
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

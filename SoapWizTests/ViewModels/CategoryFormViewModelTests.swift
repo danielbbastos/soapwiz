@@ -63,4 +63,24 @@ struct CategoryFormViewModelTests {
         model.save(context: ctx)
         #expect(existing.name == "Carrier Oils")
     }
+
+    @Test func save_NewCategory_ReturnsInsertedCategory() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let model = CategoryFormViewModel()
+        model.name = "  Oils  "
+        let saved = model.save(context: ctx)
+        #expect(saved.name == "Oils")
+    }
+
+    @Test func save_EditingCategory_ReturnsSameCategory() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = IngredientCategory(name: "Oils")
+        ctx.insert(existing)
+        let model = CategoryFormViewModel(category: existing)
+        model.name = "Carrier Oils"
+        let saved = model.save(context: ctx)
+        #expect(saved === existing)
+    }
 }

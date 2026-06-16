@@ -33,13 +33,16 @@ final class ProviderFormViewModel {
         !trimmedName.isEmpty && !isDuplicate(among: providers)
     }
 
-    func save(context: ModelContext) {
+    @discardableResult
+    func save(context: ModelContext) -> Provider {
         if let provider {
             provider.name = trimmedName
             provider.website = trimmedWebsite
             provider.notes = trimmedNotes
-        } else {
-            context.insert(Provider(name: trimmedName, website: trimmedWebsite, notes: trimmedNotes))
+            return provider
         }
+        let newProvider = Provider(name: trimmedName, website: trimmedWebsite, notes: trimmedNotes)
+        context.insert(newProvider)
+        return newProvider
     }
 }

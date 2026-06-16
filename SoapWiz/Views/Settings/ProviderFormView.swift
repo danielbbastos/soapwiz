@@ -8,9 +8,11 @@ struct ProviderFormView: View {
     @Query(sort: \Provider.name) private var allProviders: [Provider]
 
     @State private var model: ProviderFormViewModel
+    let onSave: ((Provider) -> Void)?
 
-    init(provider: Provider? = nil) {
+    init(provider: Provider? = nil, onSave: ((Provider) -> Void)? = nil) {
         _model = State(initialValue: ProviderFormViewModel(provider: provider))
+        self.onSave = onSave
     }
 
     var body: some View {
@@ -50,7 +52,8 @@ struct ProviderFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(model.isEditing ? "Save" : "Add") {
-                        model.save(context: modelContext)
+                        let saved = model.save(context: modelContext)
+                        onSave?(saved)
                         dismiss()
                     }
                     .disabled(!model.isValid(among: allProviders))

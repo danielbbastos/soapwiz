@@ -478,4 +478,18 @@ struct IngredientFormViewModelTests {
 
         #expect(existing.density == nil)
     }
+
+    @Test func defaultCategory_NewIngredient_PreselectsCategory() {
+        let oils = IngredientCategory(name: "Oils")
+        let model = IngredientFormViewModel(defaultCategory: oils)
+        #expect(model.selectedCategory === oils)
+    }
+
+    @Test func defaultCategory_EditingIngredient_KeepsIngredientCategory() {
+        let oils = IngredientCategory(name: "Oils")
+        let fragrances = IngredientCategory(name: "Fragrances")
+        let existing = Ingredient(name: "Olive Oil", category: oils, unit: "g")
+        let model = IngredientFormViewModel(ingredient: existing, defaultCategory: fragrances)
+        #expect(model.selectedCategory === oils)
+    }
 }

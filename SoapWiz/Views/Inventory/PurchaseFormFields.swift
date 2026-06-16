@@ -10,12 +10,31 @@ struct PurchaseFormFields: View {
     @Query(sort: \Provider.name) private var providers: [Provider]
     @Query(sort: \StorageLocation.name) private var storageLocations: [StorageLocation]
 
+    @State private var showingNewProvider = false
+    @State private var showingNewLocation = false
+
     var body: some View {
         Section("Purchase") {
-            Picker("Provider", selection: $model.selectedProvider) {
-                Text("None").tag(Optional<Provider>.none)
+            Menu {
+                Button { model.selectedProvider = nil } label: {
+                    MenuSelectionLabel("None", isSelected: model.selectedProvider == nil)
+                }
+                Button { showingNewProvider = true } label: {
+                    Label("New Provider", systemImage: "plus")
+                }
+                Divider()
                 ForEach(providers) { provider in
-                    Text(provider.name).tag(Optional(provider))
+                    Button { model.selectedProvider = provider } label: {
+                        MenuSelectionLabel(provider.name, isSelected: model.selectedProvider === provider)
+                    }
+                }
+            } label: {
+                PickerMenuRowLabel(title: "Provider", value: model.selectedProvider?.name ?? "None")
+            }
+            .tint(.primary)
+            .sheet(isPresented: $showingNewProvider) {
+                ProviderFormView { newProvider in
+                    model.selectedProvider = newProvider
                 }
             }
             DatePicker("Date of Purchase", selection: $model.dateOfPurchase, displayedComponents: .date)
@@ -63,10 +82,26 @@ struct PurchaseFormFields: View {
         .listRowBackground(Color.cardBackground)
 
         Section("Storage") {
-            Picker("Location", selection: $model.selectedLocation) {
-                Text("None").tag(Optional<StorageLocation>.none)
+            Menu {
+                Button { model.selectedLocation = nil } label: {
+                    MenuSelectionLabel("None", isSelected: model.selectedLocation == nil)
+                }
+                Button { showingNewLocation = true } label: {
+                    Label("New Location", systemImage: "plus")
+                }
+                Divider()
                 ForEach(storageLocations) { location in
-                    Text(location.name).tag(Optional(location))
+                    Button { model.selectedLocation = location } label: {
+                        MenuSelectionLabel(location.name, isSelected: model.selectedLocation === location)
+                    }
+                }
+            } label: {
+                PickerMenuRowLabel(title: "Location", value: model.selectedLocation?.name ?? "None")
+            }
+            .tint(.primary)
+            .sheet(isPresented: $showingNewLocation) {
+                StorageLocationFormView { newLocation in
+                    model.selectedLocation = newLocation
                 }
             }
         }

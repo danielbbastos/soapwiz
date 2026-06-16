@@ -30,12 +30,15 @@ final class StorageLocationFormViewModel {
         !trimmedName.isEmpty && !isDuplicate(among: locations)
     }
 
-    func save(context: ModelContext) {
+    @discardableResult
+    func save(context: ModelContext) -> StorageLocation {
         if let location {
             location.name = trimmedName
             location.locationDescription = trimmedDescription
-        } else {
-            context.insert(StorageLocation(name: trimmedName, locationDescription: trimmedDescription))
+            return location
         }
+        let newLocation = StorageLocation(name: trimmedName, locationDescription: trimmedDescription)
+        context.insert(newLocation)
+        return newLocation
     }
 }

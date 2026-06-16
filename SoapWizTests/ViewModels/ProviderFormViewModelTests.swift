@@ -49,4 +49,24 @@ struct ProviderFormViewModelTests {
         model.save(context: ctx)
         #expect(existing.website == "https://new.example")
     }
+
+    @Test func save_NewProvider_ReturnsInsertedProvider() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let model = ProviderFormViewModel()
+        model.name = "  Acme  "
+        let saved = model.save(context: ctx)
+        #expect(saved.name == "Acme")
+    }
+
+    @Test func save_EditingProvider_ReturnsSameProvider() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = Provider(name: "Acme", website: "old", notes: "")
+        ctx.insert(existing)
+        let model = ProviderFormViewModel(provider: existing)
+        model.website = "https://new.example"
+        let saved = model.save(context: ctx)
+        #expect(saved === existing)
+    }
 }

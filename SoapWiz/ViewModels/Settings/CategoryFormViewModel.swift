@@ -27,11 +27,14 @@ final class CategoryFormViewModel {
         !trimmedName.isEmpty && !isDuplicate(among: categories)
     }
 
-    func save(context: ModelContext) {
+    @discardableResult
+    func save(context: ModelContext) -> IngredientCategory {
         if let category {
             category.name = trimmedName
-        } else {
-            context.insert(IngredientCategory(name: trimmedName))
+            return category
         }
+        let newCategory = IngredientCategory(name: trimmedName)
+        context.insert(newCategory)
+        return newCategory
     }
 }

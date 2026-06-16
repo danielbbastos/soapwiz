@@ -9,10 +9,11 @@ struct IngredientFormView: View {
     @Query private var allIngredients: [Ingredient]
 
     @State private var model: IngredientFormViewModel
+    @State private var showingNewCategory = false
     let onSave: ((Ingredient) -> Void)?
 
-    init(ingredient: Ingredient? = nil, onSave: ((Ingredient) -> Void)? = nil) {
-        _model = State(initialValue: IngredientFormViewModel(ingredient: ingredient))
+    init(ingredient: Ingredient? = nil, defaultCategory: IngredientCategory? = nil, onSave: ((Ingredient) -> Void)? = nil) {
+        _model = State(initialValue: IngredientFormViewModel(ingredient: ingredient, defaultCategory: defaultCategory))
         self.onSave = onSave
     }
 
@@ -32,12 +33,23 @@ struct IngredientFormView: View {
                             model.applyNameChange(existingCodes: existingCodes)
                         }
                     codeField
-                    Picker("Category", selection: $model.selectedCategory) {
-                        Text("None").tag(Optional<IngredientCategory>.none)
-                        ForEach(categories) { category in
-                            Text(category.name).tag(Optional(category))
+                    Menu {
+                        Button { model.selectedCategory = nil } label: {
+                            MenuSelectionLabel("None", isSelected: model.selectedCategory == nil)
                         }
+                        Button { showingNewCategory = true } label: {
+                            Label("New Category", systemImage: "plus")
+                        }
+                        Divider()
+                        ForEach(categories) { category in
+                            Button { model.selectedCategory = category } label: {
+                                MenuSelectionLabel(category.name, isSelected: model.selectedCategory === category)
+                            }
+                        }
+                    } label: {
+                        PickerMenuRowLabel(title: "Category", value: model.selectedCategory?.name ?? "None")
                     }
+                    .tint(.primary)
                     Picker("Unit", selection: $model.selectedUnit) {
                         Text("None").tag(Optional<IngredientUnit>.none)
                         ForEach(IngredientUnit.allCases, id: \.self) { unit in
@@ -97,6 +109,11 @@ struct IngredientFormView: View {
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle(model.isEditing ? "Edit Ingredient" : "New Ingredient")
             .warmBackground()
+            .sheet(isPresented: $showingNewCategory) {
+                CategoryFormView { newCategory in
+                    model.selectedCategory = newCategory
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

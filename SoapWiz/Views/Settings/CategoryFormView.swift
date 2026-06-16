@@ -8,9 +8,11 @@ struct CategoryFormView: View {
     @Query(sort: \IngredientCategory.name) private var allCategories: [IngredientCategory]
 
     @State private var model: CategoryFormViewModel
+    let onSave: ((IngredientCategory) -> Void)?
 
-    init(category: IngredientCategory? = nil) {
+    init(category: IngredientCategory? = nil, onSave: ((IngredientCategory) -> Void)? = nil) {
         _model = State(initialValue: CategoryFormViewModel(category: category))
+        self.onSave = onSave
     }
 
     var body: some View {
@@ -36,7 +38,8 @@ struct CategoryFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(model.isEditing ? "Save" : "Add") {
-                        model.save(context: modelContext)
+                        let saved = model.save(context: modelContext)
+                        onSave?(saved)
                         dismiss()
                     }
                     .disabled(!model.isValid(among: allCategories))
