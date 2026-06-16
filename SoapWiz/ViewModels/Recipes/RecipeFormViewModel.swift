@@ -404,6 +404,24 @@ final class RecipeFormViewModel {
         if fragranceUnitIsPercentageOfOils { redistributeFragrancePercentages() }
     }
 
+    private var hasSeeded = false
+
+    /// Pre-fills the form from an inventory selection, routing each ingredient to
+    /// the section its category maps to. Lye and uncategorised ingredients are
+    /// skipped — they aren't recipe line items. Runs once.
+    func applySeed(_ ingredients: [Ingredient]) {
+        guard !hasSeeded else { return }
+        hasSeeded = true
+        for ingredient in ingredients {
+            switch ingredient.category?.ingredientRole {
+            case .oil: addOil(ingredient)
+            case .additive: addAdditive(ingredient)
+            case .fragrance: addFragrance(ingredient)
+            case nil: continue
+            }
+        }
+    }
+
     func updateFragrance(id: UUID, amount: Double? = nil, unit: String? = nil) {
         guard let idx = fragranceDrafts.firstIndex(where: { $0.id == id }) else { return }
         if let amount { fragranceDrafts[idx].amount = amount }

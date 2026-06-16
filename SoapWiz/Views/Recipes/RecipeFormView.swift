@@ -17,6 +17,7 @@ struct RecipeFormView: View {
     }()
 
     var recipe: Recipe? = nil
+    var seed: RecipeSeed? = nil
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -52,6 +53,7 @@ struct RecipeFormView: View {
             }
             .task(id: recipe?.persistentModelID) {
                 if let recipe { model.load(from: recipe) }
+                if let seed { model.applySeed(seed.ingredients) }
                 model.resolveDefaultLyeIngredient(from: lyeIngredients)
             }
             .onChange(of: lyeIngredients) {
@@ -91,9 +93,9 @@ struct RecipeFormView: View {
         .pickerStyle(.segmented)
 
         if #available(iOS 26, *) {
-            picker.background(Color(.systemGroupedBackground), in: .capsule)
+            picker.background(Color.warmBackground, in: .capsule)
         } else {
-            picker.background(Color(.systemGroupedBackground), in: .rect(cornerRadius: 8))
+            picker.background(Color.warmBackground, in: .rect(cornerRadius: 8))
         }
     }
 }

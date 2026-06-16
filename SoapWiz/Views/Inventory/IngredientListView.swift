@@ -3,6 +3,7 @@ import SwiftData
 
 struct IngredientListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppNavigation.self) private var nav
     @Query(sort: \Ingredient.name) private var ingredients: [Ingredient]
 
     @State private var model = IngredientListViewModel()
@@ -10,6 +11,10 @@ struct IngredientListView: View {
 
     private var displayedIngredients: [Ingredient] {
         model.filtered(ingredients)
+    }
+
+    private var selectedIngredients: [Ingredient] {
+        ingredients.filter { model.selection.contains($0.persistentModelID) }
     }
 
     var body: some View {
@@ -74,8 +79,12 @@ struct IngredientListView: View {
                     }
                     if !ingredients.isEmpty {
                         ToolbarItem(placement: .topBarTrailing) {
-                            EditButton()
-                                .environment(\.editMode, $model.editMode)
+                            Button(model.editMode == .active ? "Done" : "Select") {
+                                withAnimation {
+                                    model.editMode = model.editMode == .active ? .inactive : .active
+                                }
+                                if model.editMode == .inactive { model.selection.removeAll() }
+                            }
                         }
                     }
                 }
@@ -89,6 +98,8 @@ struct IngredientListView: View {
                             }
                         ]
                     )
+                } else if !model.selection.isEmpty {
+                    createRecipeButton
                 }
             }
         }
@@ -119,6 +130,28 @@ struct IngredientListView: View {
         .sheet(isPresented: $model.showingFilters) {
             InventoryFilterView(model: model)
         }
+    }
+
+    /// Shown while in select mode, floating above the tab bar (a `.bottomBar`
+    /// toolbar item would sit behind the TabView's tab bar).
+    private var createRecipeButton: some View {
+        Button {
+            let ingredients = selectedIngredients
+            model.editMode = .inactive
+            model.selection.removeAll()
+            nav.createRecipe(with: ingredients)
+        } label: {
+            Text("Create recipe with… (\(model.selection.count))")
+                .font(.headline)
+                .foregroundStyle(Color.accentColor)
+                .padding(.vertical, 14)
+                .frame(maxWidth: .infinity)
+                .background(Color.cardBackground, in: .capsule)
+                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 20)
     }
 
     private var filterButton: some View {
