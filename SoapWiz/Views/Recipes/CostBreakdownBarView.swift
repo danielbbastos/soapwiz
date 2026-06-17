@@ -14,10 +14,10 @@ struct CostBreakdownBarView: View {
     private var pvpFactor: Double { settingsRecords.first?.pvpFactor ?? 4.0 }
 
     private static let currencyFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.locale = .autoupdatingCurrent
-        return f
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = .autoupdatingCurrent
+        return formatter
     }()
 
     var body: some View {
@@ -58,25 +58,7 @@ struct CostBreakdownBarView: View {
                         .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
                     if expanded {
-                        Button {
-                            isSwipeHintPresented = true
-                        } label: {
-                            Image(systemName: "info.circle")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .popover(isPresented: $isSwipeHintPresented) {
-                            Text("Swipe left to add another product size.")
-                                .font(.footnote)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 10)
-                                .frame(maxWidth: 240)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                                .presentationBackground(.clear)
-                                .presentationCompactAdaptation(.popover)
-                        }
+                        swipeHintButton
                     }
                 }
             }
@@ -97,53 +79,37 @@ struct CostBreakdownBarView: View {
         }
     }
 
+    private var swipeHintButton: some View {
+        Button {
+            isSwipeHintPresented = true
+        } label: {
+            Image(systemName: "info.circle")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $isSwipeHintPresented) {
+            Text("Swipe left to add another product size.")
+                .font(.footnote)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .frame(maxWidth: 240)
+                .fixedSize(horizontal: false, vertical: true)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                .presentationBackground(.clear)
+                .presentationCompactAdaptation(.popover)
+        }
+    }
+
     private func carousel(batch: ProductCostBreakdown) -> some View {
         let fraction: CGFloat = keyboardVisible ? 0.3 : 0.4
         let maxHeight: CGFloat = availableHeight > 0 ? availableHeight * fraction : 350
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 0) {
                 ForEach($model.productDrafts) { $draft in
-                    let breakdown = model.breakdownAndCost(for: draft, batch: batch)
-                    VStack(spacing: 0) {
-                        ScrollView(.vertical, showsIndicators: false) {
-                            RecipeProductCardView(
-                                draft: $draft,
-                                breakdown: breakdown,
-                                availableUnits: ProductUnit.allCases,
-                                model: model
-                            )
-                        }
-                        if breakdown.total > 0 {
-                            Divider().opacity(0.4)
-                            HStack {
-                                Text("Total")
-                                    .font(.caption.weight(.semibold))
-                                Spacer()
-                                if let costStr = Self.currencyFormatter.string(from: NSNumber(value: breakdown.total)) {
-                                    Text(costStr)
-                                        .font(.caption.weight(.semibold))
-                                }
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.top, 8)
-                            .padding(.bottom, 4)
-                            HStack {
-                                Text("RRP")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.tint)
-                                Spacer()
-                                if let pvpStr = Self.currencyFormatter.string(from: NSNumber(value: breakdown.total * pvpFactor)) {
-                                    Text(pvpStr)
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.tint)
-                                }
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.bottom, 8)
-                        }
-                    }
-                    .containerRelativeFrame(.horizontal)
-                    .id(AnyHashable(draft.id))
+                    productColumn(draft: $draft, batch: batch)
+                        .containerRelativeFrame(.horizontal)
+                        .id(AnyHashable(draft.id))
                 }
                 AddProductCardView {
                     model.addProduct(defaultUnitSymbol: ProductUnit.grams.rawValue)
@@ -164,6 +130,53 @@ struct CostBreakdownBarView: View {
                 visibleCardID = AnyHashable(firstID)
             }
         }
+    }
+
+    private func productColumn(draft: Binding<RecipeProductDraft>, batch: ProductCostBreakdown) -> some View {
+        let breakdown = model.breakdownAndCost(for: draft.wrappedValue, batch: batch)
+        return VStack(spacing: 0) {
+            ScrollView(.vertical, showsIndicators: false) {
+                RecipeProductCardView(
+                    draft: draft,
+                    breakdown: breakdown,
+                    availableUnits: ProductUnit.allCases,
+                    model: model
+                )
+            }
+            if breakdown.total > 0 {
+                Divider().opacity(0.4)
+                productTotals(breakdown)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func productTotals(_ breakdown: ProductCostBreakdown) -> some View {
+        HStack {
+            Text("Total")
+                .font(.caption.weight(.semibold))
+            Spacer()
+            if let costStr = Self.currencyFormatter.string(from: NSNumber(value: breakdown.total)) {
+                Text(costStr)
+                    .font(.caption.weight(.semibold))
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+        HStack {
+            Text("RRP")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tint)
+            Spacer()
+            if let pvpStr = Self.currencyFormatter.string(from: NSNumber(value: breakdown.total * pvpFactor)) {
+                Text(pvpStr)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tint)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 8)
     }
 
     private func summaryText(canExpand: Bool, batchTotal: Double) -> String {
