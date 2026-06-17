@@ -13,8 +13,22 @@ final class Recipe {
     var superFat: Double = 5
     var fragrancePercentage: Double = 3
 
+    /// When `true` the recipe uses a KOH + NaOH blend (`kohPercentage` /
+    /// `naohPercentage`, each with its own purity) instead of the single-lye
+    /// path driven by `lyeType` / `lyePurity`.
+    var useHybrid: Bool = false
+    var kohPercentage: Double = 90
+    var naohPercentage: Double = 10
+    var kohPurity: Double = 90
+    var naohPurity: Double = 99
+
     @Relationship(deleteRule: .nullify)
     var lyeIngredient: Ingredient?
+
+    /// The KOH lye ingredient used by the hybrid path, so its cost can be priced
+    /// separately from the NaOH `lyeIngredient`.
+    @Relationship(deleteRule: .nullify)
+    var kohLyeIngredient: Ingredient?
 
     @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.recipe)
     var ingredients: [RecipeIngredient] = []

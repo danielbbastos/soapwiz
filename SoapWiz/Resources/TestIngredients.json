@@ -1318,6 +1318,39 @@
       ]
     },
     {
+      "name": "Potassium Hydroxide (Lye)",
+      "category": "Lyes",
+      "unit": "g",
+      "sapValue": null,
+      "density": null,
+      "purchases": [
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-02-14",
+          "quantity": 1000,
+          "totalPrice": 11.5,
+          "badge": "KOH-001",
+          "journalCode": "J-061",
+          "storageLocation": "Fridge",
+          "expiryDate": "2028-02-13",
+          "openingDate": "2026-03-02",
+          "remainingAmount": 540
+        },
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-05-09",
+          "quantity": 2000,
+          "totalPrice": 21.9,
+          "badge": "KOH-002",
+          "journalCode": "J-066",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-05-08",
+          "openingDate": null,
+          "remainingAmount": 2000
+        }
+      ]
+    },
+    {
       "name": "Sodium Lactate",
       "category": "Additives",
       "unit": "ml",

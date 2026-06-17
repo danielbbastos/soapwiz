@@ -1028,7 +1028,7 @@ struct RecipeFormViewModelTests {
         #expect(abs(row.val1 - 10) < 0.001)
         #expect(abs(row.val2 - 20) < 0.001)
         #expect(abs(row.val3 - 30) < 0.001)
-        #expect(row.naohLyeSolution == nil)
+        #expect(row.naohLye == nil)
     }
 
     @Test func extraIngredientData_CitricAcid_ComputesThreePercentages() throws {
@@ -1041,27 +1041,35 @@ struct RecipeFormViewModelTests {
         #expect(abs(row.val3 - 30) < 0.001)
     }
 
-    @Test func extraIngredientData_CitricAcid_NaOHSubRow_DividedByLyeConcentration() throws {
-        // waterParts = 1.5 → lyeConc = 1 / 2.5 = 0.4
-        let model = makeModelWithOils(oils: 1000, waterParts: 1.5)
+    @Test func extraIngredientData_CitricAcid_NaOHSubRow_IsAcidTimesFactorOverPurity() throws {
+        // Single NaOH at 100% purity: extra NaOH = acid × 0.625 (the actual lye,
+        // no water), matching LyeCalc's "Extra Lye to Neutralize".
+        let model = makeModelWithOils(oils: 1000)
         let data = try #require(model.extraIngredientData)
-        let naoh = try #require(data.sectionA[1].naohLyeSolution)
-        // citric_1pct = 10, naoh_pure = 10 * 0.625 = 6.25, displayed = 6.25 / 0.4 = 15.625
-        #expect(abs(naoh.v1 - 15.625) < 0.001)
-        #expect(abs(naoh.v2 - 31.25) < 0.001)
-        #expect(abs(naoh.v3 - 46.875) < 0.001)
+        let naoh = try #require(data.sectionA[1].naohLye)
+        // citric_1pct = 10 → 10 * 0.625 = 6.25
+        #expect(abs(naoh.v1 - 6.25) < 0.001)
+        #expect(abs(naoh.v2 - 12.5) < 0.001)
+        #expect(abs(naoh.v3 - 18.75) < 0.001)
     }
 
-    @Test func extraIngredientData_CitricAcid_NaOHSubRow_ScalesWithLyeConcentration() throws {
-        // waterParts = 1.0 → lyeConc = 0.5; same citric but higher displayed (less concentrated lye)
-        let modelA = makeModelWithOils(oils: 1000, waterParts: 1.5) // lyeConc = 0.4
-        let modelB = makeModelWithOils(oils: 1000, waterParts: 1.0) // lyeConc = 0.5
+    @Test func extraIngredientData_CitricAcid_NaOHSubRow_IndependentOfWaterAndScalesWithPurity() throws {
+        // The extra lye is the lye itself (no water), so the water:lye ratio
+        // doesn't change it.
+        let modelA = makeModelWithOils(oils: 1000, waterParts: 1.5)
+        let modelB = makeModelWithOils(oils: 1000, waterParts: 1.0)
         let dataA = try #require(modelA.extraIngredientData)
         let dataB = try #require(modelB.extraIngredientData)
-        let naohA = try #require(dataA.sectionA[1].naohLyeSolution)
-        let naohB = try #require(dataB.sectionA[1].naohLyeSolution)
-        // Higher concentration (0.5 > 0.4) → smaller displayed volume
-        #expect(naohB.v1 < naohA.v1)
+        let naohA = try #require(dataA.sectionA[1].naohLye)
+        let naohB = try #require(dataB.sectionA[1].naohLye)
+        #expect(abs(naohA.v1 - naohB.v1) < 0.001)
+
+        // Lower purity needs more lye.
+        let lowPurity = makeModelWithOils(oils: 1000)
+        lowPurity.lyePurity = 90
+        let lowData = try #require(lowPurity.extraIngredientData)
+        let naohLow = try #require(lowData.sectionA[1].naohLye)
+        #expect(naohLow.v1 > naohA.v1)
     }
 
     @Test func extraIngredientData_EOFO_ComputesCorrectly() throws {
@@ -1072,33 +1080,31 @@ struct RecipeFormViewModelTests {
         #expect(row.label == "EO / Fragrance Oil")
         #expect(abs(row.minValue - 30) < 0.001)
         #expect(row.maxValue == nil)
-        #expect(row.naohLyeSolution == nil)
+        #expect(row.naohLye == nil)
     }
 
     @Test func extraIngredientData_AscorbicAcid_ComputesValueAndNaOH() throws {
-        // waterParts = 1.5 → lyeConc = 0.4
-        let model = makeModelWithOils(oils: 1000, waterParts: 1.5)
+        let model = makeModelWithOils(oils: 1000)
         let data = try #require(model.extraIngredientData)
         let row = data.sectionB[1]
         #expect(row.label == "Ascorbic Acid")
         #expect(abs(row.minValue - 10) < 0.001)
         #expect(row.maxValue == nil)
-        // naoh = 10 * 0.2020 / 0.4 = 5.05
-        let naoh = try #require(row.naohLyeSolution)
-        #expect(abs(naoh - 5.05) < 0.001)
+        // naoh = 10 * 0.2020 = 2.02 (100% purity, single NaOH)
+        let naoh = try #require(row.naohLye)
+        #expect(abs(naoh - 2.02) < 0.001)
     }
 
     @Test func extraIngredientData_LacticAcid_ComputesValueAndNaOH() throws {
-        // waterParts = 1.5 → lyeConc = 0.4
-        let model = makeModelWithOils(oils: 1000, waterParts: 1.5)
+        let model = makeModelWithOils(oils: 1000)
         let data = try #require(model.extraIngredientData)
         let row = data.sectionB[2]
         #expect(row.label == "Lactic Acid")
         #expect(abs(row.minValue - 7.5) < 0.001)
         #expect(row.maxValue == nil)
-        // naoh = 7.5 * 0.5920 / 0.4 = 11.1
-        let naoh = try #require(row.naohLyeSolution)
-        #expect(abs(naoh - 11.1) < 0.001)
+        // naoh = 7.5 * 0.5920 = 4.44 (100% purity, single NaOH)
+        let naoh = try #require(row.naohLye)
+        #expect(abs(naoh - 4.44) < 0.001)
     }
 
     @Test func extraIngredientData_TetrasodiumEDTA_UsesBatchTotal() throws {
@@ -1110,7 +1116,7 @@ struct RecipeFormViewModelTests {
         // 1500 * 0.005 = 7.5
         #expect(abs(row.minValue - 7.5) < 0.001)
         #expect(row.maxValue == nil)
-        #expect(row.naohLyeSolution == nil)
+        #expect(row.naohLye == nil)
     }
 
     @Test func extraIngredientData_SodiumCitrate_ComputesRange() throws {
@@ -1767,13 +1773,19 @@ struct RecipeFormViewModelTests {
         #expect(abs(lye - 206.25) < 1e-9)
     }
 
-    @Test func calculatedLyeAmount_KOHRecipe_NoCompensation() throws {
-        let model = makeNaohModel()
+    @Test func calculatedLyeAmount_KOHRecipe_UsesKOHSapAndCompensatesWithKOH() throws {
+        let model = makeNaohModel()        // oil sapValue 0.2, purity 100
+        model.oilDrafts[0].ingredient.kohSapValue = 0.28
         model.lyeType = "KOH"
         model.toggleExtra(Ingredient(name: "Citric Acid", unit: "g"), amount: 10)
 
+        // Base KOH lye = 1000 × 0.28 = 280; acid KOH = 10 × 0.625 × molar ratio.
+        let acidKOH = 10 * 0.625 * RecipeFormViewModel.kohPerNaOHMass
         let lye = try #require(model.calculatedLyeAmount)
-        #expect(abs(lye - 200) < 1e-9)
+        #expect(abs(lye - (280 + acidKOH)) < 1e-9)
+        // It is all KOH — no NaOH.
+        #expect(model.calculatedNaOHLyeAmount == 0)
+        #expect(abs((model.calculatedKOHLyeAmount ?? 0) - (280 + acidKOH)) < 1e-9)
     }
 
     @Test func calculatedLyeAmount_LowerPurity_ScalesCompensation() throws {
