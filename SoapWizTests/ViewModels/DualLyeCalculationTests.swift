@@ -278,7 +278,7 @@ struct DualLyeCalculationTests {
         let oilNaOH = 0.10 * 1000 * 0.134
         let oilKOH = 0.90 * 1000 * 0.188
         let acidNaOH = 10 * 0.625 * 0.10
-        let acidKOH = 10 * 0.625 * RecipeFormViewModel.kohPerNaOHMass * 0.90
+        let acidKOH = 10 * 0.625 * LyeCalculator.kohPerNaOHMass * 0.90
         #expect(isClose(model.calculatedNaOHLyeAmount, oilNaOH + acidNaOH))
         #expect(isClose(model.calculatedKOHLyeAmount, oilKOH + acidKOH))
     }
@@ -323,8 +323,8 @@ struct DualLyeCalculationTests {
         let citric = try #require(data.sectionA.first { $0.label == "Citric Acid Powder" })
         let naoh = try #require(citric.naohLye)
         let koh = try #require(citric.kohLye)
-        #expect(abs(naoh.v1 - 0.63) < 0.01)
-        #expect(abs(koh.v1 - 8.76) < 0.01)
+        #expect(abs(naoh.val1 - 0.63) < 0.01)
+        #expect(abs(koh.val1 - 8.76) < 0.01)
     }
 
     @Test func extras_DualPureKOH_CitricHasNoNaOHSolution() throws {

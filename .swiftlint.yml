@@ -1,0 +1,22 @@
+# SwiftLint configuration for SoapWiz.
+# Mostly SwiftLint defaults. The length limits are set to the thresholds the
+# project actually targets (see SW-87) rather than the stricter defaults, and
+# line_length is relaxed to 140 to match the project's readable-but-wide lines.
+
+included:
+  - SoapWiz
+  - SoapWizTests
+
+line_length:
+  warning: 140
+  error: 200
+
+# A type body up to 350 lines is acceptable; beyond that it should be split.
+type_body_length:
+  warning: 350
+  error: 500
+
+# Files up to 400 lines; the hard ceiling stays at the default 1000.
+file_length:
+  warning: 400
+  error: 1000
