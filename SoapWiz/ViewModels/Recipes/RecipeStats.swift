@@ -34,8 +34,8 @@ struct RecipeStats {
         if totalWeight > 0 {
             self.oilSharedProfiles = contributions.map { contrib in
                 let share = contrib.amount / totalWeight
-                let p = contrib.ingredient.fattyAcidProfile ?? .zero
-                return (contrib.ingredient.name, p.scaled(by: share))
+                let profile = contrib.ingredient.fattyAcidProfile ?? .zero
+                return (contrib.ingredient.name, profile.scaled(by: share))
             }
             let weightedNaOH = contributions.reduce(0.0) { acc, contrib in
                 acc + (contrib.ingredient.sapValue ?? 0) * (contrib.amount / totalWeight)

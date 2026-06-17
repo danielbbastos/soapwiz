@@ -16,8 +16,8 @@ struct RecipeFormView: View {
         return #Predicate { $0.category?.name == name }
     }()
 
-    var recipe: Recipe? = nil
-    var seed: RecipeSeed? = nil
+    var recipe: Recipe?
+    var seed: RecipeSeed?
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -116,7 +116,8 @@ private extension RecipeFormView {
             VStack(alignment: .leading, spacing: 12) {
                 Text("EO / Fragrances %")
                     .font(.headline)
-                Text("The target percentage of total oil weight reserved for essential oils and fragrance oils. Used to calculate the recommended amount and to track usage in the Ingredients tab.")
+                Text("The target percentage of total oil weight reserved for essential oils and fragrance oils. "
+                     + "Used to calculate the recommended amount and to track usage in the Ingredients tab.")
                     .font(.body)
                     .foregroundStyle(.secondary)
             }

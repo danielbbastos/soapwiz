@@ -64,7 +64,8 @@ struct CategoryListView: View {
             Button("OK", role: .cancel) { model.deleteBlockedCategory = nil }
         } message: { category in
             let count = category.ingredients.count
-            Text("\"\(category.name)\" is assigned to \(count) ingredient\(count == 1 ? "" : "s"). Remove the category from those ingredients first.")
+            Text("\"\(category.name)\" is assigned to \(count) ingredient\(count == 1 ? "" : "s"). "
+                 + "Remove the category from those ingredients first.")
         }
     }
 }

@@ -41,11 +41,11 @@ struct IngredientDetailViewModelTests {
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
-        let b1 = try makePurchase(quantity: 100, daysAgo: 10)
-        let b2 = try makePurchase(quantity: 50, daysAgo: 5)
-        ctx.insert(b1); ctx.insert(b2)
-        ingredient.purchases.append(b1)
-        ingredient.purchases.append(b2)
+        let purchase1 = try makePurchase(quantity: 100, daysAgo: 10)
+        let purchase2 = try makePurchase(quantity: 50, daysAgo: 5)
+        ctx.insert(purchase1); ctx.insert(purchase2)
+        ingredient.purchases.append(purchase1)
+        ingredient.purchases.append(purchase2)
 
         let model = IngredientDetailViewModel(ingredient: ingredient)
         #expect(model.totalRemaining == 150)

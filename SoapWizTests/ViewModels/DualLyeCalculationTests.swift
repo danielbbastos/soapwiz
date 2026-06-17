@@ -8,7 +8,10 @@ import SwiftData
 struct DualLyeCalculationTests {
 
     private func makeContext() throws -> (ModelContainer, ModelContext) {
-        let schema = Schema([Recipe.self, RecipeIngredient.self, RecipeProduct.self, Ingredient.self, IngredientPurchase.self, IngredientCategory.self])
+        let schema = Schema([
+            Recipe.self, RecipeIngredient.self, RecipeProduct.self,
+            Ingredient.self, IngredientPurchase.self, IngredientCategory.self
+        ])
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
         return (container, container.mainContext)
     }

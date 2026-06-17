@@ -188,7 +188,10 @@ struct MoldCalculatorView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Fill")
                 .font(.headline)
-            Text("How full the mold is poured. Soap batter needs headroom above the oils, lye and water it becomes — these factors already leave the usual amount.\n\n**Standard** fills the mold normally. **Extra headroom** recommends a little less oil (~5–10% more empty space) for recipes with lots of fragrance or additives that make the batter rise.")
+            Text("How full the mold is poured. Soap batter needs headroom above the oils, lye and water it "
+                 + "becomes — these factors already leave the usual amount.\n\n**Standard** fills the mold "
+                 + "normally. **Extra headroom** recommends a little less oil (~5–10% more empty space) for "
+                 + "recipes with lots of fragrance or additives that make the batter rise.")
                 .font(.body)
                 .foregroundStyle(.secondary)
         }

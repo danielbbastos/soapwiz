@@ -5,14 +5,14 @@ import SwiftData
 /// drawing it from one specific purchase. Built from the immutable
 /// `BatchLineItem` snapshots — nothing here recomputes against live data.
 struct UsageEntry: Identifiable {
-    struct ID: Hashable {
+    struct EntryID: Hashable {
         let lineItem: PersistentIdentifier
         /// Index into the line item's `draws` for purchase-scoped entries;
         /// `nil` for ingredient-scoped entries (one per line item).
         let drawIndex: Int?
     }
 
-    let id: ID
+    let id: EntryID
     /// The batch that made the deduction; tapping the row opens its detail.
     let batch: Batch
     let date: Date

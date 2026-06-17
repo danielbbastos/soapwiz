@@ -51,15 +51,15 @@ final class IngredientFormViewModel {
     var isValid: Bool {
         guard !trimmedName.isEmpty else { return false }
         guard selectedUnit != nil || (isEditing && ingredient?.unit.isEmpty ?? false) else { return false }
-        let c = trimmedCode
-        if !c.isEmpty && c.count < 3 { return false }
+        let code = trimmedCode
+        if !code.isEmpty && code.count < 3 { return false }
         return true
     }
 
     func codeHasDuplicate(among ingredients: [Ingredient]) -> Bool {
-        let c = trimmedCode
-        guard !c.isEmpty else { return false }
-        return ingredients.contains { $0 !== ingredient && $0.code.uppercased() == c }
+        let code = trimmedCode
+        guard !code.isEmpty else { return false }
+        return ingredients.contains { $0 !== ingredient && $0.code.uppercased() == code }
     }
 
     func applyNameChange(existingCodes: [String]) {
@@ -80,10 +80,10 @@ final class IngredientFormViewModel {
         if words.count > 1 {
             let initials = words.map { String($0.prefix(1)).uppercased() }.joined()
             var candidate = initials
-            for ch in (words.last?.uppercased() ?? "").dropFirst() {
+            for character in (words.last?.uppercased() ?? "").dropFirst() {
                 if candidate.count >= 3 && !normalised.contains(candidate) { return candidate }
                 guard candidate.count < 6 else { break }
-                candidate.append(ch)
+                candidate.append(character)
             }
             return candidate
         } else {

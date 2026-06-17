@@ -59,7 +59,10 @@ struct DataSeederTests {
         for recipe in recipes {
             let model = BatchProductionViewModel(recipe: recipe, lyeCandidates: lyeCandidates)
             let shortages = model.shortages
-            #expect(shortages.isEmpty, "\(recipe.name) is short on: \(shortages.map { "\($0.ingredient.name) (need \($0.required), have \($0.available))" }.joined(separator: ", "))")
+            let detail = shortages
+                .map { "\($0.ingredient.name) (need \($0.required), have \($0.available))" }
+                .joined(separator: ", ")
+            #expect(shortages.isEmpty, "\(recipe.name) is short on: \(detail)")
             #expect(model.canCreate, "\(recipe.name) cannot create a batch")
         }
     }
