@@ -349,11 +349,11 @@ private extension RecipeIngredientsTabView {
             ForEach(rows) { row in
                 Divider().padding(.leading, 16)
                 extraSectionARow(label: row.label, weight: value(from: row), isSubrow: false)
-                if let naoh = row.naohLyeSolution {
+                if let naoh = row.naohLye {
                     let naohValue = selectedSectionAPct == 1 ? naoh.v1 : selectedSectionAPct == 2 ? naoh.v2 : naoh.v3
                     extraSectionARow(label: "↳ Extra NaOH", weight: naohValue, isSubrow: true)
                 }
-                if let koh = row.kohLyeSolution {
+                if let koh = row.kohLye {
                     let kohValue = selectedSectionAPct == 1 ? koh.v1 : selectedSectionAPct == 2 ? koh.v2 : koh.v3
                     extraSectionARow(label: "↳ Extra KOH", weight: kohValue, isSubrow: true)
                 }
@@ -460,10 +460,10 @@ private extension RecipeIngredientsTabView {
             ForEach(rows) { row in
                 Divider().padding(.leading, 16)
                 extraSectionBRow(row)
-                if let naoh = row.naohLyeSolution {
+                if let naoh = row.naohLye {
                     extraSectionBSubRow("↳ Extra NaOH", value: naoh)
                 }
-                if let koh = row.kohLyeSolution {
+                if let koh = row.kohLye {
                     extraSectionBSubRow("↳ Extra KOH", value: koh)
                 }
             }

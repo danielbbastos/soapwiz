@@ -82,18 +82,18 @@ struct ExtraSectionARow: Identifiable {
     let val1: Double
     let val2: Double
     let val3: Double
-    let naohLyeSolution: (v1: Double, v2: Double, v3: Double)?
-    let kohLyeSolution: (v1: Double, v2: Double, v3: Double)?
+    let naohLye: (v1: Double, v2: Double, v3: Double)?
+    let kohLye: (v1: Double, v2: Double, v3: Double)?
 
     init(label: String, val1: Double, val2: Double, val3: Double,
-         naohLyeSolution: (v1: Double, v2: Double, v3: Double)? = nil,
-         kohLyeSolution: (v1: Double, v2: Double, v3: Double)? = nil) {
+         naohLye: (v1: Double, v2: Double, v3: Double)? = nil,
+         kohLye: (v1: Double, v2: Double, v3: Double)? = nil) {
         self.label = label
         self.val1 = val1
         self.val2 = val2
         self.val3 = val3
-        self.naohLyeSolution = naohLyeSolution
-        self.kohLyeSolution = kohLyeSolution
+        self.naohLye = naohLye
+        self.kohLye = kohLye
     }
 }
 
@@ -102,16 +102,16 @@ struct ExtraSectionBRow: Identifiable {
     let label: String
     let minValue: Double
     let maxValue: Double?
-    let naohLyeSolution: Double?
-    let kohLyeSolution: Double?
+    let naohLye: Double?
+    let kohLye: Double?
 
     init(label: String, minValue: Double, maxValue: Double? = nil,
-         naohLyeSolution: Double? = nil, kohLyeSolution: Double? = nil) {
+         naohLye: Double? = nil, kohLye: Double? = nil) {
         self.label = label
         self.minValue = minValue
         self.maxValue = maxValue
-        self.naohLyeSolution = naohLyeSolution
-        self.kohLyeSolution = kohLyeSolution
+        self.naohLye = naohLye
+        self.kohLye = kohLye
     }
 }
 
@@ -439,8 +439,8 @@ final class RecipeFormViewModel {
             ExtraSectionARow(
                 label: "Citric Acid Powder",
                 val1: citric1, val2: citric2, val3: citric3,
-                naohLyeSolution: triple(citric1, citric2, citric3, factor: 0.625, multiplier: naohAcidMultiplier),
-                kohLyeSolution: triple(citric1, citric2, citric3, factor: 0.625, multiplier: kohAcidMultiplier)
+                naohLye: triple(citric1, citric2, citric3, factor: 0.625, multiplier: naohAcidMultiplier),
+                kohLye: triple(citric1, citric2, citric3, factor: 0.625, multiplier: kohAcidMultiplier)
             ),
         ]
 
@@ -449,11 +449,11 @@ final class RecipeFormViewModel {
         let sectionB: [ExtraSectionBRow] = [
             ExtraSectionBRow(label: "EO / Fragrance Oil", minValue: oils * fragranceTargetPercentage / 100),
             ExtraSectionBRow(label: "Ascorbic Acid", minValue: ascorbic,
-                naohLyeSolution: single(ascorbic, factor: 0.2020, multiplier: naohAcidMultiplier),
-                kohLyeSolution: single(ascorbic, factor: 0.2020, multiplier: kohAcidMultiplier)),
+                naohLye: single(ascorbic, factor: 0.2020, multiplier: naohAcidMultiplier),
+                kohLye: single(ascorbic, factor: 0.2020, multiplier: kohAcidMultiplier)),
             ExtraSectionBRow(label: "Lactic Acid", minValue: lactic,
-                naohLyeSolution: single(lactic, factor: 0.5920, multiplier: naohAcidMultiplier),
-                kohLyeSolution: single(lactic, factor: 0.5920, multiplier: kohAcidMultiplier)),
+                naohLye: single(lactic, factor: 0.5920, multiplier: naohAcidMultiplier),
+                kohLye: single(lactic, factor: 0.5920, multiplier: kohAcidMultiplier)),
             ExtraSectionBRow(label: "Tetrasodium EDTA", minValue: batchTotal * 0.005),
             ExtraSectionBRow(label: "Sodium Citrate", minValue: oils * 0.013, maxValue: oils * 0.039),
             ExtraSectionBRow(label: "Potassium Citrate", minValue: oils * 0.016, maxValue: oils * 0.048),

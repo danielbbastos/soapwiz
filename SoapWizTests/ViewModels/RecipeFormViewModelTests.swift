@@ -1028,7 +1028,7 @@ struct RecipeFormViewModelTests {
         #expect(abs(row.val1 - 10) < 0.001)
         #expect(abs(row.val2 - 20) < 0.001)
         #expect(abs(row.val3 - 30) < 0.001)
-        #expect(row.naohLyeSolution == nil)
+        #expect(row.naohLye == nil)
     }
 
     @Test func extraIngredientData_CitricAcid_ComputesThreePercentages() throws {
@@ -1046,7 +1046,7 @@ struct RecipeFormViewModelTests {
         // no water), matching LyeCalc's "Extra Lye to Neutralize".
         let model = makeModelWithOils(oils: 1000)
         let data = try #require(model.extraIngredientData)
-        let naoh = try #require(data.sectionA[1].naohLyeSolution)
+        let naoh = try #require(data.sectionA[1].naohLye)
         // citric_1pct = 10 → 10 * 0.625 = 6.25
         #expect(abs(naoh.v1 - 6.25) < 0.001)
         #expect(abs(naoh.v2 - 12.5) < 0.001)
@@ -1060,15 +1060,15 @@ struct RecipeFormViewModelTests {
         let modelB = makeModelWithOils(oils: 1000, waterParts: 1.0)
         let dataA = try #require(modelA.extraIngredientData)
         let dataB = try #require(modelB.extraIngredientData)
-        let naohA = try #require(dataA.sectionA[1].naohLyeSolution)
-        let naohB = try #require(dataB.sectionA[1].naohLyeSolution)
+        let naohA = try #require(dataA.sectionA[1].naohLye)
+        let naohB = try #require(dataB.sectionA[1].naohLye)
         #expect(abs(naohA.v1 - naohB.v1) < 0.001)
 
         // Lower purity needs more lye.
         let lowPurity = makeModelWithOils(oils: 1000)
         lowPurity.lyePurity = 90
         let lowData = try #require(lowPurity.extraIngredientData)
-        let naohLow = try #require(lowData.sectionA[1].naohLyeSolution)
+        let naohLow = try #require(lowData.sectionA[1].naohLye)
         #expect(naohLow.v1 > naohA.v1)
     }
 
@@ -1080,7 +1080,7 @@ struct RecipeFormViewModelTests {
         #expect(row.label == "EO / Fragrance Oil")
         #expect(abs(row.minValue - 30) < 0.001)
         #expect(row.maxValue == nil)
-        #expect(row.naohLyeSolution == nil)
+        #expect(row.naohLye == nil)
     }
 
     @Test func extraIngredientData_AscorbicAcid_ComputesValueAndNaOH() throws {
@@ -1091,7 +1091,7 @@ struct RecipeFormViewModelTests {
         #expect(abs(row.minValue - 10) < 0.001)
         #expect(row.maxValue == nil)
         // naoh = 10 * 0.2020 = 2.02 (100% purity, single NaOH)
-        let naoh = try #require(row.naohLyeSolution)
+        let naoh = try #require(row.naohLye)
         #expect(abs(naoh - 2.02) < 0.001)
     }
 
@@ -1103,7 +1103,7 @@ struct RecipeFormViewModelTests {
         #expect(abs(row.minValue - 7.5) < 0.001)
         #expect(row.maxValue == nil)
         // naoh = 7.5 * 0.5920 = 4.44 (100% purity, single NaOH)
-        let naoh = try #require(row.naohLyeSolution)
+        let naoh = try #require(row.naohLye)
         #expect(abs(naoh - 4.44) < 0.001)
     }
 
@@ -1116,7 +1116,7 @@ struct RecipeFormViewModelTests {
         // 1500 * 0.005 = 7.5
         #expect(abs(row.minValue - 7.5) < 0.001)
         #expect(row.maxValue == nil)
-        #expect(row.naohLyeSolution == nil)
+        #expect(row.naohLye == nil)
     }
 
     @Test func extraIngredientData_SodiumCitrate_ComputesRange() throws {

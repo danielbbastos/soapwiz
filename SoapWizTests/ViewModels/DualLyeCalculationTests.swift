@@ -283,7 +283,7 @@ struct DualLyeCalculationTests {
         #expect(isClose(model.calculatedKOHLyeAmount, oilKOH + acidKOH))
     }
 
-    @Test func extras_DualLye_CitricHasBothLyeSolutions() throws {
+    @Test func extras_DualLye_CitricHasBothLyeAmounts() throws {
         let model = makeModel(weight: 1000, naohSap: 0.134, kohSap: 0.188)
         model.useHybrid = true
         model.kohPercentage = 90
@@ -291,19 +291,19 @@ struct DualLyeCalculationTests {
 
         let data = try #require(model.extraIngredientData)
         let citric = try #require(data.sectionA.first { $0.label == "Citric Acid Powder" })
-        #expect(citric.naohLyeSolution != nil)
-        #expect(citric.kohLyeSolution != nil)
+        #expect(citric.naohLye != nil)
+        #expect(citric.kohLye != nil)
         let lactic = try #require(data.sectionB.first { $0.label == "Lactic Acid" })
-        #expect(lactic.naohLyeSolution != nil)
-        #expect(lactic.kohLyeSolution != nil)
+        #expect(lactic.naohLye != nil)
+        #expect(lactic.kohLye != nil)
     }
 
     @Test func extras_SingleLye_CitricHasNoKOHSolution() throws {
         let model = makeModel(weight: 1000, naohSap: 0.134, kohSap: 0.188)
         let data = try #require(model.extraIngredientData)
         let citric = try #require(data.sectionA.first { $0.label == "Citric Acid Powder" })
-        #expect(citric.naohLyeSolution != nil)
-        #expect(citric.kohLyeSolution == nil)
+        #expect(citric.naohLye != nil)
+        #expect(citric.kohLye == nil)
     }
 
     @Test func extras_DualLye_MatchesLyeCalcFigures() throws {
@@ -321,8 +321,8 @@ struct DualLyeCalculationTests {
 
         let data = try #require(model.extraIngredientData)
         let citric = try #require(data.sectionA.first { $0.label == "Citric Acid Powder" })
-        let naoh = try #require(citric.naohLyeSolution)
-        let koh = try #require(citric.kohLyeSolution)
+        let naoh = try #require(citric.naohLye)
+        let koh = try #require(citric.kohLye)
         #expect(abs(naoh.v1 - 0.63) < 0.01)
         #expect(abs(koh.v1 - 8.76) < 0.01)
     }
@@ -334,8 +334,8 @@ struct DualLyeCalculationTests {
 
         let data = try #require(model.extraIngredientData)
         let citric = try #require(data.sectionA.first { $0.label == "Citric Acid Powder" })
-        #expect(citric.naohLyeSolution == nil)
-        #expect(citric.kohLyeSolution != nil)
+        #expect(citric.naohLye == nil)
+        #expect(citric.kohLye != nil)
     }
 
     private func purchase(quantity: Double, price: Double) -> IngredientPurchase {
