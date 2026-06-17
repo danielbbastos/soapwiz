@@ -27,6 +27,7 @@ struct RecipeFormView: View {
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
     @State private var showFragranceInfo = false
+    @State private var showMoldCalculator = false
     @FocusState private var oilWeightFocused: Bool
 
     var onSave: ((Recipe) -> Void)?
@@ -124,6 +125,11 @@ private extension RecipeFormView {
             .presentationDetents([.fraction(0.3)])
             .presentationDragIndicator(.visible)
         }
+        .sheet(isPresented: $showMoldCalculator) {
+            MoldCalculatorView(oilWeightUnit: model.oilWeightUnit) { weight in
+                model.totalOilWeight = weight
+            }
+        }
     }
 
     var detailsSection: some View {
@@ -163,6 +169,15 @@ private extension RecipeFormView {
                     .labelsHidden()
                     .tint(.primary)
                 }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+
+                Button {
+                    showMoldCalculator = true
+                } label: {
+                    Text("Calculate from mold…")
+                        .foregroundStyle(.primary)
+                }
+                .buttonStyle(.plain)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
