@@ -350,11 +350,11 @@ private extension RecipeIngredientsTabView {
                 Divider().padding(.leading, 16)
                 extraSectionARow(label: row.label, weight: value(from: row), isSubrow: false)
                 if let naoh = row.naohLye {
-                    let naohValue = selectedSectionAPct == 1 ? naoh.v1 : selectedSectionAPct == 2 ? naoh.v2 : naoh.v3
+                    let naohValue = selectedSectionAPct == 1 ? naoh.val1 : selectedSectionAPct == 2 ? naoh.val2 : naoh.val3
                     extraSectionARow(label: "↳ Extra NaOH", weight: naohValue, isSubrow: true)
                 }
                 if let koh = row.kohLye {
-                    let kohValue = selectedSectionAPct == 1 ? koh.v1 : selectedSectionAPct == 2 ? koh.v2 : koh.v3
+                    let kohValue = selectedSectionAPct == 1 ? koh.val1 : selectedSectionAPct == 2 ? koh.val2 : koh.val3
                     extraSectionARow(label: "↳ Extra KOH", weight: kohValue, isSubrow: true)
                 }
             }

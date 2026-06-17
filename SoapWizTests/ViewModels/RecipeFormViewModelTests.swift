@@ -1048,9 +1048,9 @@ struct RecipeFormViewModelTests {
         let data = try #require(model.extraIngredientData)
         let naoh = try #require(data.sectionA[1].naohLye)
         // citric_1pct = 10 → 10 * 0.625 = 6.25
-        #expect(abs(naoh.v1 - 6.25) < 0.001)
-        #expect(abs(naoh.v2 - 12.5) < 0.001)
-        #expect(abs(naoh.v3 - 18.75) < 0.001)
+        #expect(abs(naoh.val1 - 6.25) < 0.001)
+        #expect(abs(naoh.val2 - 12.5) < 0.001)
+        #expect(abs(naoh.val3 - 18.75) < 0.001)
     }
 
     @Test func extraIngredientData_CitricAcid_NaOHSubRow_IndependentOfWaterAndScalesWithPurity() throws {
@@ -1062,14 +1062,14 @@ struct RecipeFormViewModelTests {
         let dataB = try #require(modelB.extraIngredientData)
         let naohA = try #require(dataA.sectionA[1].naohLye)
         let naohB = try #require(dataB.sectionA[1].naohLye)
-        #expect(abs(naohA.v1 - naohB.v1) < 0.001)
+        #expect(abs(naohA.val1 - naohB.val1) < 0.001)
 
         // Lower purity needs more lye.
         let lowPurity = makeModelWithOils(oils: 1000)
         lowPurity.lyePurity = 90
         let lowData = try #require(lowPurity.extraIngredientData)
         let naohLow = try #require(lowData.sectionA[1].naohLye)
-        #expect(naohLow.v1 > naohA.v1)
+        #expect(naohLow.val1 > naohA.val1)
     }
 
     @Test func extraIngredientData_EOFO_ComputesCorrectly() throws {
@@ -1780,7 +1780,7 @@ struct RecipeFormViewModelTests {
         model.toggleExtra(Ingredient(name: "Citric Acid", unit: "g"), amount: 10)
 
         // Base KOH lye = 1000 × 0.28 = 280; acid KOH = 10 × 0.625 × molar ratio.
-        let acidKOH = 10 * 0.625 * RecipeFormViewModel.kohPerNaOHMass
+        let acidKOH = 10 * 0.625 * LyeCalculator.kohPerNaOHMass
         let lye = try #require(model.calculatedLyeAmount)
         #expect(abs(lye - (280 + acidKOH)) < 1e-9)
         // It is all KOH — no NaOH.
