@@ -11,17 +11,12 @@ on:
 
 jobs:
   swiftlint:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: Install SwiftLint
-      - uses: SwiftLint/swiftlint-action@v1
-        with:
-          strict: true
-
       - name: Run SwiftLint
-        run: swiftlint lint --strict
+        run: docker run --rm -v "$PWD:$PWD" -w "$PWD" ghcr.io/realm/swiftlint:latest swiftlint lint --strict

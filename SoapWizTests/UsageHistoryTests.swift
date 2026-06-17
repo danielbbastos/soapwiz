@@ -38,13 +38,13 @@ struct UsageHistoryTests {
         badge: String = "", journalCode: String = ""
     ) -> IngredientPurchase {
         let date = Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now) ?? .now
-        let purchase = IngredientPurchase(
+        let purchaseRecord = IngredientPurchase(
             dateOfPurchase: date, quantity: quantity, totalPrice: totalPrice,
             badge: badge, journalCode: journalCode, expiryDate: nil, openingDate: nil
         )
-        purchase.ingredient = ingredient
-        ctx.insert(purchase)
-        return purchase
+        purchaseRecord.ingredient = ingredient
+        ctx.insert(purchaseRecord)
+        return purchaseRecord
     }
 
     @discardableResult
@@ -212,13 +212,13 @@ struct UsageHistoryTests {
         _ = container
         let oil = Ingredient(name: "Olive Oil", unit: "g")
         ctx.insert(oil)
-        let purchase = purchase(ctx, for: oil, quantity: 5000, totalPrice: 50, daysAgo: 30)
+        let purchaseRecord = purchase(ctx, for: oil, quantity: 5000, totalPrice: 50, daysAgo: 30)
         let recipe = makeRecipe(ctx, oil: oil, oilWeight: 1000)
 
         let olderBatch = try produceBatch(ctx, recipe: recipe, daysAgo: 5)
         let newerBatch = try produceBatch(ctx, recipe: recipe, daysAgo: 1)
 
-        let entries = UsageHistory.entries(for: purchase)
+        let entries = UsageHistory.entries(for: purchaseRecord)
         #expect(entries.count == 2)
         #expect(entries[0].batch === newerBatch)
         #expect(entries[1].batch === olderBatch)
@@ -228,13 +228,13 @@ struct UsageHistoryTests {
     @Test func purchaseEntries_PurchaseWithoutIngredient_IsEmpty() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let purchase = IngredientPurchase(
+        let purchaseRecord = IngredientPurchase(
             dateOfPurchase: .now, quantity: 100, totalPrice: 1,
             badge: "", journalCode: "", expiryDate: nil, openingDate: nil
         )
-        ctx.insert(purchase)
+        ctx.insert(purchaseRecord)
 
-        #expect(UsageHistory.entries(for: purchase).isEmpty)
+        #expect(UsageHistory.entries(for: purchaseRecord).isEmpty)
     }
 
     @Test func purchaseEntries_DuplicateBadges_DoNotCrossMatch() throws {
