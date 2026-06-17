@@ -19,7 +19,9 @@ jobs:
           fetch-depth: 1
 
       - name: Install SwiftLint
-        run: brew install swiftlint
+      - uses: SwiftLint/swiftlint-action@v1
+        with:
+          strict: true
 
       - name: Run SwiftLint
         run: swiftlint lint --strict
