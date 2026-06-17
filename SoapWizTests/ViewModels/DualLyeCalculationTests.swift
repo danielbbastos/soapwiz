@@ -133,7 +133,7 @@ struct DualLyeCalculationTests {
         model.naohPurity = 100
 
         #expect(isClose(model.calculatedNaOHLyeAmount, 0))
-        #expect(isClose(model.calculatedKOHLyeAmount, 0.90 * 0 + 1000 * 0.188))
+        #expect(isClose(model.calculatedKOHLyeAmount, 1000 * 0.188))
     }
 
     @Test func waterAmount_DualLye_IsTotalLyeTimesRatio() {
@@ -174,23 +174,23 @@ struct DualLyeCalculationTests {
     // MARK: - soapType classifier
 
     @Test func soapType_SingleNaOH_IsSolid() {
-        #expect(SoapType.classify(useHybrid: false, naohPercentage: 0, kohPercentage: 0, lyeType: "NaOH") == .solid)
+        #expect(SoapType.classify(useHybrid: false, naohPercentage: 0, lyeType: "NaOH") == .solid)
     }
 
     @Test func soapType_SingleKOH_IsLiquid() {
-        #expect(SoapType.classify(useHybrid: false, naohPercentage: 0, kohPercentage: 0, lyeType: "KOH") == .liquid)
+        #expect(SoapType.classify(useHybrid: false, naohPercentage: 0, lyeType: "KOH") == .liquid)
     }
 
     @Test func soapType_DualHighNaOH_IsCream() {
-        #expect(SoapType.classify(useHybrid: true, naohPercentage: 20, kohPercentage: 80, lyeType: "NaOH") == .cream)
+        #expect(SoapType.classify(useHybrid: true, naohPercentage: 20, lyeType: "NaOH") == .cream)
     }
 
     @Test func soapType_DualPureKOH_IsLiquid() {
-        #expect(SoapType.classify(useHybrid: true, naohPercentage: 0, kohPercentage: 100, lyeType: "NaOH") == .liquid)
+        #expect(SoapType.classify(useHybrid: true, naohPercentage: 0, lyeType: "NaOH") == .liquid)
     }
 
     @Test func soapType_DualLowNaOH_IsLiquid() {
-        #expect(SoapType.classify(useHybrid: true, naohPercentage: 10, kohPercentage: 90, lyeType: "NaOH") == .liquid)
+        #expect(SoapType.classify(useHybrid: true, naohPercentage: 10, lyeType: "NaOH") == .liquid)
     }
 
     @Test func soapType_ModelReflectsConfiguration() {

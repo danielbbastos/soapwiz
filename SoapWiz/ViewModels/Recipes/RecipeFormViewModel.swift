@@ -247,7 +247,6 @@ final class RecipeFormViewModel {
         SoapType.classify(
             useHybrid: useHybrid,
             naohPercentage: naohPercentage,
-            kohPercentage: kohPercentage,
             lyeType: lyeType
         )
     }

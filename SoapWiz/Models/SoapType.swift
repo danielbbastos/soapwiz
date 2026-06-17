@@ -17,19 +17,16 @@ enum SoapType: String {
 
     /// Classifies the soap from the lye configuration.
     ///
-    /// - Hybrid: a meaningful NaOH share (> 10%) yields a soft **cream**; pure
-    ///   KOH (no NaOH) yields **liquid**; anything in between is **liquid**.
+    /// - Hybrid: a meaningful NaOH share (> 10%) yields a soft **cream**;
+    ///   otherwise (KOH-dominant) it's **liquid**.
     /// - Single lye: KOH makes **liquid** soap, NaOH makes a **solid** bar.
     static func classify(
         useHybrid: Bool,
         naohPercentage: Double,
-        kohPercentage: Double,
         lyeType: String
     ) -> SoapType {
         if useHybrid {
-            if naohPercentage > 10 { return .cream }
-            if kohPercentage == 0 { return .solid }
-            return .liquid
+            return naohPercentage > 10 ? .cream : .liquid
         }
         return lyeType == "KOH" ? .liquid : .solid
     }
