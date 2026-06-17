@@ -9,15 +9,19 @@ struct SoapPropertyIndicatorView: View {
     @State private var showingRange = false
 
     private var status: Status {
-        if recommended.contains(value) { .ideal }
-        else if value < recommended.lowerBound { .low }
-        else { .high }
+        if recommended.contains(value) {
+            .ideal
+        } else if value < recommended.lowerBound {
+            .low
+        } else {
+            .high
+        }
     }
 
     private var rangeText: String {
-        let lo = recommended.lowerBound.formatted(.number.precision(.fractionLength(0)))
-        let hi = recommended.upperBound.formatted(.number.precision(.fractionLength(0)))
-        return "\(lo) – \(hi)"
+        let low = recommended.lowerBound.formatted(.number.precision(.fractionLength(0)))
+        let high = recommended.upperBound.formatted(.number.precision(.fractionLength(0)))
+        return "\(low) – \(high)"
     }
 
     var body: some View {

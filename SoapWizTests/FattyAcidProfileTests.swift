@@ -5,64 +5,64 @@ import Testing
 struct FattyAcidProfileTests {
 
     @Test func hardness_SumsSaturatedAcids() {
-        var p = FattyAcidProfile()
-        p.lauric = 48; p.myristic = 19; p.palmitic = 9; p.stearic = 3
-        #expect(p.hardness == 79)
+        var profile = FattyAcidProfile()
+        profile.lauric = 48; profile.myristic = 19; profile.palmitic = 9; profile.stearic = 3
+        #expect(profile.hardness == 79)
     }
 
     @Test func cleansing_OnlyLauricAndMyristic() {
-        var p = FattyAcidProfile()
-        p.lauric = 48; p.myristic = 19; p.palmitic = 9; p.stearic = 3; p.oleic = 6
-        #expect(p.cleansing == 67)
+        var profile = FattyAcidProfile()
+        profile.lauric = 48; profile.myristic = 19; profile.palmitic = 9; profile.stearic = 3; profile.oleic = 6
+        #expect(profile.cleansing == 67)
     }
 
     @Test func conditioning_SumsUnsaturatedAndRicinoleic() {
-        var p = FattyAcidProfile()
-        p.oleic = 60; p.linoleic = 20; p.linolenic = 5; p.ricinoleic = 10
-        #expect(p.conditioning == 95)
+        var profile = FattyAcidProfile()
+        profile.oleic = 60; profile.linoleic = 20; profile.linolenic = 5; profile.ricinoleic = 10
+        #expect(profile.conditioning == 95)
     }
 
     @Test func bubbly_LauricMyristicRicinoleic() {
-        var p = FattyAcidProfile()
-        p.lauric = 5; p.myristic = 3; p.ricinoleic = 90
-        #expect(p.bubbly == 98)
+        var profile = FattyAcidProfile()
+        profile.lauric = 5; profile.myristic = 3; profile.ricinoleic = 90
+        #expect(profile.bubbly == 98)
     }
 
     @Test func creamy_PalmiticStearicRicinoleic() {
-        var p = FattyAcidProfile()
-        p.palmitic = 10; p.stearic = 5; p.ricinoleic = 90
-        #expect(p.creamy == 105)
+        var profile = FattyAcidProfile()
+        profile.palmitic = 10; profile.stearic = 5; profile.ricinoleic = 90
+        #expect(profile.creamy == 105)
     }
 
     @Test func longevity_PalmiticAndStearic() {
-        var p = FattyAcidProfile()
-        p.palmitic = 14; p.stearic = 3
-        #expect(p.longevity == 17)
+        var profile = FattyAcidProfile()
+        profile.palmitic = 14; profile.stearic = 3
+        #expect(profile.longevity == 17)
     }
 
     @Test func iodineValue_AppliesPerAcidConstants() {
-        var p = FattyAcidProfile()
-        p.oleic = 69
-        p.linoleic = 12
-        p.linolenic = 1
+        var profile = FattyAcidProfile()
+        profile.oleic = 69
+        profile.linoleic = 12
+        profile.linolenic = 1
         let oleicContribution: Double = 69 * 90
         let linoleicContribution: Double = 12 * 181
         let linolenicContribution: Double = 1 * 273
         let expected: Double = (oleicContribution + linoleicContribution + linolenicContribution) / 100
-        #expect(p.iodineValue == expected)
+        #expect(profile.iodineValue == expected)
     }
 
     @Test func iodineValue_AllSaturated_IsZero() {
-        var p = FattyAcidProfile()
-        p.lauric = 50; p.myristic = 20; p.palmitic = 20; p.stearic = 10
-        #expect(p.iodineValue == 0)
+        var profile = FattyAcidProfile()
+        profile.lauric = 50; profile.myristic = 20; profile.palmitic = 20; profile.stearic = 10
+        #expect(profile.iodineValue == 0)
     }
 
     @Test func saturatedTotals_IncludeAllFourSaturated() {
-        var p = FattyAcidProfile()
-        p.lauric = 1; p.myristic = 2; p.palmitic = 3; p.stearic = 4; p.oleic = 5; p.ricinoleic = 6
-        #expect(p.saturated == 10)
-        #expect(p.monoUnsaturated == 5)
+        var profile = FattyAcidProfile()
+        profile.lauric = 1; profile.myristic = 2; profile.palmitic = 3; profile.stearic = 4; profile.oleic = 5; profile.ricinoleic = 6
+        #expect(profile.saturated == 10)
+        #expect(profile.monoUnsaturated == 5)
     }
 
     @Test func weightedSum_EmptyContributions_ReturnsZero() {
@@ -71,16 +71,16 @@ struct FattyAcidProfileTests {
     }
 
     @Test func weightedSum_ZeroWeights_ReturnsZero() {
-        var p = FattyAcidProfile()
-        p.oleic = 60
-        let result = FattyAcidProfile.weightedSum([(p, 0), (p, 0)])
+        var profile = FattyAcidProfile()
+        profile.oleic = 60
+        let result = FattyAcidProfile.weightedSum([(profile, 0), (profile, 0)])
         #expect(result == .zero)
     }
 
     @Test func weightedSum_EqualWeights_AveragesProfiles() {
-        var a = FattyAcidProfile(); a.palmitic = 10; a.oleic = 70
-        var b = FattyAcidProfile(); b.palmitic = 30; b.oleic = 50
-        let result = FattyAcidProfile.weightedSum([(a, 50), (b, 50)])
+        var profileA = FattyAcidProfile(); profileA.palmitic = 10; profileA.oleic = 70
+        var profileB = FattyAcidProfile(); profileB.palmitic = 30; profileB.oleic = 50
+        let result = FattyAcidProfile.weightedSum([(profileA, 50), (profileB, 50)])
         #expect(result.palmitic == 20)
         #expect(result.oleic == 60)
     }

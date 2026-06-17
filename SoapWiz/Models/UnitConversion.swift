@@ -21,8 +21,8 @@ enum MassUnitConverter {
 
     /// Converts `amount` from one mass unit to another. Returns `nil` if either
     /// unit isn't a mass unit.
-    static func convert(_ amount: Double, from: String, to: String) -> Double? {
-        guard let fromUnit = unit(for: from), let toUnit = unit(for: to) else { return nil }
+    static func convert(_ amount: Double, from: String, to toSymbol: String) -> Double? {
+        guard let fromUnit = unit(for: from), let toUnit = unit(for: toSymbol) else { return nil }
         if fromUnit == toUnit { return amount }
         return Measurement(value: amount, unit: fromUnit).converted(to: toUnit).value
     }
@@ -65,10 +65,10 @@ enum IngredientUnitConverter {
         }
     }
 
-    private static func fromMilliliters(_ ml: Double, to symbol: String) -> Double? {
+    private static func fromMilliliters(_ milliliterValue: Double, to symbol: String) -> Double? {
         switch symbol {
-        case "ml": ml
-        case "L": ml / 1000
+        case "ml": milliliterValue
+        case "L": milliliterValue / 1000
         default: nil
         }
     }
@@ -77,18 +77,19 @@ enum IngredientUnitConverter {
     /// any volume↔mass crossing and falling back to `defaultDensity` when it's
     /// `nil`. Returns `nil` when either unit is unknown or non-convertible
     /// (e.g. "un" or a percentage).
-    static func convert(_ amount: Double, from: String, to: String, density: Double?) -> Result? {
+    static func convert(_ amount: Double, from: String, to toSymbol: String, density: Double?) -> Result? {
         // Mass ↔ mass: no density involved.
-        if let mass = MassUnitConverter.convert(amount, from: from, to: to) {
+        if let mass = MassUnitConverter.convert(amount, from: from, to: toSymbol) {
             return Result(value: mass, density: nil, usedDefaultDensity: false)
         }
 
         let fromVolume = isVolume(from)
-        let toVolume = isVolume(to)
+        let toVolume = isVolume(toSymbol)
 
         // Volume ↔ volume: no density involved.
         if fromVolume, toVolume,
-           let ml = milliliters(amount, from: from), let out = fromMilliliters(ml, to: to) {
+           let milliliterValue = milliliters(amount, from: from),
+           let out = fromMilliliters(milliliterValue, to: toSymbol) {
             return Result(value: out, density: nil, usedDefaultDensity: false)
         }
 
@@ -98,19 +99,20 @@ enum IngredientUnitConverter {
         if let density, density <= 0 { return nil }
 
         let usedDefault = density == nil
-        let d = density ?? defaultDensity
+        let resolvedDensity = density ?? defaultDensity
 
         // Volume → mass: mL × density = grams, then convert grams to the target mass unit.
-        if fromVolume, MassUnitConverter.isMass(to), let ml = milliliters(amount, from: from) {
-            guard let value = MassUnitConverter.convert(ml * d, from: "g", to: to) else { return nil }
-            return Result(value: value, density: d, usedDefaultDensity: usedDefault)
+        if fromVolume, MassUnitConverter.isMass(toSymbol), let milliliterValue = milliliters(amount, from: from) {
+            guard let value = MassUnitConverter.convert(milliliterValue * resolvedDensity, from: "g", to: toSymbol)
+            else { return nil }
+            return Result(value: value, density: resolvedDensity, usedDefaultDensity: usedDefault)
         }
 
         // Mass → volume: mass → grams, ÷ density = mL, then convert to the target volume unit.
         if MassUnitConverter.isMass(from), toVolume {
             guard let grams = MassUnitConverter.convert(amount, from: from, to: "g"),
-                  let out = fromMilliliters(grams / d, to: to) else { return nil }
-            return Result(value: out, density: d, usedDefaultDensity: usedDefault)
+                  let out = fromMilliliters(grams / resolvedDensity, to: toSymbol) else { return nil }
+            return Result(value: out, density: resolvedDensity, usedDefaultDensity: usedDefault)
         }
 
         return nil

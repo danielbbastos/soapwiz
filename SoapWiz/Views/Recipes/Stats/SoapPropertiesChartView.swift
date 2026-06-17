@@ -59,8 +59,8 @@ struct SoapPropertiesChartView: View {
                     .onTapGesture { location in
                         guard let plotFrame = proxy.plotFrame else { return }
                         let origin = geo[plotFrame].origin
-                        let x = location.x - origin.x
-                        if let name: String = proxy.value(atX: x) {
+                        let xPosition = location.x - origin.x
+                        if let name: String = proxy.value(atX: xPosition) {
                             withAnimation(.easeInOut(duration: 0.22)) {
                                 selectedDisplayName = (selectedDisplayName == name) ? nil : name
                             }
@@ -79,9 +79,9 @@ struct OilContributionCardView: View {
     var onClose: () -> Void
 
     private var rangeText: String {
-        let lo = quality.recommendedRange.lowerBound.formatted(.number.precision(.fractionLength(0)))
-        let hi = quality.recommendedRange.upperBound.formatted(.number.precision(.fractionLength(0)))
-        return "Recommended: \(lo) – \(hi)"
+        let low = quality.recommendedRange.lowerBound.formatted(.number.precision(.fractionLength(0)))
+        let high = quality.recommendedRange.upperBound.formatted(.number.precision(.fractionLength(0)))
+        return "Recommended: \(low) – \(high)"
     }
 
     var body: some View {

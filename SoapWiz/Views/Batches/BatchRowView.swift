@@ -4,10 +4,10 @@ struct BatchRowView: View {
     let batch: Batch
 
     private static let currencyFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.locale = .autoupdatingCurrent
-        return f
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = .autoupdatingCurrent
+        return formatter
     }()
 
     var body: some View {

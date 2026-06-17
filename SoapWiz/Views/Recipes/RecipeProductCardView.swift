@@ -29,18 +29,18 @@ struct RecipeProductCardView: View {
     @State private var isUnitPickerPresented = false
 
     private static let amountFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.locale = .autoupdatingCurrent
-        f.minimumFractionDigits = 0
-        f.maximumFractionDigits = 2
-        return f
+        let formatter = NumberFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        return formatter
     }()
 
     private static let currencyFormatter: NumberFormatter = {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.locale = .autoupdatingCurrent
-        return f
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = .autoupdatingCurrent
+        return formatter
     }()
 
     private var groups: [(key: BreakdownGroupKey, rows: [IngredientProductBreakdown])] {
@@ -48,7 +48,7 @@ struct RecipeProductCardView: View {
             (.oils, breakdown.oils),
             (.additives, breakdown.additives),
             (.fragrances, breakdown.fragrances),
-            (.lye, breakdown.lye),
+            (.lye, breakdown.lye)
         ]
         return pairs.filter { !$0.1.isEmpty }
     }
@@ -195,7 +195,10 @@ struct RecipeProductCardView: View {
     }
 
     @ViewBuilder
-    private func breakdownRow(name: String, amount: Double, unit: String, cost: Double, emphasized: Bool = false, note: String? = nil) -> some View {
+    private func breakdownRow(
+        name: String, amount: Double, unit: String, cost: Double,
+        emphasized: Bool = false, note: String? = nil
+    ) -> some View {
         let style = emphasized ? Color.primary : Color.secondary
         let weight: Font.Weight = emphasized ? .semibold : .regular
         HStack {

@@ -53,8 +53,6 @@ final class PurchaseDetailViewModel {
             purchase.openingDate = Date.now
         }
     }
-
-
 }
 
 private extension Comparable {

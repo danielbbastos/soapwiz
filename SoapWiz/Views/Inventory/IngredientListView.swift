@@ -119,11 +119,11 @@ struct IngredientListView: View {
             if let ingredient = model.pendingIngredient {
                 navigationPath.append(ingredient)
             }
-        }) {
+        }, content: {
             IngredientFormView(onSave: { ingredient in
                 model.pendingIngredient = ingredient
             })
-        }
+        })
         .sheet(isPresented: $model.showingBulkImport) {
             BulkImportView()
         }

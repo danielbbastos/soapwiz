@@ -91,13 +91,13 @@ struct ListViewModelTests {
     @Test func ingredientDeleteAtOffsets() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let a = Ingredient(name: "A")
-        let b = Ingredient(name: "B")
-        ctx.insert(a); ctx.insert(b)
+        let ingredientA = Ingredient(name: "A")
+        let ingredientB = Ingredient(name: "B")
+        ctx.insert(ingredientA); ctx.insert(ingredientB)
         try ctx.save()
 
         let model = IngredientListViewModel()
-        model.delete(a, context: ctx)
+        model.delete(ingredientA, context: ctx)
         try ctx.save()
 
         let remaining = try ctx.fetch(FetchDescriptor<Ingredient>())
@@ -108,14 +108,14 @@ struct ListViewModelTests {
     @Test func ingredientDeleteSelectedClearsStateAndExitsEditMode() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let a = Ingredient(name: "A")
-        ctx.insert(a)
+        let ingredientA = Ingredient(name: "A")
+        ctx.insert(ingredientA)
         try ctx.save()
 
         let model = IngredientListViewModel()
         model.editMode = .active
-        model.selection = [a.persistentModelID]
-        model.deleteSelected(in: [a], context: ctx)
+        model.selection = [ingredientA.persistentModelID]
+        model.deleteSelected(in: [ingredientA], context: ctx)
 
         #expect(model.selection.isEmpty)
         #expect(model.editMode == .inactive)

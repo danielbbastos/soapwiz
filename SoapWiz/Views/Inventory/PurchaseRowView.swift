@@ -30,7 +30,9 @@ struct PurchaseRowView: View {
                 }
             }
             HStack {
-                Text("\(purchase.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))) / \(purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))) \(unit)")
+                let remaining = purchase.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))
+                let quantity = purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))
+                Text("\(remaining) / \(quantity) \(unit)")
                     .font(.subheadline)
                     .foregroundStyle(purchase.remainingAmount > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
                 Spacer()

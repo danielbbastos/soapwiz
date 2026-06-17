@@ -7,7 +7,7 @@ struct IngredientPickerView: View {
     @Environment(\.dismiss) private var dismiss
 
     let addedIDs: Set<PersistentIdentifier>
-    var allowedRole: RecipeIngredientRole? = nil
+    var allowedRole: RecipeIngredientRole?
     let onSelect: ([Ingredient]) -> Void
 
     @State private var searchText = ""

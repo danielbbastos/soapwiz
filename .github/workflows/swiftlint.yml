@@ -1,0 +1,22 @@
+name: SwiftLint
+
+on:
+  pull_request:
+    paths:
+      - '**/*.swift'
+      - '.swiftlint.yml'
+      - '.github/workflows/swiftlint.yml'
+  push:
+    branches: [main]
+
+jobs:
+  swiftlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run SwiftLint
+        run: docker run --rm -v "$PWD:$PWD" -w "$PWD" ghcr.io/realm/swiftlint:latest swiftlint lint --strict
