@@ -73,9 +73,12 @@ struct RecipeIngredientsTabView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Dosage Percentages")
                     .font(.headline)
-                Text("These percentages represent the dosage as a fraction of total oil weight — "
-                     + "for example, 1% equals 10 g per 1000 g of oils."
-                     + "\n\nThey are only relevant for **Sodium Lactate** and **Citric Acid Powder**.")
+                (Text("These percentages represent the dosage as a fraction of total oil weight — "
+                      + "for example, 1% equals 10 g per 1000 g of oils.\n\nThey are only relevant for ")
+                 + Text("Sodium Lactate").bold()
+                 + Text(" and ")
+                 + Text("Citric Acid Powder").bold()
+                 + Text("."))
                     .font(.body)
                     .foregroundStyle(.secondary)
             }
@@ -350,6 +353,10 @@ private extension RecipeIngredientsTabView {
                     let naohValue = selectedSectionAPct == 1 ? naoh.v1 : selectedSectionAPct == 2 ? naoh.v2 : naoh.v3
                     extraSectionARow(label: "↳ Extra NaOH", weight: naohValue, isSubrow: true)
                 }
+                if let koh = row.kohLyeSolution {
+                    let kohValue = selectedSectionAPct == 1 ? koh.v1 : selectedSectionAPct == 2 ? koh.v2 : koh.v3
+                    extraSectionARow(label: "↳ Extra KOH", weight: kohValue, isSubrow: true)
+                }
             }
         }
         .listRowInsets(EdgeInsets())
@@ -455,6 +462,9 @@ private extension RecipeIngredientsTabView {
                 extraSectionBRow(row)
                 if let naoh = row.naohLyeSolution {
                     extraSectionBSubRow("↳ Extra NaOH", value: naoh)
+                }
+                if let koh = row.kohLyeSolution {
+                    extraSectionBSubRow("↳ Extra KOH", value: koh)
                 }
             }
         }

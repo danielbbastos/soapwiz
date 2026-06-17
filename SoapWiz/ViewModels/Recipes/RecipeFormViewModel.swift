@@ -60,7 +60,12 @@ struct OilAmountCalculation: Identifiable {
     let id: UUID
     let ingredient: Ingredient
     let weight: Double
-    let lye: Double
+    /// Lye contributed by this oil, already discounted for super fat. Split so
+    /// the hybrid path can price NaOH and KOH separately; the single path puts
+    /// everything in `naohLye`.
+    let naohLye: Double
+    let kohLye: Double
+    var lye: Double { naohLye + kohLye }
 }
 
 struct CalculatedAmountRow: Identifiable {
@@ -78,14 +83,17 @@ struct ExtraSectionARow: Identifiable {
     let val2: Double
     let val3: Double
     let naohLyeSolution: (v1: Double, v2: Double, v3: Double)?
+    let kohLyeSolution: (v1: Double, v2: Double, v3: Double)?
 
     init(label: String, val1: Double, val2: Double, val3: Double,
-         naohLyeSolution: (v1: Double, v2: Double, v3: Double)? = nil) {
+         naohLyeSolution: (v1: Double, v2: Double, v3: Double)? = nil,
+         kohLyeSolution: (v1: Double, v2: Double, v3: Double)? = nil) {
         self.label = label
         self.val1 = val1
         self.val2 = val2
         self.val3 = val3
         self.naohLyeSolution = naohLyeSolution
+        self.kohLyeSolution = kohLyeSolution
     }
 }
 
@@ -95,12 +103,15 @@ struct ExtraSectionBRow: Identifiable {
     let minValue: Double
     let maxValue: Double?
     let naohLyeSolution: Double?
+    let kohLyeSolution: Double?
 
-    init(label: String, minValue: Double, maxValue: Double? = nil, naohLyeSolution: Double? = nil) {
+    init(label: String, minValue: Double, maxValue: Double? = nil,
+         naohLyeSolution: Double? = nil, kohLyeSolution: Double? = nil) {
         self.label = label
         self.minValue = minValue
         self.maxValue = maxValue
         self.naohLyeSolution = naohLyeSolution
+        self.kohLyeSolution = kohLyeSolution
     }
 }
 
@@ -120,7 +131,13 @@ final class RecipeFormViewModel {
     var fragranceDrafts: [IngredientAmountDraft] = []
     var productDrafts: [RecipeProductDraft] = []
     var fragrancePercentage: Double = 3
+    var useHybrid: Bool = false
+    var kohPercentage: Double = 90
+    var naohPercentage: Double = 10
+    var kohPurity: Double = 90
+    var naohPurity: Double = 99
     var lyeIngredient: Ingredient?
+    var kohLyeIngredient: Ingredient?
 
     @ObservationIgnored
     private var editingRecipe: Recipe?
@@ -162,29 +179,109 @@ final class RecipeFormViewModel {
 
     var oilAmountCalculations: [OilAmountCalculation]? {
         guard !oilDrafts.isEmpty else { return nil }
-        guard lyePurity > 0 && lyePurity <= 100 else { return nil }
+        guard lyeConfigIsValid else { return nil }
 
         if weightUnitIsPercentage {
             guard totalOilWeight > 0 else { return nil }
             return oilDrafts.map { draft in
-                let oilWeight = totalOilWeight * (draft.amount / 100)
-                let sap = draft.ingredient.sapValue ?? 0
-                let lye = oilWeight * sap * (1 - superFat / 100) / (lyePurity / 100)
-                return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: oilWeight, lye: lye)
+                lyeContribution(weight: totalOilWeight * (draft.amount / 100), draft: draft)
             }
         } else {
             let calcs = oilDrafts.compactMap { draft -> OilAmountCalculation? in
                 guard draft.amount > 0 else { return nil }
-                let sap = draft.ingredient.sapValue ?? 0
-                let lye = draft.amount * sap * (1 - superFat / 100) / (lyePurity / 100)
-                return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: draft.amount, lye: lye)
+                return lyeContribution(weight: draft.amount, draft: draft)
             }
             return calcs.isEmpty ? nil : calcs
         }
     }
 
+    /// Whether the active lye configuration can produce a calculation: the purity
+    /// of every active lye component must be a valid percentage.
+    private var lyeConfigIsValid: Bool {
+        func validPurity(_ purity: Double) -> Bool { purity > 0 && purity <= 100 }
+        guard useHybrid else { return validPurity(lyePurity) }
+        if naohPercentage > 0 && !validPurity(naohPurity) { return false }
+        if kohPercentage > 0 && !validPurity(kohPurity) { return false }
+        return true
+    }
+
+    /// Lye one oil contributes, split into NaOH and KOH and discounted for super
+    /// fat. Hybrid scales each lye by its split share and own purity; single lye
+    /// uses `lyePurity` and the sap value of the chosen `lyeType`.
+    private func lyeContribution(weight: Double, draft: OilIngredientDraft) -> OilAmountCalculation {
+        let superFatFactor = 1 - superFat / 100
+        let naohSap = draft.ingredient.sapValue ?? 0
+        let kohSap = draft.ingredient.kohSapValue ?? 0
+
+        if useHybrid {
+            let naohLye = naohPurity > 0
+                ? (naohPercentage / 100) * weight * naohSap / (naohPurity / 100) * superFatFactor : 0
+            let kohLye = kohPurity > 0
+                ? (kohPercentage / 100) * weight * kohSap / (kohPurity / 100) * superFatFactor : 0
+            return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: weight, naohLye: naohLye, kohLye: kohLye)
+        }
+
+        let sap = lyeType == "KOH" ? kohSap : naohSap
+        let lye = lyePurity > 0 ? weight * sap * superFatFactor / (lyePurity / 100) : 0
+        return lyeType == "KOH"
+            ? OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: weight, naohLye: 0, kohLye: lye)
+            : OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: weight, naohLye: lye, kohLye: 0)
+    }
+
+    /// Total NaOH lye, including the NaOH share of acid neutralisation.
+    var calculatedNaOHLyeAmount: Double? {
+        oilAmountCalculations.map { $0.reduce(0) { $0 + $1.naohLye } + acidNeutralization.naoh }
+    }
+
+    /// Total KOH lye, including the KOH share of acid neutralisation.
+    var calculatedKOHLyeAmount: Double? {
+        oilAmountCalculations.map { $0.reduce(0) { $0 + $1.kohLye } + acidNeutralization.koh }
+    }
+
     var calculatedLyeAmount: Double? {
-        oilAmountCalculations.map { $0.reduce(0) { $0 + $1.lye } + acidNeutralizationLye }
+        let acid = acidNeutralization
+        return oilAmountCalculations.map { $0.reduce(0) { $0 + $1.lye } + acid.naoh + acid.koh }
+    }
+
+    var soapType: SoapType {
+        SoapType.classify(
+            useHybrid: useHybrid,
+            naohPercentage: naohPercentage,
+            kohPercentage: kohPercentage,
+            lyeType: lyeType
+        )
+    }
+
+    /// Standard single-lye purities: NaOH ships near-anhydrous (~99%), KOH is
+    /// hygroscopic and sold at ~90%.
+    static let defaultNaOHPurity = 99.0
+    static let defaultKOHPurity = 90.0
+
+    /// Switches the single lye type, moving `lyePurity` to the new lye's standard
+    /// default — but only when it still holds the other lye's default, so a value
+    /// the user set deliberately is preserved.
+    func setLyeType(_ type: String) {
+        if type == "KOH", lyePurity == Self.defaultNaOHPurity {
+            lyePurity = Self.defaultKOHPurity
+        } else if type == "NaOH", lyePurity == Self.defaultKOHPurity {
+            lyePurity = Self.defaultNaOHPurity
+        }
+        lyeType = type
+    }
+
+    /// Sets the KOH share (clamped 0–100) and keeps NaOH as the complement so the
+    /// split always sums to 100.
+    func setKOHPercentage(_ value: Double) {
+        let clamped = min(max(value, 0), 100)
+        kohPercentage = clamped
+        naohPercentage = 100 - clamped
+    }
+
+    /// Sets the NaOH share (clamped 0–100), keeping KOH as the complement.
+    func setNaOHPercentage(_ value: Double) {
+        let clamped = min(max(value, 0), 100)
+        naohPercentage = clamped
+        kohPercentage = 100 - clamped
     }
 
     /// g of pure NaOH consumed per gram of acid (anhydrous neutralization
@@ -195,24 +292,52 @@ final class RecipeFormViewModel {
         ("lactic acid", 0.5920),
     ]
 
-    /// Extra lye consumed by acid additives: amount × factor / purity. Water
-    /// follows automatically via `waterParts`, so lye + water together equal the
-    /// lye-solution amount the extras table shows. NaOH only — the factors are
-    /// NaOH-specific. Percentage-unit drafts are skipped: "% of batch" and
-    /// "% of liquids" resolve against the lye amount this value feeds, which
-    /// would recurse.
-    private var acidNeutralizationLye: Double {
-        guard lyeType == "NaOH", lyePurity > 0 else { return 0 }
-        return additiveDrafts.reduce(0) { sum, draft in
+    /// Molar-mass ratio KOH/NaOH (56.106 / 39.997). KOH neutralises the same acid
+    /// as NaOH but, being heavier, more grams are needed by this factor.
+    static let kohPerNaOHMass = 56.106 / 39.997
+
+    /// Fraction of the lye that is NaOH / KOH, used to split acid neutralisation.
+    /// Hybrid follows the configured split; single lye is entirely the chosen
+    /// `lyeType`.
+    var naohShare: Double { useHybrid ? naohPercentage / 100 : (lyeType == "NaOH" ? 1 : 0) }
+    var kohShare: Double { useHybrid ? kohPercentage / 100 : (lyeType == "KOH" ? 1 : 0) }
+
+    /// Purity backing each lye's acid neutralisation: hybrid uses the per-lye
+    /// purities, single uses the one `lyePurity`.
+    private var effectiveNaOHPurity: Double { useHybrid ? naohPurity : lyePurity }
+    private var effectiveKOHPurity: Double { useHybrid ? kohPurity : lyePurity }
+
+    /// Extra lye per (gram of acid × its NaOH neutralisation factor), for each
+    /// lye: the lye's split share divided by its purity, with KOH additionally
+    /// scaled by the molar-mass ratio (KOH is heavier, so more grams are needed).
+    /// `nil` when that lye is absent. These are the actual extra-lye figures —
+    /// lye only, no water — matching LyeCalc's "Extra Lye to Neutralize".
+    private var naohAcidMultiplier: Double? {
+        naohShare > 0 && effectiveNaOHPurity > 0 ? naohShare / (effectiveNaOHPurity / 100) : nil
+    }
+    private var kohAcidMultiplier: Double? {
+        kohShare > 0 && effectiveKOHPurity > 0 ? Self.kohPerNaOHMass * kohShare / (effectiveKOHPurity / 100) : nil
+    }
+
+    /// Extra lye consumed by acid additives, split between NaOH and KOH following
+    /// the recipe's lye ratio and each scaled by its own purity. Percentage-unit
+    /// drafts are skipped: "% of batch" and "% of liquids" resolve against the
+    /// lye amount this value feeds, which would recurse.
+    private var acidNeutralization: (naoh: Double, koh: Double) {
+        var naoh = 0.0
+        var koh = 0.0
+        for draft in additiveDrafts {
             guard draft.amount > 0,
                   let factor = Self.naohPerGramOfAcid
                       .first(where: { Self.namesMatch(draft.ingredient.name, $0.acid) })?.factor,
                   let batchAmount = IngredientUnitConverter.convert(
                       draft.amount, from: draft.unit, to: displayWeightUnit, density: draft.ingredient.density
                   )?.value
-            else { return sum }
-            return sum + batchAmount * factor / (lyePurity / 100)
+            else { continue }
+            if let mult = naohAcidMultiplier { naoh += batchAmount * factor * mult }
+            if let mult = kohAcidMultiplier { koh += batchAmount * factor * mult }
         }
+        return (naoh, koh)
     }
 
     var calculatedWaterAmount: Double? {
@@ -235,10 +360,23 @@ final class RecipeFormViewModel {
             return CalculatedAmountRow(label: calc.ingredient.name, weight: calc.weight, pct: pct, isSummary: false)
         }
         rows.append(CalculatedAmountRow(label: "Oils total (batch)", weight: totalOil, pct: batchPct(totalOil), isSummary: true))
-        rows.append(CalculatedAmountRow(
-            label: "\(lyeType) (\(formatPercentage(lyePurity))%, \(formatPercentage(superFat))% SF)",
-            weight: totalLye, pct: batchPct(totalLye), isSummary: false
-        ))
+        if useHybrid {
+            let naoh = calculatedNaOHLyeAmount ?? 0
+            let koh = calculatedKOHLyeAmount ?? 0
+            rows.append(CalculatedAmountRow(
+                label: "KOH (\(formatPercentage(kohPercentage))%, \(formatPercentage(kohPurity))% pure)",
+                weight: koh, pct: batchPct(koh), isSummary: false
+            ))
+            rows.append(CalculatedAmountRow(
+                label: "NaOH (\(formatPercentage(naohPercentage))%, \(formatPercentage(naohPurity))% pure)",
+                weight: naoh, pct: batchPct(naoh), isSummary: false
+            ))
+        } else {
+            rows.append(CalculatedAmountRow(
+                label: "\(lyeType) (\(formatPercentage(lyePurity))%, \(formatPercentage(superFat))% SF)",
+                weight: totalLye, pct: batchPct(totalLye), isSummary: false
+            ))
+        }
         rows.append(CalculatedAmountRow(
             label: "Water (\(formatPercentage(waterParts)):1)",
             weight: totalWater, pct: batchPct(totalWater), isSummary: false
@@ -271,10 +409,6 @@ final class RecipeFormViewModel {
         )
     }
 
-    private var lyeConcentration: Double {
-        1.0 / (1.0 + waterParts)
-    }
-
     var extraIngredientData: (sectionA: [ExtraSectionARow], sectionB: [ExtraSectionBRow])? {
         guard let calculations = oilAmountCalculations,
               let totalLye = calculatedLyeAmount,
@@ -283,8 +417,20 @@ final class RecipeFormViewModel {
         let oils = calculations.reduce(0.0) { $0 + $1.weight }
         guard oils > 0 else { return nil }
 
-        let lyeConc = lyeConcentration
         let batchTotal = oils + totalLye + totalWater
+
+        // Extra lye to neutralise each acid, split by the recipe's lye ratio. A
+        // side with no lye (nil multiplier) is omitted so the extras table drops
+        // that subrow.
+        func triple(_ val1: Double, _ val2: Double, _ val3: Double, factor: Double, multiplier: Double?) -> (v1: Double, v2: Double, v3: Double)? {
+            guard let multiplier else { return nil }
+            let scale = factor * multiplier
+            return (val1 * scale, val2 * scale, val3 * scale)
+        }
+        func single(_ amount: Double, factor: Double, multiplier: Double?) -> Double? {
+            guard let multiplier else { return nil }
+            return amount * factor * multiplier
+        }
 
         let citric1 = oils * 0.01
         let citric2 = oils * 0.02
@@ -294,11 +440,8 @@ final class RecipeFormViewModel {
             ExtraSectionARow(
                 label: "Citric Acid Powder",
                 val1: citric1, val2: citric2, val3: citric3,
-                naohLyeSolution: (
-                    v1: citric1 * 0.625 / lyeConc,
-                    v2: citric2 * 0.625 / lyeConc,
-                    v3: citric3 * 0.625 / lyeConc
-                )
+                naohLyeSolution: triple(citric1, citric2, citric3, factor: 0.625, multiplier: naohAcidMultiplier),
+                kohLyeSolution: triple(citric1, citric2, citric3, factor: 0.625, multiplier: kohAcidMultiplier)
             ),
         ]
 
@@ -306,8 +449,12 @@ final class RecipeFormViewModel {
         let lactic = oils * 0.0075
         let sectionB: [ExtraSectionBRow] = [
             ExtraSectionBRow(label: "EO / Fragrance Oil", minValue: oils * fragranceTargetPercentage / 100),
-            ExtraSectionBRow(label: "Ascorbic Acid", minValue: ascorbic, naohLyeSolution: ascorbic * 0.2020 / lyeConc),
-            ExtraSectionBRow(label: "Lactic Acid", minValue: lactic, naohLyeSolution: lactic * 0.5920 / lyeConc),
+            ExtraSectionBRow(label: "Ascorbic Acid", minValue: ascorbic,
+                naohLyeSolution: single(ascorbic, factor: 0.2020, multiplier: naohAcidMultiplier),
+                kohLyeSolution: single(ascorbic, factor: 0.2020, multiplier: kohAcidMultiplier)),
+            ExtraSectionBRow(label: "Lactic Acid", minValue: lactic,
+                naohLyeSolution: single(lactic, factor: 0.5920, multiplier: naohAcidMultiplier),
+                kohLyeSolution: single(lactic, factor: 0.5920, multiplier: kohAcidMultiplier)),
             ExtraSectionBRow(label: "Tetrasodium EDTA", minValue: batchTotal * 0.005),
             ExtraSectionBRow(label: "Sodium Citrate", minValue: oils * 0.013, maxValue: oils * 0.039),
             ExtraSectionBRow(label: "Potassium Citrate", minValue: oils * 0.016, maxValue: oils * 0.048),
@@ -329,7 +476,13 @@ final class RecipeFormViewModel {
         waterParts = recipe.waterParts
         superFat = recipe.superFat
         fragrancePercentage = recipe.fragrancePercentage
+        useHybrid = recipe.useHybrid
+        kohPercentage = recipe.kohPercentage
+        naohPercentage = recipe.naohPercentage
+        kohPurity = recipe.kohPurity
+        naohPurity = recipe.naohPurity
         lyeIngredient = recipe.lyeIngredient
+        kohLyeIngredient = recipe.kohLyeIngredient
 
         oilDrafts = recipe.ingredients
             .filter { $0.ingredientRole == .oil }
@@ -580,12 +733,22 @@ final class RecipeFormViewModel {
     }
 
     private var lyeBatchBreakdown: [IngredientProductBreakdown] {
-        guard let ingredient = lyeIngredient, let amount = calculatedLyeAmount, amount > 0 else { return [] }
-        return [IngredientProductBreakdown(
-            ingredient: ingredient,
-            ingredientAmount: amount,
-            cost: cost(ofBatchAmount: amount, for: ingredient)
-        )]
+        func row(_ ingredient: Ingredient?, _ amount: Double?) -> IngredientProductBreakdown? {
+            guard let ingredient, let amount, amount > 0 else { return nil }
+            return IngredientProductBreakdown(
+                ingredient: ingredient,
+                ingredientAmount: amount,
+                cost: cost(ofBatchAmount: amount, for: ingredient)
+            )
+        }
+        guard useHybrid else {
+            let ingredient = lyeType == "KOH" ? kohLyeIngredient : lyeIngredient
+            return [row(ingredient, calculatedLyeAmount)].compactMap { $0 }
+        }
+        return [
+            row(lyeIngredient, calculatedNaOHLyeAmount),
+            row(kohLyeIngredient, calculatedKOHLyeAmount),
+        ].compactMap { $0 }
     }
 
     /// Total oil weight in the batch (oils) unit.
@@ -735,16 +898,21 @@ final class RecipeFormViewModel {
     }
 
     func resolveDefaultLyeIngredient(from inventory: [Ingredient]) {
-        guard lyeIngredient == nil else { return }
-        let lyeName: String
-        switch lyeType {
-        case "NaOH": lyeName = "sodium hydroxide"
-        case "KOH": lyeName = "potassium hydroxide"
-        default: return
-        }
         let candidates = inventory.filter { $0.category?.name == IngredientCategory.Name.lyes }
-        lyeIngredient = candidates.first { $0.name.lowercased().contains(lyeName) }
-            ?? candidates.first
+        guard !candidates.isEmpty else { return }
+
+        func match(_ name: String) -> Ingredient? {
+            candidates.first { $0.name.lowercased().contains(name) }
+        }
+
+        if lyeIngredient == nil {
+            // Single lye is currently always NaOH; the hybrid path's NaOH portion
+            // shares this ingredient.
+            lyeIngredient = match("sodium hydroxide") ?? candidates.first
+        }
+        if kohLyeIngredient == nil {
+            kohLyeIngredient = match("potassium hydroxide") ?? candidates.first
+        }
     }
 
     private func weightedCostPerUnit(for ingredient: Ingredient) -> Double {
@@ -803,7 +971,13 @@ final class RecipeFormViewModel {
         recipe.waterParts = waterParts
         recipe.superFat = superFat
         recipe.fragrancePercentage = fragrancePercentage
+        recipe.useHybrid = useHybrid
+        recipe.kohPercentage = kohPercentage
+        recipe.naohPercentage = naohPercentage
+        recipe.kohPurity = kohPurity
+        recipe.naohPurity = naohPurity
         recipe.lyeIngredient = lyeIngredient
+        recipe.kohLyeIngredient = kohLyeIngredient
 
         recipe.ingredients.forEach { context.delete($0) }
 

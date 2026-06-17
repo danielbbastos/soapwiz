@@ -194,56 +194,123 @@ private extension RecipeFormView {
 
     var lyeSection: some View {
         Section("Lye configuration") {
+            Toggle("Dual lye (NaOH + KOH)", isOn: $model.useHybrid)
+
             HStack {
-                Text("Lye type")
+                Text("Soap type")
                 Spacer()
-                Text("NaOH")
+                Text(model.soapType.label)
                     .foregroundStyle(.secondary)
             }
-            NavigationLink {
-                LyeIngredientPickerView(selected: $model.lyeIngredient)
-            } label: {
-                HStack {
-                    Text("Lye ingredient")
-                    Spacer()
-                    Text(model.lyeIngredient?.name ?? "Select…")
-                        .foregroundStyle(.secondary)
-                }
+
+            if model.useHybrid {
+                hybridLyeRows
+            } else {
+                singleLyeRows
             }
+
+            waterRatioRow
+            superFatRow
+        }
+        .animation(.default, value: model.useHybrid)
+    }
+
+    @ViewBuilder
+    private var singleLyeRows: some View {
+        HStack {
+            Text("Lye type")
+            Spacer()
+            Picker("Lye type", selection: Binding(get: { model.lyeType }, set: model.setLyeType)) {
+                Text("NaOH").tag("NaOH")
+                Text("KOH").tag("KOH")
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .tint(.primary)
+        }
+        lyeIngredientRow(
+            "Lye ingredient",
+            selected: model.lyeType == "KOH" ? $model.kohLyeIngredient : $model.lyeIngredient
+        )
+        purityRow("Lye purity", value: $model.lyePurity, prompt: "99")
+    }
+
+    @ViewBuilder
+    private var hybridLyeRows: some View {
+        percentageRow("KOH", value: model.kohPercentage, set: model.setKOHPercentage)
+        percentageRow("NaOH", value: model.naohPercentage, set: model.setNaOHPercentage)
+        purityRow("KOH purity", value: $model.kohPurity, prompt: "90")
+        purityRow("NaOH purity", value: $model.naohPurity, prompt: "99")
+        lyeIngredientRow("KOH ingredient", selected: $model.kohLyeIngredient)
+        lyeIngredientRow("NaOH ingredient", selected: $model.lyeIngredient)
+    }
+
+    private func percentageRow(_ label: String, value: Double, set: @escaping (Double) -> Void) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            TextField("0", value: Binding(get: { value }, set: set), format: .number.precision(.fractionLength(0...1)))
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 60)
+            Text("%")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func purityRow(_ label: String, value: Binding<Double>, prompt: String) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            TextField(prompt, value: value, format: .number.precision(.fractionLength(0...1)))
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 60)
+            Text("%")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func lyeIngredientRow(_ label: String, selected: Binding<Ingredient?>) -> some View {
+        NavigationLink {
+            LyeIngredientPickerView(selected: selected)
+        } label: {
             HStack {
-                Text("Lye purity")
+                Text(label)
                 Spacer()
-                TextField("99", value: $model.lyePurity, format: .number.precision(.fractionLength(0...1)))
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 60)
-                Text("%")
+                Text(selected.wrappedValue?.name ?? "Select…")
                     .foregroundStyle(.secondary)
             }
-            HStack {
-                Text("Water to lye ratio")
-                Spacer()
-                TextField("1.5", value: $model.waterParts, format: .number.precision(.fractionLength(0...1)))
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.center)
-                    .frame(width: 30)
-                Text(":")
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 4)
-                Text("1")
-                    .foregroundStyle(.secondary)
-                    .frame(width: 30, alignment: .center)
-            }
-            HStack {
-                Text("Super Fat")
-                Spacer()
-                TextField("5", value: $model.superFat, format: .number.precision(.fractionLength(0...1)))
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 60)
-                Text("%")
-                    .foregroundStyle(.secondary)
-            }
+        }
+    }
+
+    private var waterRatioRow: some View {
+        HStack {
+            Text("Water to lye ratio")
+            Spacer()
+            TextField("1.5", value: $model.waterParts, format: .number.precision(.fractionLength(0...1)))
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.center)
+                .frame(width: 30)
+            Text(":")
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+            Text("1")
+                .foregroundStyle(.secondary)
+                .frame(width: 30, alignment: .center)
+        }
+    }
+
+    private var superFatRow: some View {
+        HStack {
+            Text("Super Fat")
+            Spacer()
+            TextField("5", value: $model.superFat, format: .number.precision(.fractionLength(0...1)))
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 60)
+            Text("%")
+                .foregroundStyle(.secondary)
         }
     }
 
