@@ -19,6 +19,16 @@ struct LyeCalculator {
     let weightUnitIsPercentage: Bool
     let totalOilWeight: Double
     let displayWeightUnit: String
+    let useCFM: Bool
+    let cfmNeutralizer: CFMNeutralizer
+
+    /// Fraction of the soap weight dosed as the Failor neutraliser solution
+    /// (¾ oz per lb of soap = 0.75/16).
+    static let cfmNeutralizerSolutionFraction = 0.75 / 16
+
+    /// Excess-lye multiplier the Catherine Failor method applies in place of the
+    /// super-fat discount: 0% super fat plus 10% excess lye → ×1.10.
+    static let cfmExcessLyeFactor = 1.10
 
     /// g of pure NaOH consumed per gram of acid (anhydrous neutralization
     /// factors, matching the extras table's lye-solution figures).
@@ -32,22 +42,49 @@ struct LyeCalculator {
     /// as NaOH but, being heavier, more grams are needed by this factor.
     static let kohPerNaOHMass = 56.106 / 39.997
 
-    var oilAmountCalculations: [OilAmountCalculation]? {
+    /// How the soap is classified from the lye configuration. Gates the Catherine
+    /// Failor method, which only applies to non-solid soaps.
+    var soapType: SoapType {
+        SoapType.classify(useHybrid: useHybrid, naohPercentage: naohPercentage, lyeType: lyeType)
+    }
+
+    /// Whether the Catherine Failor method is in effect: requested and the soap
+    /// isn't a solid bar.
+    var cfmActive: Bool { useCFM && soapType != .solid }
+
+    /// Normal lye factor — the super-fat discount applied to full saponification.
+    private var superFatFactor: Double { 1 - superFat / 100 }
+
+    /// Factor used for the *needed* (and costed) lye: the Failor method overrides
+    /// the super-fat discount with a 10% excess instead; otherwise it's the
+    /// normal super-fat discount.
+    var neededLyeFactor: Double { cfmActive ? Self.cfmExcessLyeFactor : superFatFactor }
+
+    /// Per-oil lye contributions at a given lye factor. Oil weights are factor
+    /// independent; only the lye scales, so callers can ask for the needed,
+    /// normal, or full-saponification basis from the same resolution.
+    private func oilCalculations(factor: Double) -> [OilAmountCalculation]? {
         guard !oilDrafts.isEmpty else { return nil }
         guard lyeConfigIsValid else { return nil }
 
         if weightUnitIsPercentage {
             guard totalOilWeight > 0 else { return nil }
             return oilDrafts.map { draft in
-                lyeContribution(weight: totalOilWeight * (draft.amount / 100), draft: draft)
+                lyeContribution(weight: totalOilWeight * (draft.amount / 100), draft: draft, factor: factor)
             }
         } else {
             let calcs = oilDrafts.compactMap { draft -> OilAmountCalculation? in
                 guard draft.amount > 0 else { return nil }
-                return lyeContribution(weight: draft.amount, draft: draft)
+                return lyeContribution(weight: draft.amount, draft: draft, factor: factor)
             }
             return calcs.isEmpty ? nil : calcs
         }
+    }
+
+    /// Per-oil lye at the *needed* factor — drives the displayed lye amounts and
+    /// the recipe cost (the lye actually added).
+    var oilAmountCalculations: [OilAmountCalculation]? {
+        oilCalculations(factor: neededLyeFactor)
     }
 
     /// Whether the active lye configuration can produce a calculation: the purity
@@ -60,24 +97,24 @@ struct LyeCalculator {
         return true
     }
 
-    /// Lye one oil contributes, split into NaOH and KOH and discounted for super
-    /// fat. Hybrid scales each lye by its split share and own purity; single lye
-    /// uses `lyePurity` and the sap value of the chosen `lyeType`.
-    private func lyeContribution(weight: Double, draft: OilIngredientDraft) -> OilAmountCalculation {
-        let superFatFactor = 1 - superFat / 100
+    /// Lye one oil contributes, split into NaOH and KOH and scaled by `factor`
+    /// (super-fat discount or Failor excess). Hybrid scales each lye by its split
+    /// share and own purity; single lye uses `lyePurity` and the sap value of the
+    /// chosen `lyeType`.
+    private func lyeContribution(weight: Double, draft: OilIngredientDraft, factor: Double) -> OilAmountCalculation {
         let naohSap = draft.ingredient.sapValue ?? 0
         let kohSap = draft.ingredient.kohSapValue ?? 0
 
         if useHybrid {
             let naohLye = naohPurity > 0
-                ? (naohPercentage / 100) * weight * naohSap / (naohPurity / 100) * superFatFactor : 0
+                ? (naohPercentage / 100) * weight * naohSap / (naohPurity / 100) * factor : 0
             let kohLye = kohPurity > 0
-                ? (kohPercentage / 100) * weight * kohSap / (kohPurity / 100) * superFatFactor : 0
+                ? (kohPercentage / 100) * weight * kohSap / (kohPurity / 100) * factor : 0
             return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: weight, naohLye: naohLye, kohLye: kohLye)
         }
 
         let sap = lyeType == "KOH" ? kohSap : naohSap
-        let lye = lyePurity > 0 ? weight * sap * superFatFactor / (lyePurity / 100) : 0
+        let lye = lyePurity > 0 ? weight * sap * factor / (lyePurity / 100) : 0
         return lyeType == "KOH"
             ? OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: weight, naohLye: 0, kohLye: lye)
             : OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: weight, naohLye: lye, kohLye: 0)
@@ -98,9 +135,51 @@ struct LyeCalculator {
         return oilAmountCalculations.map { $0.reduce(0) { $0 + $1.lye } + acid.naoh + acid.koh }
     }
 
+    /// Total lye at the recipe's normal super fat, ignoring any Failor excess.
+    /// Water is sized from this so the 10% excess lye doesn't inflate the water
+    /// (matching LightCalc); without CFM it equals `calculatedLyeAmount`.
+    var normalSuperFatLyeAmount: Double? {
+        oilCalculations(factor: superFatFactor)
+            .map { $0.reduce(0) { $0 + $1.lye } + acidNeutralization.naoh + acidNeutralization.koh }
+    }
+
     var calculatedWaterAmount: Double? {
-        guard let lye = calculatedLyeAmount else { return nil }
+        guard let lye = normalSuperFatLyeAmount else { return nil }
         return lye * waterParts
+    }
+
+    /// Soap weight before cooking: oils + full-saponification lye (0% super fat,
+    /// no excess) + batch water. Used as the base for the Failor neutraliser
+    /// solution dose. `nil` until the recipe has oils.
+    var soapWeightPreCook: Double? {
+        guard let fullLye = oilCalculations(factor: 1)
+            .map({ $0.reduce(0) { $0 + $1.lye } + acidNeutralization.naoh + acidNeutralization.koh }),
+              let water = calculatedWaterAmount else { return nil }
+        return totalOilBatchWeight + fullLye + water
+    }
+
+    /// The two Failor neutraliser rows (the solid and its dissolving water) for
+    /// the calculated-amounts table, or `nil` when CFM isn't active. Display-only:
+    /// the excess lye is neutralised during the cook, so these are recommendations
+    /// rather than part of the saponified soap weight.
+    var cfmNeutralizerRows: (solid: CalculatedAmountRow, water: CalculatedAmountRow)? {
+        guard cfmActive, let soapWeight = soapWeightPreCook, soapWeight > 0 else { return nil }
+        let solution = soapWeight * Self.cfmNeutralizerSolutionFraction
+        let solidFraction = cfmNeutralizer.solidFraction
+        let solid = solution * solidFraction
+        let water = solution * (1 - solidFraction)
+        let solidPct = Int((solidFraction * 100).rounded())
+        let waterPct = 100 - solidPct
+        return (
+            solid: CalculatedAmountRow(
+                label: "\(cfmNeutralizer.displayName) (\(solidPct)% of Solution)",
+                weight: solid, pct: 0, isSummary: false
+            ),
+            water: CalculatedAmountRow(
+                label: "Water for \(cfmNeutralizer.displayName) Solution (\(waterPct)% of Solution)",
+                weight: water, pct: 0, isSummary: false
+            )
+        )
     }
 
     /// Total oil weight in the batch (oils) unit.
@@ -167,23 +246,45 @@ struct LyeCalculator {
             return CalculatedAmountRow(label: calc.ingredient.name, weight: calc.weight, pct: pct, isSummary: false)
         }
         rows.append(CalculatedAmountRow(label: "Oils total (batch)", weight: totalOil, pct: batchPct(totalOil), isSummary: true))
+
+        // Under the Failor method the lye is taken at 0% super fat + 10% excess,
+        // so the per-lye rows carry that note instead of the purity/SF detail.
+        func lyeLabel(_ lye: String, detail: @autoclosure () -> String) -> String {
+            let qualifier = cfmActive ? "0% Superfat + 10% Excess Lye" : detail()
+            return "\(lye) (\(qualifier))"
+        }
+        func pct(_ value: Double) -> String { PercentageFormatter.string(value) }
+
         if useHybrid {
             let naoh = calculatedNaOHLyeAmount ?? 0
             let koh = calculatedKOHLyeAmount ?? 0
             rows.append(CalculatedAmountRow(
-                label: "KOH (\(PercentageFormatter.string(kohPercentage))%, \(PercentageFormatter.string(kohPurity))% pure)",
+                label: lyeLabel("KOH", detail: "\(pct(kohPercentage))%, \(pct(kohPurity))% pure"),
                 weight: koh, pct: batchPct(koh), isSummary: false
             ))
             rows.append(CalculatedAmountRow(
-                label: "NaOH (\(PercentageFormatter.string(naohPercentage))%, \(PercentageFormatter.string(naohPurity))% pure)",
+                label: lyeLabel("NaOH", detail: "\(pct(naohPercentage))%, \(pct(naohPurity))% pure"),
                 weight: naoh, pct: batchPct(naoh), isSummary: false
             ))
         } else {
             rows.append(CalculatedAmountRow(
-                label: "\(lyeType) (\(PercentageFormatter.string(lyePurity))%, \(PercentageFormatter.string(superFat))% SF)",
+                label: lyeLabel(lyeType, detail: "\(pct(lyePurity))%, \(pct(superFat))% SF"),
                 weight: totalLye, pct: batchPct(totalLye), isSummary: false
             ))
         }
+
+        // Failor neutraliser solution (display-only recommendation).
+        if let neutralizer = cfmNeutralizerRows {
+            rows.append(CalculatedAmountRow(
+                label: neutralizer.solid.label, weight: neutralizer.solid.weight,
+                pct: batchPct(neutralizer.solid.weight), isSummary: false
+            ))
+            rows.append(CalculatedAmountRow(
+                label: neutralizer.water.label, weight: neutralizer.water.weight,
+                pct: batchPct(neutralizer.water.weight), isSummary: false
+            ))
+        }
+
         rows.append(CalculatedAmountRow(
             label: "Water (\(PercentageFormatter.string(waterParts)):1)",
             weight: totalWater, pct: batchPct(totalWater), isSummary: false

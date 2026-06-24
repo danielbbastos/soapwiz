@@ -22,6 +22,9 @@ final class RecipeFormViewModel {
     var naohPercentage: Double = 10
     var kohPurity: Double = 90
     var naohPurity: Double = 99
+    var isCreamSoap: Bool = false
+    var useCFM: Bool = false
+    var cfmNeutralizer: CFMNeutralizer = .boricAcid
     var lyeIngredient: Ingredient?
     var kohLyeIngredient: Ingredient?
 
@@ -81,7 +84,9 @@ final class RecipeFormViewModel {
             waterParts: waterParts,
             weightUnitIsPercentage: weightUnitIsPercentage,
             totalOilWeight: totalOilWeight,
-            displayWeightUnit: displayWeightUnit
+            displayWeightUnit: displayWeightUnit,
+            useCFM: useCFM,
+            cfmNeutralizer: cfmNeutralizer
         )
     }
 
@@ -97,7 +102,11 @@ final class RecipeFormViewModel {
     }
 
     private var extrasBuilder: RecipeExtrasBuilder {
-        RecipeExtrasBuilder(lye: lyeCalculator, fragranceTargetPercentage: fragranceTargetPercentage)
+        RecipeExtrasBuilder(
+            lye: lyeCalculator,
+            fragranceTargetPercentage: fragranceTargetPercentage,
+            isCreamSoap: isCreamSoap
+        )
     }
 
     // MARK: - Lye / amounts (delegated to LyeCalculator)
@@ -180,6 +189,12 @@ final class RecipeFormViewModel {
 
     var extraIngredientData: (sectionA: [ExtraSectionARow], sectionB: [ExtraSectionBRow])? {
         extrasBuilder.extraIngredientData
+    }
+
+    /// Cream-soap recommended additions (extra water, glycerine), or `nil` when
+    /// cream soap is off. Shown above the standard extras table.
+    var creamSoapAdditions: [ExtraSectionBRow]? {
+        extrasBuilder.creamSoapAdditions
     }
 
     /// Inventory ingredient matching an extras-table label, by case-insensitive

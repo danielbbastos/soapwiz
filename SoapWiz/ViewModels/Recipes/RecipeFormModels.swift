@@ -25,6 +25,37 @@ struct RecipeProductDraft: Identifiable {
     var modelID: PersistentIdentifier?
 }
 
+// MARK: - Soap method types
+
+/// The neutraliser used by the Catherine Failor method to mop up the 10% excess
+/// lye. Each is dosed as the same total solution mass (¾ oz per lb of soap),
+/// differing only in how much of that solution is the solid vs. water.
+enum CFMNeutralizer: String, CaseIterable {
+    case boricAcid = "boric"
+    case borax
+
+    var displayName: String {
+        switch self {
+        case .boricAcid: "Boric Acid"
+        case .borax: "Borax"
+        }
+    }
+
+    /// Fraction of the neutraliser solution that is the solid (the remainder is
+    /// water): boric acid makes a 20% solution, borax a 33% solution.
+    var solidFraction: Double {
+        switch self {
+        case .boricAcid: 0.20
+        case .borax: 0.33
+        }
+    }
+
+    /// Resolves a stored raw value to a case, defaulting to boric acid.
+    static func resolve(_ raw: String) -> CFMNeutralizer {
+        CFMNeutralizer(rawValue: raw) ?? .boricAcid
+    }
+}
+
 // MARK: - Calculated value types
 
 struct FragranceTarget {

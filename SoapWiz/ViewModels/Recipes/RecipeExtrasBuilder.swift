@@ -6,6 +6,20 @@ import Foundation
 struct RecipeExtrasBuilder {
     let lye: LyeCalculator
     let fragranceTargetPercentage: Double
+    let isCreamSoap: Bool
+
+    /// Cream-soap recommended additions, scaled to total oil weight: extra water
+    /// (0.792×) and glycerine (0.0625×). `nil` unless cream soap is on and the
+    /// recipe has oils. Surfaced above the standard extras table.
+    var creamSoapAdditions: [ExtraSectionBRow]? {
+        guard isCreamSoap else { return nil }
+        let oils = lye.totalOilBatchWeight
+        guard oils > 0 else { return nil }
+        return [
+            ExtraSectionBRow(label: "Additional Water for Cream Soap", minValue: oils * 0.792),
+            ExtraSectionBRow(label: "Glycerine for Cream Soap", minValue: oils * 0.0625)
+        ]
+    }
 
     var extraIngredientData: (sectionA: [ExtraSectionARow], sectionB: [ExtraSectionBRow])? {
         guard lye.oilAmountCalculations != nil,
