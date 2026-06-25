@@ -22,6 +22,18 @@ final class Recipe {
     var kohPurity: Double = 90
     var naohPurity: Double = 99
 
+    /// Cream-soap method: doesn't change the lye math, only appends recommended
+    /// additions (extra water, glycerine) scaled to the oil weight. Independent of
+    /// the auto-classified `SoapType.cream` and may be combined with `useCFM`.
+    var isCreamSoap: Bool = false
+
+    /// Catherine Failor liquid-soap method. When active (and the soap isn't a
+    /// solid bar) the lye is taken at 0% superfat + 10% excess and a boric-acid
+    /// or borax neutraliser solution is recommended. `cfmNeutralizer` is the
+    /// `CFMNeutralizer` raw value ("boric" / "borax").
+    var useCFM: Bool = false
+    var cfmNeutralizer: String = CFMNeutralizer.boricAcid.rawValue
+
     @Relationship(deleteRule: .nullify)
     var lyeIngredient: Ingredient?
 

@@ -21,6 +21,9 @@ extension RecipeFormViewModel {
         naohPercentage = recipe.naohPercentage
         kohPurity = recipe.kohPurity
         naohPurity = recipe.naohPurity
+        isCreamSoap = recipe.isCreamSoap
+        useCFM = recipe.useCFM
+        cfmNeutralizer = CFMNeutralizer.resolve(recipe.cfmNeutralizer)
         lyeIngredient = recipe.lyeIngredient
         kohLyeIngredient = recipe.kohLyeIngredient
 
@@ -64,6 +67,9 @@ extension RecipeFormViewModel {
         recipe.naohPercentage = naohPercentage
         recipe.kohPurity = kohPurity
         recipe.naohPurity = naohPurity
+        recipe.isCreamSoap = isCreamSoap
+        recipe.useCFM = useCFM
+        recipe.cfmNeutralizer = cfmNeutralizer.rawValue
         recipe.lyeIngredient = lyeIngredient
         recipe.kohLyeIngredient = kohLyeIngredient
 

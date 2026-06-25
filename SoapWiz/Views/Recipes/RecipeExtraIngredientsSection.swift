@@ -9,11 +9,19 @@ struct RecipeExtraIngredientsSection: View {
     @Bindable var model: RecipeFormViewModel
     @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
     @State private var expanded = false
+    @State private var creamExpanded = true
     @State private var selectedSectionAPct = 1
     @State private var showSectionAInfo = false
 
     @ViewBuilder
     var body: some View {
+        if let creamRows = model.creamSoapAdditions {
+            Section(header: CollapsibleSectionHeader(title: "Cream Soap Additions", expanded: $creamExpanded)) {
+                if creamExpanded {
+                    extraSectionB(rows: creamRows)
+                }
+            }
+        }
         if let data = model.extraIngredientData {
             Section(header: CollapsibleSectionHeader(title: "Extra Ingredients", expanded: $expanded)) {
                 if expanded {

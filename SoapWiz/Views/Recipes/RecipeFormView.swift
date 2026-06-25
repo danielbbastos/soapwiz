@@ -109,6 +109,7 @@ private extension RecipeFormView {
             detailsSection
             weightSection
             lyeSection
+            soapMethodSection
             fragranceSection
         }
         .scrollClipDisabled()
@@ -216,6 +217,33 @@ private extension RecipeFormView {
         .animation(.default, value: model.useHybrid)
     }
 
+    var soapMethodSection: some View {
+        Section {
+            Toggle("Cream soap additions", isOn: $model.isCreamSoap)
+            // The Catherine Failor method only makes sense for non-solid soaps
+            // (single KOH or dual lye), so it's hidden for a solid NaOH bar.
+            if model.soapType != .solid {
+                Toggle("Catherine Failor method", isOn: $model.useCFM)
+                if model.useCFM {
+                    Picker("Neutraliser", selection: $model.cfmNeutralizer) {
+                        ForEach(CFMNeutralizer.allCases, id: \.self) { option in
+                            Text(option.displayName).tag(option)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+        } header: {
+            Text("Soap method")
+        } footer: {
+            if model.soapType == .solid {
+                Text("The Catherine Failor liquid-soap method appears when the recipe makes a liquid or cream soap — switch to KOH or dual lye.")
+            }
+        }
+        .animation(.default, value: model.useCFM)
+        .animation(.default, value: model.soapType)
+    }
+
     @ViewBuilder
     private var singleLyeRows: some View {
         HStack {
@@ -276,10 +304,13 @@ private extension RecipeFormView {
         NavigationLink {
             LyeIngredientPickerView(selected: selected)
         } label: {
-            HStack {
+            // Stacked so a long ingredient name (e.g. "Potassium Hydroxide
+            // (Lye)") wraps under the label instead of overflowing on narrow
+            // iPhone widths.
+            VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                Spacer()
                 Text(selected.wrappedValue?.name ?? "Select…")
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
         }
