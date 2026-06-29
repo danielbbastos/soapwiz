@@ -237,7 +237,8 @@ private extension RecipeFormView {
             Text("Soap method")
         } footer: {
             if model.soapType == .solid {
-                Text("The Catherine Failor liquid-soap method appears when the recipe makes a liquid or cream soap — switch to KOH or dual lye.")
+                Text("The Catherine Failor liquid-soap method appears when the recipe makes a liquid "
+                     + "or cream soap — switch to KOH or dual lye.")
             }
         }
         .animation(.default, value: model.useCFM)

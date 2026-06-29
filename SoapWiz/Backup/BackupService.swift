@@ -213,7 +213,16 @@ enum BackupService {
         // Reuse the singleton rather than inserting a second settings record.
         AppSettings.resolve(in: context).pvpFactor = backup.settings.pvpFactor
 
-        try context.save()
+        do {
+            try context.save()
+        } catch {
+            // The wipe + rebuild left the context dirty. Without a rollback,
+            // SwiftData's auto-save on backgrounding could commit this partial
+            // state and permanently destroy the original data. Reset to the
+            // last persisted snapshot so the on-disk store stays authoritative.
+            context.rollback()
+            throw error
+        }
     }
 
     private static func restoreIngredient(
