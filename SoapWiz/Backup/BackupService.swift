@@ -185,41 +185,36 @@ enum BackupService {
             throw BackupError.unsupportedVersion(found: backup.version, supported: BackupData.currentVersion)
         }
 
-        try wipe(context)
-
-        let categories = backup.categories.map { dto -> IngredientCategory in
-            let category = IngredientCategory(name: dto.name)
-            context.insert(category)
-            return category
-        }
-        let providers = backup.providers.map { dto -> Provider in
-            let provider = Provider(name: dto.name, website: dto.website, notes: dto.notes)
-            context.insert(provider)
-            return provider
-        }
-        let storageLocations = backup.storageLocations.map { dto -> StorageLocation in
-            let location = StorageLocation(name: dto.name, locationDescription: dto.locationDescription)
-            context.insert(location)
-            return location
-        }
-        let ingredients = backup.ingredients.map {
-            restoreIngredient($0, categories: categories, providers: providers, storageLocations: storageLocations, into: context)
-        }
-        let recipes = backup.recipes.map { restoreRecipe($0, ingredients: ingredients, into: context) }
-        for dto in backup.batches {
-            restoreBatch(dto, recipes: recipes, ingredients: ingredients, into: context)
-        }
-
-        // Reuse the singleton rather than inserting a second settings record.
-        AppSettings.resolve(in: context).pvpFactor = backup.settings.pvpFactor
-
         do {
+            try wipe(context)
+
+            let categories = backup.categories.map { dto -> IngredientCategory in
+                let category = IngredientCategory(name: dto.name)
+                context.insert(category)
+                return category
+            }
+            let providers = backup.providers.map { dto -> Provider in
+                let provider = Provider(name: dto.name, website: dto.website, notes: dto.notes)
+                context.insert(provider)
+                return provider
+            }
+            let storageLocations = backup.storageLocations.map { dto -> StorageLocation in
+                let location = StorageLocation(name: dto.name, locationDescription: dto.locationDescription)
+                context.insert(location)
+                return location
+            }
+            let ingredients = backup.ingredients.map {
+                restoreIngredient($0, categories: categories, providers: providers, storageLocations: storageLocations, into: context)
+            }
+            let recipes = backup.recipes.map { restoreRecipe($0, ingredients: ingredients, into: context) }
+            for dto in backup.batches {
+                restoreBatch(dto, recipes: recipes, ingredients: ingredients, into: context)
+            }
+
+            AppSettings.resolve(in: context).pvpFactor = backup.settings.pvpFactor
+
             try context.save()
         } catch {
-            // The wipe + rebuild left the context dirty. Without a rollback,
-            // SwiftData's auto-save on backgrounding could commit this partial
-            // state and permanently destroy the original data. Reset to the
-            // last persisted snapshot so the on-disk store stays authoritative.
             context.rollback()
             throw error
         }
