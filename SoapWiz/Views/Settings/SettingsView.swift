@@ -32,6 +32,7 @@ struct SettingsView: View {
             List {
                 inventorySection
                 if let settings {
+                    notificationsSection(settings)
                     pricingSection(settings)
                 }
                 backupSection
@@ -65,6 +66,31 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("Settings")
             .warmBackground()
+        }
+    }
+
+    private func notificationsSection(_ settings: AppSettings) -> some View {
+        Section {
+            Toggle("Expiry Reminders", isOn: Bindable(settings).expiryNotificationsEnabled)
+        } header: {
+            Text("Notifications")
+        } footer: {
+            Text("Get notified 1 month and 1 week before ingredients expire.")
+        }
+        .listRowBackground(Color.cardBackground)
+        .onChange(of: settings.expiryNotificationsEnabled) { _, enabled in
+            Task {
+                if enabled {
+                    let granted = await NotificationService.requestAuthorization()
+                    if !granted {
+                        settings.expiryNotificationsEnabled = false
+                    } else {
+                        await NotificationService.syncNotifications(modelContext: modelContext)
+                    }
+                } else {
+                    await NotificationService.cancelAllExpiryNotifications()
+                }
+            }
         }
     }
 
