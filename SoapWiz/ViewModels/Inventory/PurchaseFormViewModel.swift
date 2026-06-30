@@ -43,8 +43,17 @@ final class PurchaseFormViewModel {
     }
 
     var isEditing: Bool { purchase != nil }
-    var quantity: Double { Double(quantityText) ?? 0 }
-    var totalPrice: Double { Double(totalPriceText) ?? 0 }
+    var quantity: Double {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.number(from: quantityText)?.doubleValue ?? 0
+    }
+
+    var totalPrice: Double {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        return formatter.number(from: totalPriceText)?.doubleValue ?? 0
+    }
     var pricePerUnit: Double {
         guard quantity > 0 else { return 0 }
         return totalPrice / quantity
