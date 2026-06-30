@@ -1,7 +1,9 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
+    @Environment(\.modelContext) private var modelContext
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
     @Query private var providers: [Provider]
@@ -9,64 +11,134 @@ struct SettingsView: View {
     private var settings: AppSettings? { settingsRecords.first }
 
     @State private var showPvpInfo = false
+    @State private var dataTransfer = DataTransferViewModel()
+
+    private var importConfirmation: Binding<Bool> {
+        Binding(
+            get: { dataTransfer.pendingImport != nil },
+            set: { if !$0 { dataTransfer.pendingImport = nil } }
+        )
+    }
+
+    private var importError: Binding<Bool> {
+        Binding(
+            get: { dataTransfer.errorMessage != nil },
+            set: { if !$0 { dataTransfer.errorMessage = nil } }
+        )
+    }
 
     var body: some View {
         NavigationStack {
             List {
-                Section("Inventory") {
-                    NavigationLink(destination: CategoryListView()) {
-                        LabeledContent("Categories", value: "\(categories.count)")
-                    }
-                    NavigationLink(destination: StorageLocationListView()) {
-                        LabeledContent("Storage Locations", value: "\(locations.count)")
-                    }
-                    NavigationLink(destination: ProviderListView()) {
-                        LabeledContent("Providers", value: "\(providers.count)")
-                    }
-                }
-                .listRowBackground(Color.cardBackground)
+                inventorySection
                 if let settings {
-                    Section("Pricing") {
-                        HStack {
-                            Text("RRP factor")
-                            Button {
-                                showPvpInfo = true
-                            } label: {
-                                Image(systemName: "info.circle")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                            Spacer()
-                            TextField("4", value: Bindable(settings).pvpFactor,
-                                  format: .number.precision(.fractionLength(0...2)))
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.trailing)
-                            .frame(width: 60)
-                        }
-                        .listRowBackground(Color.cardBackground)
-                    }
-                    .sheet(isPresented: $showPvpInfo) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("RRP Factor")
-                                .font(.headline)
-                            Text("A multiplier applied to the total ingredient cost of a product to estimate "
-                                 + "its recommended retail price (RRP — Recommended Retail Price)."
-                                 + "\n\nFor example, a factor of 4 means a product costing €2.50 to make "
-                                 + "would be priced at €10.00.")
-                                .font(.body)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(24)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .presentationDetents([.fraction(0.35)])
-                        .presentationDragIndicator(.visible)
-                    }
+                    pricingSection(settings)
                 }
+                backupSection
+            }
+            .sheet(item: $dataTransfer.exportFile) { file in
+                ShareSheet(items: [file.url])
+            }
+            .fileImporter(
+                isPresented: $dataTransfer.isImporterPresented,
+                allowedContentTypes: [.json]
+            ) { result in
+                dataTransfer.handleImportSelection(result)
+            }
+            .alert("Replace all data?", isPresented: importConfirmation) {
+                Button("Replace", role: .destructive) {
+                    dataTransfer.confirmImport(into: modelContext)
+                }
+                Button("Cancel", role: .cancel) {
+                    dataTransfer.pendingImport = nil
+                }
+            } message: {
+                Text("This permanently deletes everything currently in SoapWiz and replaces it "
+                     + "with the contents of this backup. This can’t be undone.")
+            }
+            .alert("Something went wrong", isPresented: importError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(dataTransfer.errorMessage ?? "")
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("Settings")
             .warmBackground()
         }
+    }
+
+    private var inventorySection: some View {
+        Section("Inventory") {
+            NavigationLink(destination: CategoryListView()) {
+                LabeledContent("Categories", value: "\(categories.count)")
+            }
+            NavigationLink(destination: StorageLocationListView()) {
+                LabeledContent("Storage Locations", value: "\(locations.count)")
+            }
+            NavigationLink(destination: ProviderListView()) {
+                LabeledContent("Providers", value: "\(providers.count)")
+            }
+        }
+        .listRowBackground(Color.cardBackground)
+    }
+
+    private func pricingSection(_ settings: AppSettings) -> some View {
+        Section("Pricing") {
+            HStack {
+                Text("RRP factor")
+                Button {
+                    showPvpInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                Spacer()
+                TextField("4", value: Bindable(settings).pvpFactor,
+                      format: .number.precision(.fractionLength(0...2)))
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 60)
+            }
+            .listRowBackground(Color.cardBackground)
+        }
+        .sheet(isPresented: $showPvpInfo) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("RRP Factor")
+                    .font(.headline)
+                Text("A multiplier applied to the total ingredient cost of a product to estimate "
+                     + "its recommended retail price (RRP — Recommended Retail Price)."
+                     + "\n\nFor example, a factor of 4 means a product costing €2.50 to make "
+                     + "would be priced at €10.00.")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .presentationDetents([.fraction(0.35)])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    private var backupSection: some View {
+        Section {
+            Button {
+                dataTransfer.export(from: modelContext)
+            } label: {
+                Label("Export Data", systemImage: "square.and.arrow.up")
+            }
+            Button {
+                dataTransfer.isImporterPresented = true
+            } label: {
+                Label("Import Data", systemImage: "square.and.arrow.down")
+            }
+        } header: {
+            Text("Backup")
+        } footer: {
+            Text("Export saves all your ingredients, recipes, and history to a single file. "
+                 + "Importing a file replaces everything currently in the app.")
+        }
+        .listRowBackground(Color.cardBackground)
     }
 }
