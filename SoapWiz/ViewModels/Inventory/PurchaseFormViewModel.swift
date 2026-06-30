@@ -20,25 +20,62 @@ final class PurchaseFormViewModel {
     let ingredient: Ingredient
     let purchase: IngredientPurchase?
 
+    private struct Snapshot {
+        let provider: Provider?
+        let dateOfPurchase: Date
+        let quantityText: String
+        let totalPriceText: String
+        let badge: String
+        let journalCode: String
+        let hasExpiryDate: Bool
+        let expiryDate: Date
+        let hasOpeningDate: Bool
+        let openingDate: Date
+        let location: StorageLocation?
+    }
+
+    private let initialSnapshot: Snapshot?
+
     init(ingredient: Ingredient, purchase: IngredientPurchase? = nil) {
         self.ingredient = ingredient
         self.purchase = purchase
         if let purchase {
+            let qtyText = purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))
+            let priceText = purchase.totalPrice.formatted(.number.precision(.fractionLength(0...2)))
+            let hasExpiry = purchase.expiryDate != nil
+            let expiry = purchase.expiryDate ?? Calendar.current.date(
+                byAdding: .year, value: 1, to: Date()
+            ) ?? Date()
+            let hasOpening = purchase.openingDate != nil
+            let opening = purchase.openingDate ?? Date()
+
             selectedProvider = purchase.provider
             dateOfPurchase = purchase.dateOfPurchase
-            quantityText = purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))
-            totalPriceText = purchase.totalPrice.formatted(.number.precision(.fractionLength(0...2)))
+            quantityText = qtyText
+            totalPriceText = priceText
             badge = purchase.badge
             journalCode = purchase.journalCode
-            if let expiry = purchase.expiryDate {
-                hasExpiryDate = true
-                expiryDate = expiry
-            }
-            if let opening = purchase.openingDate {
-                hasOpeningDate = true
-                openingDate = opening
-            }
+            hasExpiryDate = hasExpiry
+            expiryDate = expiry
+            hasOpeningDate = hasOpening
+            openingDate = opening
             selectedLocation = purchase.storageLocation
+
+            initialSnapshot = Snapshot(
+                provider: purchase.provider,
+                dateOfPurchase: purchase.dateOfPurchase,
+                quantityText: qtyText,
+                totalPriceText: priceText,
+                badge: purchase.badge,
+                journalCode: purchase.journalCode,
+                hasExpiryDate: hasExpiry,
+                expiryDate: expiry,
+                hasOpeningDate: hasOpening,
+                openingDate: opening,
+                location: purchase.storageLocation
+            )
+        } else {
+            initialSnapshot = nil
         }
     }
 
@@ -58,7 +95,23 @@ final class PurchaseFormViewModel {
         guard quantity > 0 else { return 0 }
         return totalPrice / quantity
     }
-    var isValid: Bool { quantity > 0 }
+
+    var isDirty: Bool {
+        guard let snap = initialSnapshot else { return true }
+        return selectedProvider !== snap.provider
+            || dateOfPurchase != snap.dateOfPurchase
+            || quantityText != snap.quantityText
+            || totalPriceText != snap.totalPriceText
+            || badge != snap.badge
+            || journalCode != snap.journalCode
+            || hasExpiryDate != snap.hasExpiryDate
+            || (hasExpiryDate && expiryDate != snap.expiryDate)
+            || hasOpeningDate != snap.hasOpeningDate
+            || (hasOpeningDate && openingDate != snap.openingDate)
+            || selectedLocation !== snap.location
+    }
+
+    var isValid: Bool { quantity > 0 && isDirty }
 
     func save(context: ModelContext) {
         if let purchase {
