@@ -63,10 +63,11 @@ enum ExpiryNotificationScheduler {
             var groups: [String: [String]] = [:]
 
             for purchase in eligible {
-                guard let fireDate = threshold.fireDate(before: purchase.expiryDate, calendar: calendar),
-                      fireDate > now else { continue }
+                guard let rawFireDate = threshold.fireDate(before: purchase.expiryDate, calendar: calendar),
+                      let normalizedFireDate = normalizedToMorning(rawFireDate, calendar: calendar),
+                      normalizedFireDate > now else { continue }
 
-                let key = dayKey(from: fireDate, calendar: calendar)
+                let key = dayKey(from: rawFireDate, calendar: calendar)
                 groups[key, default: []].append(purchase.ingredientName)
             }
 
@@ -87,6 +88,13 @@ enum ExpiryNotificationScheduler {
         }
 
         return requests.sorted { $0.fireDate < $1.fireDate }
+    }
+
+    private static func normalizedToMorning(_ date: Date, calendar: Calendar) -> Date? {
+        var components = calendar.dateComponents([.year, .month, .day], from: date)
+        components.hour = 9
+        components.minute = 0
+        return calendar.date(from: components)
     }
 
     private static func dayKey(from date: Date, calendar: Calendar) -> String {
