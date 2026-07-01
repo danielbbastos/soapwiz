@@ -48,7 +48,8 @@ enum NotificationService {
             )
         }
 
-        let requests = ExpiryNotificationScheduler.computeRequests(purchases: snapshots)
+        let allRequests = ExpiryNotificationScheduler.computeRequests(purchases: snapshots)
+        let requests = allRequests.prefix(64)
 
         let center = UNUserNotificationCenter.current()
 
