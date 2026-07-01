@@ -183,6 +183,13 @@ struct PurchaseFormViewModelTests {
         #expect(model.quantity == 123.5)
     }
 
+    @Test func quantity_LargeValue_NoGroupingSeparator() throws {
+        let fixture = try makeEditingFixture(quantity: 1500)
+        let model = PurchaseFormViewModel(ingredient: fixture.ingredient, purchase: fixture.purchase)
+        #expect(model.quantityText == "1500")
+        #expect(model.quantity == 1500)
+    }
+
     // MARK: - Helpers
 
     private struct EditingFixture {

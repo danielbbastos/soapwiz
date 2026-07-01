@@ -42,6 +42,7 @@ final class PurchaseFormViewModel {
         if let purchase {
             let posixFormat = FloatingPointFormatStyle<Double>(locale: Locale(identifier: "en_US_POSIX"))
                 .precision(.fractionLength(0...2))
+                .grouping(.never)
             let qtyText = purchase.quantity.formatted(posixFormat)
             let priceText = purchase.totalPrice.formatted(posixFormat)
             let hasExpiry = purchase.expiryDate != nil

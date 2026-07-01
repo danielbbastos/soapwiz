@@ -73,7 +73,7 @@ enum ExpiryNotificationScheduler {
 
             for (key, names) in groups {
                 let identifier = "\(notificationPrefix)\(threshold.rawValue)-\(key)"
-                let sortedNames = names.sorted()
+                let sortedNames = Set(names).sorted()
                 let (title, body) = threshold.notificationContent(ingredientNames: sortedNames)
 
                 guard let fireDate = date(fromDayKey: key, hour: 9, calendar: calendar) else { continue }
