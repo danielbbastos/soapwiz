@@ -53,9 +53,24 @@ struct SoapWizApp: App {
         return container
     }()
 
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .task {
+                    await NotificationService.syncIfEnabled(
+                        modelContext: sharedModelContainer.mainContext
+                    )
+                }
+                .onChange(of: scenePhase) { _, newPhase in
+                    guard newPhase == .active else { return }
+                    Task {
+                        await NotificationService.syncIfEnabled(
+                            modelContext: sharedModelContainer.mainContext
+                        )
+                    }
+                }
         }
         .modelContainer(sharedModelContainer)
     }

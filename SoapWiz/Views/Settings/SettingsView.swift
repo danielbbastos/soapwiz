@@ -11,6 +11,7 @@ struct SettingsView: View {
     private var settings: AppSettings? { settingsRecords.first }
 
     @State private var showPvpInfo = false
+    @State private var showNotificationDenied = false
     @State private var dataTransfer = DataTransferViewModel()
 
     private var importConfirmation: Binding<Bool> {
@@ -32,6 +33,7 @@ struct SettingsView: View {
             List {
                 inventorySection
                 if let settings {
+                    notificationsSection(settings)
                     pricingSection(settings)
                 }
                 backupSection
@@ -65,6 +67,43 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("Settings")
             .warmBackground()
+        }
+    }
+
+    private func notificationsSection(_ settings: AppSettings) -> some View {
+        Section {
+            Toggle("Expiry Reminders", isOn: Bindable(settings).expiryNotificationsEnabled)
+        } header: {
+            Text("Notifications")
+        } footer: {
+            Text("Get notified 1 month and 1 week before ingredients expire.")
+        }
+        .listRowBackground(Color.cardBackground)
+        .onChange(of: settings.expiryNotificationsEnabled) { _, enabled in
+            Task {
+                if enabled {
+                    let granted = await NotificationService.requestAuthorization()
+                    if !granted {
+                        settings.expiryNotificationsEnabled = false
+                        showNotificationDenied = true
+                    } else {
+                        await NotificationService.syncNotifications(modelContext: modelContext)
+                    }
+                } else {
+                    await NotificationService.cancelAllExpiryNotifications()
+                }
+            }
+        }
+        .alert("Notifications Disabled", isPresented: $showNotificationDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("SoapWiz needs notification permission to send expiry reminders. "
+                 + "You can enable it in Settings.")
         }
     }
 
