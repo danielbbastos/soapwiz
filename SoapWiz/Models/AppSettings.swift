@@ -3,7 +3,7 @@ import SwiftData
 @Model
 final class AppSettings {
     var pvpFactor: Double = 4.0
-    var expiryNotificationsEnabled: Bool = true
+    var expiryNotificationsEnabled: Bool = false
 
     init() {}
 
