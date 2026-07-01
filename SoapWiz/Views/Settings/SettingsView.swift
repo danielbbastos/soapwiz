@@ -11,6 +11,7 @@ struct SettingsView: View {
     private var settings: AppSettings? { settingsRecords.first }
 
     @State private var showPvpInfo = false
+    @State private var showNotificationDenied = false
     @State private var dataTransfer = DataTransferViewModel()
 
     private var importConfirmation: Binding<Bool> {
@@ -84,6 +85,7 @@ struct SettingsView: View {
                     let granted = await NotificationService.requestAuthorization()
                     if !granted {
                         settings.expiryNotificationsEnabled = false
+                        showNotificationDenied = true
                     } else {
                         await NotificationService.syncNotifications(modelContext: modelContext)
                     }
@@ -91,6 +93,17 @@ struct SettingsView: View {
                     await NotificationService.cancelAllExpiryNotifications()
                 }
             }
+        }
+        .alert("Notifications Disabled", isPresented: $showNotificationDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("SoapWiz needs notification permission to send expiry reminders. "
+                 + "You can enable it in Settings.")
         }
     }
 

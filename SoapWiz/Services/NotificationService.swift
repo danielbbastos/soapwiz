@@ -16,8 +16,12 @@ enum NotificationService {
         guard settings.expiryNotificationsEnabled else { return }
 
         let center = UNUserNotificationCenter.current()
-        let notificationSettings = await center.notificationSettings()
-        guard notificationSettings.authorizationStatus == .authorized else { return }
+        let status = await center.notificationSettings().authorizationStatus
+        if status == .notDetermined {
+            guard await requestAuthorization() else { return }
+        } else if status != .authorized {
+            return
+        }
 
         await syncNotifications(modelContext: modelContext)
     }
