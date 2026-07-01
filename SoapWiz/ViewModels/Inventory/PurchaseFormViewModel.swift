@@ -40,8 +40,10 @@ final class PurchaseFormViewModel {
         self.ingredient = ingredient
         self.purchase = purchase
         if let purchase {
-            let qtyText = purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))
-            let priceText = purchase.totalPrice.formatted(.number.precision(.fractionLength(0...2)))
+            let posixFormat = FloatingPointFormatStyle<Double>(locale: Locale(identifier: "en_US_POSIX"))
+                .precision(.fractionLength(0...2))
+            let qtyText = purchase.quantity.formatted(posixFormat)
+            let priceText = purchase.totalPrice.formatted(posixFormat)
             let hasExpiry = purchase.expiryDate != nil
             let expiry = purchase.expiryDate ?? Calendar.current.date(
                 byAdding: .year, value: 1, to: Date()
@@ -80,17 +82,8 @@ final class PurchaseFormViewModel {
     }
 
     var isEditing: Bool { purchase != nil }
-    var quantity: Double {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return formatter.number(from: quantityText)?.doubleValue ?? 0
-    }
-
-    var totalPrice: Double {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return formatter.number(from: totalPriceText)?.doubleValue ?? 0
-    }
+    var quantity: Double { Double(quantityText) ?? 0 }
+    var totalPrice: Double { Double(totalPriceText) ?? 0 }
     var pricePerUnit: Double {
         guard quantity > 0 else { return 0 }
         return totalPrice / quantity
