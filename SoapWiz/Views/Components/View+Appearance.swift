@@ -8,6 +8,14 @@ extension View {
             .background(Color.warmBackground.ignoresSafeArea())
     }
 
+    /// Keeps single-column forms readable on wide layouts; effectively a no-op
+    /// in compact because compact widths never exceed the cap.
+    func readableFormWidth(_ maxWidth: CGFloat = 680) -> some View {
+        self
+            .frame(maxWidth: maxWidth)
+            .frame(maxWidth: .infinity)
+    }
+
     // Keep `.navigationTitle` alongside this so back buttons and accessibility still get the plain string.
     func warmNavigationTitle(_ title: String) -> some View {
         self.toolbar {

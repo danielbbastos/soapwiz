@@ -11,7 +11,8 @@ import SwiftData
 @main
 struct SoapWizApp: App {
     init() {
-        UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
+        // Paints the area behind split-view columns on iPad; defaults to black otherwise.
+        UIWindow.appearance().backgroundColor = UIColor(named: "WarmBackground")
     }
 
     var sharedModelContainer: ModelContainer = {

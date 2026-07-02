@@ -6,6 +6,10 @@ struct SoapPropertiesChartView: View {
     let hasOils: Bool
     @Binding var selectedDisplayName: String?
 
+    /// Regular width has room for the full quality names under the bars;
+    /// compact falls back to the abbreviations.
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     var body: some View {
         Chart {
             ForEach(SoapQuality.allCases) { quality in
@@ -46,7 +50,7 @@ struct SoapPropertiesChartView: View {
                 AxisValueLabel {
                     if let name = value.as(String.self),
                        let quality = SoapQuality.allCases.first(where: { $0.displayName == name }) {
-                        Text(quality.shortName)
+                        Text(horizontalSizeClass == .regular ? quality.displayName : quality.shortName)
                     }
                 }
             }

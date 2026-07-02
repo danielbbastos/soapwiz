@@ -29,6 +29,8 @@ struct SettingsView: View {
     }
 
     var body: some View {
+        // Deliberately not a split view: settings is a short push-style list,
+        // a sidebar here adds nothing (sidebars are for Inventory/Recipes/History).
         NavigationStack {
             List {
                 inventorySection
@@ -38,6 +40,7 @@ struct SettingsView: View {
                 }
                 backupSection
             }
+            .readableFormWidth()
             .sheet(item: $dataTransfer.exportFile) { file in
                 ShareSheet(items: [file.url])
             }
@@ -109,13 +112,13 @@ struct SettingsView: View {
 
     private var inventorySection: some View {
         Section("Inventory") {
-            NavigationLink(destination: CategoryListView()) {
+            NavigationLink(destination: CategoryListView().readableFormWidth()) {
                 LabeledContent("Categories", value: "\(categories.count)")
             }
-            NavigationLink(destination: StorageLocationListView()) {
+            NavigationLink(destination: StorageLocationListView().readableFormWidth()) {
                 LabeledContent("Storage Locations", value: "\(locations.count)")
             }
-            NavigationLink(destination: ProviderListView()) {
+            NavigationLink(destination: ProviderListView().readableFormWidth()) {
                 LabeledContent("Providers", value: "\(providers.count)")
             }
         }

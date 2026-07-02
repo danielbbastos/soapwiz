@@ -7,9 +7,12 @@ import SwiftData
 struct RecipeCostSection: View {
     let model: RecipeFormViewModel
     let batch: ProductCostBreakdown
+    /// `true` renders a free-standing `RecipeDetailCard` for the wide
+    /// side-by-side layout instead of a Form section.
+    var asCard = false
 
     @Query private var settingsRecords: [AppSettings]
-    @State private var batchTotalExpanded = false
+    @State private var batchTotalExpanded = true
     @State private var expandedProducts: [PersistentIdentifier: Bool] = [:]
 
     /// One titled group of breakdown rows (Oils / Additives / Fragrances / Lye).
@@ -37,7 +40,21 @@ struct RecipeCostSection: View {
     private var pvpFactor: Double { settingsRecords.first?.pvpFactor ?? 4.0 }
 
     var body: some View {
-        Section("Cost breakdown") {
+        if asCard {
+            RecipeDetailCard(title: "Cost breakdown") {
+                content
+            }
+        } else {
+            Section("Cost breakdown") {
+                content
+            }
+            .listRowBackground(Color.cardBackground)
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        Group {
             let batchTotal = batch.total
             if batchTotal > 0 {
                 DisclosureGroup(isExpanded: $batchTotalExpanded) {
@@ -74,7 +91,6 @@ struct RecipeCostSection: View {
                 }
             }
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private var nonWholeBatchProducts: [RecipeProductDraft] {

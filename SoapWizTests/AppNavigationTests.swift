@@ -8,7 +8,7 @@ import SwiftData
 struct AppNavigationTests {
 
     private func makeContext() throws -> (ModelContainer, ModelContext) {
-        let schema = Schema([Batch.self, BatchLineItem.self, Recipe.self])
+        let schema = Schema([Batch.self, BatchLineItem.self, Recipe.self, Ingredient.self])
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
         return (container, container.mainContext)
     }
@@ -19,11 +19,12 @@ struct AppNavigationTests {
         return batch
     }
 
-    @Test func initialState_InventoryTabAndEmptyHistoryPath() {
+    @Test func initialState_InventoryTabAndNoPendingHandoffs() {
         let sut = AppNavigation()
 
         #expect(sut.selectedTab == .inventory)
-        #expect(sut.historyPath.isEmpty)
+        #expect(sut.pendingBatch == nil)
+        #expect(sut.pendingRecipeSeed == nil)
     }
 
     @Test func showBatch_SelectsHistoryTab() throws {
@@ -37,25 +38,63 @@ struct AppNavigationTests {
         #expect(sut.selectedTab == .history)
     }
 
-    @Test func showBatch_PathContainsOnlyTheBatch() throws {
+    @Test func showBatch_SetsPendingBatch() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let sut = AppNavigation()
+        let batch = makeBatch(ctx)
 
-        sut.showBatch(makeBatch(ctx))
+        sut.showBatch(batch)
 
-        #expect(sut.historyPath.count == 1)
+        #expect(sut.pendingBatch === batch)
     }
 
-    @Test func showBatch_DeepHistoryStack_ReplacesPathInsteadOfStacking() throws {
+    @Test func showBatch_ReplacesPreviousPendingBatch() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let sut = AppNavigation()
-        sut.historyPath.append(makeBatch(ctx, name: "Old Soap"))
-        sut.historyPath.append(makeBatch(ctx, name: "Older Soap"))
+        sut.showBatch(makeBatch(ctx, name: "Old Soap"))
 
-        sut.showBatch(makeBatch(ctx))
+        let newBatch = makeBatch(ctx, name: "New Soap")
+        sut.showBatch(newBatch)
 
-        #expect(sut.historyPath.count == 1)
+        #expect(sut.pendingBatch === newBatch)
+    }
+
+    @Test func createRecipe_SelectsRecipesTab() {
+        let sut = AppNavigation()
+
+        sut.createRecipe(with: [])
+
+        #expect(sut.selectedTab == .recipes)
+    }
+
+    @Test func createRecipe_SetsPendingSeedWithIngredients() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        ctx.insert(ingredient)
+
+        sut.createRecipe(with: [ingredient])
+
+        let seed = try #require(sut.pendingRecipeSeed)
+        #expect(seed.ingredients.count == 1)
+        #expect(seed.ingredients.first === ingredient)
+    }
+
+    @Test func createRecipe_SameIngredientsTwice_ProducesDistinctSeeds() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        let ingredient = Ingredient(name: "Olive Oil", unit: "g")
+        ctx.insert(ingredient)
+
+        sut.createRecipe(with: [ingredient])
+        let firstSeed = try #require(sut.pendingRecipeSeed)
+        sut.createRecipe(with: [ingredient])
+        let secondSeed = try #require(sut.pendingRecipeSeed)
+
+        #expect(firstSeed.id != secondSeed.id)
     }
 }

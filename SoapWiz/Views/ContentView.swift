@@ -20,7 +20,11 @@ struct ContentView: View {
         }
         .tabViewStyle(.tabBarOnly)
         .fontDesign(.rounded)
-        .environment(\.horizontalSizeClass, .compact)
+        // The asset-catalog global accent isn't picked up at runtime on
+        // iPadOS 26 (`Color.accentColor`, the tab bar, and sidebar selection
+        // all resolve to default blue), so load the colorset by name and
+        // propagate it explicitly from the root.
+        .tint(Color("AccentColor"))
         .environment(navigation)
     }
 }

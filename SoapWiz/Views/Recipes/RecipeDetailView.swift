@@ -10,7 +10,10 @@ struct RecipeDetailView: View {
     private var lyeIngredients: [Ingredient]
     @Query private var settingsRecords: [AppSettings]
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     @State private var model = RecipeFormViewModel()
+    @State private var detailWidth: Double = 0
     @State private var showEdit = false
     @State private var selectedQualityName: String?
     @State private var showInGrams = false
@@ -40,26 +43,40 @@ struct RecipeDetailView: View {
 
     var body: some View {
         let batch = model.wholeBatchBreakdown
+        let layout = RecipeDetailLayout(sizeClass: horizontalSizeClass, width: detailWidth)
         Form {
-            if !recipe.desc.isEmpty {
-                Section {
-                    Text(recipe.desc)
-                        .foregroundStyle(.secondary)
+            switch layout {
+            case .sideBySideTop, .wide:
+                sideBySideTopSection(batch: batch)
+            case .stacked:
+                if !recipe.desc.isEmpty {
+                    Section {
+                        descriptionRow
+                    }
+                    .listRowBackground(Color.cardBackground)
                 }
-                .listRowBackground(Color.cardBackground)
+                oilsSection
+                fragrancesSection(batch: batch)
+                additivesSection(batch: batch)
+                calculatedAmountsSection
             }
 
-            oilsSection
-            additivesSection(batch: batch)
-            fragrancesSection(batch: batch)
-            calculatedAmountsSection
-            soapPropertiesSection
-            RecipeCostSection(model: model, batch: batch)
+            if layout == .wide {
+                wideChartAndCostSection(batch: batch)
+            } else {
+                soapPropertiesSection
+                RecipeCostSection(model: model, batch: batch)
+            }
         }
+        .onGeometryChange(for: Double.self) { proxy in
+            proxy.size.width
+        } action: { width in
+            detailWidth = width
+        }
+        .warmBackground()
         .navigationTitle(recipe.name)
         .navigationBarTitleDisplayMode(.inline)
         .warmNavigationTitle(recipe.name)
-        .warmBackground()
         .safeAreaInset(edge: .bottom) {
             Button {
                 showCreateBatch = true
@@ -99,6 +116,48 @@ struct RecipeDetailView: View {
         }
     }
 
+    // MARK: - Side-by-side top region (regular width)
+
+    /// Full-width description on top, then ingredient groups on the left
+    /// beside calculated amounts on the right. Rendered as free-standing cards
+    /// inside one full-width Form row so the chart and cost sections below can
+    /// span the whole width while everything scrolls together.
+    private func sideBySideTopSection(batch: ProductCostBreakdown) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: 20) {
+                if !recipe.desc.isEmpty {
+                    RecipeDetailCard(title: nil) { descriptionRow }
+                }
+
+                HStack(alignment: .top, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        RecipeDetailCard(title: "Oils") { oilsRows }
+                        if !model.fragranceDrafts.isEmpty {
+                            RecipeDetailCard(title: "Fragrances") { fragrancesRows(batch: batch) }
+                        }
+                        if !model.additiveDrafts.isEmpty {
+                            RecipeDetailCard(title: "Additives") { additivesRows(batch: batch) }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+
+                    VStack(alignment: .leading, spacing: 20) {
+                        RecipeDetailCard(title: "Calculated amounts") { calculatedAmountsRows }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        }
+    }
+
+    private var descriptionRow: some View {
+        Text(recipe.desc)
+            .foregroundStyle(.secondary)
+    }
+
     // MARK: - Oils
 
     private var sortedOils: [OilIngredientDraft] {
@@ -109,23 +168,28 @@ struct RecipeDetailView: View {
         Dictionary(uniqueKeysWithValues: (model.oilAmountCalculations ?? []).map { ($0.id, $0.weight) })
     }
 
-    private var oilsSection: some View {
+    @ViewBuilder
+    private var oilsRows: some View {
         let weightLookup = oilBatchWeightByDraftId
-        return Section("Oils") {
-            if sortedOils.isEmpty {
-                Text("No oils added")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(sortedOils) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                        Spacer()
-                        Text(oilAmountText(draft, batchWeight: weightLookup[draft.id]))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
+        if sortedOils.isEmpty {
+            Text("No oils added")
+                .foregroundStyle(.secondary)
+        } else {
+            ForEach(sortedOils) { draft in
+                HStack {
+                    Text(draft.ingredient.name)
+                    Spacer()
+                    Text(oilAmountText(draft, batchWeight: weightLookup[draft.id]))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
                 }
             }
+        }
+    }
+
+    private var oilsSection: some View {
+        Section("Oils") {
+            oilsRows
         }
         .listRowBackground(Color.cardBackground)
     }
@@ -147,20 +211,24 @@ struct RecipeDetailView: View {
 
     // MARK: - Additives
 
+    private func additivesRows(batch: ProductCostBreakdown) -> some View {
+        let weightLookup = batchWeightLookup(batch.additives)
+        return ForEach(model.additiveDrafts) { draft in
+            HStack {
+                Text(draft.ingredient.name)
+                Spacer()
+                Text(ingredientAmountText(draft, batchWeight: weightLookup[draft.ingredient.persistentModelID]))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+    }
+
     @ViewBuilder
     private func additivesSection(batch: ProductCostBreakdown) -> some View {
         if !model.additiveDrafts.isEmpty {
-            let weightLookup = batchWeightLookup(batch.additives)
             Section("Additives") {
-                ForEach(model.additiveDrafts) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                        Spacer()
-                        Text(ingredientAmountText(draft, batchWeight: weightLookup[draft.ingredient.persistentModelID]))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
+                additivesRows(batch: batch)
             }
             .listRowBackground(Color.cardBackground)
         }
@@ -168,20 +236,24 @@ struct RecipeDetailView: View {
 
     // MARK: - Fragrances
 
+    private func fragrancesRows(batch: ProductCostBreakdown) -> some View {
+        let weightLookup = batchWeightLookup(batch.fragrances)
+        return ForEach(model.fragranceDrafts) { draft in
+            HStack {
+                Text(draft.ingredient.name)
+                Spacer()
+                Text(ingredientAmountText(draft, batchWeight: weightLookup[draft.ingredient.persistentModelID]))
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+        }
+    }
+
     @ViewBuilder
     private func fragrancesSection(batch: ProductCostBreakdown) -> some View {
         if !model.fragranceDrafts.isEmpty {
-            let weightLookup = batchWeightLookup(batch.fragrances)
             Section("Fragrances") {
-                ForEach(model.fragranceDrafts) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                        Spacer()
-                        Text(ingredientAmountText(draft, batchWeight: weightLookup[draft.ingredient.persistentModelID]))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
+                fragrancesRows(batch: batch)
             }
             .listRowBackground(Color.cardBackground)
         }
@@ -214,24 +286,28 @@ struct RecipeDetailView: View {
     }
 
     @ViewBuilder
+    private var calculatedAmountsRows: some View {
+        if let rows = model.calculatedAmountRows {
+            unitTogglePicker
+            ForEach(rows) { row in
+                HStack {
+                    Text(row.label)
+                        .fontWeight(row.isSummary ? .semibold : .regular)
+                    Spacer()
+                    Text(weightText(row.weight))
+                        .foregroundStyle(row.isSummary ? .primary : .secondary)
+                        .monospacedDigit()
+                }
+            }
+        } else {
+            Text("Add oils to see calculated amounts")
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private var calculatedAmountsSection: some View {
         Section("Calculated amounts") {
-            if let rows = model.calculatedAmountRows {
-                unitTogglePicker
-                ForEach(rows) { row in
-                    HStack {
-                        Text(row.label)
-                            .fontWeight(row.isSummary ? .semibold : .regular)
-                        Spacer()
-                        Text(weightText(row.weight))
-                            .foregroundStyle(row.isSummary ? .primary : .secondary)
-                            .monospacedDigit()
-                    }
-                }
-            } else {
-                Text("Add oils to see calculated amounts")
-                    .foregroundStyle(.secondary)
-            }
+            calculatedAmountsRows
         }
         .listRowBackground(Color.cardBackground)
     }
@@ -244,8 +320,35 @@ struct RecipeDetailView: View {
     }
 
     private var soapPropertiesSection: some View {
+        Section("Soap properties") {
+            soapPropertiesContent
+        }
+        .listRowBackground(Color.cardBackground)
+    }
+
+    /// The soap-properties chart paired with the cost breakdown, side by side.
+    /// Same free-standing-card trick as `sideBySideTopSection`.
+    private func wideChartAndCostSection(batch: ProductCostBreakdown) -> some View {
+        Section {
+            HStack(alignment: .top, spacing: 16) {
+                RecipeDetailCard(title: "Soap properties") {
+                    soapPropertiesContent
+                }
+                .frame(maxWidth: .infinity)
+
+                RecipeCostSection(model: model, batch: batch, asCard: true)
+                    .frame(maxWidth: .infinity)
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+        }
+    }
+
+    @ViewBuilder
+    private var soapPropertiesContent: some View {
         let stats = RecipeStats(oilDrafts: model.oilDrafts)
-        return Section("Soap properties") {
+        Group {
             if stats.hasOils {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Grey bands show the recommended range for each property.")
@@ -292,6 +395,5 @@ struct RecipeDetailView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .listRowBackground(Color.cardBackground)
     }
 }
