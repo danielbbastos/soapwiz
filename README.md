@@ -28,13 +28,13 @@ Manage categories, suppliers, and storage locations. Export the entire database 
 
 ## Screenshots
 
-| Inventory | Ingredient detail | Recipe |
+| Inventory | Ingredient detail | Recipes |
 |:---:|:---:|:---:|
-| ![Inventory](docs/screenshots/inventory.png) | ![Ingredient detail](docs/screenshots/ingredient-detail.png) | ![Recipe detail](docs/screenshots/recipe-detail.png) |
+| ![Inventory](docs/screenshots/inventory.png) | ![Ingredient detail](docs/screenshots/ingredient-detail.png) | ![Recipes](docs/screenshots/recipes.png) |
 
-| Soap properties & cost | Batch history | Settings |
-|:---:|:---:|:---:|
-| ![Soap properties](docs/screenshots/recipe-properties.png) | ![History](docs/screenshots/history.png) | ![Settings](docs/screenshots/settings.png) |
+| Recipe detail | Soap properties & cost | Batch history | Settings |
+|:---:|:---:|:---:|:---:|
+| ![Recipe detail](docs/screenshots/recipe-detail.png) | ![Soap properties](docs/screenshots/recipe-properties.png) | ![History](docs/screenshots/history.png) | ![Settings](docs/screenshots/settings.png) |
 
 ## Architecture
 
