@@ -3,9 +3,9 @@ import SwiftData
 
 @Model
 final class Provider {
-    var name: String
-    var website: String
-    var notes: String
+    var name: String = ""
+    var website: String = ""
+    var notes: String = ""
 
     @Relationship(deleteRule: .nullify, inverse: \IngredientPurchase.provider)
     var purchases: [IngredientPurchase] = []

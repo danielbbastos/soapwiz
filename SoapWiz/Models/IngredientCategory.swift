@@ -13,7 +13,7 @@ final class IngredientCategory {
         static let others = "Others"
     }
 
-    var name: String
+    var name: String = ""
 
     @Relationship(deleteRule: .nullify, inverse: \Ingredient.category)
     var ingredients: [Ingredient] = []

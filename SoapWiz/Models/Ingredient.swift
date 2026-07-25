@@ -3,10 +3,10 @@ import SwiftData
 
 @Model
 final class Ingredient {
-    var name: String
+    var name: String = ""
     var code: String = ""
     var category: IngredientCategory?
-    var unit: String
+    var unit: String = ""
 
     var lowStockThreshold: Double?
     var sapValue: Double?
@@ -25,6 +25,15 @@ final class Ingredient {
     /// batch history is an immutable record that must outlive the ingredient.
     @Relationship(deleteRule: .nullify, inverse: \BatchLineItem.ingredient)
     var batchLineItems: [BatchLineItem] = []
+
+    /// Recipes using this ingredient as their NaOH lye. Deleting the ingredient
+    /// nullifies the recipe's link rather than deleting the recipe.
+    @Relationship(deleteRule: .nullify, inverse: \Recipe.lyeIngredient)
+    var recipesUsingAsLye: [Recipe] = []
+
+    /// Recipes using this ingredient as their KOH lye on the hybrid path.
+    @Relationship(deleteRule: .nullify, inverse: \Recipe.kohLyeIngredient)
+    var recipesUsingAsKOHLye: [Recipe] = []
 
     var totalRemaining: Double {
         purchases.reduce(0) { $0 + $1.remainingAmount }
