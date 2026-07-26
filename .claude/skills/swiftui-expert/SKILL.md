@@ -1,6 +1,6 @@
 ---
 name: swiftui-expert
-description: Write, review, or improve SwiftUI code following best practices for state management, view composition, performance, and iOS 26+ Liquid Glass adoption. Use when building new SwiftUI features, refactoring existing views, reviewing code quality, or adopting modern SwiftUI patterns.
+description: SwiftUI state management and current APIs — choosing between @State, @Binding, @Observable, @Environment; avoiding deprecated APIs; list identity; animation and accessibility patterns. Use when picking a property wrapper, verifying an API is still current, or building a new SwiftUI feature. Not for view-file structure (see swiftui-patterns-developer), performance audits (see swiftui-performance-developer), or Liquid Glass (see liquid-glass-developer).
 ---
 
 # SwiftUI Expert Skill

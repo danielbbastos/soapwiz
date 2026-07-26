@@ -1,6 +1,6 @@
 ---
 name: decompose
-description: Task breakdown assistant. Use when a task is large enough to need a structured breakdown before implementation begins.
+description: Break a large feature into independent subtasks. Use when the work touches more than 3 files, needs both new models and new views, or has a model→ViewModel→view dependency chain. Produces plans/PLAN_SW-XX.md plus Linear sub-issues. For a single-pass feature use plan-feature instead.
 ---
 
 # Task Decomposition (Workflow)

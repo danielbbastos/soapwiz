@@ -18,6 +18,10 @@ Review local code changes on the current branch against a base branch.
 
 ## Process
 
+### Step 0: Load Review Standards
+
+Invoke the **`code-review-developer`** skill before reading any diff. It carries the review format, severity levels, and the pre-suggestion checklist that Steps 2–4 depend on. Do not skip it — reviewing from memory is how the standards drift.
+
 ### Step 1: Get Changed Files
 
 ```bash

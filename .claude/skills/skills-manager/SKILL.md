@@ -1,6 +1,6 @@
 ---
 name: skills-manager
-description: Context-aware routing to skills and hooks management. Use when troubleshooting skill activation, fine-tuning skill descriptions, creating new skills, or managing the automated hooks system.
+description: Use when creating a new skill, editing a SKILL.md, writing or fixing a skill description, debugging why a skill did or did not activate, or configuring hooks in .claude/hooks. Covers skill dispatch, frontmatter rules, and hook events.
 ---
 
 # Skills Manager

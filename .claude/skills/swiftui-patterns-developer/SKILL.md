@@ -1,6 +1,6 @@
 ---
 name: swiftui-patterns-developer
-description: SwiftUI view structure, composition, and best practices. Use when refactoring SwiftUI views, organizing view files, or extracting subviews.
+description: SwiftUI view structure and composition — body ordering, extracting subviews, splitting an oversized view file, @ViewBuilder usage. Use when a view file has grown too large or when reorganising a view's internals. Not for state management or API choice (see swiftui-expert), performance audits (see swiftui-performance-developer), or SoapWiz data conventions (see swiftui-patterns-soapwiz).
 ---
 
 # SwiftUI Patterns Developer (Smart Router)

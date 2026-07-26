@@ -1,6 +1,6 @@
 ---
 name: claudemd-maintainer
-description: Context-aware guidance for maintaining and improving CLAUDE.md files. Use when editing CLAUDE.md, discussing documentation structure for AI assistants, or optimizing project instructions.
+description: Use when creating, editing, auditing, or trimming CLAUDE.md, project instructions, or memory/context files for Claude. Covers what belongs in CLAUDE.md versus a skill, length limits, and cutting content the codebase already documents.
 ---
 
 # CLAUDE.md Maintainer (Smart Router)
