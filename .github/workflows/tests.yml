@@ -1,0 +1,99 @@
+name: Tests
+
+on:
+  pull_request:
+    paths:
+      - '**/*.swift'
+      - 'SoapWiz.xcodeproj/**'
+      - '.github/workflows/tests.yml'
+  push:
+    branches: [main]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # Finding a working Xcode + simulator pair on a hosted runner is fiddly, and
+      # hardcoding either half breaks when the image rotates:
+      #
+      #   - Pinning Xcode 26.1 failed: the image now carries iOS 26.2/26.4/26.5
+      #     runtimes, and an Xcode cannot target a runtime newer than itself.
+      #   - Picking the newest installed Xcode (26.6) failed too: it had no usable
+      #     runtimes at all, only placeholder destinations.
+      #   - `simctl list devices` is not a reliable source either, since it lists
+      #     runtimes the selected Xcode may be unable to target.
+      #
+      # So: ask xcodebuild itself, which only reports destinations eligible for this
+      # scheme and toolchain. Try the image default first (the maintainers pair it
+      # with installed runtimes), then fall back through the rest, newest first.
+      - name: Select Xcode and simulator
+        id: sim
+        run: |
+          # Prefer an iPhone for determinism, but any eligible simulator will do —
+          # these are unit tests, not device-specific UI tests.
+          pick_udid() {
+            local sims
+            sims=$(xcodebuild -project SoapWiz.xcodeproj -scheme SoapWiz \
+              -showdestinations 2>/dev/null \
+              | grep 'platform:iOS Simulator' | grep -v placeholder) || true
+            printf '%s\n' "$sims" | grep 'name:iPhone' \
+              | grep -oE 'id:[0-9A-Fa-f-]{36}' | head -1 | cut -d: -f2
+          }
+
+          # `|| true` matters: Actions runs this step as `bash -e`, and a bare
+          # assignment takes the exit status of its command substitution. Today
+          # pick_udid returns 0 even with no match (the pipeline's status comes from
+          # `cut`), but adding `set -o pipefail` here — as the test step below does —
+          # would make it return 1 and abort before the fallback loop ever ran.
+          UDID=$(pick_udid) || true
+          if [ -z "$UDID" ]; then
+            for xc in $(ls -d /Applications/Xcode*.app 2>/dev/null | sort -rV); do
+              echo "No usable simulator; trying $xc"
+              sudo xcode-select -s "$xc"
+              UDID=$(pick_udid) || true
+              [ -n "$UDID" ] && break
+            done
+          fi
+
+          if [ -z "$UDID" ]; then
+            echo "::error::No Xcode on this runner offers an eligible iOS Simulator destination"
+            xcodebuild -version
+            xcrun simctl list runtimes
+            exit 1
+          fi
+
+          xcodebuild -version
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "Using simulator $UDID"
+
+      # `SoapWizUITests` is a target in project.pbxproj with no sources on disk.
+      # pipefail matters: without it a failing xcodebuild would be masked if this
+      # command is ever piped through a formatter.
+      - name: Run tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project SoapWiz.xcodeproj \
+            -scheme SoapWiz \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
+            -skip-testing:SoapWizUITests \
+            -resultBundlePath TestResults.xcresult \
+            -quiet
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults.xcresult
+          retention-days: 7
