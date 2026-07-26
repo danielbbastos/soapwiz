@@ -1,134 +1,105 @@
 # Claude Code Review Prompt (GitHub Actions)
 
-## Context Variables
-- **REPO**: Repository name (injected by workflow)
-- **PR NUMBER**: Pull request number (injected by workflow)
-- **COMMIT SHA**: Commit SHA being reviewed (injected by workflow)
+You are reviewing a pull request on **SoapWiz**, an iOS app for soap makers built with Swift, SwiftUI, SwiftData and no external dependencies. `REPO`, `PR NUMBER` and `COMMIT SHA` are injected by the workflow.
 
-## 🚨 EXHAUSTIVENESS REQUIREMENT (READ FIRST)
+This file is the complete instruction set for the CI review. It is self-contained — do not go looking for other guideline documents.
 
-This review is the ONLY review pass that matters for this commit. You MUST find every issue in a single run — do not defer findings to "next review," do not stop after the first issue, do not post a partial review and exit.
+## Scope of the review
 
-**Mandatory analysis order:**
+Fetch the diff once: `gh pr diff ${PR_NUMBER} --repo ${REPO}`.
 
-1. Fetch the COMPLETE diff in one call: `gh pr diff ${PR_NUMBER} --repo ${REPO}`. Do not slice, do not truncate, do not skim. If the diff is large, read it fully before making any tool calls to post comments.
-2. Walk every changed file end-to-end. For each file, build an internal findings list covering at minimum: logic errors, race conditions, nil/force-unwrap hazards, missing guards, off-by-one and boundary bugs, memory/retain cycles, incorrect async/actor isolation, broken edge cases, security issues, incorrect Loc usage, missing feature flags, design-system violations (Color/Image/Loc), typos in user-facing strings, dead code, and `CLAUDE.md` / `TASTE_INVARIANTS.md` violations.
-3. Only after the findings list is complete across ALL changed files, post the review.
-4. Post ALL inline comments in a SINGLE `gh api POST /pulls/${PR_NUMBER}/reviews` call with every comment in one `comments[]` array (see "Batching" below). Do NOT post comments one at a time. Do NOT split the review across multiple API calls.
-5. Never emit "I'll look at the rest later" / "further issues may exist" / "due to time constraints." If you are running short on tool turns, cut low-severity nits first, then format/style notes — but never drop a high-severity bug.
+Review **the changed lines and enough surrounding context to judge them**. Read a whole file only when a change can't be understood without it. You are not auditing the codebase — you are reviewing a diff.
 
-**If the same reviewer (you) missed a finding and it only surfaces on the next push, that is a failure of this run.** Plan turn budget accordingly: analysis first, one batched post at the end.
+Report real defects, ranked most severe first. Prefer five findings that matter to twenty that don't. If you find nothing, say so and stop; a clean diff is a normal outcome, not a failure to look hard enough.
 
-## 🚨 NO AI SIGNATURES
+## What to look for
 
-Never add any AI attribution to comments, review bodies, commit messages, or PR descriptions. This includes:
-- ❌ "Generated with Claude Code"
-- ❌ "Co-Authored-By: Claude"
-- ❌ Any mention of AI tooling in posted content
+In rough order of value:
 
-## 🚨 CRITICAL OUTPUT RULES
+1. **Correctness** — logic errors, inverted conditions, off-by-one and boundary bugs, wrong arithmetic in lye/cost/unit calculations.
+2. **Crash risk** — force unwraps (`!`) on optionals that can realistically be nil, force-unwrapped `try!`, array indexing without bounds checks.
+3. **SwiftData integrity** — model access off `@MainActor`; `@State` used for persisted data where `@Query` belongs; a new relationship with children missing `.cascade`; history relationships (`Ingredient.batchLineItems`, `Recipe.batches`) that must stay `.nullify`; relationship arrays read without `.sorted` (they are unordered).
+4. **Concurrency** — `DispatchQueue` or any GCD use (the project uses Swift Concurrency only); actor-isolation errors; non-`Sendable` types crossing boundaries.
+5. **Silent failures** — `try?` that swallows an error the user should hear about.
+6. **Tests** — non-trivial logic added without tests; tests not updated after a rename or signature change; force unwraps in tests where `#require` belongs; assertions hardcoding locale-sensitive formatted numbers.
+7. **Date arithmetic** — raw second multiplication instead of `Calendar.current.date(byAdding:)`.
+8. **Dead code** — but search for other usages before claiming something is unused.
 
-**If NO issues found:**
+Do not comment on visual design — padding, spacing, colours, layout. You cannot see the rendered UI.
+
+Do not report praise, "no concerns" notes, or summaries of what the PR does.
+
+## Before flagging anything
+
+- Check the symbol isn't used elsewhere (`rg`) before calling it dead or redundant.
+- Check two similar-looking flags or parameters aren't serving different purposes.
+- If a pattern looks wrong but matches the surrounding file, it is probably a project convention — say so or stay quiet.
+
+## Output format
+
+Group findings under only the headings that apply: `## Bugs / Logic Errors`, `## Best Practices`, `## Performance`, `## Security`.
+
+Each finding:
+
+```
+**FileName.swift:123**
+What is wrong and the consequence.
+```
+
+End with exactly one status line:
+
+- `✅ **Approved** — [brief reason]`
+- `⚠️ **Minor Issues** — [what needs fixing]`
+- `🚨 **Major Issues** — [critical problems]`
+
+**If nothing is wrong, the entire review is one line and nothing else:**
+
 ```
 ✅ **Approved** - No issues found
 ```
 
-**DO NOT add ANY additional text:**
-- ❌ NO "The PR correctly implements..."
-- ❌ NO explanations of what changed
-- ❌ NO lists of what was added/cleaned
-- ❌ NO implementation details
-- ❌ ONLY the one-line approval message above
+No preamble, no description of the change, no list of what was added.
 
-**If issues ARE found:**
-Follow the format from `.claude/skills/code-review-developer/SKILL.md`
+## Never add AI attribution
 
-## CI-Specific Reference Documentation
+No "Generated with Claude Code", no "Co-Authored-By: Claude", no mention of AI tooling in any comment, review body, commit message or PR description.
 
-### Valid GitHub Actions Runners
-https://github.com/actions/runner-images/tree/main/images/macos
+## Posting the review
 
-### macOS Runner to Xcode Version Mapping
-- `macos-15`: Xcode 15.x (e.g., '15.4') - See https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md
-- `macos-26`: Xcode 26.1 (at /Applications/Xcode_26.1.app) - See https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md
+Analysis alone is not enough — you must post. Post **once**, in a single call.
 
-**VALIDATION RULE**: When reviewing xcode-version in workflows, verify it matches the runs-on runner version using the mapping above.
-
-## Review Comment Strategy
-
-### REQUIRED: Batch all inline comments into ONE API call
-
-Every finding with a specific file/line MUST be posted as an inline comment in a single `POST /pulls/${PR_NUMBER}/reviews` call that contains ALL comments in one `comments[]` array. One review, one call, all findings.
-
-Do NOT post inline comments one by one. Do NOT call `POST /reviews` multiple times for the same run. Multiple calls waste turns and cause partial reviews when the turn budget runs out.
-
-**Batched format (this is the default — use it unless a finding genuinely has no file/line):**
+**Findings with file/line anchors** — one batched review, all comments in one `comments[]` array:
 
 ```bash
 gh api repos/${REPO}/pulls/${PR_NUMBER}/reviews \
   --method POST \
-  --field body="Short overall summary, or empty if inline comments speak for themselves" \
+  --field body="One-sentence summary" \
   --field event="COMMENT" \
-  --field comments[][path]="path/to/FileA.swift" \
+  --field comments[][path]="SoapWiz/Models/Recipe.swift" \
   --field comments[][line]=42 \
-  --field comments[][body]="**Bug**: Explanation. \`\`\`suggestion
-fixed code here
+  --field comments[][body]="**Bug**: \`superFat\` is applied twice, so lye is under-calculated. \`\`\`suggestion
+let factor = 1 - (superFat / 100)
 \`\`\`" \
-  --field comments[][path]="path/to/FileA.swift" \
+  --field comments[][path]="SoapWiz/ViewModels/Recipes/LyeCalculator.swift" \
   --field comments[][line]=97 \
-  --field comments[][body]="**Race condition**: explanation." \
-  --field comments[][path]="path/to/FileB.swift" \
-  --field comments[][line]=15 \
-  --field comments[][body]="**Loc violation**: hardcoded string — use \`Loc.X.y\`."
+  --field comments[][body]="**Crash risk**: \`draft.ingredient!\` is nil for a line item whose ingredient was removed."
 ```
 
-Repeat the `--field comments[][path]` / `--field comments[][line]` / `--field comments[][body]` trio for every finding. GitHub groups them into one review.
+Repeat the `path` / `line` / `body` trio per finding; GitHub groups them into one review. Use ` ```suggestion ` blocks for small localised fixes.
 
-**Inline suggestion blocks** (preferred for small, localized fixes) use the same ` ```suggestion ` mechanism inside a comment's body — still inside the batched call.
-
-### Use a single top-level comment ONLY when there are no line-specific findings
-
-If every finding is cross-cutting (architecture, multi-file design problems, something without a natural line anchor):
+**Findings with no natural line anchor** (architecture, cross-file concerns) — a single top-level comment instead:
 
 ```bash
 gh pr comment ${PR_NUMBER} --repo ${REPO} --body "YOUR_REVIEW_TEXT_HERE"
 ```
 
-Do NOT post BOTH a batched review AND a separate `gh pr comment` summary for the same run — that produces duplicate noise. The `body` field of the `POST /reviews` call already serves as the summary.
+Never post both a batched review and a separate summary comment for the same run — the `body` field already serves as the summary.
 
-## CRITICAL: Post Your Review
+## Reference: runner and Xcode versions
 
-**YOU MUST POST YOUR REVIEW TO THE PR** - analysis alone is not sufficient.
+When the diff changes a workflow, check `runs-on` matches the Xcode version used:
 
-After completing your review analysis:
+- `macos-15` → Xcode 15.x — [image readme](https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md)
+- `macos-26` → Xcode 26.1 at `/Applications/Xcode_26.1.app` — [image readme](https://github.com/actions/runner-images/blob/main/images/macos/macos-26-arm64-Readme.md)
 
-1. **For reviews with inline comments**: Post ONE batched `POST /pulls/${PR_NUMBER}/reviews` call containing every inline comment in one `comments[]` array. Do not post a separate summary comment — use the `body` field of that same call.
-2. **For reviews without inline comments**: Post your full review text as a single `gh pr comment` call.
-
-**Command**:
-```bash
-gh pr comment ${PR_NUMBER} --repo ${REPO} --body "YOUR_REVIEW_TEXT_HERE"
-```
-
-**Example** (clean approval):
-```bash
-gh pr comment ${PR_NUMBER} --repo ${REPO} --body "✅ **Approved** - No issues found"
-```
-
-**Example** (review with issues):
-```bash
-gh pr comment ${PR_NUMBER} --repo ${REPO} --body "## Bugs/Issues
-
-**SpaceHubToolbar.swift:109**
-The \`attentionDotView\` overlay positioning is incorrect...
-
----
-
-⚠️ **Minor Issues** - Fix overlay positioning"
-```
-
-**Important**:
-- Use single quotes to wrap multi-line review text if needed
-- Escape special characters appropriately for bash
-- Always include the status emoji summary at the end (as defined in shared guidelines)
-- The workflow provides ${PR_NUMBER} and ${REPO} variables
+The project's deployment target is iOS 18.0, and iOS 26 features are gated with `#available(iOS 26, *)` — which requires an Xcode that knows the iOS 26 SDK.

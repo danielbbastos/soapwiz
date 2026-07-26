@@ -31,26 +31,14 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Load review skill and CI automation
+      # pr-review-automation.md is the complete, self-contained CI review prompt.
+      # The code-review-developer skill is deliberately not inlined here: it is
+      # written for interactive use and duplicated this file's output rules.
+      - name: Load CI review prompt
         id: load-prompt
         run: |
-          # Load the code-review-developer skill (routes to general standards)
-          SKILL_CONTENT=$(cat .claude/skills/code-review-developer/SKILL.md)
-
-          # Load CI-specific automation instructions
-          CI_AUTOMATION=$(cat .github/workflows/pr-review-automation.md)
-
-          # Combine both for the prompt
-          PROMPT_CONTENT="${SKILL_CONTENT}
-
-          ---
-
-          # CI/PR-Specific Instructions
-
-          ${CI_AUTOMATION}"
-
           echo "prompt_content<<EOF" >> $GITHUB_OUTPUT
-          echo "$PROMPT_CONTENT" >> $GITHUB_OUTPUT
+          cat .github/workflows/pr-review-automation.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Run Claude Code Review
