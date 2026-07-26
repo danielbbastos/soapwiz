@@ -34,12 +34,13 @@ final class Recipe {
     var useCFM: Bool = false
     var cfmNeutralizer: String = CFMNeutralizer.boricAcid.rawValue
 
-    @Relationship(deleteRule: .nullify)
+    // Inverse and `.nullify` delete rule are declared on `Ingredient.recipesUsingAsLye`,
+    // so a deleted ingredient drops this link instead of taking the recipe with it.
     var lyeIngredient: Ingredient?
 
     /// The KOH lye ingredient used by the hybrid path, so its cost can be priced
-    /// separately from the NaOH `lyeIngredient`.
-    @Relationship(deleteRule: .nullify)
+    /// separately from the NaOH `lyeIngredient`. Inverse and delete rule are
+    /// declared on `Ingredient.recipesUsingAsKOHLye`.
     var kohLyeIngredient: Ingredient?
 
     @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.recipe)

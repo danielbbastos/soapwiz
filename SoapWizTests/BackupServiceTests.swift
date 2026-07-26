@@ -183,7 +183,7 @@ struct BackupServiceTests {
         #expect(recipe.superFat == 7)
         #expect(recipe.lyeIngredient?.name == "Olive Oil")
         #expect(recipe.ingredients.count == 1)
-        #expect(recipe.ingredients.first?.ingredient.name == "Olive Oil")
+        #expect(recipe.ingredients.first?.ingredient?.name == "Olive Oil")
         #expect(recipe.ingredients.first?.percentage == 100)
         #expect(recipe.products.first?.size == 100)
     }

@@ -13,10 +13,10 @@ final class Batch {
     var recipe: Recipe?
 
     /// Recipe name as it was when the batch was made.
-    var recipeName: String
-    var dateCreated: Date
-    var batchCount: Int
-    var totalCost: Double
+    var recipeName: String = ""
+    var dateCreated: Date = Date.now
+    var batchCount: Int = 0
+    var totalCost: Double = 0
 
     @Relationship(deleteRule: .cascade, inverse: \BatchLineItem.batch)
     var lineItems: [BatchLineItem] = []

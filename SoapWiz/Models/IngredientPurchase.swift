@@ -9,14 +9,14 @@ final class IngredientPurchase {
     var uuid: UUID = UUID()
     var ingredient: Ingredient?
     var provider: Provider?
-    var dateOfPurchase: Date
-    var quantity: Double
-    var totalPrice: Double
-    var badge: String
-    var journalCode: String
+    var dateOfPurchase: Date = Date.now
+    var quantity: Double = 0
+    var totalPrice: Double = 0
+    var badge: String = ""
+    var journalCode: String = ""
     var expiryDate: Date?
     var openingDate: Date?
-    var remainingAmount: Double
+    var remainingAmount: Double = 0
     var storageLocation: StorageLocation?
 
     var pricePerUnit: Double {

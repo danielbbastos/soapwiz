@@ -108,7 +108,7 @@ enum BackupService {
             lyeIngredientIndex: recipe.lyeIngredient.flatMap { ingredientIndex[$0.persistentModelID] },
             kohLyeIngredientIndex: recipe.kohLyeIngredient.flatMap { ingredientIndex[$0.persistentModelID] },
             ingredients: recipe.ingredients.compactMap { line in
-                ingredientIndex[line.ingredient.persistentModelID].map { idx in
+                line.ingredient.flatMap { ingredientIndex[$0.persistentModelID] }.map { idx in
                     BackupData.RecipeIngredientDTO(
                         ingredientIndex: idx,
                         percentage: line.percentage,

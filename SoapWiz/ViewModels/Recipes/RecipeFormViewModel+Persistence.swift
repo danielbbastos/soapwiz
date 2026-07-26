@@ -29,13 +29,16 @@ extension RecipeFormViewModel {
 
         oilDrafts = recipe.ingredients
             .filter { $0.ingredientRole == .oil }
-            .map { OilIngredientDraft(ingredient: $0.ingredient, amount: $0.percentage, isLocked: true) }
+            .compactMap { line -> OilIngredientDraft? in
+                guard let ingredient = line.ingredient else { return nil }
+                return OilIngredientDraft(ingredient: ingredient, amount: line.percentage, isLocked: true)
+            }
         additiveDrafts = recipe.ingredients
             .filter { $0.ingredientRole == .additive }
-            .map { IngredientAmountDraft(ingredient: $0.ingredient, amount: $0.additiveAmount, unit: $0.additiveUnit) }
+            .compactMap(Self.amountDraft)
         fragranceDrafts = recipe.ingredients
             .filter { $0.ingredientRole == .fragrance }
-            .map { IngredientAmountDraft(ingredient: $0.ingredient, amount: $0.additiveAmount, unit: $0.additiveUnit) }
+            .compactMap(Self.amountDraft)
 
         productDrafts = recipe.products.map {
             RecipeProductDraft(size: $0.size, unitSymbol: $0.unitSymbol, modelID: $0.persistentModelID)
@@ -101,5 +104,12 @@ extension RecipeFormViewModel {
                 context.insert(recipeIngredient)
             }
         }
+    }
+
+    /// Drops line items whose ingredient is missing — a row pointing at nothing
+    /// can't be edited or costed, so it has no draft representation.
+    private static func amountDraft(from line: RecipeIngredient) -> IngredientAmountDraft? {
+        guard let ingredient = line.ingredient else { return nil }
+        return IngredientAmountDraft(ingredient: ingredient, amount: line.additiveAmount, unit: line.additiveUnit)
     }
 }

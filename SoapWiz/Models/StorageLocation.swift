@@ -3,8 +3,8 @@ import SwiftData
 
 @Model
 final class StorageLocation {
-    var name: String
-    var locationDescription: String
+    var name: String = ""
+    var locationDescription: String = ""
 
     @Relationship(deleteRule: .nullify, inverse: \IngredientPurchase.storageLocation)
     var purchases: [IngredientPurchase] = []

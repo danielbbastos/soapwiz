@@ -316,6 +316,6 @@ struct RecipeFormViewModelTests: RecipeFormTestHelpers {
         #expect(allRecipes.count == 1)
         let allRI = try ctx.fetch(FetchDescriptor<RecipeIngredient>())
         #expect(allRI.count == 1)
-        #expect(allRI[0].ingredient.name == "Olive Oil")
+        #expect(allRI[0].ingredient?.name == "Olive Oil")
     }
 }

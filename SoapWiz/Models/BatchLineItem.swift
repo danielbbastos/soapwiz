@@ -31,14 +31,14 @@ final class BatchLineItem {
     var ingredient: Ingredient?
 
     /// Ingredient name as it was when the batch was made.
-    var ingredientName: String
+    var ingredientName: String = ""
     /// Amount consumed, in the ingredient's inventory unit.
-    var amountConsumed: Double
+    var amountConsumed: Double = 0
     /// The ingredient's inventory unit.
-    var unit: String
-    var cost: Double
+    var unit: String = ""
+    var cost: Double = 0
     /// Which purchases this amount drew from, oldest first.
-    var draws: [BatchPurchaseDraw]
+    var draws: [BatchPurchaseDraw] = []
 
     init(
         ingredient: Ingredient?,
