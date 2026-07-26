@@ -50,12 +50,17 @@ jobs:
               | grep -oE 'id:[0-9A-Fa-f-]{36}' | head -1 | cut -d: -f2
           }
 
-          UDID=$(pick_udid)
+          # `|| true` matters: Actions runs this step as `bash -e`, and a bare
+          # assignment takes the exit status of its command substitution. Today
+          # pick_udid returns 0 even with no match (the pipeline's status comes from
+          # `cut`), but adding `set -o pipefail` here — as the test step below does —
+          # would make it return 1 and abort before the fallback loop ever ran.
+          UDID=$(pick_udid) || true
           if [ -z "$UDID" ]; then
             for xc in $(ls -d /Applications/Xcode*.app 2>/dev/null | sort -rV); do
               echo "No usable simulator; trying $xc"
               sudo xcode-select -s "$xc"
-              UDID=$(pick_udid)
+              UDID=$(pick_udid) || true
               [ -n "$UDID" ] && break
             done
           fi
