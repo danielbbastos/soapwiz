@@ -23,39 +23,51 @@ jobs:
         with:
           fetch-depth: 1
 
-      # The project gates iOS 26 features with `#available(iOS 26, *)`, which the
-      # compiler can only parse against an SDK that knows about iOS 26. Runner
-      # images ship several Xcodes and rotate versions, so select the newest
-      # installed rather than pinning a path that goes stale. The glob covers both
-      # naming styles seen in the wild (Xcode_26.1.app, Xcode26_1.app).
-      - name: Select newest Xcode
-        run: |
-          LATEST=$(ls -d /Applications/Xcode*.app 2>/dev/null | sort -V | tail -1)
-          if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST"; fi
-          xcodebuild -version
-
-      # `test` needs a concrete bootable simulator — `generic/platform=iOS Simulator`
-      # only works for `build`. Ask xcodebuild which destinations are eligible for
-      # this scheme and toolchain: `simctl` also lists runtimes the selected Xcode
-      # cannot target, which is how a pinned Xcode 26.1 ended up trying to use an
-      # iOS 26.2 device and failing.
-      - name: Choose a simulator
+      # Finding a working Xcode + simulator pair on a hosted runner is fiddly, and
+      # hardcoding either half breaks when the image rotates:
+      #
+      #   - Pinning Xcode 26.1 failed: the image now carries iOS 26.2/26.4/26.5
+      #     runtimes, and an Xcode cannot target a runtime newer than itself.
+      #   - Picking the newest installed Xcode (26.6) failed too: it had no usable
+      #     runtimes at all, only placeholder destinations.
+      #   - `simctl list devices` is not a reliable source either, since it lists
+      #     runtimes the selected Xcode may be unable to target.
+      #
+      # So: ask xcodebuild itself, which only reports destinations eligible for this
+      # scheme and toolchain. Try the image default first (the maintainers pair it
+      # with installed runtimes), then fall back through the rest, newest first.
+      - name: Select Xcode and simulator
         id: sim
         run: |
-          xcodebuild -project SoapWiz.xcodeproj -scheme SoapWiz -showdestinations \
-            2>/dev/null | tee destinations.txt
-          SIMS=$(grep 'platform:iOS Simulator' destinations.txt | grep -v placeholder)
           # Prefer an iPhone for determinism, but any eligible simulator will do —
           # these are unit tests, not device-specific UI tests.
-          UDID=$(printf '%s\n' "$SIMS" | grep 'name:iPhone' \
-            | grep -oE 'id:[0-9A-Fa-f-]{36}' | head -1 | cut -d: -f2)
+          pick_udid() {
+            local sims
+            sims=$(xcodebuild -project SoapWiz.xcodeproj -scheme SoapWiz \
+              -showdestinations 2>/dev/null \
+              | grep 'platform:iOS Simulator' | grep -v placeholder) || true
+            printf '%s\n' "$sims" | grep 'name:iPhone' \
+              | grep -oE 'id:[0-9A-Fa-f-]{36}' | head -1 | cut -d: -f2
+          }
+
+          UDID=$(pick_udid)
           if [ -z "$UDID" ]; then
-            UDID=$(printf '%s\n' "$SIMS" | grep -oE 'id:[0-9A-Fa-f-]{36}' | head -1 | cut -d: -f2)
+            for xc in $(ls -d /Applications/Xcode*.app 2>/dev/null | sort -rV); do
+              echo "No usable simulator; trying $xc"
+              sudo xcode-select -s "$xc"
+              UDID=$(pick_udid)
+              [ -n "$UDID" ] && break
+            done
           fi
+
           if [ -z "$UDID" ]; then
-            echo "No eligible iOS Simulator destination for the SoapWiz scheme" >&2
+            echo "::error::No Xcode on this runner offers an eligible iOS Simulator destination"
+            xcodebuild -version
+            xcrun simctl list runtimes
             exit 1
           fi
+
+          xcodebuild -version
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
           echo "Using simulator $UDID"
 
