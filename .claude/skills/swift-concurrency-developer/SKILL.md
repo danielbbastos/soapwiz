@@ -1,6 +1,6 @@
 ---
 name: swift-concurrency-developer
-description: Expert guidance on Swift concurrency using the Office Building mental model. Use when working with actors, isolation, Sendable, TaskGroups, or fixing concurrency warnings and data race issues.
+description: Swift concurrency — actors, actor isolation, Sendable, TaskGroup, nonisolated, async let, @MainActor. Use when fixing data-race warnings, actor-isolation errors, "non-Sendable type crossing actor boundary", Swift 6 strict-concurrency migration, or deciding where an isolation boundary belongs.
 ---
 
 # Swift Concurrency Developer (Smart Router)
