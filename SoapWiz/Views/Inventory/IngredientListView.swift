@@ -45,7 +45,7 @@ struct IngredientListView: View {
                                 }
                                 .swipeActions(edge: .trailing) {
                                     Button("Delete", role: .destructive) {
-                                        model.delete(ingredient, context: modelContext)
+                                        model.delete(ingredient)
                                     }
                                 }
                                 .listRowBackground(Color.cardBackground)
@@ -70,7 +70,7 @@ struct IngredientListView: View {
                     ToolbarItem(placement: .topBarLeading) {
                         if model.editMode == .active {
                             Button("Delete", role: .destructive) {
-                                model.deleteSelected(in: displayedIngredients, context: modelContext)
+                                model.deleteSelected(in: displayedIngredients)
                             }
                             .disabled(model.selection.isEmpty)
                         } else {
@@ -110,10 +110,7 @@ struct IngredientListView: View {
             Button("Delete", role: .destructive) { model.confirmDelete(context: modelContext) }
             Button("Cancel", role: .cancel) { model.confirmingDelete = [] }
         } message: {
-            let purchaseCount = model.confirmingDelete.reduce(0) { $0 + $1.purchases.count }
-            let ingredientWord = model.confirmingDelete.count == 1 ? "ingredient" : "ingredients"
-            let purchaseWord = purchaseCount == 1 ? "purchase" : "purchases"
-            Text("Deleting \(model.confirmingDelete.count) \(ingredientWord) will also delete \(purchaseCount) \(purchaseWord).")
+            Text(model.deleteConfirmationMessage)
         }
         .alert(
             model.deleteBlockedIngredients.count == 1 ? "Cannot Delete Ingredient" : "Cannot Delete Ingredients",

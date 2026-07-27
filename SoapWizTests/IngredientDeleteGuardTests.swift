@@ -133,7 +133,7 @@ struct IngredientDeleteGuardTests {
         try ctx.save()
 
         let model = IngredientListViewModel()
-        model.delete(olive, context: ctx)
+        model.delete(olive)
         try ctx.save()
 
         #expect(model.deleteBlockedIngredients.map(\.name) == ["Olive Oil"])
@@ -163,13 +163,16 @@ struct IngredientDeleteGuardTests {
         try ctx.save()
 
         let model = IngredientListViewModel()
-        model.delete(olive, context: ctx)
+        model.delete(olive)
 
         #expect(model.deleteBlockedIngredients.count == 1)
         #expect(model.confirmingDelete.isEmpty)
     }
 
-    @Test func delete_UnusedWithNoPurchases_DeletesImmediately() throws {
+    /// Nothing is deleted on a single tap. An ingredient with no stock still holds sap
+    /// values, density and a fatty-acid profile, and there is no undo — an accidental
+    /// swipe must not destroy it.
+    @Test func delete_UnusedWithNoPurchases_AsksForConfirmationAndKeepsIt() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let olive = Ingredient(name: "Olive Oil", unit: "g")
@@ -177,11 +180,28 @@ struct IngredientDeleteGuardTests {
         try ctx.save()
 
         let model = IngredientListViewModel()
-        model.delete(olive, context: ctx)
+        model.delete(olive)
         try ctx.save()
 
         #expect(model.deleteBlockedIngredients.isEmpty)
+        #expect(model.confirmingDelete.map(\.name) == ["Olive Oil"])
+        #expect(try ctx.fetch(FetchDescriptor<Ingredient>()).count == 1)
+    }
+
+    @Test func confirmDelete_AfterConfirmation_ActuallyDeletes() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let olive = Ingredient(name: "Olive Oil", unit: "g")
+        ctx.insert(olive)
+        try ctx.save()
+
+        let model = IngredientListViewModel()
+        model.delete(olive)
+        model.confirmDelete(context: ctx)
+        try ctx.save()
+
         #expect(try ctx.fetch(FetchDescriptor<Ingredient>()).isEmpty)
+        #expect(model.confirmingDelete.isEmpty)
     }
 
     @Test func delete_UnusedWithPurchases_StillAsksForConfirmation() throws {
@@ -198,7 +218,7 @@ struct IngredientDeleteGuardTests {
         try ctx.save()
 
         let model = IngredientListViewModel()
-        model.delete(olive, context: ctx)
+        model.delete(olive)
 
         #expect(model.deleteBlockedIngredients.isEmpty)
         #expect(model.confirmingDelete.map(\.name) == ["Olive Oil"])
@@ -221,14 +241,14 @@ struct IngredientDeleteGuardTests {
 
         let model = IngredientListViewModel()
         model.selection = [olive.persistentModelID, coconut.persistentModelID]
-        model.deleteSelected(in: [olive, coconut], context: ctx)
+        model.deleteSelected(in: [olive, coconut])
         try ctx.save()
 
         #expect(model.deleteBlockedIngredients.map(\.name) == ["Olive Oil"])
         #expect(try ctx.fetch(FetchDescriptor<Ingredient>()).count == 2)
     }
 
-    @Test func deleteSelected_NoneUsed_DeletesAll() throws {
+    @Test func deleteSelected_NoneUsed_AsksForConfirmationBeforeDeleting() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let olive = Ingredient(name: "Olive Oil", unit: "g")
@@ -238,86 +258,31 @@ struct IngredientDeleteGuardTests {
 
         let model = IngredientListViewModel()
         model.selection = [olive.persistentModelID, coconut.persistentModelID]
-        model.deleteSelected(in: [olive, coconut], context: ctx)
+        model.deleteSelected(in: [olive, coconut])
         try ctx.save()
 
         #expect(model.deleteBlockedIngredients.isEmpty)
+        #expect(model.confirmingDelete.count == 2)
+        #expect(try ctx.fetch(FetchDescriptor<Ingredient>()).count == 2)
+
+        model.confirmDelete(context: ctx)
+        try ctx.save()
+
         #expect(try ctx.fetch(FetchDescriptor<Ingredient>()).isEmpty)
         #expect(model.selection.isEmpty)
     }
 
-    // MARK: - Blocking message
-
-    @Test func deleteBlockedMessage_NothingBlocked_IsEmpty() {
-        let model = IngredientListViewModel()
-        #expect(model.deleteBlockedMessage.isEmpty)
-    }
-
-    @Test func deleteBlockedMessage_SingleIngredient_NamesEveryBlockingRecipe() throws {
+    @Test func deleteSelected_EmptySelection_DoesNothing() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let olive = Ingredient(name: "Olive Oil", unit: "g")
         ctx.insert(olive)
-        for name in ["Bastille", "Castile"] {
-            let recipe = Recipe(name: name)
-            ctx.insert(recipe)
-            let line = RecipeIngredient(ingredient: olive, percentage: 100, role: .oil)
-            line.recipe = recipe
-            ctx.insert(line)
-        }
         try ctx.save()
 
         let model = IngredientListViewModel()
-        model.delete(olive, context: ctx)
-        let message = model.deleteBlockedMessage
+        model.deleteSelected(in: [olive])
 
-        #expect(message.contains("Olive Oil"))
-        #expect(message.contains("Bastille"))
-        #expect(message.contains("Castile"))
-        #expect(message.contains("2 recipes"))
-    }
-
-    @Test func deleteBlockedMessage_SingleRecipe_UsesSingularWording() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let olive = Ingredient(name: "Olive Oil", unit: "g")
-        let recipe = Recipe(name: "Bastille")
-        ctx.insert(olive)
-        ctx.insert(recipe)
-        let line = RecipeIngredient(ingredient: olive, percentage: 100, role: .oil)
-        line.recipe = recipe
-        ctx.insert(line)
-        try ctx.save()
-
-        let model = IngredientListViewModel()
-        model.delete(olive, context: ctx)
-        let message = model.deleteBlockedMessage
-
-        #expect(message.contains("1 recipe:"))
-        #expect(message.contains("that recipe"))
-    }
-
-    @Test func deleteBlockedMessage_MultipleIngredients_ListsEachName() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let olive = Ingredient(name: "Olive Oil", unit: "g")
-        let coconut = Ingredient(name: "Coconut Oil", unit: "g")
-        let recipe = Recipe(name: "Bastille")
-        [olive, coconut].forEach { ctx.insert($0) }
-        ctx.insert(recipe)
-        for ingredient in [olive, coconut] {
-            let line = RecipeIngredient(ingredient: ingredient, percentage: 50, role: .oil)
-            line.recipe = recipe
-            ctx.insert(line)
-        }
-        try ctx.save()
-
-        let model = IngredientListViewModel()
-        model.selection = [olive.persistentModelID, coconut.persistentModelID]
-        model.deleteSelected(in: [olive, coconut], context: ctx)
-        let message = model.deleteBlockedMessage
-
-        #expect(message.contains("Olive Oil"))
-        #expect(message.contains("Coconut Oil"))
+        #expect(model.confirmingDelete.isEmpty)
+        #expect(model.deleteBlockedIngredients.isEmpty)
     }
 }

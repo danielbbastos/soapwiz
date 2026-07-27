@@ -85,14 +85,21 @@ final class IngredientListViewModel {
         }
     }
 
+    /// At most this many names are spelled out before the rest are summarised.
+    /// Alert messages don't scroll, so an unbounded list stops being readable —
+    /// the exact count carries the information anyway.
+    private static let maxNamesListed = 3
+
     /// Being used by a recipe blocks deletion outright and takes precedence over the
     /// remaining-stock confirmation: losing stock is recoverable, silently gutting a
     /// recipe's oil percentages — and with them its lye calculation — is not.
-    func delete(_ ingredient: Ingredient, context: ModelContext) {
+    ///
+    /// Everything else routes through `confirmingDelete`. An ingredient carries sap
+    /// values, density and a fatty-acid profile that are tedious to re-enter, and
+    /// there is no undo, so no deletion happens on a single tap.
+    func delete(_ ingredient: Ingredient) {
         if ingredient.isUsedInRecipes {
             deleteBlockedIngredients = [ingredient]
-        } else if ingredient.purchases.isEmpty {
-            context.delete(ingredient)
         } else {
             confirmingDelete = [ingredient]
         }
@@ -100,17 +107,14 @@ final class IngredientListViewModel {
 
     /// If any selected ingredient is used by a recipe, nothing is deleted — a partial
     /// delete would be harder to reason about than none at all.
-    func deleteSelected(in ingredients: [Ingredient], context: ModelContext) {
+    func deleteSelected(in ingredients: [Ingredient]) {
         let targets = selection.compactMap { id in ingredients.first { $0.persistentModelID == id } }
+        guard !targets.isEmpty else { return }
         let blocked = targets.filter(\.isUsedInRecipes)
         if !blocked.isEmpty {
             deleteBlockedIngredients = blocked
-        } else if targets.contains(where: { !$0.purchases.isEmpty }) {
-            confirmingDelete = targets
         } else {
-            targets.forEach { context.delete($0) }
-            selection.removeAll()
-            editMode = .inactive
+            confirmingDelete = targets
         }
     }
 
@@ -123,11 +127,40 @@ final class IngredientListViewModel {
             let recipeWord = recipes.count == 1 ? "recipe" : "recipes"
             let target = recipes.count == 1 ? "that recipe" : "those recipes"
             return "\"\(ingredient.name)\" is used in \(recipes.count) \(recipeWord): "
-                + "\(recipes.formatted()). Remove it from \(target) first."
+                + "\(Self.abbreviated(recipes)). Remove it from \(target) first."
         }
 
         let names = deleteBlockedIngredients.map(\.name).sorted()
-        return "\(names.formatted()) are used in recipes. Remove them from those recipes first."
+        return "\(Self.abbreviated(names)) are used in recipes. Remove them from those recipes first."
+    }
+
+    /// Message for the delete confirmation. Lives here rather than in the view so the
+    /// wording is testable.
+    var deleteConfirmationMessage: String {
+        guard !confirmingDelete.isEmpty else { return "" }
+
+        let purchaseCount = confirmingDelete.reduce(0) { $0 + $1.purchases.count }
+        guard purchaseCount > 0 else {
+            if confirmingDelete.count == 1, let name = confirmingDelete.first?.name {
+                return "Delete \"\(name)\"? This can't be undone."
+            }
+            return "Delete \(confirmingDelete.count) ingredients? This can't be undone."
+        }
+
+        let ingredientWord = confirmingDelete.count == 1 ? "ingredient" : "ingredients"
+        let purchaseWord = purchaseCount == 1 ? "purchase" : "purchases"
+        return "Deleting \(confirmingDelete.count) \(ingredientWord) will also delete "
+            + "\(purchaseCount) \(purchaseWord). This can't be undone."
+    }
+
+    /// Spells out the first few names and summarises the rest. The overflow form joins
+    /// manually because `ListFormatStyle` has no notion of truncation, and appending to
+    /// its output would read "A, B, and C and 22 others".
+    private static func abbreviated(_ names: [String]) -> String {
+        guard names.count > maxNamesListed else { return names.formatted() }
+        let remaining = names.count - maxNamesListed
+        let otherWord = remaining == 1 ? "other" : "others"
+        return names.prefix(maxNamesListed).joined(separator: ", ") + " and \(remaining) \(otherWord)"
     }
 
     func confirmDelete(context: ModelContext) {
