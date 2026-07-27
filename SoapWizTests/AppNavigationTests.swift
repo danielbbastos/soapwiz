@@ -9,7 +9,7 @@ struct AppNavigationTests {
 
     private func makeContext() throws -> (ModelContainer, ModelContext) {
         let schema = Schema([Batch.self, BatchLineItem.self, Recipe.self])
-        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
         return (container, container.mainContext)
     }
 

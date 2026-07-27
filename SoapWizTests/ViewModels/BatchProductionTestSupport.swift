@@ -14,7 +14,7 @@ extension BatchProductionTestHelpers {
             Ingredient.self, IngredientPurchase.self, IngredientCategory.self,
             Batch.self, BatchLineItem.self
         ])
-        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
         return (container, container.mainContext)
     }
     /// A recipe measured directly in grams with a single oil of `oilWeight` g, no

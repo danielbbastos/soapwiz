@@ -12,7 +12,7 @@ struct DualLyeCalculationTests {
             Recipe.self, RecipeIngredient.self, RecipeProduct.self,
             Ingredient.self, IngredientPurchase.self, IngredientCategory.self
         ])
-        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
         return (container, container.mainContext)
     }
 

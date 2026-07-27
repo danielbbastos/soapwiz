@@ -9,7 +9,7 @@ struct ProviderTests {
 
     private func makeContainer() throws -> ModelContainer {
         let schema = Schema([Ingredient.self, IngredientPurchase.self, IngredientCategory.self, StorageLocation.self, Provider.self])
-        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let config = ModelConfiguration.inMemory(schema)
         return try ModelContainer(for: schema, configurations: [config])
     }
 

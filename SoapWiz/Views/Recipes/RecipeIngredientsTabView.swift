@@ -49,6 +49,7 @@ struct RecipeIngredientsTabView: View {
 
     var body: some View {
         Form {
+            unresolvedLineItemsSection
             oilsSection
             additivesSection
             fragrancesSection
@@ -73,6 +74,39 @@ struct RecipeIngredientsTabView: View {
                 onSelect: selectAction(for: section)
             )
         }
+    }
+
+    // MARK: - Unresolved line items
+
+    @ViewBuilder
+    private var unresolvedLineItemsSection: some View {
+        if model.unresolvedLineItemCount > 0 {
+            Section {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(unresolvedLineItemsTitle)
+                        Text(unresolvedLineItemsSubtitle)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
+            }
+        }
+    }
+
+    private var unresolvedLineItemsTitle: String {
+        model.unresolvedLineItemCount == 1
+            ? "1 ingredient hasn't synced yet and isn't shown here."
+            : "\(model.unresolvedLineItemCount) ingredients haven't synced yet and aren't shown here."
+    }
+
+    private var unresolvedLineItemsSubtitle: String {
+        model.unresolvedLineItemCount == 1
+            ? "It will be kept when you save."
+            : "They will be kept when you save."
     }
 
     // MARK: - Oils
