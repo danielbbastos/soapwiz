@@ -35,6 +35,21 @@ final class Ingredient {
     @Relationship(deleteRule: .nullify, inverse: \Recipe.kohLyeIngredient)
     var recipesUsingAsKOHLye: [Recipe] = []
 
+    /// Recipes referencing this ingredient — as a line item, as the NaOH lye, or
+    /// as the KOH lye. One recipe can reference it in more than one of those roles,
+    /// so results are deduplicated.
+    ///
+    /// Batches are deliberately excluded: they snapshot the ingredient's name and
+    /// cost, so history stays readable after the ingredient is gone. Recipes are
+    /// live documents and would be silently miscalculated instead.
+    var recipesUsingThis: [Recipe] {
+        let referencing = recipeIngredients.compactMap(\.recipe) + recipesUsingAsLye + recipesUsingAsKOHLye
+        var seen: Set<PersistentIdentifier> = []
+        return referencing.filter { seen.insert($0.persistentModelID).inserted }
+    }
+
+    var isUsedInRecipes: Bool { !recipesUsingThis.isEmpty }
+
     var totalRemaining: Double {
         purchases.reduce(0) { $0 + $1.remainingAmount }
     }

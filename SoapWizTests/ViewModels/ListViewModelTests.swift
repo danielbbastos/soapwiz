@@ -97,7 +97,8 @@ struct ListViewModelTests {
         try ctx.save()
 
         let model = IngredientListViewModel()
-        model.delete(ingredientA, context: ctx)
+        model.delete(ingredientA)
+        model.confirmDelete(context: ctx)
         try ctx.save()
 
         let remaining = try ctx.fetch(FetchDescriptor<Ingredient>())
@@ -115,7 +116,8 @@ struct ListViewModelTests {
         let model = IngredientListViewModel()
         model.editMode = .active
         model.selection = [ingredientA.persistentModelID]
-        model.deleteSelected(in: [ingredientA], context: ctx)
+        model.deleteSelected(in: [ingredientA])
+        model.confirmDelete(context: ctx)
 
         #expect(model.selection.isEmpty)
         #expect(model.editMode == .inactive)
