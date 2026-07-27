@@ -124,10 +124,9 @@ final class IngredientListViewModel {
 
         if deleteBlockedIngredients.count == 1, let ingredient = deleteBlockedIngredients.first {
             let recipes = ingredient.recipesUsingThis.map(\.name).sorted()
-            let recipeWord = recipes.count == 1 ? "recipe" : "recipes"
             let target = recipes.count == 1 ? "that recipe" : "those recipes"
-            return "\"\(ingredient.name)\" is used in \(recipes.count) \(recipeWord): "
-                + "\(Self.abbreviated(recipes)). Remove it from \(target) first."
+            return "\"\(ingredient.name)\" is used in \(Self.abbreviated(recipes)). "
+                + "Remove it from \(target) first."
         }
 
         let names = deleteBlockedIngredients.map(\.name).sorted()

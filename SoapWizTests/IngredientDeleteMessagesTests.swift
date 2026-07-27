@@ -51,7 +51,7 @@ struct IngredientDeleteMessagesTests {
         #expect(message.contains("Olive Oil"))
         #expect(message.contains("Bastille"))
         #expect(message.contains("Castile"))
-        #expect(message.contains("2 recipes"))
+        #expect(message.contains("those recipes"))
     }
 
     @Test func deleteBlockedMessage_SingleRecipe_UsesSingularWording() throws {
@@ -70,13 +70,13 @@ struct IngredientDeleteMessagesTests {
         model.delete(olive)
         let message = model.deleteBlockedMessage
 
-        #expect(message.contains("1 recipe:"))
+        #expect(message.contains("is used in Bastille."))
         #expect(message.contains("that recipe"))
     }
 
     /// Alert messages don't scroll, so the list is capped. Spelling out 25 names
     /// produced a 515-character message that the system simply truncated.
-    @Test func deleteBlockedMessage_ManyRecipes_CapsNamesButKeepsExactCount() throws {
+    @Test func deleteBlockedMessage_ManyRecipes_ListsFirstThreeAndSummarisesTheRest() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let olive = Ingredient(name: "Olive Oil", unit: "g")
@@ -94,7 +94,6 @@ struct IngredientDeleteMessagesTests {
         model.delete(olive)
         let message = model.deleteBlockedMessage
 
-        #expect(message.contains("25 recipes"))
         #expect(message.contains("and 22 others"))
         #expect(message.contains("Recipe 01"))
         #expect(message.contains("Recipe 03"))
