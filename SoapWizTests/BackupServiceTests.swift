@@ -16,7 +16,7 @@ struct BackupServiceTests {
         ])
         let container = try ModelContainer(
             for: schema,
-            configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)]
+            configurations: [ModelConfiguration.inMemory(schema)]
         )
         return (container, container.mainContext)
     }

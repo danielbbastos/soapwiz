@@ -9,7 +9,7 @@ struct PurchaseFormViewModelTests {
 
     private func makeContainer() throws -> ModelContainer {
         let schema = Schema([Ingredient.self, IngredientPurchase.self, IngredientCategory.self, StorageLocation.self, Provider.self])
-        return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+        return try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
     }
 
     @Test func quantityRequiredForValid() throws {

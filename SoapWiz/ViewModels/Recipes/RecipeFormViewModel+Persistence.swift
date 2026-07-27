@@ -27,6 +27,8 @@ extension RecipeFormViewModel {
         lyeIngredient = recipe.lyeIngredient
         kohLyeIngredient = recipe.kohLyeIngredient
 
+        unresolvedLineItemCount = recipe.ingredients.count { $0.ingredient == nil }
+
         oilDrafts = recipe.ingredients
             .filter { $0.ingredientRole == .oil }
             .compactMap { line -> OilIngredientDraft? in
@@ -76,7 +78,10 @@ extension RecipeFormViewModel {
         recipe.lyeIngredient = lyeIngredient
         recipe.kohLyeIngredient = kohLyeIngredient
 
-        recipe.ingredients.forEach { context.delete($0) }
+        // Line items with no ingredient survive the rebuild: the ingredient may
+        // simply not have synced yet, and deleting the row would destroy it for
+        // every device.
+        recipe.ingredients.filter { $0.ingredient != nil }.forEach { context.delete($0) }
         insertIngredients(into: recipe, context: context)
 
         recipe.products.forEach { context.delete($0) }
@@ -106,8 +111,9 @@ extension RecipeFormViewModel {
         }
     }
 
-    /// Drops line items whose ingredient is missing — a row pointing at nothing
-    /// can't be edited or costed, so it has no draft representation.
+    /// Skips line items whose ingredient is missing — a row pointing at nothing
+    /// can't be edited or costed, so it has no draft representation. They are
+    /// counted into `unresolvedLineItemCount` and kept on the recipe.
     private static func amountDraft(from line: RecipeIngredient) -> IngredientAmountDraft? {
         guard let ingredient = line.ingredient else { return nil }
         return IngredientAmountDraft(ingredient: ingredient, amount: line.additiveAmount, unit: line.additiveUnit)

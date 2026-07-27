@@ -28,6 +28,11 @@ final class RecipeFormViewModel {
     var lyeIngredient: Ingredient?
     var kohLyeIngredient: Ingredient?
 
+    /// Line items whose ingredient could not be resolved. With CloudKit
+    /// mirroring on, a `RecipeIngredient` can arrive before the `Ingredient` it
+    /// points at, so these rows are surfaced and preserved rather than dropped.
+    var unresolvedLineItemCount: Int = 0
+
     @ObservationIgnored
     var editingRecipe: Recipe?
 
@@ -69,7 +74,7 @@ final class RecipeFormViewModel {
     // MARK: - Calculators
 
     /// Lye/water computation, rebuilt from current state on each access.
-    private var lyeCalculator: LyeCalculator {
+    var lyeCalculator: LyeCalculator {
         LyeCalculator(
             oilDrafts: oilDrafts,
             additiveDrafts: additiveDrafts,
@@ -98,14 +103,6 @@ final class RecipeFormViewModel {
             displayWeightUnit: displayWeightUnit,
             lyeIngredient: lyeIngredient,
             kohLyeIngredient: kohLyeIngredient
-        )
-    }
-
-    private var extrasBuilder: RecipeExtrasBuilder {
-        RecipeExtrasBuilder(
-            lye: lyeCalculator,
-            fragranceTargetPercentage: fragranceTargetPercentage,
-            isCreamSoap: isCreamSoap
         )
     }
 
@@ -183,44 +180,6 @@ final class RecipeFormViewModel {
             percentage: fragranceTargetPercentage,
             isOverTarget: target > 0 && enteredSum > target * 1.005
         )
-    }
-
-    // MARK: - Extra ingredient suggestions
-
-    var extraIngredientData: (sectionA: [ExtraSectionARow], sectionB: [ExtraSectionBRow])? {
-        extrasBuilder.extraIngredientData
-    }
-
-    /// Cream-soap recommended additions (extra water, glycerine), or `nil` when
-    /// cream soap is off. Shown above the standard extras table.
-    var creamSoapAdditions: [ExtraSectionBRow]? {
-        extrasBuilder.creamSoapAdditions
-    }
-
-    /// Inventory ingredient matching an extras-table label, by case-insensitive
-    /// containment either way ("Citric Acid Powder" ↔ "Citric Acid",
-    /// "Sodium Lactate (60%)" ↔ "Sodium Lactate").
-    func matchedExtraIngredient(label: String, in inventory: [Ingredient]) -> Ingredient? {
-        inventory.first { ingredientNamesMatch(label, $0.name) }
-    }
-
-    /// Whether the ingredient is already among the additive drafts — drives the
-    /// checkmark on its extras row, including additives the user added manually.
-    func isExtraAdded(_ ingredient: Ingredient) -> Bool {
-        additiveDrafts.contains { $0.ingredient.persistentModelID == ingredient.persistentModelID }
-    }
-
-    /// Adds the suggested extras amount (already in the batch unit) as a regular
-    /// additive draft so cost, products, and batch creation all pick it up — or
-    /// removes the ingredient's draft when it is already present.
-    func toggleExtra(_ ingredient: Ingredient, amount: Double) {
-        if let idx = additiveDrafts.firstIndex(where: {
-            $0.ingredient.persistentModelID == ingredient.persistentModelID
-        }) {
-            additiveDrafts.remove(at: idx)
-        } else {
-            additiveDrafts.append(IngredientAmountDraft(ingredient: ingredient, amount: amount, unit: displayWeightUnit))
-        }
     }
 
     // MARK: - Cost / breakdown (delegated to RecipeCostCalculator)

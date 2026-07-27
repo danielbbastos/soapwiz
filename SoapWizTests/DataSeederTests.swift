@@ -14,7 +14,7 @@ struct DataSeederTests {
             Recipe.self, RecipeIngredient.self, RecipeProduct.self,
             Batch.self, BatchLineItem.self
         ])
-        return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+        return try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
     }
 
     @Test func seedDoesNotInsertWhenIngredientsExist() throws {

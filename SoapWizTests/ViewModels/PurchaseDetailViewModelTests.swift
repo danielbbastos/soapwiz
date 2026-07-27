@@ -9,7 +9,7 @@ struct PurchaseDetailViewModelTests {
 
     private func makeContext() throws -> (ModelContainer, ModelContext) {
         let schema = Schema([Ingredient.self, IngredientPurchase.self, IngredientCategory.self, StorageLocation.self, Provider.self])
-        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)])
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
         return (container, container.mainContext)
     }
 
