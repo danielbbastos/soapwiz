@@ -115,6 +115,17 @@ struct IngredientListView: View {
             let purchaseWord = purchaseCount == 1 ? "purchase" : "purchases"
             Text("Deleting \(model.confirmingDelete.count) \(ingredientWord) will also delete \(purchaseCount) \(purchaseWord).")
         }
+        .alert(
+            model.deleteBlockedIngredients.count == 1 ? "Cannot Delete Ingredient" : "Cannot Delete Ingredients",
+            isPresented: Binding(
+                get: { !model.deleteBlockedIngredients.isEmpty },
+                set: { if !$0 { model.deleteBlockedIngredients = [] } }
+            )
+        ) {
+            Button("OK", role: .cancel) { model.deleteBlockedIngredients = [] }
+        } message: {
+            Text(model.deleteBlockedMessage)
+        }
         .sheet(isPresented: $model.showingAddIngredient, onDismiss: {
             if let ingredient = model.pendingIngredient {
                 navigationPath.append(ingredient)

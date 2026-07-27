@@ -30,6 +30,7 @@ final class IngredientListViewModel {
     var editMode: EditMode = .inactive
     var selection: Set<PersistentIdentifier> = []
     var confirmingDelete: [Ingredient] = []
+    var deleteBlockedIngredients: [Ingredient] = []
 
     var searchText: String = ""
     var selectedCategories: Set<PersistentIdentifier> = []
@@ -84,23 +85,49 @@ final class IngredientListViewModel {
         }
     }
 
+    /// Being used by a recipe blocks deletion outright and takes precedence over the
+    /// remaining-stock confirmation: losing stock is recoverable, silently gutting a
+    /// recipe's oil percentages — and with them its lye calculation — is not.
     func delete(_ ingredient: Ingredient, context: ModelContext) {
-        if ingredient.purchases.isEmpty {
+        if ingredient.isUsedInRecipes {
+            deleteBlockedIngredients = [ingredient]
+        } else if ingredient.purchases.isEmpty {
             context.delete(ingredient)
         } else {
             confirmingDelete = [ingredient]
         }
     }
 
+    /// If any selected ingredient is used by a recipe, nothing is deleted — a partial
+    /// delete would be harder to reason about than none at all.
     func deleteSelected(in ingredients: [Ingredient], context: ModelContext) {
         let targets = selection.compactMap { id in ingredients.first { $0.persistentModelID == id } }
-        if targets.contains(where: { !$0.purchases.isEmpty }) {
+        let blocked = targets.filter(\.isUsedInRecipes)
+        if !blocked.isEmpty {
+            deleteBlockedIngredients = blocked
+        } else if targets.contains(where: { !$0.purchases.isEmpty }) {
             confirmingDelete = targets
         } else {
             targets.forEach { context.delete($0) }
             selection.removeAll()
             editMode = .inactive
         }
+    }
+
+    /// Explains which recipes are in the way, so the user knows where to go next.
+    var deleteBlockedMessage: String {
+        guard !deleteBlockedIngredients.isEmpty else { return "" }
+
+        if deleteBlockedIngredients.count == 1, let ingredient = deleteBlockedIngredients.first {
+            let recipes = ingredient.recipesUsingThis.map(\.name).sorted()
+            let recipeWord = recipes.count == 1 ? "recipe" : "recipes"
+            let target = recipes.count == 1 ? "that recipe" : "those recipes"
+            return "\"\(ingredient.name)\" is used in \(recipes.count) \(recipeWord): "
+                + "\(recipes.formatted()). Remove it from \(target) first."
+        }
+
+        let names = deleteBlockedIngredients.map(\.name).sorted()
+        return "\(names.formatted()) are used in recipes. Remove them from those recipes first."
     }
 
     func confirmDelete(context: ModelContext) {
