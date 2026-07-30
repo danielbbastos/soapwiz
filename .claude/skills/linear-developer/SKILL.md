@@ -158,8 +158,10 @@ linctl issue update SW-1234 --parent SW-5 --json
 
 ### Get Branch Name for Task
 ```bash
-linctl issue get SW-1234 --json | jq -r '.gitBranchName'
+linctl issue get SW-1234 --json | jq -r '.branchName'
 ```
+
+The field is `branchName`, not `gitBranchName` — the latter is the Linear GraphQL name and returns `null` through `linctl`.
 
 ### Release Task Hierarchy
 ```bash

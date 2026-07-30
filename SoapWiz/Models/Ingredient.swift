@@ -14,26 +14,64 @@ final class Ingredient {
     var density: Double?
     var fattyAcidProfile: FattyAcidProfile?
 
-    @Relationship(deleteRule: .cascade, inverse: \IngredientPurchase.ingredient)
-    var purchases: [IngredientPurchase] = []
+    /// Optional for CloudKit; read and write through `purchases`. Neither name is
+    /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .cascade, originalName: "purchases", inverse: \IngredientPurchase.ingredient)
+    var purchasesStorage: [IngredientPurchase]? = []
 
-    @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.ingredient)
-    var recipeIngredients: [RecipeIngredient] = []
+    var purchases: [IngredientPurchase] {
+        get { purchasesStorage ?? [] }
+        set { purchasesStorage = newValue }
+    }
+
+    /// Optional for CloudKit; read and write through `recipeIngredients`. Neither
+    /// name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .cascade, originalName: "recipeIngredients", inverse: \RecipeIngredient.ingredient)
+    var recipeIngredientsStorage: [RecipeIngredient]? = []
+
+    var recipeIngredients: [RecipeIngredient] {
+        get { recipeIngredientsStorage ?? [] }
+        set { recipeIngredientsStorage = newValue }
+    }
 
     /// Batch line items that consumed this ingredient. Deleting the ingredient
     /// nullifies the line item's back-link (`.nullify`) rather than deleting it —
     /// batch history is an immutable record that must outlive the ingredient.
-    @Relationship(deleteRule: .nullify, inverse: \BatchLineItem.ingredient)
-    var batchLineItems: [BatchLineItem] = []
+    ///
+    /// Optional for CloudKit; read and write through `batchLineItems`. Neither
+    /// name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .nullify, originalName: "batchLineItems", inverse: \BatchLineItem.ingredient)
+    var batchLineItemsStorage: [BatchLineItem]? = []
+
+    var batchLineItems: [BatchLineItem] {
+        get { batchLineItemsStorage ?? [] }
+        set { batchLineItemsStorage = newValue }
+    }
 
     /// Recipes using this ingredient as their NaOH lye. Deleting the ingredient
     /// nullifies the recipe's link rather than deleting the recipe.
-    @Relationship(deleteRule: .nullify, inverse: \Recipe.lyeIngredient)
-    var recipesUsingAsLye: [Recipe] = []
+    ///
+    /// Optional for CloudKit; read and write through `recipesUsingAsLye`. Neither
+    /// name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .nullify, originalName: "recipesUsingAsLye", inverse: \Recipe.lyeIngredient)
+    var recipesUsingAsLyeStorage: [Recipe]? = []
+
+    var recipesUsingAsLye: [Recipe] {
+        get { recipesUsingAsLyeStorage ?? [] }
+        set { recipesUsingAsLyeStorage = newValue }
+    }
 
     /// Recipes using this ingredient as their KOH lye on the hybrid path.
-    @Relationship(deleteRule: .nullify, inverse: \Recipe.kohLyeIngredient)
-    var recipesUsingAsKOHLye: [Recipe] = []
+    ///
+    /// Optional for CloudKit; read and write through `recipesUsingAsKOHLye`.
+    /// Neither name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .nullify, originalName: "recipesUsingAsKOHLye", inverse: \Recipe.kohLyeIngredient)
+    var recipesUsingAsKOHLyeStorage: [Recipe]? = []
+
+    var recipesUsingAsKOHLye: [Recipe] {
+        get { recipesUsingAsKOHLyeStorage ?? [] }
+        set { recipesUsingAsKOHLyeStorage = newValue }
+    }
 
     /// Recipes referencing this ingredient — as a line item, as the NaOH lye, or
     /// as the KOH lye. One recipe can reference it in more than one of those roles,

@@ -18,8 +18,15 @@ final class Batch {
     var batchCount: Int = 0
     var totalCost: Double = 0
 
-    @Relationship(deleteRule: .cascade, inverse: \BatchLineItem.batch)
-    var lineItems: [BatchLineItem] = []
+    /// Optional for CloudKit; read and write through `lineItems`. Neither name is
+    /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .cascade, originalName: "lineItems", inverse: \BatchLineItem.batch)
+    var lineItemsStorage: [BatchLineItem]? = []
+
+    var lineItems: [BatchLineItem] {
+        get { lineItemsStorage ?? [] }
+        set { lineItemsStorage = newValue }
+    }
 
     init(recipe: Recipe?, recipeName: String, dateCreated: Date = .now, batchCount: Int, totalCost: Double = 0) {
         self.recipe = recipe

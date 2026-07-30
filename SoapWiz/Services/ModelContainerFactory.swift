@@ -1,12 +1,40 @@
 import Foundation
+import OSLog
 import SwiftData
 
 /// Builds the app's `ModelContainer`. Mirroring to CloudKit is best-effort: a
 /// device with no iCloud account, no entitlement, or an unreachable container
 /// must still get a fully working local store rather than a failed launch.
 enum ModelContainerFactory {
+    /// The fallback is deliberately silent to the user but must not be silent to
+    /// us: a schema CloudKit rejects looks exactly like a healthy local-only
+    /// launch from the outside.
+    private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "store")
+
     static let cloudKitContainerIdentifier = "iCloud.pt.daphnia.SoapWiz"
 
+    /// Every model here obeys the constraints `NSPersistentCloudKitContainer`
+    /// imposes on its automatic schema mapping: no unique constraints, no `.deny`
+    /// delete rules, every attribute optional or defaulted, and every
+    /// relationship optional with a declared inverse.
+    ///
+    /// To-many relationships are therefore stored as optional arrays under a
+    /// `…Storage` suffix and exposed as non-optional computed accessors under the
+    /// original names, so reads and writes elsewhere stay unaware of the
+    /// optionality. Two consequences, both of which fail at fetch time rather
+    /// than compile time:
+    ///
+    /// - The accessors are computed, so the store cannot resolve them. A
+    ///   `#Predicate` referencing one fails the same way it would for any other
+    ///   computed property.
+    /// - The storage properties are optional to-many, which `#Predicate` cannot
+    ///   filter on either: unwrapping puts a to-many key where the query needs a
+    ///   single value, and it fails with "to-many key not allowed here". `??` and
+    ///   `if let` do not rescue it — the problem is the shape, not the nil.
+    ///
+    /// To filter on a to-many, build the traversal as an `#Expression` over the
+    /// storage property and evaluate it inside the predicate. See
+    /// `CloudKitRelationshipTests.fetchFiltersOnToManyViaExpression`.
     static let schema = Schema([
         Ingredient.self,
         IngredientPurchase.self,
@@ -32,8 +60,12 @@ enum ModelContainerFactory {
             isStoredInMemoryOnly: false,
             cloudKitDatabase: .private(cloudKitContainerIdentifier)
         )
-        if let container = try? ModelContainer(for: schema, configurations: [mirrored]) {
+        do {
+            let container = try ModelContainer(for: schema, configurations: [mirrored])
+            log.notice("Store is CloudKit-mirrored.")
             return container
+        } catch {
+            log.error("CloudKit mirroring unavailable, falling back to a local store: \(error, privacy: .public)")
         }
 
         // `.none` is required, not merely explicit: the default is `.automatic`,

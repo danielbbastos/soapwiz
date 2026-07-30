@@ -43,17 +43,39 @@ final class Recipe {
     /// declared on `Ingredient.recipesUsingAsKOHLye`.
     var kohLyeIngredient: Ingredient?
 
-    @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.recipe)
-    var ingredients: [RecipeIngredient] = []
+    /// Optional for CloudKit; read and write through `ingredients`. Neither name
+    /// is usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .cascade, originalName: "ingredients", inverse: \RecipeIngredient.recipe)
+    var ingredientsStorage: [RecipeIngredient]? = []
 
-    @Relationship(deleteRule: .cascade, inverse: \RecipeProduct.recipe)
-    var products: [RecipeProduct] = []
+    var ingredients: [RecipeIngredient] {
+        get { ingredientsStorage ?? [] }
+        set { ingredientsStorage = newValue }
+    }
+
+    /// Optional for CloudKit; read and write through `products`. Neither name is
+    /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .cascade, originalName: "products", inverse: \RecipeProduct.recipe)
+    var productsStorage: [RecipeProduct]? = []
+
+    var products: [RecipeProduct] {
+        get { productsStorage ?? [] }
+        set { productsStorage = newValue }
+    }
 
     /// Batches made from this recipe. Deleting the recipe nullifies each batch's
     /// back-link (`.nullify`) rather than deleting it — batch history is an
     /// immutable record that must outlive the recipe.
-    @Relationship(deleteRule: .nullify, inverse: \Batch.recipe)
-    var batches: [Batch] = []
+    ///
+    /// Optional for CloudKit; read and write through `batches`. Neither name is
+    /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .nullify, originalName: "batches", inverse: \Batch.recipe)
+    var batchesStorage: [Batch]? = []
+
+    var batches: [Batch] {
+        get { batchesStorage ?? [] }
+        set { batchesStorage = newValue }
+    }
 
     init(name: String, desc: String = "") {
         self.name = name
