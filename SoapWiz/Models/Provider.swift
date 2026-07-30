@@ -9,7 +9,7 @@ final class Provider {
 
     /// Optional for CloudKit; read and write through `purchases`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .nullify, inverse: \IngredientPurchase.provider)
+    @Relationship(deleteRule: .nullify, originalName: "purchases", inverse: \IngredientPurchase.provider)
     var purchasesStorage: [IngredientPurchase]? = []
 
     var purchases: [IngredientPurchase] {

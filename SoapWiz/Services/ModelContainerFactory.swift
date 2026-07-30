@@ -2,24 +2,14 @@ import Foundation
 import OSLog
 import SwiftData
 
-/// Which backing store `ModelContainerFactory` ended up building.
-enum ModelStore {
-    case cloudKitMirrored
-    case local
-}
-
 /// Builds the app's `ModelContainer`. Mirroring to CloudKit is best-effort: a
 /// device with no iCloud account, no entitlement, or an unreachable container
 /// must still get a fully working local store rather than a failed launch.
 enum ModelContainerFactory {
+    /// The fallback is deliberately silent to the user but must not be silent to
+    /// us: a schema CloudKit rejects looks exactly like a healthy local-only
+    /// launch from the outside.
     private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "store")
-
-    /// The store the last `makeProduction()` built, and the error that ruled out
-    /// mirroring when it fell back. The fallback is deliberately silent to the
-    /// user but must not be silent to us: a schema that CloudKit rejects looks
-    /// exactly like a healthy local-only launch from the outside.
-    private(set) static var activeStore: ModelStore?
-    private(set) static var mirroringFailure: Error?
 
     static let cloudKitContainerIdentifier = "iCloud.pt.daphnia.SoapWiz"
 
@@ -72,12 +62,9 @@ enum ModelContainerFactory {
         )
         do {
             let container = try ModelContainer(for: schema, configurations: [mirrored])
-            activeStore = .cloudKitMirrored
-            mirroringFailure = nil
             log.notice("Store is CloudKit-mirrored.")
             return container
         } catch {
-            mirroringFailure = error
             log.error("CloudKit mirroring unavailable, falling back to a local store: \(error, privacy: .public)")
         }
 
@@ -90,7 +77,6 @@ enum ModelContainerFactory {
             isStoredInMemoryOnly: false,
             cloudKitDatabase: .none
         )
-        activeStore = .local
         do {
             return try ModelContainer(for: schema, configurations: [local])
         } catch {

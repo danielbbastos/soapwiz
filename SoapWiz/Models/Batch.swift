@@ -20,7 +20,7 @@ final class Batch {
 
     /// Optional for CloudKit; read and write through `lineItems`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .cascade, inverse: \BatchLineItem.batch)
+    @Relationship(deleteRule: .cascade, originalName: "lineItems", inverse: \BatchLineItem.batch)
     var lineItemsStorage: [BatchLineItem]? = []
 
     var lineItems: [BatchLineItem] {

@@ -45,7 +45,7 @@ final class Recipe {
 
     /// Optional for CloudKit; read and write through `ingredients`. Neither name
     /// is usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.recipe)
+    @Relationship(deleteRule: .cascade, originalName: "ingredients", inverse: \RecipeIngredient.recipe)
     var ingredientsStorage: [RecipeIngredient]? = []
 
     var ingredients: [RecipeIngredient] {
@@ -55,7 +55,7 @@ final class Recipe {
 
     /// Optional for CloudKit; read and write through `products`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .cascade, inverse: \RecipeProduct.recipe)
+    @Relationship(deleteRule: .cascade, originalName: "products", inverse: \RecipeProduct.recipe)
     var productsStorage: [RecipeProduct]? = []
 
     var products: [RecipeProduct] {
@@ -69,7 +69,7 @@ final class Recipe {
     ///
     /// Optional for CloudKit; read and write through `batches`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .nullify, inverse: \Batch.recipe)
+    @Relationship(deleteRule: .nullify, originalName: "batches", inverse: \Batch.recipe)
     var batchesStorage: [Batch]? = []
 
     var batches: [Batch] {

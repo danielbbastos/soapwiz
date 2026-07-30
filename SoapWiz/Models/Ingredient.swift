@@ -16,7 +16,7 @@ final class Ingredient {
 
     /// Optional for CloudKit; read and write through `purchases`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .cascade, inverse: \IngredientPurchase.ingredient)
+    @Relationship(deleteRule: .cascade, originalName: "purchases", inverse: \IngredientPurchase.ingredient)
     var purchasesStorage: [IngredientPurchase]? = []
 
     var purchases: [IngredientPurchase] {
@@ -26,7 +26,7 @@ final class Ingredient {
 
     /// Optional for CloudKit; read and write through `recipeIngredients`. Neither
     /// name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.ingredient)
+    @Relationship(deleteRule: .cascade, originalName: "recipeIngredients", inverse: \RecipeIngredient.ingredient)
     var recipeIngredientsStorage: [RecipeIngredient]? = []
 
     var recipeIngredients: [RecipeIngredient] {
@@ -40,7 +40,7 @@ final class Ingredient {
     ///
     /// Optional for CloudKit; read and write through `batchLineItems`. Neither
     /// name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .nullify, inverse: \BatchLineItem.ingredient)
+    @Relationship(deleteRule: .nullify, originalName: "batchLineItems", inverse: \BatchLineItem.ingredient)
     var batchLineItemsStorage: [BatchLineItem]? = []
 
     var batchLineItems: [BatchLineItem] {
@@ -53,7 +53,7 @@ final class Ingredient {
     ///
     /// Optional for CloudKit; read and write through `recipesUsingAsLye`. Neither
     /// name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .nullify, inverse: \Recipe.lyeIngredient)
+    @Relationship(deleteRule: .nullify, originalName: "recipesUsingAsLye", inverse: \Recipe.lyeIngredient)
     var recipesUsingAsLyeStorage: [Recipe]? = []
 
     var recipesUsingAsLye: [Recipe] {
@@ -65,7 +65,7 @@ final class Ingredient {
     ///
     /// Optional for CloudKit; read and write through `recipesUsingAsKOHLye`.
     /// Neither name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .nullify, inverse: \Recipe.kohLyeIngredient)
+    @Relationship(deleteRule: .nullify, originalName: "recipesUsingAsKOHLye", inverse: \Recipe.kohLyeIngredient)
     var recipesUsingAsKOHLyeStorage: [Recipe]? = []
 
     var recipesUsingAsKOHLye: [Recipe] {

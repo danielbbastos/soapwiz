@@ -17,7 +17,7 @@ final class IngredientCategory {
 
     /// Optional for CloudKit; read and write through `ingredients`. Neither name
     /// is usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .nullify, inverse: \Ingredient.category)
+    @Relationship(deleteRule: .nullify, originalName: "ingredients", inverse: \Ingredient.category)
     var ingredientsStorage: [Ingredient]? = []
 
     var ingredients: [Ingredient] {
