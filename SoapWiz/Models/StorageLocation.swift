@@ -6,8 +6,15 @@ final class StorageLocation {
     var name: String = ""
     var locationDescription: String = ""
 
+    /// Optional for CloudKit; read and write through `purchases`. Neither name is
+    /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
     @Relationship(deleteRule: .nullify, inverse: \IngredientPurchase.storageLocation)
-    var purchases: [IngredientPurchase] = []
+    var purchasesStorage: [IngredientPurchase]? = []
+
+    var purchases: [IngredientPurchase] {
+        get { purchasesStorage ?? [] }
+        set { purchasesStorage = newValue }
+    }
 
     init(name: String, locationDescription: String = "") {
         self.name = name

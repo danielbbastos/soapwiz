@@ -7,8 +7,15 @@ final class Provider {
     var website: String = ""
     var notes: String = ""
 
+    /// Optional for CloudKit; read and write through `purchases`. Neither name is
+    /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
     @Relationship(deleteRule: .nullify, inverse: \IngredientPurchase.provider)
-    var purchases: [IngredientPurchase] = []
+    var purchasesStorage: [IngredientPurchase]? = []
+
+    var purchases: [IngredientPurchase] {
+        get { purchasesStorage ?? [] }
+        set { purchasesStorage = newValue }
+    }
 
     init(name: String, website: String = "", notes: String = "") {
         self.name = name

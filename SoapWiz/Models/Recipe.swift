@@ -43,17 +43,39 @@ final class Recipe {
     /// declared on `Ingredient.recipesUsingAsKOHLye`.
     var kohLyeIngredient: Ingredient?
 
+    /// Optional for CloudKit; read and write through `ingredients`. Neither name
+    /// is usable in `#Predicate` — see `ModelContainerFactory.schema`.
     @Relationship(deleteRule: .cascade, inverse: \RecipeIngredient.recipe)
-    var ingredients: [RecipeIngredient] = []
+    var ingredientsStorage: [RecipeIngredient]? = []
 
+    var ingredients: [RecipeIngredient] {
+        get { ingredientsStorage ?? [] }
+        set { ingredientsStorage = newValue }
+    }
+
+    /// Optional for CloudKit; read and write through `products`. Neither name is
+    /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
     @Relationship(deleteRule: .cascade, inverse: \RecipeProduct.recipe)
-    var products: [RecipeProduct] = []
+    var productsStorage: [RecipeProduct]? = []
+
+    var products: [RecipeProduct] {
+        get { productsStorage ?? [] }
+        set { productsStorage = newValue }
+    }
 
     /// Batches made from this recipe. Deleting the recipe nullifies each batch's
     /// back-link (`.nullify`) rather than deleting it — batch history is an
     /// immutable record that must outlive the recipe.
+    ///
+    /// Optional for CloudKit; read and write through `batches`. Neither name is
+    /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
     @Relationship(deleteRule: .nullify, inverse: \Batch.recipe)
-    var batches: [Batch] = []
+    var batchesStorage: [Batch]? = []
+
+    var batches: [Batch] {
+        get { batchesStorage ?? [] }
+        set { batchesStorage = newValue }
+    }
 
     init(name: String, desc: String = "") {
         self.name = name
