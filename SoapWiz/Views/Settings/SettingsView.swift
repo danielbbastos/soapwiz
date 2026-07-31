@@ -14,24 +14,14 @@ struct SettingsView: View {
     @State private var showNotificationDenied = false
     @State private var dataTransfer = DataTransferViewModel()
 
-    private var importConfirmation: Binding<Bool> {
-        Binding(
-            get: { dataTransfer.pendingImport != nil },
-            set: { if !$0 { dataTransfer.pendingImport = nil } }
-        )
-    }
+    /// Confirming an import tears this view down, so the confirmation and everything
+    /// that follows it live on `ContentView`. This screen only stages the file.
+    @Environment(RestoreCoordinator.self) private var restore
 
     private var importError: Binding<Bool> {
         Binding(
             get: { dataTransfer.errorMessage != nil },
             set: { if !$0 { dataTransfer.errorMessage = nil } }
-        )
-    }
-
-    private var rollbackNotice: Binding<Bool> {
-        Binding(
-            get: { dataTransfer.rollbackFile != nil },
-            set: { if !$0 { dataTransfer.rollbackFile = nil } }
         )
     }
 
@@ -52,37 +42,12 @@ struct SettingsView: View {
                 isPresented: $dataTransfer.isImporterPresented,
                 allowedContentTypes: [.json]
             ) { result in
-                dataTransfer.handleImportSelection(result)
-            }
-            .alert("Replace all data?", isPresented: importConfirmation) {
-                Button("Replace", role: .destructive) {
-                    dataTransfer.confirmImport(into: modelContext)
-                }
-                Button("Cancel", role: .cancel) {
-                    dataTransfer.pendingImport = nil
-                }
-            } message: {
-                Text("This permanently deletes everything currently in SoapWiz and replaces it "
-                     + "with the contents of this backup. This can’t be undone.")
+                dataTransfer.handleImportSelection(result, into: restore)
             }
             .alert("Something went wrong", isPresented: importError) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(dataTransfer.errorMessage ?? "")
-            }
-            .alert("Import complete", isPresented: rollbackNotice) {
-                Button("Save Previous Data") {
-                    if let file = dataTransfer.rollbackFile {
-                        dataTransfer.rollbackFile = nil
-                        dataTransfer.exportFile = file
-                    }
-                }
-                Button("Done", role: .cancel) {
-                    dataTransfer.rollbackFile = nil
-                }
-            } message: {
-                Text("Your previous data was saved to a rollback file before it was replaced. "
-                     + "Save it somewhere safe if you might need to go back.")
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
