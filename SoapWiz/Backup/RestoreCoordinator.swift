@@ -111,10 +111,16 @@ final class RestoreCoordinator {
         do {
             try BackupService.restore(backup, into: context)
             rollbackFile = rollback.map(ExportFile.init(url:))
+            // Only once the new snapshot is safely written and the restore has
+            // actually happened. Pruning any earlier would trade a rollback the
+            // user still has for one they might not get.
+            pruneRollbacks(keeping: rollback)
         } catch let error as BackupError {
             errorMessage = error.errorDescription
+            discardRollback(rollback)
         } catch {
             errorMessage = "Couldn’t restore this backup."
+            discardRollback(rollback)
         }
 
         finish()
@@ -142,16 +148,50 @@ final class RestoreCoordinator {
         guard !backup.isEmpty else { return nil }
 
         let data = try BackupService.encode(backup)
-        let directory = try rollbackDirectory ?? FileManager.default.url(
+        let url = try rollbackDirectoryURL()
+            .appendingPathComponent(Self.rollbackFileName(for: backup.exportedAt))
+        try data.write(to: url, options: .atomic)
+        return url
+    }
+
+    private func rollbackDirectoryURL() throws -> URL {
+        if let rollbackDirectory { return rollbackDirectory }
+        return try FileManager.default.url(
             for: .documentDirectory,
             in: .userDomainMask,
             appropriateFor: nil,
             create: true
         )
-        let url = directory.appendingPathComponent(Self.rollbackFileName(for: backup.exportedAt))
-        try data.write(to: url, options: .atomic)
-        return url
     }
+
+    /// Drops the snapshot written for a restore that then failed. `BackupService.restore`
+    /// rolls the context back, so it describes a store that was never replaced — keeping
+    /// it would leave a file in Documents the user was never told about.
+    private func discardRollback(_ url: URL?) {
+        guard let url else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    /// Leaves `kept` as the only rollback on disk. One import's worth of undo is the
+    /// whole promise; without this every confirmed import would add a full-store
+    /// snapshot to Documents forever, and older ones describe a store the user has
+    /// since replaced anyway.
+    private func pruneRollbacks(keeping kept: URL?) {
+        guard let directory = try? rollbackDirectoryURL() else { return }
+        let existing = try? FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: nil
+        )
+        for url in existing ?? [] where url != kept && Self.isRollbackFile(url) {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    private static func isRollbackFile(_ url: URL) -> Bool {
+        url.lastPathComponent.hasPrefix(rollbackPrefix) && url.pathExtension == "json"
+    }
+
+    private static let rollbackPrefix = "SoapWiz-Rollback-"
 
     /// Rollback file name, e.g. `SoapWiz-Rollback-2026-06-25-143000.json`. Named
     /// distinctly from an export so the two aren't confused in a file list.
@@ -159,6 +199,6 @@ final class RestoreCoordinator {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd-HHmmss"
-        return "SoapWiz-Rollback-\(formatter.string(from: date)).json"
+        return "\(rollbackPrefix)\(formatter.string(from: date)).json"
     }
 }

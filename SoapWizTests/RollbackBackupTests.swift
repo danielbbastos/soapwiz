@@ -47,6 +47,20 @@ struct RollbackBackupTests {
         await coordinator.perform(in: ctx)
     }
 
+    /// An empty directory of its own, so a test sees only the files it put there.
+    private func makeRollbackDirectory() throws -> URL {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("rollbacks-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        return url
+    }
+
+    private func rollbackFiles(in directory: URL) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: directory.path)
+            .filter { $0.hasPrefix("SoapWiz-Rollback-") }
+            .sorted()
+    }
+
     private func removeIfPresent(_ file: ExportFile?) {
         guard let file else { return }
         try? FileManager.default.removeItem(at: file.url)
@@ -161,6 +175,101 @@ struct RollbackBackupTests {
         #expect(coordinator.errorMessage != nil)
         #expect(coordinator.rollbackFile == nil)
         #expect(try ctx.fetch(FetchDescriptor<Ingredient>()).map(\.name) == ["Olive Oil"])
+    }
+
+    // MARK: - Keeping Documents tidy
+
+    /// One import's worth of undo is the whole promise. Without pruning, every
+    /// confirmed import would leave another full-store snapshot in Documents.
+    @Test func restore_AfterAnEarlierImport_LeavesOnlyTheNewestRollback() async throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedStore(ctx, ingredientName: "Olive Oil")
+
+        let directory = try makeRollbackDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let stale = directory.appendingPathComponent("SoapWiz-Rollback-2020-01-01-000000.json")
+        try Data("{}".utf8).write(to: stale)
+
+        let coordinator = makeCoordinator()
+        coordinator.rollbackDirectory = directory
+        await restore(try BackupService.makeBackup(from: ctx), with: coordinator, into: ctx)
+
+        let file = try #require(coordinator.rollbackFile)
+        #expect(FileManager.default.fileExists(atPath: file.url.path))
+        #expect(FileManager.default.fileExists(atPath: stale.path) == false)
+        #expect(try rollbackFiles(in: directory) == [file.url.lastPathComponent])
+    }
+
+    /// A failed restore rolls the context back, so its snapshot describes a store
+    /// that was never replaced — and the user is never told the file exists.
+    @Test func restore_WhenTheImportFails_LeavesNoOrphanedRollback() async throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedStore(ctx, ingredientName: "Olive Oil")
+
+        let directory = try makeRollbackDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        var incoming = try BackupService.makeBackup(from: ctx)
+        incoming.version = BackupData.currentVersion + 1
+
+        let coordinator = makeCoordinator()
+        coordinator.rollbackDirectory = directory
+        await restore(incoming, with: coordinator, into: ctx)
+
+        #expect(coordinator.errorMessage != nil)
+        #expect(coordinator.rollbackFile == nil)
+        #expect(try rollbackFiles(in: directory).isEmpty)
+        #expect(try ctx.fetch(FetchDescriptor<Ingredient>()).map(\.name) == ["Olive Oil"])
+    }
+
+    /// Pruning happens only after a restore succeeds. A snapshot the user still has
+    /// must not be traded for one they might not get.
+    @Test func restore_WhenRollbackCannotBeWritten_KeepsTheEarlierRollback() async throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedStore(ctx, ingredientName: "Olive Oil")
+
+        let directory = try makeRollbackDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let earlier = directory.appendingPathComponent("SoapWiz-Rollback-2020-01-01-000000.json")
+        try Data("{}".utf8).write(to: earlier)
+
+        let blocker = directory.appendingPathComponent("blocker")
+        try Data().write(to: blocker)
+
+        let coordinator = makeCoordinator()
+        coordinator.rollbackDirectory = blocker.appendingPathComponent("nested")
+        await restore(try BackupService.makeBackup(from: ctx), with: coordinator, into: ctx)
+
+        #expect(coordinator.errorMessage != nil)
+        #expect(FileManager.default.fileExists(atPath: earlier.path))
+    }
+
+    /// Pruning must not reach past its own files — an export saved alongside a
+    /// rollback is the user's, not ours to delete.
+    @Test func restore_Pruning_LeavesUnrelatedFilesAlone() async throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedStore(ctx, ingredientName: "Olive Oil")
+
+        let directory = try makeRollbackDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let export = directory.appendingPathComponent("SoapWiz-Backup-2020-01-01-000000.json")
+        try Data("{}".utf8).write(to: export)
+        let unrelated = directory.appendingPathComponent("notes.txt")
+        try Data("hello".utf8).write(to: unrelated)
+
+        let coordinator = makeCoordinator()
+        coordinator.rollbackDirectory = directory
+        await restore(try BackupService.makeBackup(from: ctx), with: coordinator, into: ctx)
+
+        #expect(FileManager.default.fileExists(atPath: export.path))
+        #expect(FileManager.default.fileExists(atPath: unrelated.path))
     }
 
     // MARK: - Tearing the interface down
