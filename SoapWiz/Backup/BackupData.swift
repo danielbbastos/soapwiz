@@ -21,6 +21,14 @@ struct BackupData: Codable {
     var ingredients: [IngredientDTO]
     var recipes: [RecipeDTO]
     var batches: [BatchDTO]
+
+    /// True when the snapshot holds nothing worth restoring. `settings` is excluded
+    /// deliberately — it always exists, and a default pricing factor is not data the
+    /// user would miss.
+    var isEmpty: Bool {
+        categories.isEmpty && providers.isEmpty && storageLocations.isEmpty
+            && ingredients.isEmpty && recipes.isEmpty && batches.isEmpty
+    }
 }
 
 extension BackupData {

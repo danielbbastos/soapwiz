@@ -28,6 +28,13 @@ struct SettingsView: View {
         )
     }
 
+    private var rollbackNotice: Binding<Bool> {
+        Binding(
+            get: { dataTransfer.rollbackFile != nil },
+            set: { if !$0 { dataTransfer.rollbackFile = nil } }
+        )
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -62,6 +69,20 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(dataTransfer.errorMessage ?? "")
+            }
+            .alert("Import complete", isPresented: rollbackNotice) {
+                Button("Save Previous Data") {
+                    if let file = dataTransfer.rollbackFile {
+                        dataTransfer.rollbackFile = nil
+                        dataTransfer.exportFile = file
+                    }
+                }
+                Button("Done", role: .cancel) {
+                    dataTransfer.rollbackFile = nil
+                }
+            } message: {
+                Text("Your previous data was saved to a rollback file before it was replaced. "
+                     + "Save it somewhere safe if you might need to go back.")
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
