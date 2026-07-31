@@ -20,7 +20,7 @@ final class CategoryFormViewModel {
 
     func isDuplicate(among categories: [IngredientCategory]) -> Bool {
         guard !trimmedName.isEmpty else { return false }
-        return categories.contains { $0.name.lowercased() == trimmedName.lowercased() && $0 != category }
+        return categories.contains { $0.name.lookupKey == trimmedName.lookupKey && $0 != category }
     }
 
     func isValid(among categories: [IngredientCategory]) -> Bool {

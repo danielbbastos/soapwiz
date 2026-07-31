@@ -13,6 +13,9 @@ final class IngredientCategory {
         static let others = "Others"
     }
 
+    /// Stable identity across devices, so a name collision arriving from CloudKit
+    /// can be collapsed the same way everywhere. See `DuplicateMerger`.
+    var uuid: UUID = UUID()
     var name: String = ""
 
     /// Optional for CloudKit; read and write through `ingredients`. Neither name

@@ -34,7 +34,7 @@ struct RecipeCostSection: View {
         return formatter
     }()
 
-    private var pvpFactor: Double { settingsRecords.first?.pvpFactor ?? 4.0 }
+    private var pvpFactor: Double { AppSettings.canonical(from: settingsRecords)?.pvpFactor ?? 4.0 }
 
     var body: some View {
         Section("Cost breakdown") {

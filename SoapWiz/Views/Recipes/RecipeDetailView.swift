@@ -8,7 +8,6 @@ struct RecipeDetailView: View {
 
     @Query(filter: RecipeDetailView.lyesPredicate)
     private var lyeIngredients: [Ingredient]
-    @Query private var settingsRecords: [AppSettings]
 
     @State private var model = RecipeFormViewModel()
     @State private var showEdit = false

@@ -3,6 +3,9 @@ import SwiftData
 
 @Model
 final class Provider {
+    /// Stable identity across devices, so a name collision arriving from CloudKit
+    /// can be collapsed the same way everywhere. See `DuplicateMerger`.
+    var uuid: UUID = UUID()
     var name: String = ""
     var website: String = ""
     var notes: String = ""

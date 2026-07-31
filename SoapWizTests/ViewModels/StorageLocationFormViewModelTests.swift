@@ -24,6 +24,22 @@ struct StorageLocationFormViewModelTests {
         #expect(model.isDuplicate(among: [existing]))
     }
 
+    /// Must match `DuplicateMerger`'s notion of the same name, or the merger will
+    /// collapse a pair the form allowed.
+    @Test func duplicateInvalidIgnoringDiacriticsAndSpacing() {
+        let existing = StorageLocation(name: "Armário  1")
+        let model = StorageLocationFormViewModel()
+        model.name = "Armario 1"
+        #expect(model.isDuplicate(among: [existing]))
+    }
+
+    @Test func distinctNameIsNotDuplicate() {
+        let existing = StorageLocation(name: "Shelf A")
+        let model = StorageLocationFormViewModel()
+        model.name = "Shelf B"
+        #expect(!model.isDuplicate(among: [existing]))
+    }
+
     @Test func saveInserts() throws {
         let container = try makeContainer()
         let ctx = container.mainContext

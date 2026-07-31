@@ -47,6 +47,14 @@ final class IngredientListViewModel {
         (expiryFilter == .all ? 0 : 1)
     }
 
+    /// Drops selections whose category no longer exists. `DuplicateMerger` deletes
+    /// the losing row of a duplicate pair, and a filter still holding its ID would
+    /// silently match nothing and show an empty inventory.
+    func pruneSelectedCategories(against categories: [IngredientCategory]) {
+        guard !selectedCategories.isEmpty else { return }
+        selectedCategories.formIntersection(categories.map(\.persistentModelID))
+    }
+
     func clearFilters() {
         selectedCategories = []
         stockStatus = .all

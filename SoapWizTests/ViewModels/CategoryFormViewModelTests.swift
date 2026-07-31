@@ -34,6 +34,40 @@ struct CategoryFormViewModelTests {
         #expect(!model.isValid(among: [existing]))
     }
 
+    /// The validator has to agree with `DuplicateMerger` about what counts as the
+    /// same name, or a user can deliberately create a pair the merger then
+    /// silently collapses.
+    @Test func duplicateNameInvalidIgnoringDiacritics() throws {
+        let existing = IngredientCategory(name: "Óleos")
+        let model = CategoryFormViewModel()
+        model.name = "Oleos"
+        #expect(model.isDuplicate(among: [existing]))
+    }
+
+    @Test func duplicateNameInvalidIgnoringInternalWhitespace() throws {
+        let existing = IngredientCategory(name: "Olive Oil")
+        let model = CategoryFormViewModel()
+        model.name = "Olive  Oil"
+        #expect(model.isDuplicate(among: [existing]))
+    }
+
+    /// Stored names are not trimmed on every path — seeded and restored rows keep
+    /// whatever they were given — so the stored side must be normalised too.
+    @Test func duplicateNameInvalidWhenStoredNameIsUntrimmed() throws {
+        let existing = IngredientCategory(name: "  Oils  ")
+        let model = CategoryFormViewModel()
+        model.name = "Oils"
+        #expect(model.isDuplicate(among: [existing]))
+    }
+
+    @Test func distinctNameIsNotDuplicate() throws {
+        let existing = IngredientCategory(name: "Oils")
+        let model = CategoryFormViewModel()
+        model.name = "Waxes"
+        #expect(!model.isDuplicate(among: [existing]))
+        #expect(model.isValid(among: [existing]))
+    }
+
     @Test func editingSelfIsNotDuplicate() throws {
         let existing = IngredientCategory(name: "Oils")
         let model = CategoryFormViewModel(category: existing)

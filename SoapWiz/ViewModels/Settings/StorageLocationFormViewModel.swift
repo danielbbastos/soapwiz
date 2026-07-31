@@ -23,7 +23,7 @@ final class StorageLocationFormViewModel {
 
     func isDuplicate(among locations: [StorageLocation]) -> Bool {
         guard !trimmedName.isEmpty else { return false }
-        return locations.contains { $0.name.lowercased() == trimmedName.lowercased() && $0 != location }
+        return locations.contains { $0.name.lookupKey == trimmedName.lookupKey && $0 != location }
     }
 
     func isValid(among locations: [StorageLocation]) -> Bool {

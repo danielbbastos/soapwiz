@@ -26,7 +26,7 @@ final class ProviderFormViewModel {
 
     func isDuplicate(among providers: [Provider]) -> Bool {
         guard !trimmedName.isEmpty else { return false }
-        return providers.contains { $0.name.lowercased() == trimmedName.lowercased() && $0 != provider }
+        return providers.contains { $0.name.lookupKey == trimmedName.lookupKey && $0 != provider }
     }
 
     func isValid(among providers: [Provider]) -> Bool {

@@ -3,6 +3,9 @@ import SwiftData
 
 @Model
 final class StorageLocation {
+    /// Stable identity across devices, so a name collision arriving from CloudKit
+    /// can be collapsed the same way everywhere. See `DuplicateMerger`.
+    var uuid: UUID = UUID()
     var name: String = ""
     var locationDescription: String = ""
 

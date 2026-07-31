@@ -24,6 +24,22 @@ struct ProviderFormViewModelTests {
         #expect(model.isDuplicate(among: [existing]))
     }
 
+    /// Must match `DuplicateMerger`'s notion of the same name, or the merger will
+    /// collapse a pair the form allowed.
+    @Test func duplicateInvalidIgnoringDiacriticsAndSpacing() {
+        let existing = Provider(name: "Sabão  Supply")
+        let model = ProviderFormViewModel()
+        model.name = "Sabao Supply"
+        #expect(model.isDuplicate(among: [existing]))
+    }
+
+    @Test func distinctNameIsNotDuplicate() {
+        let existing = Provider(name: "Acme")
+        let model = ProviderFormViewModel()
+        model.name = "Globex"
+        #expect(!model.isDuplicate(among: [existing]))
+    }
+
     @Test func saveInsertsWithTrimmedFields() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
