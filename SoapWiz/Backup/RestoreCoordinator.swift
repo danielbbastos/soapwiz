@@ -123,10 +123,14 @@ final class RestoreCoordinator {
             discardRollback(rollback)
         }
 
-        finish()
-
         // The scheduled expiry notifications refer to purchases that no longer exist.
+        // Before `finish()`, not after: leaving `.restoring` takes the placeholder off
+        // screen, and this runs inside the task that placeholder owns — SwiftUI would
+        // cancel it mid-flight and the restored purchases could end up with no
+        // notifications at all, silently.
         await NotificationService.syncIfEnabled(modelContext: context)
+
+        finish()
     }
 
     /// Rebuilds the interface, whichever way the restore went. A failed import must
@@ -176,7 +180,12 @@ final class RestoreCoordinator {
     /// whole promise; without this every confirmed import would add a full-store
     /// snapshot to Documents forever, and older ones describe a store the user has
     /// since replaced anyway.
+    ///
+    /// Nothing is pruned when there is no new snapshot to keep. A restore over an
+    /// empty store writes no rollback, and the earlier ones are then the only way
+    /// back to data that nothing has replaced.
     private func pruneRollbacks(keeping kept: URL?) {
+        guard let kept else { return }
         guard let directory = try? rollbackDirectoryURL() else { return }
         let existing = try? FileManager.default.contentsOfDirectory(
             at: directory,

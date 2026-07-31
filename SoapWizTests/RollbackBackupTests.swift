@@ -202,6 +202,32 @@ struct RollbackBackupTests {
         #expect(try rollbackFiles(in: directory) == [file.url.lastPathComponent])
     }
 
+    /// A restore over an empty store writes no rollback, so there is nothing newer
+    /// to replace the earlier ones with — they are still the only way back to data
+    /// that nothing has overwritten.
+    @Test func restore_OverEmptyStore_KeepsEarlierRollbacks() async throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+
+        let (otherContainer, otherCtx) = try makeContext()
+        _ = otherContainer
+        seedStore(otherCtx, ingredientName: "Coconut Oil")
+
+        let directory = try makeRollbackDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let earlier = directory.appendingPathComponent("SoapWiz-Rollback-2020-01-01-000000.json")
+        try Data("{}".utf8).write(to: earlier)
+
+        let coordinator = makeCoordinator()
+        coordinator.rollbackDirectory = directory
+        await restore(try BackupService.makeBackup(from: otherCtx), with: coordinator, into: ctx)
+
+        #expect(coordinator.rollbackFile == nil)
+        #expect(coordinator.errorMessage == nil)
+        #expect(FileManager.default.fileExists(atPath: earlier.path))
+    }
+
     /// A failed restore rolls the context back, so its snapshot describes a store
     /// that was never replaced — and the user is never told the file exists.
     @Test func restore_WhenTheImportFails_LeavesNoOrphanedRollback() async throws {
