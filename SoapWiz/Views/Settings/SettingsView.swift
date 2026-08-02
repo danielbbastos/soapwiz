@@ -4,6 +4,9 @@ import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
+    /// Confirming an import tears this view down, so the confirmation and everything
+    /// that follows it live on `ContentView`. This screen only stages the file.
+    @Environment(RestoreCoordinator.self) private var restore
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
     @Query private var providers: [Provider]
@@ -13,10 +16,6 @@ struct SettingsView: View {
     @State private var showPvpInfo = false
     @State private var showNotificationDenied = false
     @State private var dataTransfer = DataTransferViewModel()
-
-    /// Confirming an import tears this view down, so the confirmation and everything
-    /// that follows it live on `ContentView`. This screen only stages the file.
-    @Environment(RestoreCoordinator.self) private var restore
 
     private var importError: Binding<Bool> {
         Binding(

@@ -1,6 +1,5 @@
 import Testing
 import Foundation
-import SwiftUI
 import SwiftData
 @testable import SoapWiz
 
@@ -9,62 +8,7 @@ import SwiftData
 /// just before the wipe is what makes that recoverable.
 @Suite("Rollback backup", .serialized)
 @MainActor
-struct RollbackBackupTests {
-
-    private func makeContext() throws -> (ModelContainer, ModelContext) {
-        let schema = ModelContainerFactory.schema
-        let container = try ModelContainer(
-            for: schema,
-            configurations: [ModelConfiguration.inMemory(schema)]
-        )
-        return (container, container.mainContext)
-    }
-
-    private func seedStore(_ ctx: ModelContext, ingredientName: String) {
-        let category = IngredientCategory(name: "Oils")
-        ctx.insert(category)
-        let ingredient = Ingredient(name: ingredientName, category: category, unit: "g")
-        ctx.insert(ingredient)
-        try? ctx.save()
-    }
-
-    /// The settle delay exists to let UIKit finish deallocating the torn-down
-    /// interface; with no interface there is nothing to wait for.
-    private func makeCoordinator() -> RestoreCoordinator {
-        let coordinator = RestoreCoordinator()
-        coordinator.settleDelay = .zero
-        return coordinator
-    }
-
-    /// Stages and runs a restore the way the interface does: confirm, tear down, perform.
-    private func restore(
-        _ backup: BackupData,
-        with coordinator: RestoreCoordinator,
-        into ctx: ModelContext
-    ) async {
-        coordinator.stage(backup)
-        coordinator.begin(navigation: AppNavigation())
-        await coordinator.perform(in: ctx)
-    }
-
-    /// An empty directory of its own, so a test sees only the files it put there.
-    private func makeRollbackDirectory() throws -> URL {
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("rollbacks-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
-        return url
-    }
-
-    private func rollbackFiles(in directory: URL) throws -> [String] {
-        try FileManager.default.contentsOfDirectory(atPath: directory.path)
-            .filter { $0.hasPrefix("SoapWiz-Rollback-") }
-            .sorted()
-    }
-
-    private func removeIfPresent(_ file: ExportFile?) {
-        guard let file else { return }
-        try? FileManager.default.removeItem(at: file.url)
-    }
+struct RollbackBackupTests: RestoreTestCase {
 
     // MARK: - When a rollback is written
 
@@ -162,14 +106,8 @@ struct RollbackBackupTests {
         _ = otherContainer
         seedStore(otherCtx, ingredientName: "Coconut Oil")
 
-        // A path nested inside a regular file can never be written to.
-        let blocker = FileManager.default.temporaryDirectory
-            .appendingPathComponent("rollback-blocker-\(UUID().uuidString)")
-        try Data().write(to: blocker)
-        defer { try? FileManager.default.removeItem(at: blocker) }
-
         let coordinator = makeCoordinator()
-        coordinator.rollbackDirectory = blocker.appendingPathComponent("nested")
+        coordinator.rollbackDirectory = try makeUnwritableDirectory()
         await restore(try BackupService.makeBackup(from: otherCtx), with: coordinator, into: ctx)
 
         #expect(coordinator.errorMessage != nil)
@@ -264,11 +202,8 @@ struct RollbackBackupTests {
         let earlier = directory.appendingPathComponent("SoapWiz-Rollback-2020-01-01-000000.json")
         try Data("{}".utf8).write(to: earlier)
 
-        let blocker = directory.appendingPathComponent("blocker")
-        try Data().write(to: blocker)
-
         let coordinator = makeCoordinator()
-        coordinator.rollbackDirectory = blocker.appendingPathComponent("nested")
+        coordinator.rollbackDirectory = try makeUnwritableDirectory(in: directory)
         await restore(try BackupService.makeBackup(from: ctx), with: coordinator, into: ctx)
 
         #expect(coordinator.errorMessage != nil)
@@ -296,95 +231,6 @@ struct RollbackBackupTests {
 
         #expect(FileManager.default.fileExists(atPath: export.path))
         #expect(FileManager.default.fileExists(atPath: unrelated.path))
-    }
-
-    // MARK: - Tearing the interface down
-
-    /// The tab-local navigation paths die with the views that own them, but
-    /// `AppNavigation` outlives the rebuild — anything it still holds would be a
-    /// deleted model the moment the wipe lands.
-    @Test func begin_ClearsTheNavigationStateThatSurvivesTheRebuild() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        seedStore(ctx, ingredientName: "Olive Oil")
-
-        let batch = Batch(recipe: nil, recipeName: "Castile", batchCount: 1)
-        ctx.insert(batch)
-        let ingredient = try #require(try ctx.fetch(FetchDescriptor<Ingredient>()).first)
-        try ctx.save()
-
-        let navigation = AppNavigation()
-        navigation.historyPath = NavigationPath([batch])
-        navigation.pendingRecipeSeed = RecipeSeed(ingredients: [ingredient])
-
-        let coordinator = makeCoordinator()
-        coordinator.stage(try BackupService.makeBackup(from: ctx))
-        coordinator.begin(navigation: navigation)
-
-        #expect(navigation.historyPath.isEmpty)
-        #expect(navigation.pendingRecipeSeed == nil)
-    }
-
-    @Test func begin_MovesToTheRestoringPhase() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        seedStore(ctx, ingredientName: "Olive Oil")
-
-        let coordinator = makeCoordinator()
-        coordinator.stage(try BackupService.makeBackup(from: ctx))
-        coordinator.begin(navigation: AppNavigation())
-
-        #expect(coordinator.phase == .restoring)
-        #expect(coordinator.pendingImport == nil)
-    }
-
-    /// Whichever way the restore goes, the interface has to come back — a failed
-    /// import must not strand the user on the restoring placeholder.
-    @Test func perform_OnSuccess_RebuildsTheInterface() async throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        seedStore(ctx, ingredientName: "Olive Oil")
-
-        let coordinator = makeCoordinator()
-        await restore(try BackupService.makeBackup(from: ctx), with: coordinator, into: ctx)
-        defer { removeIfPresent(coordinator.rollbackFile) }
-
-        #expect(coordinator.phase == .idle)
-        #expect(coordinator.generation == 1)
-    }
-
-    @Test func perform_WhenRollbackCannotBeWritten_StillRebuildsTheInterface() async throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        seedStore(ctx, ingredientName: "Olive Oil")
-
-        let blocker = FileManager.default.temporaryDirectory
-            .appendingPathComponent("rollback-blocker-\(UUID().uuidString)")
-        try Data().write(to: blocker)
-        defer { try? FileManager.default.removeItem(at: blocker) }
-
-        let coordinator = makeCoordinator()
-        coordinator.rollbackDirectory = blocker.appendingPathComponent("nested")
-        await restore(try BackupService.makeBackup(from: ctx), with: coordinator, into: ctx)
-
-        #expect(coordinator.phase == .idle)
-        #expect(coordinator.generation == 1)
-    }
-
-    /// The placeholder's `.task` can fire again as the view comes and goes; a
-    /// restore that was never confirmed must not run off the back of it.
-    @Test func perform_WithoutBegin_DoesNothing() async throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        seedStore(ctx, ingredientName: "Olive Oil")
-
-        let coordinator = makeCoordinator()
-        coordinator.stage(try BackupService.makeBackup(from: ctx))
-        await coordinator.perform(in: ctx)
-
-        #expect(coordinator.generation == 0)
-        #expect(coordinator.rollbackFile == nil)
-        #expect(try ctx.fetch(FetchDescriptor<Ingredient>()).map(\.name) == ["Olive Oil"])
     }
 
     // MARK: - Naming

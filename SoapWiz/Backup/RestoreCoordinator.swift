@@ -51,6 +51,8 @@ final class RestoreCoordinator {
     /// Where the rollback file is written. `nil` means Documents.
     var rollbackDirectory: URL?
 
+    private static let rollbackPrefix = "SoapWiz-Rollback-"
+
     private var stagedBackup: BackupData?
 
     // MARK: - Staging
@@ -199,8 +201,6 @@ final class RestoreCoordinator {
     private static func isRollbackFile(_ url: URL) -> Bool {
         url.lastPathComponent.hasPrefix(rollbackPrefix) && url.pathExtension == "json"
     }
-
-    private static let rollbackPrefix = "SoapWiz-Rollback-"
 
     /// Rollback file name, e.g. `SoapWiz-Rollback-2026-06-25-143000.json`. Named
     /// distinctly from an export so the two aren't confused in a file list.
