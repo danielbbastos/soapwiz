@@ -36,13 +36,7 @@ final class DuplicateMergeCoordinator {
     /// Runs the merge now. Used at launch and on foreground, where there is no
     /// burst to coalesce.
     func mergeNow() {
-        do {
-            try DuplicateMerger.mergeAll(in: context)
-        } catch {
-            // A failed merge leaves duplicates in place, which is survivable — the
-            // next trigger tries again. Losing the launch to it would not be.
-            log.error("Duplicate merge failed: \(error, privacy: .public)")
-        }
+        DuplicateMerger.mergeAllLoggingFailure(in: context)
     }
 
     /// `.NSPersistentStoreRemoteChange` is public Core Data API, but Apple

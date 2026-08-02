@@ -19,7 +19,7 @@ struct SoapWizApp: App {
         DataSeeder.seed(into: container.mainContext)
         // Before `resolve`, so it only ever has to handle the zero-record case —
         // any duplicate settings rows from a previous sync are already gone.
-        try? DuplicateMerger.mergeAll(in: container.mainContext)
+        DuplicateMerger.mergeAllLoggingFailure(in: container.mainContext)
         _ = AppSettings.resolve(in: container.mainContext)
         return container
     }()
