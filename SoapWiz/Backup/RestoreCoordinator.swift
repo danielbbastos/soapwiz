@@ -92,24 +92,49 @@ final class RestoreCoordinator {
         guard phase == .restoring, let backup = stagedBackup else { return }
         stagedBackup = nil
 
-        await Task.yield()
-        if settleDelay > .zero {
-            try? await Task.sleep(for: settleDelay)
-        }
+        await settle()
 
         let rollback: URL?
         do {
             rollback = try writeRollback(from: context)
         } catch {
-            // Fail closed. The whole point of the rollback is that a mis-tap is
-            // recoverable; restoring without one silently removes that guarantee
-            // at the exact moment the user is relying on it.
-            errorMessage = "Couldn’t save a copy of your current data, so nothing was "
-                + "changed. Export a backup first, then try importing again."
-            finish()
+            failClosed()
             return
         }
 
+        replaceStore(with: backup, rollback: rollback, in: context)
+
+        // The scheduled expiry notifications refer to purchases that no longer exist.
+        // Before `finish()`, not after: leaving `.restoring` takes the placeholder off
+        // screen, and this runs inside the task that placeholder owns — SwiftUI would
+        // cancel it mid-flight and the restored purchases could end up with no
+        // notifications at all, silently.
+        await NotificationService.syncIfEnabled(modelContext: context)
+
+        finish()
+    }
+
+    /// Gives the torn-down interface time to actually go away. Releasing the view
+    /// state is synchronous, but the UIKit layer underneath it is not, and only
+    /// sleeping ends the runloop turn that drains it.
+    private func settle() async {
+        await Task.yield()
+        if settleDelay > .zero {
+            try? await Task.sleep(for: settleDelay)
+        }
+    }
+
+    /// Abandons the import because its rollback could not be written. The whole point
+    /// of the rollback is that a mis-tap is recoverable; restoring without one silently
+    /// removes that guarantee at the exact moment the user is relying on it.
+    private func failClosed() {
+        errorMessage = "Couldn’t save a copy of your current data, so nothing was "
+            + "changed. Export a backup first, then try importing again."
+        finish()
+    }
+
+    /// The destructive step itself, with the rollback already on disk behind it.
+    private func replaceStore(with backup: BackupData, rollback: URL?, in context: ModelContext) {
         do {
             try BackupService.restore(backup, into: context)
             rollbackFile = rollback.map(ExportFile.init(url:))
@@ -124,15 +149,6 @@ final class RestoreCoordinator {
             errorMessage = "Couldn’t restore this backup."
             discardRollback(rollback)
         }
-
-        // The scheduled expiry notifications refer to purchases that no longer exist.
-        // Before `finish()`, not after: leaving `.restoring` takes the placeholder off
-        // screen, and this runs inside the task that placeholder owns — SwiftUI would
-        // cancel it mid-flight and the restored purchases could end up with no
-        // notifications at all, silently.
-        await NotificationService.syncIfEnabled(modelContext: context)
-
-        finish()
     }
 
     /// Rebuilds the interface, whichever way the restore went. A failed import must

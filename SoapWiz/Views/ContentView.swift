@@ -7,24 +7,15 @@ struct ContentView: View {
     @State private var navigation = AppNavigation()
     @State private var restore = RestoreCoordinator()
 
-    private var importConfirmation: Binding<Bool> {
+    /// Presents an alert for as long as the coordinator holds a value at `keyPath`,
+    /// and clears it again on dismissal. Every alert here is driven by a value that
+    /// is either there or not.
+    private func presenting<T>(
+        _ keyPath: ReferenceWritableKeyPath<RestoreCoordinator, T?>
+    ) -> Binding<Bool> {
         Binding(
-            get: { restore.pendingImport != nil },
-            set: { if !$0 { restore.cancel() } }
-        )
-    }
-
-    private var restoreError: Binding<Bool> {
-        Binding(
-            get: { restore.errorMessage != nil },
-            set: { if !$0 { restore.errorMessage = nil } }
-        )
-    }
-
-    private var rollbackNotice: Binding<Bool> {
-        Binding(
-            get: { restore.rollbackFile != nil },
-            set: { if !$0 { restore.rollbackFile = nil } }
+            get: { restore[keyPath: keyPath] != nil },
+            set: { if !$0 { restore[keyPath: keyPath] = nil } }
         )
     }
 
@@ -42,7 +33,7 @@ struct ContentView: View {
         }
         .environment(navigation)
         .environment(restore)
-        .alert("Replace all data?", isPresented: importConfirmation) {
+        .alert("Replace all data?", isPresented: presenting(\.pendingImport)) {
             Button("Replace", role: .destructive) {
                 // Without this the teardown animates, which keeps the outgoing
                 // screens mounted — and re-evaluating — while the store is wiped.
@@ -59,12 +50,12 @@ struct ContentView: View {
             Text("This permanently deletes everything currently in SoapWiz and replaces it "
                  + "with the contents of this backup. This can’t be undone.")
         }
-        .alert("Something went wrong", isPresented: restoreError) {
+        .alert("Something went wrong", isPresented: presenting(\.errorMessage)) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(restore.errorMessage ?? "")
         }
-        .alert("Import complete", isPresented: rollbackNotice) {
+        .alert("Import complete", isPresented: presenting(\.rollbackFile)) {
             Button("Save Previous Data") {
                 if let file = restore.rollbackFile {
                     restore.rollbackFile = nil
