@@ -11,7 +11,7 @@ struct SettingsView: View {
     @Query private var locations: [StorageLocation]
     @Query private var providers: [Provider]
     @Query private var settingsRecords: [AppSettings]
-    private var settings: AppSettings? { settingsRecords.first }
+    private var settings: AppSettings? { AppSettings.canonical(from: settingsRecords) }
 
     @State private var showPvpInfo = false
     @State private var showNotificationDenied = false

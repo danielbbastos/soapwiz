@@ -5,6 +5,7 @@ struct IngredientListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
     @Query(sort: \Ingredient.name) private var ingredients: [Ingredient]
+    @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
 
     @State private var model = IngredientListViewModel()
     @State private var navigationPath = NavigationPath()
@@ -66,6 +67,9 @@ struct IngredientListView: View {
                     .onAppear { model.pendingIngredient = nil }
                 }
                 .searchable(text: $model.searchText, prompt: "Search ingredients")
+                .onChange(of: categories) { _, updated in
+                    model.pruneSelectedCategories(against: updated)
+                }
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         if model.editMode == .active {

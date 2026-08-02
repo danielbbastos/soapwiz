@@ -11,7 +11,7 @@ struct CostBreakdownBarView: View {
     @State private var visibleCardID: AnyHashable?
     @State private var keyboardVisible = false
 
-    private var pvpFactor: Double { settingsRecords.first?.pvpFactor ?? 4.0 }
+    private var pvpFactor: Double { AppSettings.canonical(from: settingsRecords)?.pvpFactor ?? 4.0 }
 
     private static let currencyFormatter: NumberFormatter = {
         let formatter = NumberFormatter()

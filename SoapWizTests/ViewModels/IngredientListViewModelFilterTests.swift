@@ -333,4 +333,53 @@ struct IngredientListViewModelFilterTests {
         #expect(model.expiryFilter == .all)
         #expect(model.selectedCategories.isEmpty)
     }
+
+    // MARK: - Pruning selections after a duplicate merge
+
+    /// `DuplicateMerger` deletes the losing row of a duplicate pair. A filter still
+    /// holding that ID would match no ingredient and silently show an empty list.
+    @Test func pruneSelectedCategoriesDropsIDsThatNoLongerExist() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let survivor = IngredientCategory(name: "Oils")
+        let merged = IngredientCategory(name: "oils")
+        ctx.insert(survivor)
+        ctx.insert(merged)
+        try ctx.save()
+
+        let model = IngredientListViewModel()
+        model.selectedCategories = [survivor.persistentModelID, merged.persistentModelID]
+
+        model.pruneSelectedCategories(against: [survivor])
+
+        #expect(model.selectedCategories == [survivor.persistentModelID])
+    }
+
+    @Test func pruneSelectedCategoriesKeepsStillValidSelections() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let oils = IngredientCategory(name: "Oils")
+        let waxes = IngredientCategory(name: "Waxes")
+        ctx.insert(oils)
+        ctx.insert(waxes)
+        try ctx.save()
+
+        let model = IngredientListViewModel()
+        model.selectedCategories = [oils.persistentModelID, waxes.persistentModelID]
+
+        model.pruneSelectedCategories(against: [oils, waxes])
+
+        #expect(model.selectedCategories.count == 2)
+    }
+
+    /// An empty selection means "all categories" — pruning must not turn that into
+    /// a filter that matches nothing.
+    @Test func pruneSelectedCategoriesLeavesAnEmptySelectionAlone() throws {
+        let model = IngredientListViewModel()
+
+        model.pruneSelectedCategories(against: [])
+
+        #expect(model.selectedCategories.isEmpty)
+        #expect(!model.hasActiveFilters)
+    }
 }
