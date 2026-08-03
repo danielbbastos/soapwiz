@@ -55,6 +55,16 @@ enum ModelContainerFactory {
     /// release builds — the store may hold the user's only copy of data that
     /// has not finished syncing.
     static func makeProduction() -> ModelContainer {
+        // `LOCAL_ONLY_STORE` is for builds signed without the iCloud
+        // entitlement — a free personal team cannot carry that capability, and
+        // asking for mirroring anyway is fatal rather than recoverable:
+        // `ModelContainer(_:configurations:)` returns successfully, then
+        // CloudKit traps on its own queue during asynchronous setup, long after
+        // the `do`/`catch` below has been left. The only way to survive an
+        // unentitled build is not to ask, and only the build knows.
+        #if LOCAL_ONLY_STORE
+        log.notice("Built without CloudKit; using a local store.")
+        #else
         let mirrored = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
@@ -67,6 +77,7 @@ enum ModelContainerFactory {
         } catch {
             log.error("CloudKit mirroring unavailable, falling back to a local store: \(error, privacy: .public)")
         }
+        #endif
 
         // `.none` is required, not merely explicit: the default is `.automatic`,
         // which turns mirroring back on whenever the iCloud entitlement is
