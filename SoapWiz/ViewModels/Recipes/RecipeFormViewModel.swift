@@ -36,6 +36,11 @@ final class RecipeFormViewModel {
     @ObservationIgnored
     var editingRecipe: Recipe?
 
+    /// Guards `applyImport` the way `hasSeeded` guards `applySeed`: the form's
+    /// `.task` can run again, and a second application would double every row.
+    @ObservationIgnored
+    var hasImported = false
+
     init() {
         productDrafts = [Self.defaultProductDraft()]
     }

@@ -1,0 +1,112 @@
+import Foundation
+import SwiftData
+
+/// Applying a reviewed import to the recipe form.
+///
+/// The form is filled in but nothing is saved: the user still lands on the
+/// normal recipe screen, can check the Stats tab, and has to press Save. That
+/// keeps a misread percentage catchable, and it means an abandoned import
+/// leaves no trace in the store.
+extension RecipeFormViewModel {
+    func applyImport(_ prepared: PreparedRecipeImport) {
+        guard !hasImported else { return }
+        hasImported = true
+
+        let draft = prepared.draft
+        name = draft.name
+        desc = importedDescription(for: prepared)
+        applyWeightMode(from: draft)
+        applyLyeSettings(from: draft)
+
+        applyOils(prepared.rows(for: .oil))
+        applyAdditives(prepared.rows(for: .additive))
+        applyFragrances(prepared.rows(for: .fragrance))
+    }
+
+    // MARK: - Configuration
+
+    /// A recipe written in percentages keeps its percentages, with the batch
+    /// size going into `totalOilWeight`. One written in weights is measured in
+    /// the source's own unit, which is what `weightUnit` means outside
+    /// percentage mode.
+    private func applyWeightMode(from draft: RecipeImportDraft) {
+        if draft.amountsArePercentages {
+            weightUnit = "%"
+            oilWeightUnit = draft.resolvedBatchUnit
+            totalOilWeight = draft.batchSize ?? totalOilWeight
+        } else {
+            weightUnit = draft.resolvedBatchUnit
+            oilWeightUnit = draft.resolvedBatchUnit
+        }
+    }
+
+    /// Only values the source actually stated are applied. A recipe that says
+    /// nothing about superfat keeps the form's default rather than being told
+    /// it wants 0%.
+    private func applyLyeSettings(from draft: RecipeImportDraft) {
+        setLyeType(draft.lyeType)
+        if let superFat = draft.superFat { self.superFat = superFat }
+        if let waterParts = draft.waterParts { self.waterParts = waterParts }
+        if let fragrancePercentage = draft.fragrancePercentage {
+            self.fragrancePercentage = fragrancePercentage
+        }
+    }
+
+    private func importedDescription(for prepared: PreparedRecipeImport) -> String {
+        let skipped = prepared.skippedDescriptions
+        guard !skipped.isEmpty else { return prepared.draft.desc }
+        let note = "Not imported: \(skipped.joined(separator: ", "))"
+        return prepared.draft.desc.isEmpty ? note : "\(prepared.draft.desc)\n\(note)"
+    }
+
+    // MARK: - Ingredient rows
+
+    private func applyOils(_ rows: [RecipeImportRow]) {
+        for row in rows {
+            guard let ingredient = row.ingredient else { continue }
+            addOil(ingredient)
+            guard let draft = oilDrafts.last(where: {
+                $0.ingredient.persistentModelID == ingredient.persistentModelID
+            }) else { continue }
+            userEdited(id: draft.id, amount: row.imported.amount)
+        }
+    }
+
+    private func applyAdditives(_ rows: [RecipeImportRow]) {
+        for row in rows {
+            guard let ingredient = row.ingredient else { continue }
+            addAdditive(ingredient)
+            guard let draft = additiveDrafts.last(where: {
+                $0.ingredient.persistentModelID == ingredient.persistentModelID
+            }) else { continue }
+            let unit = resolvedUnit(row.imported.unit, among: RecipeUnitOptions.additive, fallback: defaultAdditiveUnit)
+            updateAdditive(id: draft.id, amount: row.imported.amount, unit: unit)
+        }
+    }
+
+    /// The unit is set before the amount: `updateFragrance(unit:)` unlocks every
+    /// fragrance row and redistributes, which would overwrite an amount set
+    /// first. Setting the amount afterwards locks the row and makes it stick.
+    private func applyFragrances(_ rows: [RecipeImportRow]) {
+        for row in rows {
+            guard let ingredient = row.ingredient else { continue }
+            addFragrance(ingredient)
+            guard let draft = fragranceDrafts.last(where: {
+                $0.ingredient.persistentModelID == ingredient.persistentModelID
+            }) else { continue }
+            let unit = resolvedUnit(row.imported.unit, among: RecipeUnitOptions.fragrance, fallback: defaultFragranceUnit)
+            updateFragrance(id: draft.id, unit: unit)
+            userEditedFragrance(id: draft.id, amount: row.imported.amount)
+        }
+    }
+
+    /// Keeps the source's unit when the form can offer it, and falls back to the
+    /// section default otherwise. A unit the pickers don't list would leave the
+    /// row showing something the user can't reselect.
+    private func resolvedUnit(_ imported: String?, among options: [String], fallback: String) -> String {
+        guard let imported else { return fallback }
+        let normalised = imported.trimmingCharacters(in: .whitespaces)
+        if let match = options.first(where: { $0.lookupKey == normalised.lookupKey }) { return match }
+        return fallback
+    }
+}
