@@ -8,9 +8,6 @@ struct AvailableHeightKey: PreferenceKey {
     }
 }
 
-private let additiveUnits = ["g", "kg", "oz", "lb", "ml", "L", "% of batch", "% of liquids", "% of oils"]
-private let fragranceUnits = ["g", "oz", "ml", "% of batch", "% of liquids", "% of oils"]
-
 /// Label style with a tighter gap between the icon and title than the default.
 private struct TightLabelStyle: LabelStyle {
     var spacing: CGFloat = 4
@@ -177,7 +174,7 @@ struct RecipeIngredientsTabView: View {
                             get: { draft.unit },
                             set: { model.updateAdditive(id: draft.id, unit: $0) }
                         )) {
-                            ForEach(additiveUnits, id: \.self) { Text($0) }
+                            ForEach(RecipeUnitOptions.additive, id: \.self) { Text($0) }
                         }
                         .labelsHidden()
                         .pickerStyle(.menu)
@@ -247,7 +244,7 @@ struct RecipeIngredientsTabView: View {
                             get: { draft.unit },
                             set: { model.updateFragrance(id: draft.id, unit: $0) }
                         )) {
-                            ForEach(fragranceUnits, id: \.self) { Text($0) }
+                            ForEach(RecipeUnitOptions.fragrance, id: \.self) { Text($0) }
                         }
                         .labelsHidden()
                         .pickerStyle(.menu)
