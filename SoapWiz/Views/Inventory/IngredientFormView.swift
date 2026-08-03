@@ -12,8 +12,17 @@ struct IngredientFormView: View {
     @State private var showingNewCategory = false
     let onSave: ((Ingredient) -> Void)?
 
-    init(ingredient: Ingredient? = nil, defaultCategory: IngredientCategory? = nil, onSave: ((Ingredient) -> Void)? = nil) {
-        _model = State(initialValue: IngredientFormViewModel(ingredient: ingredient, defaultCategory: defaultCategory))
+    init(
+        ingredient: Ingredient? = nil,
+        defaultCategory: IngredientCategory? = nil,
+        prefilledName: String? = nil,
+        onSave: ((Ingredient) -> Void)? = nil
+    ) {
+        _model = State(initialValue: IngredientFormViewModel(
+            ingredient: ingredient,
+            defaultCategory: defaultCategory,
+            prefilledName: prefilledName
+        ))
         self.onSave = onSave
     }
 
@@ -109,6 +118,12 @@ struct IngredientFormView: View {
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle(model.isEditing ? "Edit Ingredient" : "New Ingredient")
             .warmBackground()
+            // A prefilled name arrives before the field exists, so the
+            // `onChange` that derives the code never fires for it.
+            .task {
+                guard !model.isEditing, !model.name.isEmpty, model.code.isEmpty else { return }
+                model.applyNameChange(existingCodes: existingCodes)
+            }
             .sheet(isPresented: $showingNewCategory) {
                 CategoryFormView { newCategory in
                     model.selectedCategory = newCategory
