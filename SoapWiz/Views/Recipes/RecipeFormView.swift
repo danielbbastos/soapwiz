@@ -18,6 +18,7 @@ struct RecipeFormView: View {
 
     var recipe: Recipe?
     var seed: RecipeSeed?
+    var importDraft: PreparedRecipeImport?
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -55,6 +56,7 @@ struct RecipeFormView: View {
             .task(id: recipe?.persistentModelID) {
                 if let recipe { model.load(from: recipe) }
                 if let seed { model.applySeed(seed.ingredients) }
+                if let importDraft { model.applyImport(importDraft) }
                 model.resolveDefaultLyeIngredient(from: lyeIngredients)
             }
             .onChange(of: lyeIngredients) {

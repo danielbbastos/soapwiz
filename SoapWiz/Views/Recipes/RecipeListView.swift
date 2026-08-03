@@ -8,6 +8,7 @@ struct RecipeListView: View {
 
     @State private var model = RecipeListViewModel()
     @State private var navigationPath = NavigationPath()
+    @State private var showingImport = false
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -52,10 +53,26 @@ struct RecipeListView: View {
                         navigationPath = NavigationPath()
                     })
                 }
-
-                FloatingActionButton {
-                    navigationPath.append(true)
+                .navigationDestination(for: PreparedRecipeImport.self) { prepared in
+                    RecipeFormView(importDraft: prepared, onSave: { _ in
+                        navigationPath = NavigationPath()
+                    })
                 }
+                .sheet(isPresented: $showingImport) {
+                    RecipeImportView { prepared in
+                        navigationPath.append(prepared)
+                    }
+                }
+
+                // Import is offered only when the on-device model can actually
+                // run it. A feature that fails on tap is worse than one that
+                // isn't there.
+                ExpandableFloatingActionButton(
+                    primaryAction: { navigationPath.append(true) },
+                    secondaryActions: RecipeImportAvailability.current.isAvailable
+                        ? [FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") { showingImport = true }]
+                        : []
+                )
             }
         }
         // Honour a seeded-recipe request from the inventory selection flow: open
