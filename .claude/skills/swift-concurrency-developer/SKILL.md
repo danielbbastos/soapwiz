@@ -1,6 +1,6 @@
 ---
 name: swift-concurrency-developer
-description: Swift concurrency — actors, actor isolation, Sendable, TaskGroup, nonisolated, async let, @MainActor. Use when fixing data-race warnings, actor-isolation errors, "non-Sendable type crossing actor boundary", Swift 6 strict-concurrency migration, or deciding where an isolation boundary belongs.
+description: Swift concurrency — actors, actor isolation, Sendable, TaskGroup, nonisolated, async let, @MainActor, @concurrent, sending, @Sendable closures, actor reentrancy, MainActor.assumeIsolated. Use when fixing data-race warnings, actor-isolation errors, "non-Sendable type crossing actor boundary", strict-concurrency or Swift 6 migration, deciding where an isolation boundary belongs, or replacing DispatchQueue/GCD with Task-based concurrency. This project sets SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor globally, so all SwiftData model access is main-actor isolated.
 ---
 
 # Swift Concurrency Developer (Smart Router)

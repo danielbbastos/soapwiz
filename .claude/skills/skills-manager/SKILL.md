@@ -1,6 +1,6 @@
 ---
 name: skills-manager
-description: Use when creating a new skill, editing a SKILL.md, writing or fixing a skill description, debugging why a skill did or did not activate, or configuring hooks in .claude/hooks. Covers skill dispatch, frontmatter rules, and hook events.
+description: Use when creating a new skill, editing a SKILL.md, writing or fixing a skill description, auditing which skills are unused, or configuring hooks in .claude/hooks — including "why didn't that skill activate", "this skill never fires", "make a skill trigger more often", and rewriting a description so it routes correctly. Covers skill dispatch, frontmatter rules, and hook events.
 ---
 
 # Skills Manager
@@ -66,7 +66,7 @@ chmod +x .claude/hooks/*.sh
 
 **Location**: `.claude/skills/*/SKILL.md`
 
-**All 17 skills:**
+**All 18 skills:**
 
 | Skill | Purpose |
 |-------|---------|
@@ -79,6 +79,7 @@ chmod +x .claude/hooks/*.sh
 | `liquid-glass-developer` | iOS 26 Liquid Glass effects in SwiftUI |
 | `plan-feature` | Single-feature planning and approval flow |
 | `self-review` | Post-implementation check against CODE_STANDARD.md |
+| `ship-issue` | Autonomous end-to-end delivery of a Linear issue |
 | `skills-manager` | This skill — skill lifecycle and hooks management |
 | `swift-concurrency-developer` | Swift async/await and actor patterns |
 | `swiftui-expert` | SwiftUI state, composition, animation, APIs |

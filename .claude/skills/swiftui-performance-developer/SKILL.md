@@ -1,6 +1,6 @@
 ---
 name: swiftui-performance-developer
-description: SwiftUI performance auditor. Use when investigating slow rendering, janky scrolling, or excessive view updates in SoapWiz.
+description: SwiftUI performance auditor. Use when investigating slow rendering, janky or stuttering scrolling, frame drops, excessive view updates, a body recomputed too often, @Observable over-invalidation, a large or unfiltered @Query, slow navigation pushes, or "the app feels sluggish" — and when profiling SwiftUI with Instruments.
 ---
 
 # SwiftUI Performance Developer
