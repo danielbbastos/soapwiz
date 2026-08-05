@@ -121,22 +121,76 @@ struct RecipeImportViewModelTests: RecipeImportTestHelpers {
         #expect(model.unresolvedCount == 1)
     }
 
-    @Test func refreshResolutions_AfterCreatingTheIngredient_ResolvesTheRow() async throws {
+    /// The create sheet's completion runs synchronously right after the insert,
+    /// before the parent's `@Query` has re-run. Anything that re-matches by
+    /// name against the captured inventory searches a pre-insert snapshot and
+    /// leaves the row unmatched — the one row the user just resolved.
+    @Test func resolve_WithAnIngredientMissingFromTheCapturedInventory_StillBindsTheRow() async throws {
         let (container, context) = try makeContext()
         _ = container
-        var inventory = makeInventory(in: context)
+        let inventory = makeInventory(in: context)
 
-        let draft = RecipeImportDraft.mock(oils: [ImportedIngredient(name: "Babassu Oil", amount: 100, unit: nil)])
+        let draft = RecipeImportDraft.mock(oils: [
+            ImportedIngredient(name: "Olive Oil", amount: 70, unit: nil),
+            ImportedIngredient(name: "Kokum Butter", amount: 30, unit: nil)
+        ])
         let model = RecipeImportViewModel(extractor: StubRecipeExtractor(draft: draft))
         model.rawText = "recipe"
         await model.extract(inventory: inventory)
-        #expect(model.unresolvedCount == 1)
 
-        inventory.append(makeOil(name: "Babassu Oil", sap: 0.175, category: nil, context: context))
-        model.refreshResolutions(inventory: inventory)
+        let unresolved = try #require(model.rows.first { !$0.isResolved })
+        let created = makeOil(name: "Kokum Butter", sap: 0.19, category: nil, context: context)
 
+        // `inventory` deliberately does not contain `created`, mirroring the
+        // stale array the view holds at that moment.
+        model.resolve(unresolved.id, with: created, inventory: inventory)
+
+        #expect(model.rows.first { $0.id == unresolved.id }?.ingredient === created)
         #expect(model.unresolvedCount == 0)
         #expect(model.canConfirm)
+    }
+
+    @Test func resolve_AlsoMatchesAnotherRowNamingTheSameIngredient() async throws {
+        let (container, context) = try makeContext()
+        _ = container
+
+        let draft = RecipeImportDraft.mock(
+            oils: [ImportedIngredient(name: "Kokum Butter", amount: 100, unit: nil)],
+            additives: [ImportedIngredient(name: "Kokum Butter", amount: 10, unit: "g")]
+        )
+        let model = RecipeImportViewModel(extractor: StubRecipeExtractor(draft: draft))
+        model.rawText = "recipe"
+        await model.extract(inventory: [])
+        #expect(model.unresolvedCount == 2)
+
+        let created = makeOil(name: "Kokum Butter", sap: 0.19, category: nil, context: context)
+        let first = try #require(model.rows.first)
+        model.resolve(first.id, with: created, inventory: [])
+
+        #expect(model.unresolvedCount == 0)
+        #expect(model.rows.allSatisfy { $0.ingredient === created })
+    }
+
+    @Test func resolve_LeavesASkippedRowSkipped() async throws {
+        let (container, context) = try makeContext()
+        _ = container
+
+        let draft = RecipeImportDraft.mock(oils: [
+            ImportedIngredient(name: "Kokum Butter", amount: 60, unit: nil),
+            ImportedIngredient(name: "Babassu Oil", amount: 40, unit: nil)
+        ])
+        let model = RecipeImportViewModel(extractor: StubRecipeExtractor(draft: draft))
+        model.rawText = "recipe"
+        await model.extract(inventory: [])
+
+        let babassu = try #require(model.rows.first { $0.imported.name == "Babassu Oil" })
+        model.skip(babassu.id)
+
+        let kokum = try #require(model.rows.first { $0.imported.name == "Kokum Butter" })
+        let created = makeOil(name: "Kokum Butter", sap: 0.19, category: nil, context: context)
+        model.resolve(kokum.id, with: created, inventory: [])
+
+        #expect(model.rows.first { $0.id == babassu.id }?.resolution == .skipped)
     }
 
     // MARK: - Failures

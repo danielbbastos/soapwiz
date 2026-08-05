@@ -139,10 +139,19 @@ final class RecipeImportViewModel {
         setResolution(.unmatched, for: rowID)
     }
 
-    /// Re-runs matching for the still-unmatched rows after the user creates an
-    /// ingredient. Rows they already matched or skipped keep their decision.
-    func refreshResolutions(inventory: [Ingredient]) {
-        rows = RecipeIngredientReconciler.resolveUnmatched(in: rows, against: inventory)
+    /// Binds a row to the ingredient the user just created for it.
+    ///
+    /// The created ingredient is bound directly rather than looked up by name.
+    /// The create sheet's completion runs synchronously right after the insert,
+    /// before the parent's `@Query` has re-run, so re-matching against the
+    /// inventory the view is holding would search a snapshot taken before the
+    /// insert — and leave unmatched the one row the user just resolved.
+    ///
+    /// Other rows are re-resolved too: a recipe can name the same ingredient in
+    /// two sections, and creating it once should settle both.
+    func resolve(_ rowID: UUID, with ingredient: Ingredient, inventory: [Ingredient]) {
+        setResolution(.matched(ingredient), for: rowID)
+        rows = RecipeIngredientReconciler.resolveUnmatched(in: rows, against: inventory + [ingredient])
     }
 
     func returnToInput() {

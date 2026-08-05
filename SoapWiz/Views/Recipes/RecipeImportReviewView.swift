@@ -26,8 +26,8 @@ struct RecipeImportReviewView: View {
             IngredientFormView(
                 defaultCategory: category(named: row.suggestedCategoryName),
                 prefilledName: row.imported.name
-            ) { _ in
-                model.refreshResolutions(inventory: inventory)
+            ) { newIngredient in
+                model.resolve(row.id, with: newIngredient, inventory: inventory)
             }
         }
     }
