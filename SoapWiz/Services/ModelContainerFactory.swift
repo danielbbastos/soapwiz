@@ -62,6 +62,21 @@ enum ModelContainerFactory {
         // CloudKit traps on its own queue during asynchronous setup, long after
         // the `do`/`catch` below has been left. The only way to survive an
         // unentitled build is not to ask, and only the build knows.
+        //
+        // Deliberately set nowhere in `project.pbxproj`: every normal build
+        // must compile the mirrored path unchanged. It is passed on the command
+        // line, together with the stripped entitlements it has to travel with —
+        // one without the other still crashes:
+        //
+        //     xcodebuild -project SoapWiz.xcodeproj -scheme SoapWiz \
+        //       -configuration Debug -destination 'platform=iOS,name=<device>' \
+        //       CODE_SIGN_ENTITLEMENTS=SoapWiz/SoapWiz-Local.entitlements \
+        //       SWIFT_ACTIVE_COMPILATION_CONDITIONS='DEBUG LOCAL_ONLY_STORE' \
+        //       -allowProvisioningUpdates build
+        //
+        // `DEBUG` has to be spelled out: the setting replaces the project's
+        // value rather than adding to it, and dropping it silently removes
+        // `DataSeeder` and the debug-only paths along with it.
         #if LOCAL_ONLY_STORE
         log.notice("Built without CloudKit; using a local store.")
         #else
