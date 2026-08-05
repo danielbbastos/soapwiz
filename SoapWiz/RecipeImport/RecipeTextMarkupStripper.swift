@@ -53,7 +53,24 @@ enum RecipeTextMarkupStripper {
         let lowered = line.lowercased().trimmingCharacters(in: .whitespaces)
         guard !lowered.isEmpty else { return false }
         if lowered.count <= 40, boilerplatePhrases.contains(where: lowered.contains) { return true }
+        if isInterfaceChrome(lowered) { return true }
         return lowered.range(of: "^[^\\p{L}\\p{N}]+$", options: .regularExpression) != nil
+    }
+
+    /// Screen furniture that survives OCR of a screenshot: tab bars, nav bars,
+    /// the status-bar clock.
+    ///
+    /// Matched whole-line and exactly, never as a substring. "Save" alone is a
+    /// button; "Save 10% for superfat" is a recipe instruction, and a
+    /// `contains` check would take both. That distinction is the only thing
+    /// keeping this list safe to grow.
+    static func isInterfaceChrome(_ loweredLine: String) -> Bool {
+        let stripped = loweredLine
+            .trimmingCharacters(in: CharacterSet.alphanumerics.inverted.subtracting(.whitespaces))
+            .trimmingCharacters(in: .whitespaces)
+        if chromeWords.contains(stripped) { return true }
+        // A bare clock, with or without a meridiem: "9:41", "23:45", "9:41 PM".
+        return stripped.range(of: "^[0-9]{1,2}:[0-9]{2}( ?[ap]m)?$", options: .regularExpression) != nil
     }
 
     static func removeURLs(_ line: String) -> String {
@@ -100,6 +117,22 @@ enum RecipeTextMarkupStripper {
         ("&ndash;", "\u{2013}"), ("&mdash;", "\u{2014}"), ("&hellip;", "\u{2026}"),
         ("&deg;", "\u{00B0}"), ("&frac12;", "1/2"), ("&frac14;", "1/4"), ("&frac34;", "3/4"),
         ("&times;", "\u{00D7}"), ("&bull;", "\u{2022}"), ("&amp;", "&")
+    ]
+
+    /// Whole-line matches only. Words that could plausibly begin a recipe line
+    /// — "water", "oils", "total" — are deliberately absent.
+    private static let chromeWords: Set<String> = [
+        "home", "menu", "search", "back", "next", "previous", "close", "done", "cancel",
+        "edit", "delete", "share", "save", "print", "more", "show more", "load more",
+        "read more", "see all", "view all", "follow", "following", "followers",
+        "sign in", "sign up", "log in", "log out", "register", "account", "profile",
+        "settings", "notifications", "messages", "cart", "checkout", "shop", "store",
+        "explore", "discover", "library", "saved", "help", "support", "about",
+        "contact", "faq", "blog", "recipes", "reviews", "rating", "ratings",
+        "like", "likes", "reply", "replies", "views", "comments", "share this",
+        "skip", "skip to content", "accept", "accept all", "reject", "reject all",
+        "allow", "got it", "ok", "okay", "continue", "learn more", "advertisement",
+        "sponsored", "ad", "top", "back to top", "aa", "done editing"
     ]
 
     private static let boilerplatePhrases = [

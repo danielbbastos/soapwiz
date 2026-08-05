@@ -91,6 +91,72 @@ struct RecipeTextSanitizerTests {
         #expect(RecipeTextSanitizer.cleanedLines(from: "   \n\n  \t ").isEmpty)
     }
 
+    // MARK: - Tidy for editing
+
+    @Test func tidiedForEditing_TrailingBlankLines_AreRemoved() {
+        let result = RecipeTextSanitizer.tidiedForEditing("Olive Oil 70%\n\n\n\n   \n\n")
+        #expect(result == "Olive Oil 70%")
+    }
+
+    @Test func tidiedForEditing_BlankRuns_CollapseToOne() {
+        let result = RecipeTextSanitizer.tidiedForEditing("Oils\n\n\n\nOlive Oil 70%\n\n\nCoconut Oil 30%")
+        #expect(result == "Oils\n\nOlive Oil 70%\n\nCoconut Oil 30%")
+    }
+
+    @Test func tidiedForEditing_TrailingSpaces_AreRemoved() {
+        #expect(RecipeTextSanitizer.tidiedForEditing("Olive Oil 70%   \nCoconut Oil 30%  ")
+            == "Olive Oil 70%\nCoconut Oil 30%")
+    }
+
+    /// A single blank line between blocks is meaningful structure and stays.
+    @Test func tidiedForEditing_SingleBlankLine_Survives() {
+        #expect(RecipeTextSanitizer.tidiedForEditing("Oils\n\nOlive Oil 70%")
+            == "Oils\n\nOlive Oil 70%")
+    }
+
+    @Test func tidiedForEditing_EmptyInput_StaysEmpty() {
+        #expect(RecipeTextSanitizer.tidiedForEditing("").isEmpty)
+        #expect(RecipeTextSanitizer.tidiedForEditing("  \n\n \t ").isEmpty)
+    }
+
+    // MARK: - Screenshot chrome
+
+    @Test(arguments: ["Home", "Menu", "SEARCH", "Sign In", "Share", "Accept All", "9:41", "23:45", "9:41 PM"])
+    func isInterfaceChrome_ScreenFurniture_IsDropped(_ line: String) {
+        #expect(RecipeTextMarkupStripper.isBoilerplate(line), "'\(line)' should be dropped")
+    }
+
+    /// The chrome list is only safe because it matches whole lines. A recipe
+    /// line that merely contains one of those words has to survive.
+    @Test(arguments: [
+        "Save 10% of the oils for superfat",
+        "Olive Oil 70%",
+        "Search for a lighter oil if you prefer",
+        "Total oils 1000 g",
+        "Water 250 g",
+        "More olive oil makes a milder bar"
+    ])
+    func isInterfaceChrome_RecipeContent_Survives(_ line: String) {
+        #expect(!RecipeTextMarkupStripper.isBoilerplate(line), "'\(line)' should be kept")
+    }
+
+    @Test func cleanedLines_ScreenshotOfARecipePage_KeepsOnlyTheRecipe() {
+        let ocr = """
+            9:41
+            Menu
+            Search
+            Castile Soap
+            Olive Oil 70%
+            Coconut Oil 30%
+            Superfat 5%
+            Share
+            Comments
+            Home
+            """
+        let lines = RecipeTextSanitizer.cleanedLines(from: ocr)
+        #expect(lines == ["Castile Soap", "Olive Oil 70%", "Coconut Oil 30%", "Superfat 5%"])
+    }
+
     // MARK: - Scoring
 
     @Test func score_QuantityWithUnit_ScoresAboveBareProse() {
