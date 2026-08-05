@@ -11,6 +11,7 @@ struct RecipeImportView: View {
     @State private var photoItem: PhotosPickerItem?
     @State private var isReadingPhoto = false
     @State private var showingScanner = false
+    @State private var textRevision = 0
 
     var onConfirm: ((PreparedRecipeImport) -> Void)?
 
@@ -36,7 +37,7 @@ struct RecipeImportView: View {
                 }
                 if model.phase == .input, !model.rawText.isEmpty {
                     ToolbarItem(placement: .destructiveAction) {
-                        Button("Clear", role: .destructive) { model.rawText = "" }
+                        Button("Clear", role: .destructive) { replaceText(with: "") }
                     }
                 }
             }
@@ -68,7 +69,7 @@ struct RecipeImportView: View {
     private var inputForm: some View {
         Form {
             Section {
-                RecipeTextInputView(text: $model.rawText, isEnabled: !model.isExtracting)
+                RecipeTextInputView(text: $model.rawText, isEnabled: !model.isExtracting, revision: textRevision)
             } header: {
                 Text("Recipe Text")
             } footer: {
@@ -191,9 +192,21 @@ struct RecipeImportView: View {
     /// Tidies whatever arrives before it lands in the box. OCR in particular
     /// returns runs of blank lines, which show up as dead space the user can
     /// neither see nor delete easily.
+    ///
+    /// The combined result is tidied too, not just the addition: a second
+    /// import lands against text that is already there, and the seam between
+    /// them is exactly where a stray blank run would appear.
     private func append(_ text: String) {
         let addition = RecipeTextSanitizer.tidiedForEditing(text)
         guard !addition.isEmpty else { return }
-        model.rawText = model.rawText.isEmpty ? addition : "\(model.rawText)\n\(addition)"
+        let combined = model.rawText.isEmpty ? addition : "\(model.rawText)\n\(addition)"
+        replaceText(with: RecipeTextSanitizer.tidiedForEditing(combined))
+    }
+
+    /// The single funnel for writes the user did not type, so the field is
+    /// always told to lay itself out again.
+    private func replaceText(with newValue: String) {
+        model.rawText = newValue
+        textRevision += 1
     }
 }

@@ -119,6 +119,19 @@ struct RecipeTextSanitizerTests {
         #expect(RecipeTextSanitizer.tidiedForEditing("  \n\n \t ").isEmpty)
     }
 
+    /// Importing a second image appends to text that is already there, and the
+    /// seam between them is where a stray blank run would show up as dead space
+    /// in the box. Tidying the join, not just the addition, is what prevents it.
+    @Test func tidiedForEditing_JoinOfTwoImports_HasNoBlankRuns() {
+        let first = RecipeTextSanitizer.tidiedForEditing("Castile Bar\nOlive Oil 60%\n\n\n")
+        let second = RecipeTextSanitizer.tidiedForEditing("\n\nSuperfat 5%\nWater Lye 2:1\n\n")
+        let combined = RecipeTextSanitizer.tidiedForEditing("\(first)\n\(second)")
+
+        #expect(combined == "Castile Bar\nOlive Oil 60%\nSuperfat 5%\nWater Lye 2:1")
+        #expect(!combined.contains("\n\n"))
+        #expect(!combined.hasSuffix("\n"))
+    }
+
     // MARK: - Screenshot chrome
 
     @Test(arguments: ["Home", "Menu", "SEARCH", "Sign In", "Share", "Accept All", "9:41", "23:45", "9:41 PM"])
