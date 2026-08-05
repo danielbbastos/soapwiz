@@ -155,6 +155,84 @@ struct RecipeImportFormMappingTests: RecipeImportTestHelpers {
         #expect(model.name == "Empty")
     }
 
+    // MARK: - Bare percentages
+
+    /// Sources write "1%", the pickers only offer the compound forms. Falling
+    /// back to a weight would turn one percent of the oils into one gram.
+    @Test func applyImport_AdditiveStatedAsABarePercentage_StaysAPercentage() throws {
+        let clay = Ingredient(name: "Kaolin Clay", unit: "g")
+        context.insert(clay)
+
+        let draft = RecipeImportDraft.mock(additives: [ImportedIngredient(name: "Kaolin Clay", amount: 1, unit: "%")])
+        let model = apply(draft, inventory: inventory + [clay])
+
+        let additive = try #require(model.additiveDrafts.first)
+        #expect(additive.unit == "% of oils")
+        #expect(additive.amount == 1)
+    }
+
+    /// The fragrance case hides in a percentage-mode recipe, because the
+    /// fallback there is already a percent unit. It only shows up when the
+    /// recipe is measured in weights and the fragrance is still given as a
+    /// percentage — a common combination.
+    @Test func applyImport_FragranceBarePercentageInAWeightRecipe_StaysAPercentage() throws {
+        let draft = RecipeImportDraft.mock(
+            oils: [ImportedIngredient(name: "Olive Oil", amount: 700, unit: "g")],
+            fragrances: [ImportedIngredient(name: "Lavender Essential Oil", amount: 3, unit: "%")],
+            amountsArePercentages: false,
+            batchSize: nil,
+            batchUnit: "g"
+        )
+        let model = apply(draft)
+
+        let fragrance = try #require(model.fragranceDrafts.first)
+        #expect(fragrance.unit == "% of oils")
+        #expect(fragrance.amount == 3)
+    }
+
+    @Test(arguments: ["%", "percent", "PCT", " % "])
+    func applyImport_PercentSpellings_AllResolveToPercentOfOils(_ written: String) throws {
+        let draft = RecipeImportDraft.mock(
+            fragrances: [ImportedIngredient(name: "Lavender Essential Oil", amount: 3, unit: written)]
+        )
+        let model = apply(draft)
+        #expect(model.fragranceDrafts.first?.unit == "% of oils")
+    }
+
+    /// An explicit base must survive untouched — the mapping is only for the
+    /// bare case where the source said nothing.
+    @Test func applyImport_ExplicitPercentBase_IsKept() throws {
+        let clay = Ingredient(name: "Kaolin Clay", unit: "g")
+        context.insert(clay)
+
+        let draft = RecipeImportDraft.mock(
+            additives: [ImportedIngredient(name: "Kaolin Clay", amount: 2, unit: "% of batch")]
+        )
+        let model = apply(draft, inventory: inventory + [clay])
+        #expect(model.additiveDrafts.first?.unit == "% of batch")
+    }
+
+    /// A percentage that reaches the acid neutralisation must arrive as the
+    /// share it was written as. Read as a weight it would move the lye.
+    @Test func applyImport_AcidStatedAsAPercentage_KeepsItsShareOfTheOils() throws {
+        let citric = Ingredient(name: "Citric Acid", unit: "g")
+        context.insert(citric)
+
+        let draft = RecipeImportDraft.mock(
+            additives: [ImportedIngredient(name: "Citric Acid", amount: 2, unit: "%")],
+            batchSize: 1_000
+        )
+        let model = apply(draft, inventory: inventory + [citric])
+
+        let additive = try #require(model.additiveDrafts.first)
+        #expect(additive.unit == "% of oils")
+        // 2% of 1000 g of oils is 20 g of acid, not 2 g.
+        let asWeight = IngredientUnitConverter.convert(
+            additive.amount, from: additive.unit, to: "g", density: nil
+        )
+        #expect(asWeight == nil || asWeight?.value != 2)
+    }
+
     // MARK: - Skipped rows
 
     @Test func applyImport_SkippedOil_IsRecordedInTheDescription() {

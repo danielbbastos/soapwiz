@@ -105,8 +105,31 @@ extension RecipeFormViewModel {
     /// row showing something the user can't reselect.
     private func resolvedUnit(_ imported: String?, among options: [String], fallback: String) -> String {
         guard let imported else { return fallback }
-        let normalised = imported.trimmingCharacters(in: .whitespaces)
-        if let match = options.first(where: { $0.lookupKey == normalised.lookupKey }) { return match }
+        let key = imported.trimmingCharacters(in: .whitespaces).lookupKey
+        if let match = options.first(where: { $0.lookupKey == key }) { return match }
+        if Self.meansPercentOfOils(key), let percentOfOils = options.first(where: { $0 == Self.percentOfOils }) {
+            return percentOfOils
+        }
         return fallback
     }
+
+    /// Whether a written unit is a bare percentage.
+    ///
+    /// Sources write "3%" constantly; the pickers only offer the compound forms
+    /// ("% of oils", "% of batch", "% of liquids"), so a bare percent matches
+    /// nothing and would otherwise fall back to a *weight* — turning "Sodium
+    /// Lactate 1%" into one gram, and "Fragrance 3%" in a weight-based recipe
+    /// into three grams. That is a silent change of quantity, and for citric,
+    /// lactic or ascorbic acid it feeds `LyeCalculator.acidNeutralization` and
+    /// moves the lye weight with it.
+    ///
+    /// Oils is the base soap makers mean when they leave it unsaid, and it is
+    /// what the form already defaults fragrance to in percentage mode. Reading
+    /// it as a percentage of something is right in a way that reading it as a
+    /// weight can never be.
+    private static func meansPercentOfOils(_ key: String) -> Bool {
+        ["%", "percent", "pct", "% of oil", "percent of oils", "% oils"].contains(key)
+    }
+
+    private static let percentOfOils = "% of oils"
 }
