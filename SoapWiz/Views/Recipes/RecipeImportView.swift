@@ -57,9 +57,7 @@ struct RecipeImportView: View {
     private var inputForm: some View {
         Form {
             Section {
-                TextField("Paste the recipe here", text: $model.rawText, axis: .vertical)
-                    .lineLimit(8...25)
-                    .disabled(model.isExtracting)
+                RecipeTextInputView(text: $model.rawText, isEnabled: !model.isExtracting)
             } header: {
                 Text("Recipe Text")
             } footer: {
@@ -175,7 +173,12 @@ struct RecipeImportView: View {
         append(pages.joined(separator: "\n"))
     }
 
+    /// Tidies whatever arrives before it lands in the box. OCR in particular
+    /// returns runs of blank lines, which show up as dead space the user can
+    /// neither see nor delete easily.
     private func append(_ text: String) {
-        model.rawText = model.rawText.isEmpty ? text : "\(model.rawText)\n\(text)"
+        let addition = RecipeTextSanitizer.tidiedForEditing(text)
+        guard !addition.isEmpty else { return }
+        model.rawText = model.rawText.isEmpty ? addition : "\(model.rawText)\n\(addition)"
     }
 }

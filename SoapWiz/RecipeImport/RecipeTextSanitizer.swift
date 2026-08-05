@@ -47,6 +47,24 @@ enum RecipeTextSanitizer {
         )
     }
 
+    /// A light tidy for text about to be shown in the editable box, as opposed
+    /// to the aggressive selection done before sending to the model.
+    ///
+    /// Only removes what the user cannot see anyway: trailing spaces, leading
+    /// and trailing blank lines, and runs of more than one blank line. OCR
+    /// returns plenty of all three, and they read as unexplained dead space at
+    /// the bottom of the box.
+    static func tidiedForEditing(_ raw: String) -> String {
+        raw.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .reduce(into: [String]()) { lines, line in
+                if line.isEmpty, lines.last?.isEmpty ?? true { return }
+                lines.append(line)
+            }
+            .joined(separator: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     // MARK: - Line cleanup
 
     /// Splits into lines, drops page furniture and blank runs, and breaks up
