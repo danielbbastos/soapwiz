@@ -12,6 +12,7 @@ struct RecipeImportView: View {
     @State private var isReadingPhoto = false
     @State private var showingScanner = false
     @State private var textRevision = 0
+    @State private var readingProblem: String?
 
     var onConfirm: ((PreparedRecipeImport) -> Void)?
 
@@ -74,6 +75,7 @@ struct RecipeImportView: View {
                 Text("Recipe Text")
             } footer: {
                 Text(inputFooter)
+                    .foregroundStyle(readingProblem == nil ? .secondary : Color.orange)
             }
             .listRowBackground(Color.cardBackground)
 
@@ -137,6 +139,7 @@ struct RecipeImportView: View {
     /// it, rather than surprising them with a trimmed result afterwards.
     private var inputFooter: String {
         if isReadingPhoto { return "Reading the text in your photo\u{2026}" }
+        if let readingProblem { return readingProblem }
         let count = model.rawText.count
         guard count > 0 else {
             return "Paste a recipe from a website, a forum or your notes. Oils, amounts and lye settings are enough."
@@ -173,19 +176,39 @@ struct RecipeImportView: View {
     private func readText(from item: PhotosPickerItem) async {
         defer { photoItem = nil }
         guard let data = try? await item.loadTransferable(type: Data.self),
-              let image = UIImage(data: data) else { return }
+              let image = UIImage(data: data) else {
+            readingProblem = "Couldn't open that photo. Try another one."
+            return
+        }
         await readText(from: [image])
     }
 
+    /// Says why a photo produced nothing. Failing quietly here is
+    /// indistinguishable from the feature being broken: the spinner stops, the
+    /// box is unchanged, and the user cannot tell whether the page had no text
+    /// or something went wrong reading it.
     private func readText(from images: [UIImage]) async {
         isReadingPhoto = true
+        readingProblem = nil
         defer { isReadingPhoto = false }
+
         var pages: [String] = []
+        var failed = false
         for image in images {
-            guard let text = try? await RecipeImageTextRecogniser.recogniseText(in: image), !text.isEmpty else { continue }
-            pages.append(text)
+            do {
+                let text = try await RecipeImageTextRecogniser.recogniseText(in: image)
+                if !text.isEmpty { pages.append(text) }
+            } catch {
+                failed = true
+            }
         }
-        guard !pages.isEmpty else { return }
+
+        guard !pages.isEmpty else {
+            readingProblem = failed
+                ? "Couldn't read that image. Try another photo, or type the recipe in."
+                : "No text found in that image. Try a closer or sharper photo."
+            return
+        }
         append(pages.joined(separator: "\n"))
     }
 
@@ -208,5 +231,6 @@ struct RecipeImportView: View {
     private func replaceText(with newValue: String) {
         model.rawText = newValue
         textRevision += 1
+        readingProblem = nil
     }
 }
