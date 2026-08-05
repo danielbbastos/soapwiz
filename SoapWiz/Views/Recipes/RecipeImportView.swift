@@ -34,8 +34,19 @@ struct RecipeImportView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
+                if model.phase == .input, !model.rawText.isEmpty {
+                    ToolbarItem(placement: .destructiveAction) {
+                        Button("Clear", role: .destructive) { model.rawText = "" }
+                    }
+                }
             }
         }
+        // A page-sized sheet on iPad. The default form sheet is shorter than
+        // this screen, which pushed the action button and its note below the
+        // fold with no hint they existed. `.fitted` is not an option: the
+        // content is a Form, which has no finite intrinsic height, so fitting
+        // to it collapses the sheet to almost nothing.
+        .presentationSizing(.page)
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
             Task { await readText(from: item) }
@@ -66,32 +77,7 @@ struct RecipeImportView: View {
             .listRowBackground(Color.cardBackground)
 
             Section {
-                // The system's own paste button: the tap is the authorisation, so
-                // it reads the clipboard without the "would like to paste from"
-                // alert that a bare `UIPasteboard.general.string` triggers.
-                PasteButton(payloadType: String.self) { strings in
-                    guard let pasted = strings.first(where: { !$0.isEmpty }) else { return }
-                    append(pasted)
-                }
-                .labelStyle(.titleAndIcon)
-                .buttonBorderShape(.capsule)
-                PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label("Read from a Photo", systemImage: "photo")
-                }
-                if DocumentScannerView.isSupported {
-                    Button {
-                        showingScanner = true
-                    } label: {
-                        Label("Scan a Printed Recipe", systemImage: "text.viewfinder")
-                    }
-                }
-                if !model.rawText.isEmpty {
-                    Button(role: .destructive) {
-                        model.rawText = ""
-                    } label: {
-                        Label("Clear", systemImage: "trash")
-                    }
-                }
+                sourceButtons
             }
             .disabled(model.isExtracting || isReadingPhoto)
             .listRowBackground(Color.cardBackground)
@@ -115,6 +101,35 @@ struct RecipeImportView: View {
             }
             .listRowBackground(Color.cardBackground)
         }
+    }
+
+    /// One row rather than three. Stacked, these cost enough height to push the
+    /// action button off an iPad form sheet entirely.
+    private var sourceButtons: some View {
+        HStack(spacing: 10) {
+            // The system's own paste button: the tap is the authorisation, so
+            // it reads the clipboard without the "would like to paste from"
+            // alert that a bare `UIPasteboard.general.string` triggers.
+            PasteButton(payloadType: String.self) { strings in
+                guard let pasted = strings.first(where: { !$0.isEmpty }) else { return }
+                append(pasted)
+            }
+            .labelStyle(.titleAndIcon)
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                Label("Photo", systemImage: "photo")
+            }
+            .buttonStyle(.bordered)
+            if DocumentScannerView.isSupported {
+                Button {
+                    showingScanner = true
+                } label: {
+                    Label("Scan", systemImage: "text.viewfinder")
+                }
+                .buttonStyle(.bordered)
+            }
+            Spacer(minLength: 0)
+        }
+        .buttonBorderShape(.capsule)
     }
 
     /// Says what will happen to an over-long paste before the user commits to
