@@ -16,7 +16,7 @@ When context reaches 70%, run `/compact` preserving: current task, modified file
 
 ## Project Overview
 
-**SoapWiz** is an iOS app for soap makers. Features built incrementally:
+**SoapWiz** is an iOS app for soap makers. Swift, SwiftUI, SwiftData, iOS 18+, no external dependencies. iOS 26 Liquid Glass features are gated with `#available(iOS 26, *)`. Features built incrementally:
 
 1. **Ingredient inventory** — add ingredients, track quantities per purchase, low-stock and expiry warnings.
 2. **Purchase tracking** — each ingredient purchase is a separate record with its own quantity, price, dates, and metadata. Total remaining is the sum across all purchases.
@@ -24,41 +24,22 @@ When context reaches 70%, run `/compact` preserving: current task, modified file
 4. **Batches** — making a batch from a recipe deducts ingredient quantities from purchases (FIFO) and records an immutable production snapshot with costs (History tab).
 5. **Settings** — manage categories, providers, storage locations, and app-wide settings.
 
-**Stack:** Swift, SwiftUI, SwiftData, iOS 18+. iOS 26 Liquid Glass features are gated with `#available(iOS 26, *)`. No external dependencies.
+For SwiftUI/SwiftData conventions — state, forms, FAB, navigation, ViewModel structure, anti-patterns — the `swiftui-patterns-soapwiz` and `ios-dev-guidelines` skills are authoritative. Invoke them before editing any `.swift` file.
 
 ## Building
 
 ```bash
-open SoapWiz.xcodeproj
-```
-
-```bash
-xcodebuild -project SoapWiz.xcodeproj \
-  -scheme SoapWiz \
-  -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
-  build
-```
-
-```bash
-xcodebuild -project SoapWiz.xcodeproj \
-  -scheme SoapWiz \
-  -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
-  test
+xcodebuild -project SoapWiz.xcodeproj -scheme SoapWiz \
+  -destination 'platform=iOS Simulator,name=iPhone 15 Pro' build   # or: test
 ```
 
 **Note:** The project uses `PBXFileSystemSynchronizedRootGroup` (Xcode 16+). Any Swift file created inside `SoapWiz/` is automatically included in the build — no `project.pbxproj` editing needed.
 
-## Key Patterns
+## Invariants
 
-- Root view is `ContentView`: a `TabView` with Inventory, Recipes, History (batches), and Settings tabs. Tab/navigation state lives in `AppNavigation` (`@Observable`), injected via `.environment()`.
-- Each tab's list view is wrapped in its own `NavigationStack`.
-- ViewModels are `@Observable @MainActor`, one per screen, under `ViewModels/<Feature>/`.
-- `ModelContainer` is configured once in `SoapWizApp` and injected via `.modelContainer()`.
-- FAB (floating `+` button) is used consistently across list views. It hides when `editMode == .active`.
-- `PurchaseFormView` accepts an optional `purchase` parameter — `nil` = create, non-nil = edit.
 - Delete rules encode intent, not convenience: `Ingredient.purchases`, `Recipe.ingredients`/`products`, and `Batch.lineItems` cascade; `Ingredient.batchLineItems`, `Recipe.batches`, and `Recipe.lyeIngredient` nullify — batch history must outlive the ingredient and the recipe.
+- All SwiftData model access stays on `@MainActor`. The project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` globally.
 - `AppSettings` is a singleton, resolved at launch via `AppSettings.resolve(in:)`.
-- `IngredientFormView` accepts an optional `ingredient` parameter — same pattern.
 
 ## Git Workflow
 
@@ -82,12 +63,3 @@ xcrun simctl launch <id> pt.daphnia.SoapWiz
 ```
 
 Build output path: `~/Library/Developer/Xcode/DerivedData/SoapWiz-*/Build/Products/Debug-iphonesimulator/SoapWiz.app`
-
-## ⚠️ Common Mistakes
-
-- **Forgetting the cascade delete rule** on `Ingredient.purchases` — orphaned purchases accumulate silently.
-- **Mutating SwiftData models off `@MainActor`** — all model access must stay on the main thread. The project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` globally.
-- **Using `@State` for persisted data** — use `@Query` for anything that lives in SwiftData.
-- **Sorting `ingredient.purchases` directly in views** — purchases are unordered in SwiftData; always sort before display (currently by `dateOfPurchase` descending).
-- **Discarding `ModelContainer` in tests** — never do `let ctx = try makeContainer().mainContext`; the container is released immediately and `ctx.insert()` hangs on a dead backing store. Always store the container: `let (container, ctx) = try makeContext(); _ = container`.
-- **Hardcoding locale-sensitive strings in test assertions** — never hardcode `"123.5"` when testing formatted numbers; use the same formatter the production code uses so the test passes on any locale.

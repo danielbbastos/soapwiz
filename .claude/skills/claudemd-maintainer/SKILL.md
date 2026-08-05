@@ -1,6 +1,6 @@
 ---
 name: claudemd-maintainer
-description: Use when creating, editing, auditing, or trimming CLAUDE.md, project instructions, or memory/context files for Claude. Covers what belongs in CLAUDE.md versus a skill, length limits, and cutting content the codebase already documents.
+description: Use when creating, editing, auditing, or trimming CLAUDE.md, project instructions, or memory/context files for Claude — including "CLAUDE.md is too long", "reduce always-loaded context", "make CLAUDE.md leaner", moving guidance out of CLAUDE.md and into a skill, or deduplicating instructions across CLAUDE.md, skills, and memory. Covers what belongs in CLAUDE.md versus a skill, length limits, and cutting content the codebase already documents.
 ---
 
 # CLAUDE.md Maintainer (Smart Router)

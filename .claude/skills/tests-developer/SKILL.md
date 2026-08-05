@@ -129,7 +129,24 @@ Always cover:
 
 ## SwiftData Testing
 
-Use an in-memory `ModelContainer` — never test against a persisted store:
+Use an in-memory `ModelContainer` — never test against a persisted store.
+
+**Always keep the container alive.** A `ModelContext` does not retain the
+container it came from, so a discarded container is released immediately and
+the context is left on a dead backing store — `insert()` then hangs rather than
+failing, which reads as a stuck test rather than a broken one.
+
+```swift
+// Wrong — the container is released the moment this line finishes
+let ctx = try makeContainer().mainContext
+
+// Right — name it, and keep it named for the life of the test
+let (container, ctx) = try makeContext()
+_ = container
+```
+
+Storing it as a suite property, as below, has the same effect and is cleaner
+when every test in the suite needs one:
 
 ```swift
 @Suite(.serialized)
@@ -203,6 +220,7 @@ Update every affected test file and mock extension before submitting. Run tests 
 ## Rules
 
 - No force unwrapping in tests — use `#require()` (Swift Testing) or `XCTUnwrap` (XCTest)
+- Never hardcode a locale-sensitive string in an assertion. `#expect(label == "123.5")` passes in one region and fails in another — a comma decimal separator, a non-breaking space before a unit, or different grouping is enough. Assert against the same formatter the production code uses, or against the underlying value
 - Test observable behavior, not internal implementation details
 - Prefer real types over mocks; only mock external system boundaries (e.g. network, clock)
 - Use `.serialized` only when tests share mutable state — don't use it by default
@@ -212,6 +230,8 @@ Update every affected test file and mock extension before submitting. Run tests 
 - [ ] Computed properties tested (`totalRemaining`, `pricePerUnit`)
 - [ ] Edge cases covered (nil, empty, zero, single item, boundary)
 - [ ] In-memory `ModelContainer` used for SwiftData tests (not persistent)
+- [ ] `ModelContainer` kept alive, never discarded into a bare `.mainContext`
+- [ ] No hardcoded locale-sensitive strings in assertions
 - [ ] No force unwraps — `#require()` or `XCTUnwrap` instead
 - [ ] Descriptive names: `testFeature_Condition_ExpectedBehavior`
 - [ ] Mock helpers as static `.mock()` extensions at bottom of test file
