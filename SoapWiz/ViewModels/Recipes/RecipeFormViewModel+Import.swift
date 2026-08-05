@@ -14,13 +14,38 @@ extension RecipeFormViewModel {
 
         let draft = prepared.draft
         name = draft.name
-        desc = importedDescription(for: prepared)
         applyWeightMode(from: draft)
         applyLyeSettings(from: draft)
 
-        applyOils(prepared.rows(for: .oil))
-        applyAdditives(prepared.rows(for: .additive))
-        applyFragrances(prepared.rows(for: .fragrance))
+        var repeated: [String] = []
+        applyOils(prepared.rows(for: .oil), repeated: &repeated)
+        applyAdditives(prepared.rows(for: .additive), repeated: &repeated)
+        applyFragrances(prepared.rows(for: .fragrance), repeated: &repeated)
+
+        desc = importedDescription(for: prepared, repeated: repeated)
+    }
+
+    /// Whether a row's ingredient has already had its amount applied in this
+    /// section, recording the repeat if so.
+    ///
+    /// A source can name the same ingredient twice — a summary above the table,
+    /// or a line OCR reads from both a sticky header and the body. The form
+    /// holds one row per ingredient, so without this the second amount silently
+    /// replaced the first and changed the recipe's proportions.
+    ///
+    /// The first amount wins rather than the two being added. A repeat is far
+    /// more often the same information twice than a deliberate split, and
+    /// summing a re-read "Olive Oil 55%" into 110% would be a worse answer than
+    /// either. The user is told either way.
+    private func isRepeat(
+        _ row: RecipeImportRow,
+        of ingredient: Ingredient,
+        seen: inout Set<PersistentIdentifier>,
+        repeated: inout [String]
+    ) -> Bool {
+        guard !seen.insert(ingredient.persistentModelID).inserted else { return false }
+        repeated.append(ingredient.name)
+        return true
     }
 
     // MARK: - Configuration
@@ -52,18 +77,27 @@ extension RecipeFormViewModel {
         }
     }
 
-    private func importedDescription(for prepared: PreparedRecipeImport) -> String {
+    private func importedDescription(for prepared: PreparedRecipeImport, repeated: [String]) -> String {
+        var notes: [String] = []
         let skipped = prepared.skippedDescriptions
-        guard !skipped.isEmpty else { return prepared.draft.desc }
-        let note = "Not imported: \(skipped.joined(separator: ", "))"
-        return prepared.draft.desc.isEmpty ? note : "\(prepared.draft.desc)\n\(note)"
+        if !skipped.isEmpty {
+            notes.append("Not imported: \(skipped.joined(separator: ", "))")
+        }
+        if !repeated.isEmpty {
+            notes.append("Repeated in the source, kept once: \(repeated.joined(separator: ", "))")
+        }
+        return ([prepared.draft.desc] + notes)
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
     }
 
     // MARK: - Ingredient rows
 
-    private func applyOils(_ rows: [RecipeImportRow]) {
+    private func applyOils(_ rows: [RecipeImportRow], repeated: inout [String]) {
+        var seen: Set<PersistentIdentifier> = []
         for row in rows {
             guard let ingredient = row.ingredient else { continue }
+            guard !isRepeat(row, of: ingredient, seen: &seen, repeated: &repeated) else { continue }
             addOil(ingredient)
             guard let draft = oilDrafts.last(where: {
                 $0.ingredient.persistentModelID == ingredient.persistentModelID
@@ -72,9 +106,11 @@ extension RecipeFormViewModel {
         }
     }
 
-    private func applyAdditives(_ rows: [RecipeImportRow]) {
+    private func applyAdditives(_ rows: [RecipeImportRow], repeated: inout [String]) {
+        var seen: Set<PersistentIdentifier> = []
         for row in rows {
             guard let ingredient = row.ingredient else { continue }
+            guard !isRepeat(row, of: ingredient, seen: &seen, repeated: &repeated) else { continue }
             addAdditive(ingredient)
             guard let draft = additiveDrafts.last(where: {
                 $0.ingredient.persistentModelID == ingredient.persistentModelID
@@ -87,9 +123,11 @@ extension RecipeFormViewModel {
     /// The unit is set before the amount: `updateFragrance(unit:)` unlocks every
     /// fragrance row and redistributes, which would overwrite an amount set
     /// first. Setting the amount afterwards locks the row and makes it stick.
-    private func applyFragrances(_ rows: [RecipeImportRow]) {
+    private func applyFragrances(_ rows: [RecipeImportRow], repeated: inout [String]) {
+        var seen: Set<PersistentIdentifier> = []
         for row in rows {
             guard let ingredient = row.ingredient else { continue }
+            guard !isRepeat(row, of: ingredient, seen: &seen, repeated: &repeated) else { continue }
             addFragrance(ingredient)
             guard let draft = fragranceDrafts.last(where: {
                 $0.ingredient.persistentModelID == ingredient.persistentModelID
