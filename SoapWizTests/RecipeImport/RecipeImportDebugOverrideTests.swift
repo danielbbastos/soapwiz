@@ -8,15 +8,17 @@ import Foundation
 @Suite("Recipe import debug override")
 struct RecipeImportDebugOverrideTests {
 
+    /// The override being off is the whole guarantee: with it off, `current`
+    /// answers from the system and a debug build behaves like any other.
+    ///
+    /// Deliberately no assertion on what `RecipeImportAvailability.current`
+    /// then returns. Whether Apple Intelligence is present is a fact about the
+    /// machine, not about this code — it is absent on a local simulator and
+    /// present on the CI runner, so asserting either way tests the environment
+    /// and fails somewhere.
     @Test func isEnabled_WithoutTheLaunchArgument_IsOff() {
         #expect(!ProcessInfo.processInfo.arguments.contains(RecipeImportDebugOverride.launchArgument))
         #expect(!RecipeImportDebugOverride.isEnabled)
-    }
-
-    @Test func availability_WithTheOverrideOff_ReflectsTheRealModel() {
-        // The simulator has no Apple Intelligence, so this must not report
-        // `.available` purely because the build is DEBUG.
-        #expect(!RecipeImportAvailability.current.isAvailable)
     }
 
     @Test func cannedExtractor_ProducesADraftThatReachesEveryReviewBranch() async throws {
