@@ -79,6 +79,17 @@ final class BatchProductionViewModel {
         requirements.filter(\.isShort)
     }
 
+    /// Total mass the current `batchCount` will produce, in `batchWeightUnit`:
+    /// oils + lye + water + additives + fragrances. Deliberately not a sum of
+    /// `BatchRequirement.required` — those are per-ingredient inventory units
+    /// (grams for one, millilitres for another) and adding them is meaningless.
+    var totalBatchWeight: Double {
+        engine.batchTotalWeight * Double(max(1, batchCount))
+    }
+
+    /// The unit `totalBatchWeight` is expressed in — the recipe's oil weight unit.
+    var batchWeightUnit: String { engine.displayWeightUnit }
+
     var canCreate: Bool {
         !requirements.isEmpty && shortages.isEmpty
     }
@@ -130,13 +141,15 @@ final class BatchProductionViewModel {
     }
 
     /// Drains `req` from its ingredient's purchases oldest first, building the
-    /// snapshot line item and decrementing `remainingAmount` as it goes.
+    /// snapshot line item and decrementing `remainingAmount` as it goes. Every
+    /// purchase the plan touches is marked opened, not just the first.
     private func deduct(_ req: BatchRequirement, batch: Batch, context: ModelContext) -> BatchLineItem {
         var draws: [BatchPurchaseDraw] = []
         var cost = 0.0
 
         for (purchase, drawn) in plannedDraws(for: req) {
             purchase.remainingAmount -= drawn
+            purchase.markOpened()
             let drawCost = drawn * purchase.pricePerUnit
             cost += drawCost
             draws.append(BatchPurchaseDraw(

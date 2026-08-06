@@ -196,6 +196,12 @@ final class RecipeFormViewModel {
 
     var batchTotalCost: Double { wholeBatchBreakdown.total }
 
+    /// Total mass of one whole batch in the batch (oils) unit — everything that
+    /// goes in the pot. Doubles as the denominator for a fixed-size product's
+    /// share of the batch, so the weight shown when making a batch and the
+    /// weight cost is allocated against are the same number.
+    var batchTotalWeight: Double { costCalculator.batchTotalWeight(from: wholeBatchBreakdown) }
+
     var hasIngredients: Bool {
         !oilDrafts.isEmpty || !additiveDrafts.isEmpty || !fragranceDrafts.isEmpty
     }

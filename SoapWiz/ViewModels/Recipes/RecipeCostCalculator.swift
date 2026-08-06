@@ -102,14 +102,24 @@ struct RecipeCostCalculator {
         ].compactMap { $0 }
     }
 
-    /// Total batch weight in the batch (oils) unit (fragrances excluded — their
-    /// amounts are derived from oils/lye/water percentages, so including them in
-    /// the denominator would inflate the batch weight and understate product shares).
-    private func batchTotalWeight(from batch: ProductCostBreakdown) -> Double {
+    /// Total batch weight in the batch (oils) unit: oils + additives + fragrances
+    /// + lye + water. Fragrance oil is real mass, so leaving it out shrinks the
+    /// denominator and over-allocates cost to every fixed-size product.
+    ///
+    /// Lye comes from the calculator rather than `batch.lye`, whose rows only
+    /// exist once a lye `Ingredient` has been resolved; the mass is in the pot
+    /// either way.
+    ///
+    /// Excludes the Failor neutraliser solution (`LyeCalculator.cfmNeutralizerRows`):
+    /// it is a dosing recommendation rather than a recipe line item, and it is
+    /// absent from `wholeBatchBreakdown` and batch requirements too. A CFM batch's
+    /// weight is therefore understated by the neutraliser dose.
+    func batchTotalWeight(from batch: ProductCostBreakdown) -> Double {
         let additives = batch.additives.reduce(0) { $0 + $1.ingredientAmount }
+        let fragrances = batch.fragrances.reduce(0) { $0 + $1.ingredientAmount }
         let lyeAmount = lye.calculatedLyeAmount ?? 0
         let water = lye.calculatedWaterAmount ?? 0
-        return lye.totalOilBatchWeight + additives + lyeAmount + water
+        return lye.totalOilBatchWeight + additives + fragrances + lyeAmount + water
     }
 
     private func scaleBreakdown(_ source: ProductCostBreakdown, by factor: Double) -> ProductCostBreakdown {
@@ -235,6 +245,10 @@ struct RecipeCostCalculator {
         switch unit {
         case "% of oils":
             return totalOil > 0 ? totalOil * fraction : nil
+        // "% of batch" resolves against oils + lye + water, deliberately not
+        // `batchTotalWeight`: additives and fragrances are what this is sizing,
+        // and a fragrance can itself be entered as a percentage, so including
+        // them would be circular. Do not "fix" this to match batchTotalWeight.
         case "% of batch":
             guard let lyeAmount = lye.calculatedLyeAmount, let water = lye.calculatedWaterAmount else { return nil }
             return (totalOil + lyeAmount + water) * fraction

@@ -37,21 +37,15 @@ final class PurchaseDetailViewModel {
     func adjust(by step: Double) {
         let newValue = (purchase.remainingAmount + step).clamped(to: 0...purchase.quantity)
         purchase.remainingAmount = newValue
-        autoSetOpeningDateIfNeeded()
+        purchase.markOpenedIfPartlyUsed()
     }
 
     func commitEdit() {
         if let parsed = Double(editingValue.replacingOccurrences(of: ",", with: ".")) {
             purchase.remainingAmount = parsed.clamped(to: 0...purchase.quantity)
-            autoSetOpeningDateIfNeeded()
+            purchase.markOpenedIfPartlyUsed()
         }
         isEditingAmount = false
-    }
-
-    private func autoSetOpeningDateIfNeeded() {
-        if purchase.openingDate == nil && purchase.remainingAmount < purchase.quantity {
-            purchase.openingDate = Date.now
-        }
     }
 }
 

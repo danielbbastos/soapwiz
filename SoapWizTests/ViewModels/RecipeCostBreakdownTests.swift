@@ -158,6 +158,66 @@ struct RecipeCostBreakdownTests: RecipeFormTestHelpers {
         #expect(result.exceedsBatchWeight == true)
         #expect(abs(result.total - model.batchTotalCost) < 0.0001)
     }
+    /// 1000 g of oils at €0.01/g plus 30 g of fragrance at €0.10/g — a 1030 g
+    /// batch costing €13. No sap value, so no lye or water enter the weight.
+    private func makeModelWithFragrance(ctx: ModelContext) -> RecipeFormViewModel {
+        let oil = Ingredient(name: "Coconut Oil")
+        ctx.insert(oil)
+        let oilPurchase = IngredientPurchase.mock(quantity: 1000, totalPrice: 10.0)
+        oilPurchase.ingredient = oil
+        ctx.insert(oilPurchase)
+
+        let fragrance = Ingredient(name: "Lavender EO")
+        ctx.insert(fragrance)
+        let fragrancePurchase = IngredientPurchase.mock(quantity: 100, totalPrice: 10.0)
+        fragrancePurchase.ingredient = fragrance
+        ctx.insert(fragrancePurchase)
+
+        let model = RecipeFormViewModel()
+        model.weightUnit = "g"
+        model.addOil(oil)
+        model.oilDrafts[0].amount = 1000
+        model.addFragrance(fragrance)
+        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 30, unit: "g")
+        return model
+    }
+
+    @Test func breakdownAndCost_FixedSize_CountsFragranceInDenominator() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithFragrance(ctx: ctx)
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = 103
+
+        let result = model.breakdownAndCost(for: draft)
+
+        // 103 g of a 1030 g batch is 10%, not the 10.3% an oils+lye+water
+        // denominator would give. €13 batch × 0.1 = €1.30.
+        #expect(abs(model.batchTotalCost - 13) < 1e-6)
+        #expect(abs(result.total - 1.30) < 1e-6)
+        #expect(abs(result.oils[0].ingredientAmount - 100) < 1e-6)
+        #expect(result.exceedsBatchWeight == false)
+    }
+    @Test func breakdownAndCost_FixedSize_ProductCostsDoNotExceedBatchTotal() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModelWithFragrance(ctx: ctx)
+        // Two differently sized bars that between them are exactly the 1030 g
+        // batch, so their costs must sum to exactly the batch cost — never more,
+        // which is what the old denominator produced (13,39 € against a 13 €
+        // batch). Sizes differ so the sum is a real sum, not one value scaled.
+        var small = RecipeProductDraft(unitSymbol: "g")
+        small.size = 500
+        var large = RecipeProductDraft(unitSymbol: "g")
+        large.size = 530
+
+        let smallCost = model.breakdownAndCost(for: small).total
+        let largeCost = model.breakdownAndCost(for: large).total
+        let summed = smallCost + largeCost
+
+        #expect(smallCost < largeCost)
+        #expect(abs(summed - model.batchTotalCost) < 1e-6)
+    }
     @Test func init_AddsDefaultProductOnePartOfBatch() {
         let model = RecipeFormViewModel()
         #expect(model.productDrafts.count == 1)
