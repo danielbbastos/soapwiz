@@ -11,6 +11,12 @@ import Vision
 /// Vision's `RecognizeTextRequest` is available from iOS 18, so this path needs
 /// no version gate of its own beyond the one already on the whole feature.
 enum RecipeImageTextRecogniser {
+    /// One recognised box: its text and where it sat on the page.
+    struct TextBox {
+        let text: String
+        let rect: CGRect
+    }
+
     static func recogniseText(in image: UIImage) async throws -> String {
         guard let cgImage = image.cgImage else { return "" }
         var request = RecognizeTextRequest()
@@ -24,27 +30,48 @@ enum RecipeImageTextRecogniser {
         return lines(from: observations).joined(separator: "\n")
     }
 
-    /// Reading order, not detection order. Vision returns observations in
-    /// whatever order it found them; a recipe's meaning depends on its rows, so
-    /// they are sorted top-to-bottom and then left-to-right.
-    ///
-    /// Coordinates are normalised with the origin at the bottom left, so a
-    /// larger `maxY` is higher up the page.
     static func lines(from observations: [RecognizedTextObservation]) -> [String] {
-        observations
-            .sorted { lhs, rhs in
-                let lhsTop = lhs.boundingBox.cgRect.maxY
-                let rhsTop = rhs.boundingBox.cgRect.maxY
-                if abs(lhsTop - rhsTop) > sameLineTolerance { return lhsTop > rhsTop }
-                return lhs.boundingBox.cgRect.minX < rhs.boundingBox.cgRect.minX
-            }
-            .compactMap { $0.topCandidates(1).first?.string }
+        rows(of: observations.compactMap { observation in
+            guard let text = observation.topCandidates(1).first?.string else { return nil }
+            return TextBox(text: text, rect: observation.boundingBox.cgRect)
+        })
     }
 
-    /// Two observations whose vertical centres are within this fraction of the
-    /// image height are treated as the same row, so a table's columns read
-    /// across rather than down.
-    private static let sameLineTolerance: CGFloat = 0.01
+    /// Reading order: rows down the page, and the boxes within a row left to
+    /// right, joined so a table's columns read across rather than down.
+    ///
+    /// Boxes are grouped into rows first rather than sorted with a single
+    /// comparator. "Within a tolerance of each other" is not a transitive
+    /// relation — A can share a row with B, and B with C, while A and C do not
+    /// — so using it inside `sorted(by:)` breaks that function's requirement
+    /// for a strict weak ordering and lets the result come out in an order
+    /// nothing asked for. Assigning each box to a row in a single downward pass
+    /// is transitive by construction.
+    ///
+    /// Order matters more here than it looks: this text goes straight to the
+    /// model, so a scrambled row would hand it one ingredient's name against
+    /// another's amount with nothing to reveal the swap.
+    static func rows(of boxes: [TextBox]) -> [String] {
+        var rows: [[TextBox]] = []
+        for box in boxes.sorted(by: { $0.rect.midY > $1.rect.midY }) {
+            if let reference = rows.last?.first,
+               abs(reference.rect.midY - box.rect.midY) <= sameRowTolerance {
+                rows[rows.count - 1].append(box)
+            } else {
+                rows.append([box])
+            }
+        }
+        return rows.map { row in
+            row.sorted { $0.rect.minX < $1.rect.minX }
+                .map(\.text)
+                .joined(separator: " ")
+        }
+    }
+
+    /// How far apart two boxes' vertical centres can be and still count as one
+    /// row, as a fraction of image height. Coordinates are normalised with the
+    /// origin at the bottom left, so a larger `midY` is higher up the page.
+    private static let sameRowTolerance: CGFloat = 0.012
 }
 
 extension UIImage.Orientation {

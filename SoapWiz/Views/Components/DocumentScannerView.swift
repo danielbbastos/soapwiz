@@ -9,6 +9,10 @@ import VisionKit
 struct DocumentScannerView: UIViewControllerRepresentable {
     var onScan: ([UIImage]) -> Void
     var onCancel: () -> Void
+    /// Kept apart from `onCancel`: a scanner that failed and a scanner the user
+    /// dismissed both close the sheet, and only one of them is worth saying
+    /// anything about.
+    var onFailure: (Error) -> Void
 
     /// False in the simulator and on any device without a usable camera, where
     /// presenting the scanner would only produce an empty screen.
@@ -23,16 +27,22 @@ struct DocumentScannerView: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: VNDocumentCameraViewController, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onScan: onScan, onCancel: onCancel)
+        Coordinator(onScan: onScan, onCancel: onCancel, onFailure: onFailure)
     }
 
     final class Coordinator: NSObject, VNDocumentCameraViewControllerDelegate {
         private let onScan: ([UIImage]) -> Void
         private let onCancel: () -> Void
+        private let onFailure: (Error) -> Void
 
-        init(onScan: @escaping ([UIImage]) -> Void, onCancel: @escaping () -> Void) {
+        init(
+            onScan: @escaping ([UIImage]) -> Void,
+            onCancel: @escaping () -> Void,
+            onFailure: @escaping (Error) -> Void
+        ) {
             self.onScan = onScan
             self.onCancel = onCancel
+            self.onFailure = onFailure
         }
 
         func documentCameraViewController(
@@ -48,7 +58,7 @@ struct DocumentScannerView: UIViewControllerRepresentable {
         }
 
         func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFailWithError error: Error) {
-            onCancel()
+            onFailure(error)
         }
     }
 }

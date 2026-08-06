@@ -59,7 +59,11 @@ struct RecipeImportView: View {
                     showingScanner = false
                     Task { await readText(from: pages) }
                 },
-                onCancel: { showingScanner = false }
+                onCancel: { showingScanner = false },
+                onFailure: { _ in
+                    showingScanner = false
+                    readingProblem = "The scanner stopped before it finished. Try again, or use a photo."
+                }
             )
             .ignoresSafeArea()
         }
