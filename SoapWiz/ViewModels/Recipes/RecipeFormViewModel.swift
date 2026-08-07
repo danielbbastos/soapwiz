@@ -36,6 +36,11 @@ final class RecipeFormViewModel {
     @ObservationIgnored
     var editingRecipe: Recipe?
 
+    /// The form's state the last time it matched what is stored. `nil` until the
+    /// form finishes loading.
+    @ObservationIgnored
+    private var snapshot: RecipeFormSnapshot?
+
     /// Guards `applyImport` the way `hasSeeded` guards `applySeed`: the form's
     /// `.task` can run again, and a second application would double every row.
     @ObservationIgnored
@@ -52,6 +57,35 @@ final class RecipeFormViewModel {
     var weightUnitIsPercentage: Bool { weightUnit == "%" }
 
     var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    // MARK: - Unsaved changes
+
+    private var currentSnapshot: RecipeFormSnapshot {
+        RecipeFormSnapshot(
+            name: name, desc: desc, weightUnit: weightUnit, totalOilWeight: totalOilWeight,
+            oilWeightUnit: oilWeightUnit, lyeType: lyeType, lyePurity: lyePurity,
+            waterParts: waterParts, superFat: superFat, oilDrafts: oilDrafts,
+            additiveDrafts: additiveDrafts, fragranceDrafts: fragranceDrafts,
+            productDrafts: productDrafts, fragrancePercentage: fragrancePercentage,
+            useHybrid: useHybrid, kohPercentage: kohPercentage, naohPercentage: naohPercentage,
+            kohPurity: kohPurity, naohPurity: naohPurity, isCreamSoap: isCreamSoap,
+            useCFM: useCFM, cfmNeutralizer: cfmNeutralizer, lyeIngredient: lyeIngredient,
+            kohLyeIngredient: kohLyeIngredient
+        )
+    }
+
+    /// Records the current state as the clean baseline. Called once the form has
+    /// loaded, so only what the user does afterwards counts as an edit.
+    func captureSnapshot() {
+        snapshot = currentSnapshot
+    }
+
+    /// Whether leaving the form now would lose work. `false` until a baseline is
+    /// captured, so a form that never loaded never blocks its own dismissal.
+    var isDirty: Bool {
+        guard let snapshot else { return false }
+        return snapshot != currentSnapshot
+    }
 
     var totalPercentage: Double {
         oilDrafts.reduce(0) { $0 + $1.amount }
@@ -338,13 +372,17 @@ final class RecipeFormViewModel {
             candidates.first { $0.name.lowercased().contains(name) }
         }
 
+        // Resolving only ever fills a blank, so the baseline moves with it — a
+        // lye ingredient arriving late from CloudKit isn't a user edit.
         if lyeIngredient == nil {
             // Single lye is currently always NaOH; the hybrid path's NaOH portion
             // shares this ingredient.
             lyeIngredient = match("sodium hydroxide") ?? candidates.first
+            snapshot?.lyeIngredient = lyeIngredient
         }
         if kohLyeIngredient == nil {
             kohLyeIngredient = match("potassium hydroxide") ?? candidates.first
+            snapshot?.kohLyeIngredient = kohLyeIngredient
         }
     }
 

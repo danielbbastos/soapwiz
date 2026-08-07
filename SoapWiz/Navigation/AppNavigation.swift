@@ -15,6 +15,12 @@ struct RecipeSeed: Hashable {
     let ingredients: [Ingredient]
 }
 
+/// A push of the recipe form in edit mode. Distinct from pushing the `Recipe`
+/// itself, which every stack already routes to `RecipeDetailView`.
+struct RecipeEditRoute: Hashable {
+    let recipe: Recipe
+}
+
 /// Cross-tab navigation state: which tab is selected and the History tab's
 /// stack path. Lets flows that end in another tab (creating a batch from a
 /// recipe) land the user there directly.

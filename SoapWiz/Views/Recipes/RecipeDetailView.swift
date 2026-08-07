@@ -10,7 +10,6 @@ struct RecipeDetailView: View {
     private var lyeIngredients: [Ingredient]
 
     @State private var model = RecipeFormViewModel()
-    @State private var showEdit = false
     @State private var selectedQualityName: String?
     @State private var showInGrams = false
     @State private var showCreateBatch = false
@@ -73,7 +72,9 @@ struct RecipeDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Edit") { showEdit = true }
+                NavigationLink(value: RecipeEditRoute(recipe: recipe)) {
+                    Text("Edit")
+                }
             }
         }
         .sheet(isPresented: $showCreateBatch) {
@@ -81,21 +82,25 @@ struct RecipeDetailView: View {
                 navigation.showBatch(batch)
             }
         }
-        .sheet(isPresented: $showEdit, onDismiss: {
-            model.load(from: recipe)
-            model.resolveDefaultLyeIngredient(from: lyeIngredients)
-        }, content: {
-            NavigationStack {
-                RecipeFormView(recipe: recipe)
-            }
-        })
+        // Declared here rather than on the list views because this screen is
+        // pushed from two different stacks (Recipes and History), and both
+        // already route a bare `Recipe` to the detail itself.
+        .navigationDestination(for: RecipeEditRoute.self) { route in
+            RecipeFormView(recipe: route.recipe, onSave: { _ in reload() })
+        }
         .task(id: recipe.persistentModelID) {
-            model.load(from: recipe)
-            model.resolveDefaultLyeIngredient(from: lyeIngredients)
+            reload()
         }
         .onChange(of: lyeIngredients) {
             model.resolveDefaultLyeIngredient(from: lyeIngredients)
         }
+    }
+
+    /// Re-reads the recipe into the display model — on first appearance and
+    /// again after the edit form saves and pops.
+    private func reload() {
+        model.load(from: recipe)
+        model.resolveDefaultLyeIngredient(from: lyeIngredients)
     }
 
     // MARK: - Oils
@@ -140,8 +145,10 @@ struct RecipeDetailView: View {
     }
 
     /// Maps each breakdown row's ingredient to its amount in the oil weight unit.
+    /// Amounts are summed rather than assumed unique — a recipe that ends up with
+    /// two rows for one ingredient should render, not trap.
     private func batchWeightLookup(_ rows: [IngredientProductBreakdown]) -> [PersistentIdentifier: Double] {
-        Dictionary(uniqueKeysWithValues: rows.map { ($0.ingredient.persistentModelID, $0.ingredientAmount) })
+        Dictionary(rows.map { ($0.ingredient.persistentModelID, $0.ingredientAmount) }, uniquingKeysWith: +)
     }
 
     // MARK: - Additives

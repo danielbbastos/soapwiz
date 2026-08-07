@@ -90,6 +90,11 @@ extension RecipeFormViewModel {
             recipeProduct.recipe = recipe
             context.insert(recipeProduct)
         }
+
+        // Deleted line items linger in `recipe.ingredients` until the context
+        // processes them, so a caller that re-reads the recipe the moment this
+        // returns would see every row twice.
+        context.processPendingChanges()
         return recipe
     }
 

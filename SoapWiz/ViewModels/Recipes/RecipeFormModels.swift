@@ -3,14 +3,14 @@ import SwiftData
 
 // MARK: - Draft row types
 
-struct OilIngredientDraft: Identifiable {
+struct OilIngredientDraft: Identifiable, Equatable {
     let id = UUID()
     let ingredient: Ingredient
     var amount: Double = 0
     var isLocked: Bool = false
 }
 
-struct IngredientAmountDraft: Identifiable {
+struct IngredientAmountDraft: Identifiable, Equatable {
     let id = UUID()
     let ingredient: Ingredient
     var amount: Double = 0
@@ -18,11 +18,41 @@ struct IngredientAmountDraft: Identifiable {
     var isLocked: Bool = false
 }
 
-struct RecipeProductDraft: Identifiable {
+struct RecipeProductDraft: Identifiable, Equatable {
     let id = UUID()
     var size: Double = 0
     var unitSymbol: String = ""
     var modelID: PersistentIdentifier?
+}
+
+/// Every user-editable field of the recipe form, captured so the form can tell
+/// whether leaving it would lose work. Compared as a whole rather than field by
+/// field so a new form field can't silently escape the check.
+struct RecipeFormSnapshot: Equatable {
+    var name: String
+    var desc: String
+    var weightUnit: String
+    var totalOilWeight: Double
+    var oilWeightUnit: String
+    var lyeType: String
+    var lyePurity: Double
+    var waterParts: Double
+    var superFat: Double
+    var oilDrafts: [OilIngredientDraft]
+    var additiveDrafts: [IngredientAmountDraft]
+    var fragranceDrafts: [IngredientAmountDraft]
+    var productDrafts: [RecipeProductDraft]
+    var fragrancePercentage: Double
+    var useHybrid: Bool
+    var kohPercentage: Double
+    var naohPercentage: Double
+    var kohPurity: Double
+    var naohPurity: Double
+    var isCreamSoap: Bool
+    var useCFM: Bool
+    var cfmNeutralizer: CFMNeutralizer
+    var lyeIngredient: Ingredient?
+    var kohLyeIngredient: Ingredient?
 }
 
 /// The units the recipe form offers for additive and fragrance rows. Shared so

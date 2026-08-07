@@ -13,7 +13,6 @@ struct SettingsView: View {
     @Query private var settingsRecords: [AppSettings]
     private var settings: AppSettings? { AppSettings.canonical(from: settingsRecords) }
 
-    @State private var showPvpInfo = false
     @State private var showNotificationDenied = false
     @State private var dataTransfer = DataTransferViewModel()
 
@@ -112,37 +111,17 @@ struct SettingsView: View {
         Section("Pricing") {
             HStack {
                 Text("RRP factor")
-                Button {
-                    showPvpInfo = true
-                } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
+                InfoPopoverIcon(
+                    title: "RRP Factor",
+                    text: "A multiplier applied to the total ingredient cost of a product to "
+                        + "estimate its recommended retail price (RRP — Recommended Retail Price)."
+                        + "\n\nFor example, a factor of 4 means a product costing €2.50 to make "
+                        + "would be priced at €10.00."
+                )
                 Spacer()
-                TextField("4", value: Bindable(settings).pvpFactor,
-                      format: .number.precision(.fractionLength(0...2)))
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 60)
+                NumericTextField(prompt: "4", value: Bindable(settings).pvpFactor, fractionLength: 0...2)
             }
             .listRowBackground(Color.cardBackground)
-        }
-        .sheet(isPresented: $showPvpInfo) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("RRP Factor")
-                    .font(.headline)
-                Text("A multiplier applied to the total ingredient cost of a product to estimate "
-                     + "its recommended retail price (RRP — Recommended Retail Price)."
-                     + "\n\nFor example, a factor of 4 means a product costing €2.50 to make "
-                     + "would be priced at €10.00.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .presentationDetents([.fraction(0.35)])
-            .presentationDragIndicator(.visible)
         }
     }
 
