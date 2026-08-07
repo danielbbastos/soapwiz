@@ -154,4 +154,76 @@ struct RecipeImportAmountMappingTests {
         #expect(model.oilDrafts.map(\.amount) == [55, 30, 15])
         #expect(!model.desc.lowercased().contains("repeated"))
     }
+
+    // MARK: - Several fragrances
+
+    /// A blend is two or three fragrances, and the second one used to eat the
+    /// first. Setting a row's unit unlocks every fragrance row, so the amount
+    /// already sitting in the earlier row went back to being a share of what
+    /// was left of the target: 5% and 2% against a 3% target left the first
+    /// row holding 1%.
+    @Test func applyImport_TwoFragrancesAsPercentages_BothKeepTheirAmounts() throws {
+        let orange = fixture.insert("Sweet Orange Essential Oil")
+
+        let draft = RecipeImportDraft.mock(
+            fragrances: [
+                ImportedIngredient(name: "Lavender Essential Oil", amount: 5, unit: "% of oils"),
+                ImportedIngredient(name: "Sweet Orange Essential Oil", amount: 2, unit: "% of oils")
+            ],
+            fragrancePercentage: 3
+        )
+        let model = fixture.apply(draft, inventory: [orange])
+
+        #expect(model.fragranceDrafts.count == 2)
+        let lavender = try #require(model.fragranceDrafts.first { $0.ingredient.name == "Lavender Essential Oil" })
+        let sweetOrange = try #require(model.fragranceDrafts.first { $0.ingredient.name == "Sweet Orange Essential Oil" })
+        #expect(lavender.amount == 5)
+        #expect(sweetOrange.amount == 2)
+    }
+
+    /// The same collision in a weight recipe, where redistributing a percentage
+    /// target across gram amounts has no business happening at all: 20 g and
+    /// 10 g left the first fragrance at zero.
+    @Test func applyImport_TwoFragrancesAsWeights_BothKeepTheirAmounts() throws {
+        let orange = fixture.insert("Sweet Orange Essential Oil")
+
+        let draft = RecipeImportDraft.mock(
+            oils: [ImportedIngredient(name: "Olive Oil", amount: 700, unit: "g")],
+            fragrances: [
+                ImportedIngredient(name: "Lavender Essential Oil", amount: 20, unit: "g"),
+                ImportedIngredient(name: "Sweet Orange Essential Oil", amount: 10, unit: "g")
+            ],
+            amountsArePercentages: false,
+            batchSize: nil,
+            batchUnit: "g"
+        )
+        let model = fixture.apply(draft, inventory: [orange])
+
+        #expect(model.fragranceDrafts.count == 2)
+        let lavender = try #require(model.fragranceDrafts.first { $0.ingredient.name == "Lavender Essential Oil" })
+        let sweetOrange = try #require(model.fragranceDrafts.first { $0.ingredient.name == "Sweet Orange Essential Oil" })
+        #expect(lavender.unit == "g")
+        #expect(lavender.amount == 20)
+        #expect(sweetOrange.amount == 10)
+    }
+
+    /// Three rows, because the two-row case can pass on an off-by-one that a
+    /// third row still breaks.
+    @Test func applyImport_ThreeFragrancesAsPercentages_AllKeepTheirAmounts() throws {
+        let orange = fixture.insert("Sweet Orange Essential Oil")
+        let patchouli = fixture.insert("Patchouli Essential Oil")
+
+        let draft = RecipeImportDraft.mock(
+            fragrances: [
+                ImportedIngredient(name: "Lavender Essential Oil", amount: 4, unit: "% of oils"),
+                ImportedIngredient(name: "Sweet Orange Essential Oil", amount: 2, unit: "% of oils"),
+                ImportedIngredient(name: "Patchouli Essential Oil", amount: 1, unit: "% of oils")
+            ],
+            fragrancePercentage: 3
+        )
+        let model = fixture.apply(draft, inventory: [orange, patchouli])
+
+        #expect(model.fragranceDrafts.count == 3)
+        #expect(model.fragranceDrafts.map(\.amount) == [4, 2, 1])
+    }
 }

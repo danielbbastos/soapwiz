@@ -120,11 +120,19 @@ extension RecipeFormViewModel {
         }
     }
 
-    /// The unit is set before the amount: `updateFragrance(unit:)` unlocks every
-    /// fragrance row and redistributes, which would overwrite an amount set
-    /// first. Setting the amount afterwards locks the row and makes it stick.
+    /// Every row is added and given its unit before any row is given its amount.
+    ///
+    /// `updateFragrance(unit:)` unlocks *every* fragrance row and redistributes,
+    /// so a row's amount only sticks if no later row sets a unit after it. Doing
+    /// the units in one pass makes that unlocking harmless — nothing is locked
+    /// yet — and the amounts in a second pass then lock each row as they go. By
+    /// the last one there is nothing left unlocked to redistribute into.
+    ///
+    /// Interleaved, a second fragrance wiped the first: 5% and 2% against a 3%
+    /// target left the first row holding 1%, and 20 g and 10 g left it at zero.
     private func applyFragrances(_ rows: [RecipeImportRow], repeated: inout [String]) {
         var seen: Set<PersistentIdentifier> = []
+        var amounts: [(id: UUID, amount: Double)] = []
         for row in rows {
             guard let ingredient = row.ingredient else { continue }
             guard !isRepeat(row, of: ingredient, seen: &seen, repeated: &repeated) else { continue }
@@ -134,7 +142,10 @@ extension RecipeFormViewModel {
             }) else { continue }
             let unit = resolvedUnit(row.imported.unit, among: RecipeUnitOptions.fragrance, fallback: defaultFragranceUnit)
             updateFragrance(id: draft.id, unit: unit)
-            userEditedFragrance(id: draft.id, amount: row.imported.amount)
+            amounts.append((draft.id, row.imported.amount))
+        }
+        for (id, amount) in amounts {
+            userEditedFragrance(id: id, amount: amount)
         }
     }
 
