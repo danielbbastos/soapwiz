@@ -27,6 +27,10 @@ struct NumericTextField: View {
                     // SwiftUI makes the field first responder after it applies the
                     // focus change, so the selection has to wait for that to land.
                     try? await Task.sleep(for: .milliseconds(50))
+                    // The action goes to whatever is first responder now, so bail
+                    // if focus has already moved on — otherwise a fast second tap
+                    // would have its own field selected out from under it.
+                    guard isFocused else { return }
                     UIApplication.shared.sendAction(
                         #selector(UIResponder.selectAll(_:)), to: nil, from: nil, for: nil
                     )

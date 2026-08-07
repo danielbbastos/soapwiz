@@ -37,9 +37,9 @@ final class RecipeFormViewModel {
     var editingRecipe: Recipe?
 
     /// The form's state the last time it matched what is stored. `nil` until the
-    /// form finishes loading.
+    /// form finishes loading. Read and written by `RecipeFormViewModel+DirtyState`.
     @ObservationIgnored
-    private var snapshot: RecipeFormSnapshot?
+    var snapshot: RecipeFormSnapshot?
 
     /// Guards `applyImport` the way `hasSeeded` guards `applySeed`: the form's
     /// `.task` can run again, and a second application would double every row.
@@ -57,35 +57,6 @@ final class RecipeFormViewModel {
     var weightUnitIsPercentage: Bool { weightUnit == "%" }
 
     var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
-
-    // MARK: - Unsaved changes
-
-    private var currentSnapshot: RecipeFormSnapshot {
-        RecipeFormSnapshot(
-            name: name, desc: desc, weightUnit: weightUnit, totalOilWeight: totalOilWeight,
-            oilWeightUnit: oilWeightUnit, lyeType: lyeType, lyePurity: lyePurity,
-            waterParts: waterParts, superFat: superFat, oilDrafts: oilDrafts,
-            additiveDrafts: additiveDrafts, fragranceDrafts: fragranceDrafts,
-            productDrafts: productDrafts, fragrancePercentage: fragrancePercentage,
-            useHybrid: useHybrid, kohPercentage: kohPercentage, naohPercentage: naohPercentage,
-            kohPurity: kohPurity, naohPurity: naohPurity, isCreamSoap: isCreamSoap,
-            useCFM: useCFM, cfmNeutralizer: cfmNeutralizer, lyeIngredient: lyeIngredient,
-            kohLyeIngredient: kohLyeIngredient
-        )
-    }
-
-    /// Records the current state as the clean baseline. Called once the form has
-    /// loaded, so only what the user does afterwards counts as an edit.
-    func captureSnapshot() {
-        snapshot = currentSnapshot
-    }
-
-    /// Whether leaving the form now would lose work. `false` until a baseline is
-    /// captured, so a form that never loaded never blocks its own dismissal.
-    var isDirty: Bool {
-        guard let snapshot else { return false }
-        return snapshot != currentSnapshot
-    }
 
     var totalPercentage: Double {
         oilDrafts.reduce(0) { $0 + $1.amount }

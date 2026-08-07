@@ -40,7 +40,8 @@ struct GeneratedRecipeDraft {
     /// `hasAnyIngredient` permanently true, so the extractor's
     /// `.nothingRecognised` guard could never fire and a page of unrelated text
     /// would arrive at the review screen as a plausible-looking recipe.
-    @Guide(description: "Every oil, fat, butter and wax in the recipe, with the amount exactly as written. Leave empty when the text states none", .maximumCount(20))
+    @Guide(description: "Every oil, fat, butter and wax in the recipe, with the amount exactly as "
+           + "written. Leave empty when the text states none", .maximumCount(20))
     var oils: [GeneratedIngredient]
 
     @Guide(description: "Additives such as clay, sodium lactate, salt, sugar or honey", .maximumCount(12))
