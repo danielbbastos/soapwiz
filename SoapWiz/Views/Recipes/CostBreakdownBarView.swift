@@ -7,7 +7,6 @@ struct CostBreakdownBarView: View {
     var availableHeight: CGFloat = 0
     @Query private var settingsRecords: [AppSettings]
     @Environment(\.modelContext) private var modelContext
-    @State private var isSwipeHintPresented = false
     @State private var visibleCardID: AnyHashable?
     @State private var keyboardVisible = false
 
@@ -80,25 +79,7 @@ struct CostBreakdownBarView: View {
     }
 
     private var swipeHintButton: some View {
-        Button {
-            isSwipeHintPresented = true
-        } label: {
-            Image(systemName: "info.circle")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-        }
-        .buttonStyle(.plain)
-        .popover(isPresented: $isSwipeHintPresented) {
-            Text("Swipe left to add another product size.")
-                .font(.footnote)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .frame(maxWidth: 240)
-                .fixedSize(horizontal: false, vertical: true)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .presentationBackground(.clear)
-                .presentationCompactAdaptation(.popover)
-        }
+        InfoPopoverIcon(text: "Swipe left to add another product size.")
     }
 
     private func carousel(batch: ProductCostBreakdown) -> some View {

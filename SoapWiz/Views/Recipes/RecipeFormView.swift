@@ -27,8 +27,8 @@ struct RecipeFormView: View {
 
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
-    @State private var showFragranceInfo = false
     @State private var showMoldCalculator = false
+    @State private var showDiscardConfirmation = false
     @FocusState private var oilWeightFocused: Bool
 
     var onSave: ((Recipe) -> Void)?
@@ -46,15 +46,12 @@ struct RecipeFormView: View {
             .navigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
-            .onReceive(NotificationCenter.default.publisher(for: UITextField.textDidBeginEditingNotification)) { note in
-                guard let field = note.object as? UITextField,
-                      field.keyboardType == .decimalPad else { return }
-                Task { @MainActor in
-                    field.selectedTextRange = field.textRange(from: field.endOfDocument, to: field.endOfDocument)
-                }
-            }
             .task(id: recipe?.persistentModelID) {
                 if let recipe { model.load(from: recipe) }
+                // The baseline is taken before any seed or import so a pre-filled
+                // new recipe counts as unsaved work, but after loading an
+                // existing one so opening it to look doesn't.
+                model.captureSnapshot()
                 if let seed { model.applySeed(seed.ingredients) }
                 if let importDraft { model.applyImport(importDraft) }
                 model.resolveDefaultLyeIngredient(from: lyeIngredients)
@@ -62,7 +59,13 @@ struct RecipeFormView: View {
             .onChange(of: lyeIngredients) {
                 model.resolveDefaultLyeIngredient(from: lyeIngredients)
             }
+            // Cancel is the only way out, so a swipe can't discard the form by
+            // accident — the feedback behind SW-106.
+            .navigationBarBackButtonHidden(true)
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { attemptDismiss() }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         let recipe = model.save(context: modelContext)
@@ -72,6 +75,23 @@ struct RecipeFormView: View {
                     .disabled(!model.canSave)
                 }
             }
+            // An alert rather than a confirmation dialog: on iPad the latter
+            // renders as a popover that drops the cancel button entirely,
+            // leaving "keep editing" to an undiscoverable tap outside.
+            .alert("Discard changes?", isPresented: $showDiscardConfirmation) {
+                Button("Discard", role: .destructive) { dismiss() }
+                Button("Keep Editing", role: .cancel) { }
+            } message: {
+                Text("This recipe has changes that haven't been saved.")
+            }
+    }
+
+    private func attemptDismiss() {
+        if model.isDirty {
+            showDiscardConfirmation = true
+        } else {
+            dismiss()
+        }
     }
 
     @ViewBuilder
@@ -115,20 +135,6 @@ private extension RecipeFormView {
             fragranceSection
         }
         .scrollClipDisabled()
-        .sheet(isPresented: $showFragranceInfo) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("EO / Fragrances %")
-                    .font(.headline)
-                Text("The target percentage of total oil weight reserved for essential oils and fragrance oils. "
-                     + "Used to calculate the recommended amount and to track usage in the Ingredients tab.")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .presentationDetents([.fraction(0.3)])
-            .presentationDragIndicator(.visible)
-        }
         .sheet(isPresented: $showMoldCalculator) {
             MoldCalculatorView(oilWeightUnit: model.oilWeightUnit) { weight in
                 model.totalOilWeight = weight
@@ -161,11 +167,8 @@ private extension RecipeFormView {
                 HStack {
                     Text("Total oil weight")
                     Spacer()
-                    TextField("0", value: $model.totalOilWeight, format: .number.precision(.fractionLength(0...1)))
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 80)
-                        .focused($oilWeightFocused)
+                    NumericTextField(prompt: "0", value: $model.totalOilWeight,
+                                     width: 80, focus: $oilWeightFocused)
                     Picker("Oil unit", selection: $model.oilWeightUnit) {
                         ForEach(absoluteWeightUnits, id: \.self) { Text($0) }
                     }
@@ -225,7 +228,15 @@ private extension RecipeFormView {
             // The Catherine Failor method only makes sense for non-solid soaps
             // (single KOH or dual lye), so it's hidden for a solid NaOH bar.
             if model.soapType != .solid {
-                Toggle("Catherine Failor method", isOn: $model.useCFM)
+                // The info icon is a sibling of the toggle rather than part of
+                // its label, which would swallow the tap.
+                HStack {
+                    Text("Catherine Failor method")
+                    InfoPopoverIcon(title: "Catherine Failor method", text: cfmExplanation)
+                    Spacer()
+                    Toggle("Catherine Failor method", isOn: $model.useCFM)
+                        .labelsHidden()
+                }
                 if model.useCFM {
                     Picker("Neutraliser", selection: $model.cfmNeutralizer) {
                         ForEach(CFMNeutralizer.allCases, id: \.self) { option in
@@ -281,10 +292,7 @@ private extension RecipeFormView {
         HStack {
             Text(label)
             Spacer()
-            TextField("0", value: Binding(get: { value }, set: set), format: .number.precision(.fractionLength(0...1)))
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 60)
+            NumericTextField(prompt: "0", value: Binding(get: { value }, set: set))
             Text("%")
                 .foregroundStyle(.secondary)
         }
@@ -294,10 +302,7 @@ private extension RecipeFormView {
         HStack {
             Text(label)
             Spacer()
-            TextField(prompt, value: value, format: .number.precision(.fractionLength(0...1)))
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 60)
+            NumericTextField(prompt: prompt, value: value)
             Text("%")
                 .foregroundStyle(.secondary)
         }
@@ -323,10 +328,7 @@ private extension RecipeFormView {
         HStack {
             Text("Water to lye ratio")
             Spacer()
-            TextField("1.5", value: $model.waterParts, format: .number.precision(.fractionLength(0...1)))
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.center)
-                .frame(width: 30)
+            NumericTextField(prompt: "1.5", value: $model.waterParts, width: 30, alignment: .center)
             Text(":")
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
@@ -340,31 +342,35 @@ private extension RecipeFormView {
         HStack {
             Text("Super Fat")
             Spacer()
-            TextField("5", value: $model.superFat, format: .number.precision(.fractionLength(0...1)))
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 60)
+            NumericTextField(prompt: "5", value: $model.superFat)
             Text("%")
                 .foregroundStyle(.secondary)
         }
+    }
+
+    /// Liquid-soap method described in Catherine Failor's *Making Natural Liquid
+    /// Soaps*, as implemented in `LyeCalculator`.
+    var cfmExplanation: String {
+        "Takes the lye at 0% super fat plus a 10% excess so every oil saponifies, "
+        + "then neutralises what's left over after the cook. Water is still sized "
+        + "from the recipe's normal super-fat lye, so the excess doesn't dilute the batch.\n\n"
+        + "The neutraliser is ¾ oz of solution per lb of soap — boric acid at 20% solid "
+        + "to 80% water, or borax at 33% to 67%. It's a recommendation shown alongside "
+        + "the calculated amounts and isn't counted in the recipe cost."
     }
 
     var fragranceSection: some View {
         Section("Fragrance configuration") {
             HStack {
                 Text("EO / Fragrances")
-                Button {
-                    showFragranceInfo = true
-                } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
+                InfoPopoverIcon(
+                    title: "EO / Fragrances %",
+                    text: "The target percentage of total oil weight reserved for essential oils "
+                        + "and fragrance oils. Used to calculate the recommended amount and to "
+                        + "track usage in the Ingredients tab."
+                )
                 Spacer()
-                TextField("3", value: $model.fragrancePercentage, format: .number.precision(.fractionLength(0...1)))
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 60)
+                NumericTextField(prompt: "3", value: $model.fragrancePercentage)
                 Text("%")
                     .foregroundStyle(.secondary)
             }

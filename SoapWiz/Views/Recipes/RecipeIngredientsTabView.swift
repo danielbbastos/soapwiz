@@ -40,7 +40,6 @@ struct RecipeIngredientsTabView: View {
     @State private var additivesExpanded = true
     @State private var fragrancesExpanded = true
     @State private var calculatedAmountsExpanded = true
-    @State private var showFragranceInfo = false
     @State private var costBreakdownExpanded = false
     @State private var availableHeight: CGFloat = 0
 
@@ -131,13 +130,10 @@ struct RecipeIngredientsTabView: View {
                     HStack {
                         Text(draft.ingredient.name)
                         Spacer()
-                        TextField("0", value: Binding(
+                        NumericTextField(prompt: "0", value: Binding(
                             get: { draft.amount },
                             set: { model.userEdited(id: draft.id, amount: $0) }
-                        ), format: .number.precision(.fractionLength(0...1)))
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 60)
+                        ))
                         Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
                             .foregroundStyle(.secondary)
                     }
@@ -163,13 +159,10 @@ struct RecipeIngredientsTabView: View {
                         Text(draft.ingredient.name)
                             .lineLimit(1)
                         Spacer()
-                        TextField("0", value: Binding(
+                        NumericTextField(prompt: "0", value: Binding(
                             get: { draft.amount },
                             set: { model.updateAdditive(id: draft.id, amount: $0) }
-                        ), format: .number.precision(.fractionLength(0...3)))
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 55)
+                        ), fractionLength: 0...3, width: 55)
                         Picker("Unit", selection: Binding(
                             get: { draft.unit },
                             set: { model.updateAdditive(id: draft.id, unit: $0) }
@@ -202,23 +195,11 @@ struct RecipeIngredientsTabView: View {
                         HStack(spacing: 4) {
                             Text(target.text)
                                 .foregroundStyle(target.isOverTarget ? Color.red : Color.secondary)
-                            Button {
-                                showFragranceInfo = true
-                            } label: {
-                                Image(systemName: "info.circle")
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                            .popover(isPresented: $showFragranceInfo) {
-                                Text("Recommended fragrance load: \(model.formatPercentage(target.percentage))% "
-                                     + "of total oils, set on the Config tab.")
-                                    .font(.footnote)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 10)
-                                    .frame(maxWidth: 240)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .presentationCompactAdaptation(.popover)
-                            }
+                            InfoPopoverIcon(
+                                text: "Recommended fragrance load: "
+                                    + "\(model.formatPercentage(target.percentage))% of total oils, "
+                                    + "set on the Config tab."
+                            )
                         }
                     }
                 }
@@ -227,7 +208,7 @@ struct RecipeIngredientsTabView: View {
                         Text(draft.ingredient.name)
                             .lineLimit(1)
                         Spacer()
-                        TextField("0", value: Binding(
+                        NumericTextField(prompt: "0", value: Binding(
                             get: { draft.amount },
                             set: { newVal in
                                 if draft.unit == "% of oils" {
@@ -236,10 +217,7 @@ struct RecipeIngredientsTabView: View {
                                     model.updateFragrance(id: draft.id, amount: newVal)
                                 }
                             }
-                        ), format: .number.precision(.fractionLength(0...3)))
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 55)
+                        ), fractionLength: 0...3, width: 55)
                         Picker("Unit", selection: Binding(
                             get: { draft.unit },
                             set: { model.updateFragrance(id: draft.id, unit: $0) }

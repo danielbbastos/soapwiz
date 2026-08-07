@@ -11,7 +11,6 @@ struct RecipeExtraIngredientsSection: View {
     @State private var expanded = false
     @State private var creamExpanded = true
     @State private var selectedSectionAPct = 1
-    @State private var showSectionAInfo = false
 
     @ViewBuilder
     var body: some View {
@@ -72,14 +71,7 @@ struct RecipeExtraIngredientsSection: View {
             }
             .pickerStyle(.segmented)
             .fixedSize()
-            Button {
-                showSectionAInfo = true
-            } label: {
-                Image(systemName: "info.circle")
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .sheet(isPresented: $showSectionAInfo) { sectionAInfoSheet }
+            InfoPopoverIcon(title: "Dosage Percentages", text: sectionADosageExplanation)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
@@ -89,23 +81,10 @@ struct RecipeExtraIngredientsSection: View {
         .background(Color.cardBackground)
     }
 
-    private var sectionAInfoSheet: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Dosage Percentages")
-                .font(.headline)
-            (Text("These percentages represent the dosage as a fraction of total oil weight — "
-                  + "for example, 1% equals 10 g per 1000 g of oils.\n\nThey are only relevant for ")
-             + Text("Sodium Lactate").bold()
-             + Text(" and ")
-             + Text("Citric Acid Powder").bold()
-             + Text("."))
-                .font(.body)
-                .foregroundStyle(.secondary)
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .presentationDetents([.fraction(0.3)])
-        .presentationDragIndicator(.visible)
+    private var sectionADosageExplanation: String {
+        "These percentages represent the dosage as a fraction of total oil weight — "
+        + "for example, 1% equals 10 g per 1000 g of oils.\n\n"
+        + "They are only relevant for Sodium Lactate and Citric Acid Powder."
     }
 
     private func extraSectionARow(label: String, weight: Double, isSubrow: Bool) -> some View {

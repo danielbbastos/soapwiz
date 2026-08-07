@@ -15,7 +15,6 @@ struct MoldCalculatorView: View {
     @State private var fillMode: MoldFillMode = .standard
     @State private var lengthUnit: MoldLengthUnit
     @State private var dimensions: MoldDimensions
-    @State private var showFillInfo = false
 
     /// cm in one inch — the only constant needed to convert dimensions when the
     /// length unit is switched.
@@ -70,9 +69,6 @@ struct MoldCalculatorView: View {
             .safeAreaInset(edge: .bottom) {
                 useWeightButton
             }
-            .sheet(isPresented: $showFillInfo) {
-                fillInfoSheet
-            }
         }
     }
 
@@ -117,10 +113,7 @@ struct MoldCalculatorView: View {
         HStack {
             Text(label)
             Spacer()
-            TextField("0", value: value, format: .number.precision(.fractionLength(0...2)))
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 80)
+            NumericTextField(prompt: "0", value: value, fractionLength: 0...2, width: 80)
             Text(lengthUnit.rawValue)
                 .foregroundStyle(.secondary)
         }
@@ -130,13 +123,7 @@ struct MoldCalculatorView: View {
         Section {
             HStack {
                 Text("Fill")
-                Button {
-                    showFillInfo = true
-                } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
+                InfoPopoverIcon(title: "Fill", text: fillExplanation)
                 Spacer()
                 Picker("Fill", selection: $fillMode) {
                     ForEach(MoldFillMode.allCases) { Text($0.label).tag($0) }
@@ -184,21 +171,12 @@ struct MoldCalculatorView: View {
         .padding(.bottom, 8)
     }
 
-    private var fillInfoSheet: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Fill")
-                .font(.headline)
-            Text("How full the mold is poured. Soap batter needs headroom above the oils, lye and water it "
-                 + "becomes — these factors already leave the usual amount.\n\n**Standard** fills the mold "
-                 + "normally. **Extra headroom** recommends a little less oil (~5–10% more empty space) for "
-                 + "recipes with lots of fragrance or additives that make the batter rise.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-        }
-        .padding(24)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .presentationDetents([.medium])
-        .presentationDragIndicator(.visible)
+    private var fillExplanation: String {
+        "How full the mold is poured. Soap batter needs headroom above the oils, lye and "
+        + "water it becomes — these factors already leave the usual amount.\n\n"
+        + "Standard fills the mold normally. Extra headroom recommends a little less oil "
+        + "(~5–10% more empty space) for recipes with lots of fragrance or additives that "
+        + "make the batter rise."
     }
 
     /// Converts the entered dimensions into `newUnit` so switching cm ⇄ in keeps

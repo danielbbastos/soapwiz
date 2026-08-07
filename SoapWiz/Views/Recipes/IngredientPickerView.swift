@@ -68,7 +68,6 @@ struct IngredientPickerView: View {
                     ForEach(filtered, id: \.persistentModelID) { ingredient in
                         ingredientRow(ingredient)
                     }
-                    .listRowBackground(Color.cardBackground)
                 }
             }
             .navigationTitle("Choose Ingredient")
@@ -110,19 +109,17 @@ struct IngredientPickerView: View {
             }
         } label: {
             HStack {
+                // Leading, so the state stays visible under a right hand — and
+                // matching the extras rows, which already put it here.
+                Image(systemName: isAdded || isPending ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isPending ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                 Text(ingredient.name)
                 Spacer()
-                if isAdded {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(.secondary)
-                } else if isPending {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(Color.accentColor)
-                }
             }
             .contentShape(Rectangle())
         }
         .disabled(isAdded)
+        .listRowBackground(isPending ? Color.selectedRowBackground : Color.cardBackground)
     }
 
     private func chip(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {

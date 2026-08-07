@@ -89,11 +89,8 @@ struct RecipeProductCardView: View {
     private var header: some View {
         HStack(spacing: 8) {
             if selectedUnit?.requiresSize ?? true {
-                TextField("Size", value: $draft.size, format: .number.precision(.fractionLength(0...1)))
-                    .keyboardType(.decimalPad)
+                NumericTextField(prompt: "Size", value: $draft.size, width: 56, alignment: .center)
                     .font(.subheadline)
-                    .multilineTextAlignment(.center)
-                    .frame(width: 56)
                     .padding(.vertical, 4)
                     .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 6))
             }

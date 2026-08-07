@@ -36,6 +36,11 @@ final class RecipeFormViewModel {
     @ObservationIgnored
     var editingRecipe: Recipe?
 
+    /// The form's state the last time it matched what is stored. `nil` until the
+    /// form finishes loading. Read and written by `RecipeFormViewModel+DirtyState`.
+    @ObservationIgnored
+    var snapshot: RecipeFormSnapshot?
+
     /// Guards `applyImport` the way `hasSeeded` guards `applySeed`: the form's
     /// `.task` can run again, and a second application would double every row.
     @ObservationIgnored
@@ -338,13 +343,17 @@ final class RecipeFormViewModel {
             candidates.first { $0.name.lowercased().contains(name) }
         }
 
+        // Resolving only ever fills a blank, so the baseline moves with it — a
+        // lye ingredient arriving late from CloudKit isn't a user edit.
         if lyeIngredient == nil {
             // Single lye is currently always NaOH; the hybrid path's NaOH portion
             // shares this ingredient.
             lyeIngredient = match("sodium hydroxide") ?? candidates.first
+            snapshot?.lyeIngredient = lyeIngredient
         }
         if kohLyeIngredient == nil {
             kohLyeIngredient = match("potassium hydroxide") ?? candidates.first
+            snapshot?.kohLyeIngredient = kohLyeIngredient
         }
     }
 

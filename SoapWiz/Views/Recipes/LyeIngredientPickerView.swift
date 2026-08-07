@@ -30,22 +30,21 @@ struct LyeIngredientPickerView: View {
                 )
             } else {
                 ForEach(filtered) { ingredient in
+                    let isSelected = selected?.persistentModelID == ingredient.persistentModelID
                     Button {
                         selected = ingredient
                         dismiss()
                     } label: {
                         HStack {
+                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                             Text(ingredient.name)
                                 .foregroundStyle(.primary)
                             Spacer()
-                            if selected?.persistentModelID == ingredient.persistentModelID {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(.tint)
-                            }
                         }
                     }
+                    .listRowBackground(isSelected ? Color.selectedRowBackground : Color.cardBackground)
                 }
-                .listRowBackground(Color.cardBackground)
             }
         }
         .searchable(text: $searchText)
