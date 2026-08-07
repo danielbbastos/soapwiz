@@ -46,4 +46,24 @@ final class IngredientPurchase {
         self.remainingAmount = quantity
         self.storageLocation = storageLocation
     }
+
+    /// Stamps the opening date the first time the purchase is drawn from. Never
+    /// overwrites an existing date — the user may have opened it by hand earlier,
+    /// and that record is the more accurate one. For callers that observe the
+    /// draw itself, such as batch creation.
+    func markOpened() {
+        guard openingDate == nil else { return }
+        openingDate = .now
+    }
+
+    /// Infers that the purchase has been opened from its remaining amount, for
+    /// the inventory screen, which sees only the new stock level and has no draw
+    /// event to observe. Not a substitute for `markOpened`: `remainingAmount` can
+    /// exceed `quantity` when the quantity is edited down after some was used
+    /// (`PurchaseFormViewModel.save` rewrites `quantity` alone), and this then
+    /// infers nothing.
+    func markOpenedIfPartlyUsed() {
+        guard remainingAmount < quantity else { return }
+        markOpened()
+    }
 }

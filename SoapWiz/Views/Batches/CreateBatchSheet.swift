@@ -38,10 +38,20 @@ struct CreateBatchSheet: View {
                 let requirements = model.requirements
                 let shortages = requirements.filter(\.isShort)
                 let estimatedCost = model.estimatedCost
+                let totalBatchWeight = model.totalBatchWeight
 
                 Section {
                     Stepper(value: $model.batchCount, in: 1...999) {
                         LabeledContent("Batches", value: "\(model.batchCount)")
+                    }
+                    // Shown even when stock is short, unlike estimated cost: the
+                    // size of the batch you can't yet make is what tells you how
+                    // much more to buy.
+                    if totalBatchWeight > 0 {
+                        LabeledContent(
+                            "Total weight",
+                            value: amountText(totalBatchWeight, unit: model.batchWeightUnit)
+                        )
                     }
                     if shortages.isEmpty && estimatedCost > 0 {
                         LabeledContent(
