@@ -34,7 +34,13 @@ struct GeneratedRecipeDraft {
     @Guide(description: "The recipe's name. Use an empty string when the source doesn't name it")
     var name: String
 
-    @Guide(description: "Every oil, fat, butter and wax in the recipe, with the amount exactly as written", .count(1...20))
+    /// No minimum. A floor of one would make the schema demand an oil from text
+    /// that has none, and the model can only satisfy that by inventing one —
+    /// the opposite of "Report only what the text states". It would also leave
+    /// `hasAnyIngredient` permanently true, so the extractor's
+    /// `.nothingRecognised` guard could never fire and a page of unrelated text
+    /// would arrive at the review screen as a plausible-looking recipe.
+    @Guide(description: "Every oil, fat, butter and wax in the recipe, with the amount exactly as written. Leave empty when the text states none", .maximumCount(20))
     var oils: [GeneratedIngredient]
 
     @Guide(description: "Additives such as clay, sodium lactate, salt, sugar or honey", .maximumCount(12))
