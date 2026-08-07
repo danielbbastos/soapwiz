@@ -25,6 +25,14 @@ struct RecipeProductDraft: Identifiable {
     var modelID: PersistentIdentifier?
 }
 
+/// The units the recipe form offers for additive and fragrance rows. Shared so
+/// recipe import can check an imported unit against the same list the pickers
+/// show, rather than keeping a second copy that can drift.
+enum RecipeUnitOptions {
+    static let additive = ["g", "kg", "oz", "lb", "ml", "L", "% of batch", "% of liquids", "% of oils"]
+    static let fragrance = ["g", "oz", "ml", "% of batch", "% of liquids", "% of oils"]
+}
+
 // MARK: - Soap method types
 
 /// The neutraliser used by the Catherine Failor method to mop up the 10% excess

@@ -24,9 +24,12 @@ final class IngredientFormViewModel {
 
     let ingredient: Ingredient?
 
-    init(ingredient: Ingredient? = nil, defaultCategory: IngredientCategory? = nil) {
+    init(ingredient: Ingredient? = nil, defaultCategory: IngredientCategory? = nil, prefilledName: String? = nil) {
         self.ingredient = ingredient
         selectedCategory = defaultCategory
+        if let prefilledName {
+            name = prefilledName
+        }
         if let ingredient {
             name = ingredient.name
             code = ingredient.code
