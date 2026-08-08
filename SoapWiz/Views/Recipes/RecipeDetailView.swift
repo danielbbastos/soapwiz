@@ -10,7 +10,6 @@ struct RecipeDetailView: View {
     private var lyeIngredients: [Ingredient]
 
     @State private var model = RecipeFormViewModel()
-    @State private var selectedQualityName: String?
     @State private var showInGrams = false
     @State private var showCreateBatch = false
 
@@ -244,55 +243,11 @@ struct RecipeDetailView: View {
 
     // MARK: - Soap properties
 
-    private var selectedQuality: SoapQuality? {
-        guard let name = selectedQualityName else { return nil }
-        return SoapQuality.allCases.first { $0.displayName == name }
-    }
-
     private var soapPropertiesSection: some View {
         let stats = RecipeStats(oilDrafts: model.oilDrafts)
         return Section("Soap properties") {
             if stats.hasOils {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Grey bands show the recommended range for each property.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    SoapPropertiesChartView(
-                        profile: stats.fattyAcidProfile,
-                        hasOils: stats.hasOils,
-                        selectedDisplayName: $selectedQualityName
-                    )
-                }
-                .padding(.vertical, 4)
-
-                if let quality = selectedQuality {
-                    OilContributionCardView(
-                        quality: quality,
-                        totalValue: quality.value(from: stats.fattyAcidProfile),
-                        contributions: stats.contributions(for: quality),
-                        onClose: {
-                            withAnimation(.easeInOut(duration: 0.22)) {
-                                selectedQualityName = nil
-                            }
-                        }
-                    )
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-
-                HStack {
-                    Text("INS")
-                    Spacer()
-                    Text(stats.ins.formatted(.number.precision(.fractionLength(0...1))))
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-                HStack {
-                    Text("Iodine value")
-                    Spacer()
-                    Text(stats.iodineValue.formatted(.number.precision(.fractionLength(0...1))))
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
+                SoapPropertiesSection(stats: stats)
             } else {
                 Text("Add oils to see soap properties")
                     .foregroundStyle(.secondary)

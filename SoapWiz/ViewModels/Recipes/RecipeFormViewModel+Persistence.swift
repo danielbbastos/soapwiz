@@ -1,9 +1,12 @@
 import Foundation
+import OSLog
 import SwiftData
 
 /// Loading an existing recipe into the form and persisting the form back to a
 /// `Recipe`. Kept apart from the view-model's live editing state for clarity.
 extension RecipeFormViewModel {
+    private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "recipe")
+
     func load(from recipe: Recipe) {
         editingRecipe = recipe
         name = recipe.name
@@ -84,18 +87,71 @@ extension RecipeFormViewModel {
         recipe.ingredients.filter { $0.ingredient != nil }.forEach { context.delete($0) }
         insertIngredients(into: recipe, context: context)
 
-        recipe.products.forEach { context.delete($0) }
-        for draft in productDrafts {
-            let recipeProduct = RecipeProduct(size: draft.size, unitSymbol: draft.unitSymbol)
-            recipeProduct.recipe = recipe
-            context.insert(recipeProduct)
-        }
+        applyProducts(to: recipe, context: context)
 
         // Deleted line items linger in `recipe.ingredients` until the context
         // processes them, so a caller that re-reads the recipe the moment this
         // returns would see every row twice.
         context.processPendingChanges()
         return recipe
+    }
+
+    /// Writes only the recipe's `RecipeProduct` rows, leaving ingredients and
+    /// every other field alone. The recipe detail screen adds and deletes
+    /// products without opening the form, and a full `save(context:)` there
+    /// would rewrite the whole ingredient graph as a side effect.
+    func saveProducts(context: ModelContext) {
+        guard let recipe = editingRecipe else { return }
+        let inserted = applyProducts(to: recipe, context: context)
+
+        // An inserted model keeps a temporary `persistentModelID` until the
+        // context is saved, so the new drafts are stamped only afterwards:
+        // holding a temporary id would make the next diff miss its match and
+        // delete the product it should have updated. The surrounding drafts are
+        // left as they are, so the detail screen's rows keep their identity.
+        do {
+            try context.save()
+        } catch {
+            // The ids would still be temporary, and stamping a temporary id is
+            // what makes the following reconcile destructive. Left unstamped,
+            // the drafts simply look new and the next pass re-inserts them.
+            Self.log.error("Saving recipe products failed: \(error, privacy: .public)")
+            return
+        }
+        for (index, product) in inserted {
+            productDrafts[index].modelID = product.persistentModelID
+        }
+    }
+
+    /// Reconciles the recipe's products with the current drafts, matched on
+    /// `RecipeProductDraft.modelID`. Untouched products keep their identity
+    /// rather than being deleted and reinserted on every save. Returns the
+    /// products inserted for drafts that had none, paired with their draft
+    /// index, so the caller can stamp the ids back once they are permanent.
+    @discardableResult
+    private func applyProducts(to recipe: Recipe, context: ModelContext) -> [(index: Int, product: RecipeProduct)] {
+        let draftedIDs = Set(productDrafts.compactMap(\.modelID))
+        for product in recipe.products where !draftedIDs.contains(product.persistentModelID) {
+            context.delete(product)
+        }
+
+        let existing = Dictionary(
+            recipe.products.map { ($0.persistentModelID, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        var inserted: [(index: Int, product: RecipeProduct)] = []
+        for (index, draft) in productDrafts.enumerated() {
+            if let modelID = draft.modelID, let product = existing[modelID] {
+                product.size = draft.size
+                product.unitSymbol = draft.unitSymbol
+            } else if !draft.isSeededPlaceholder {
+                let product = RecipeProduct(size: draft.size, unitSymbol: draft.unitSymbol)
+                product.recipe = recipe
+                context.insert(product)
+                inserted.append((index, product))
+            }
+        }
+        return inserted
     }
 
     /// Recreates the recipe's ingredient line items from the current drafts.

@@ -1,24 +1,5 @@
 import SwiftUI
 
-private enum BreakdownGroupKey: String, CaseIterable {
-    case oils, additives, fragrances, lye
-
-    var displayName: String {
-        switch self {
-        case .oils: "Oils"
-        case .additives: "Additives"
-        case .fragrances: "Fragrances"
-        case .lye: "Lye"
-        }
-    }
-
-    /// Only additives and fragrances carry a user-chosen unit; oils and lye are
-    /// always shown in the oil weight unit.
-    var usesEnteredUnit: Bool {
-        self == .additives || self == .fragrances
-    }
-}
-
 struct RecipeProductCardView: View {
     @Binding var draft: RecipeProductDraft
     let breakdown: ProductCostBreakdown
@@ -44,13 +25,7 @@ struct RecipeProductCardView: View {
     }()
 
     private var groups: [(key: BreakdownGroupKey, rows: [IngredientProductBreakdown])] {
-        let pairs: [(BreakdownGroupKey, [IngredientProductBreakdown])] = [
-            (.oils, breakdown.oils),
-            (.additives, breakdown.additives),
-            (.fragrances, breakdown.fragrances),
-            (.lye, breakdown.lye)
-        ]
-        return pairs.filter { !$0.1.isEmpty }
+        BreakdownGroupKey.groups(of: breakdown)
     }
 
     var body: some View {

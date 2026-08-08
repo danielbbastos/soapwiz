@@ -23,6 +23,16 @@ struct RecipeProductDraft: Identifiable, Equatable {
     var size: Double = 0
     var unitSymbol: String = ""
     var modelID: PersistentIdentifier?
+
+    /// The unsaved row the form seeds itself with when a recipe has no products
+    /// of its own. It stands for the whole batch, which already has its own
+    /// figures wherever products are listed, so it is never written to the
+    /// store — persisting it would leave behind a product the user never asked
+    /// for and no screen shows. A row that once was saved has a `modelID` and
+    /// is a real product, whatever its size.
+    var isSeededPlaceholder: Bool {
+        modelID == nil && unitSymbol == ProductUnit.partsOfBatch.rawValue && size <= 1
+    }
 }
 
 /// Every user-editable field of the recipe form, captured so the form can tell
