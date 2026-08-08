@@ -343,20 +343,28 @@ final class RecipeFormViewModel {
         redistributeFragrancePercentages()
     }
 
-    /// Collapses loaded rows onto `unit` — recipes saved before the unit became
-    /// recipe-wide can hold rows that disagree. Rows already in that unit keep
-    /// their amounts (locked when the unit spreads a budget), mismatched rows
-    /// are unlocked and re-derived by one redistribution. No-op when the rows
-    /// already agree, so loading a clean recipe never rewrites amounts.
+    /// Collapses loaded rows onto `unit` and locks the ones already stored in
+    /// it, so what the user saved survives the rest of the session.
+    ///
+    /// Locking is what separates editing from creating. A new recipe's rows are
+    /// all unlocked, so each fragrance added splits the total afresh — three
+    /// fragrances land on a third each. A saved recipe's rows are locked, so
+    /// adding a fourth to a 60/40 blend leaves it at 60/40 and gives the new
+    /// row what is left, which is nothing until the user rebalances. Rewriting
+    /// the saved amounts would throw away the numbers they are editing against.
+    ///
+    /// Rows in some other unit — only possible on recipes saved before the unit
+    /// became recipe-wide — can't be preserved, so they stay unlocked and one
+    /// redistribution re-derives them from whatever the locked rows leave.
     func reconcileLoadedFragranceRows(with unit: FragranceUnit) {
         fragranceUnit = unit
-        guard fragranceDrafts.contains(where: { $0.unit != unit.rawValue }) else { return }
         let redistributes = redistributionTotal != nil
+        let hasMismatch = fragranceDrafts.contains { $0.unit != unit.rawValue }
         for idx in fragranceDrafts.indices {
             fragranceDrafts[idx].isLocked = redistributes && fragranceDrafts[idx].unit == unit.rawValue
             fragranceDrafts[idx].unit = unit.rawValue
         }
-        if redistributes { redistributeFragrancePercentages() }
+        if redistributes && hasMismatch { redistributeFragrancePercentages() }
     }
 
     /// The total the fragrance rows should sum to in the units that spread a

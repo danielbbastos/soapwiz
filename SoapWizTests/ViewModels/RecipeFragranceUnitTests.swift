@@ -241,6 +241,84 @@ struct RecipeFragranceUnitTests: RecipeFormTestHelpers {
         #expect(model.fragranceUnit == .percentOfFragrances)
     }
 
+    // MARK: - Editing a saved recipe vs. creating one
+
+    @Test func addFragrance_NewRecipe_SplitsTheBlendAfresh() {
+        let model = RecipeFormViewModel()
+        model.addFragrance(Ingredient(name: "A"))
+        model.addFragrance(Ingredient(name: "B"))
+        model.addFragrance(Ingredient(name: "C"))
+
+        // Nothing is the user's saved work yet, so each row splits the total.
+        // The last row carries the rounding remainder, so this is a near-third
+        // each rather than three equal values.
+        let amounts = model.fragranceDrafts.map(\.amount)
+        #expect(amounts.count == 3)
+        #expect(amounts.allSatisfy { abs($0 - 100 / 3) < 0.1 })
+        #expect(abs(amounts.reduce(0, +) - 100) < 1e-9)
+    }
+
+    @Test func addFragrance_SavedRecipe_StartsAtZeroAndKeepsTheSavedBlend() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = makeStoredRecipe(ctx, rowUnits: [
+            (60, "% of fragrances"), (40, "% of fragrances")
+        ])
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+        model.addFragrance(Ingredient(name: "Third EO"))
+
+        #expect(model.fragranceDrafts.map(\.amount) == [60, 40, 0])
+    }
+
+    @Test func addFragrance_SavedRecipe_ThenEditingASavedRowFeedsTheNewOne() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = makeStoredRecipe(ctx, rowUnits: [
+            (60, "% of fragrances"), (40, "% of fragrances")
+        ])
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+        model.addFragrance(Ingredient(name: "Third EO"))
+        model.userEditedFragrance(id: model.fragranceDrafts[0].id, amount: 50)
+
+        // The slack freed by the edit goes to the row still unspoken for.
+        #expect(model.fragranceDrafts.map(\.amount) == [50, 40, 10])
+    }
+
+    @Test func removeFragrance_SavedRecipe_LeavesTheOtherAmountsAlone() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = makeStoredRecipe(ctx, rowUnits: [
+            (60, "% of fragrances"), (40, "% of fragrances")
+        ])
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+        model.removeFragrance(at: IndexSet(integer: 1))
+
+        // The survivor keeps the number the user saved; the shares now total 60,
+        // which `fragranceBlendTotal` surfaces rather than silently rewriting.
+        #expect(model.fragranceDrafts.map(\.amount) == [60])
+        #expect(model.fragranceBlendTotal == 60)
+    }
+
+    @Test func load_SavedPercentOfOilsRecipe_AlsoLocksItsRows() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = makeStoredRecipe(ctx, rowUnits: [(2, "% of oils"), (1, "% of oils")])
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+        model.addFragrance(Ingredient(name: "Third EO"))
+
+        // Same rule in the other redistributing unit: the saved 2/1 against a
+        // 3% load leaves nothing for the new row.
+        #expect(model.fragranceDrafts.map(\.amount) == [2, 1, 0])
+    }
+
     @Test func load_ThenCaptureSnapshot_ReconciliationAloneIsNotDirty() throws {
         let (container, ctx) = try makeContext()
         _ = container
