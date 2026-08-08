@@ -100,7 +100,7 @@ extension RecipeFormViewModel {
     /// every other field alone. The recipe detail screen adds and deletes
     /// products without opening the form, and a full `save(context:)` there
     /// would rewrite the whole ingredient graph as a side effect.
-    func saveProducts(context: ModelContext) {
+    func saveProducts(context: ModelContext) throws {
         guard let recipe = editingRecipe else { return }
         let inserted = applyProducts(to: recipe, context: context)
 
@@ -115,8 +115,9 @@ extension RecipeFormViewModel {
             // The ids would still be temporary, and stamping a temporary id is
             // what makes the following reconcile destructive. Left unstamped,
             // the drafts simply look new and the next pass re-inserts them.
+            // The error is rethrown so the caller can tell the user.
             Self.log.error("Saving recipe products failed: \(error, privacy: .public)")
-            return
+            throw error
         }
         for (index, product) in inserted {
             productDrafts[index].modelID = product.persistentModelID

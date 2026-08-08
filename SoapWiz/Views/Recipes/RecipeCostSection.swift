@@ -14,6 +14,7 @@ struct RecipeCostSection: View {
     @State private var batchTotalExpanded = false
     @State private var expandedProducts: [UUID: Bool] = [:]
     @State private var showingAddProduct = false
+    @State private var showingSaveError = false
 
     private static let currencyFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
@@ -89,9 +90,13 @@ struct RecipeCostSection: View {
             }
             .sheet(isPresented: $showingAddProduct) {
                 AddRecipeProductSheet { draft in
-                    model.productDrafts.append(draft)
-                    model.saveProducts(context: modelContext)
+                    saveProducts { model.productDrafts.append(draft) }
                 }
+            }
+            .alert("Couldn't save products", isPresented: $showingSaveError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("The change was not saved. Please try again.")
             }
         }
         .listRowBackground(Color.cardBackground)
@@ -104,8 +109,21 @@ struct RecipeCostSection: View {
         let products = nonWholeBatchProducts
         let deletedIDs = Set(offsets.compactMap { products.indices.contains($0) ? products[$0].id : nil })
         guard !deletedIDs.isEmpty else { return }
-        model.productDrafts.removeAll { deletedIDs.contains($0.id) }
-        model.saveProducts(context: modelContext)
+        saveProducts { model.productDrafts.removeAll { deletedIDs.contains($0.id) } }
+    }
+
+    /// Applies a draft mutation and persists it. On a failed save the drafts
+    /// are restored, so the rows never show a change the store didn't take,
+    /// and the failure is surfaced in an alert.
+    private func saveProducts(after change: () -> Void) {
+        let previousDrafts = model.productDrafts
+        change()
+        do {
+            try model.saveProducts(context: modelContext)
+        } catch {
+            model.productDrafts = previousDrafts
+            showingSaveError = true
+        }
     }
 
     private var nonWholeBatchProducts: [RecipeProductDraft] {

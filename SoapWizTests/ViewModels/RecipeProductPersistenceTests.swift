@@ -14,7 +14,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         let model = try makeLoadedModel(ctx: ctx)
 
         model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         let added = try #require(recipe.products.first { $0.unitSymbol == ProductUnit.grams.rawValue })
@@ -28,7 +28,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         let model = try makeLoadedModel(ctx: ctx)
 
         model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         let added = try #require(recipe.products.first { $0.unitSymbol == ProductUnit.grams.rawValue })
@@ -41,10 +41,10 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         _ = container
         let model = try makeLoadedModel(ctx: ctx)
         model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         model.productDrafts.removeAll { $0.unitSymbol == ProductUnit.grams.rawValue }
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.count == 1)
@@ -58,7 +58,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         let model = try makeLoadedModel(ctx: ctx)
 
         model.productDrafts.removeAll()
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.isEmpty)
@@ -72,11 +72,11 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         _ = container
         let model = try makeLoadedModel(ctx: ctx)
         model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         let before = Set(recipe.products.map(\.persistentModelID))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         #expect(Set(recipe.products.map(\.persistentModelID)) == before)
     }
@@ -86,12 +86,12 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         _ = container
         let model = try makeLoadedModel(ctx: ctx)
         model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
         let recipe = try #require(model.editingRecipe)
         let originalID = try #require(model.productDrafts.last?.modelID)
 
         model.productDrafts[model.productDrafts.count - 1].size = 250
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let updated = try #require(recipe.products.first { $0.persistentModelID == originalID })
         #expect(updated.size == 250)
@@ -104,7 +104,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         let model = RecipeFormViewModel()
 
         model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         #expect(try ctx.fetch(FetchDescriptor<RecipeProduct>()).isEmpty)
     }
@@ -120,7 +120,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         #expect(try #require(model.productDrafts.first).isSeededPlaceholder)
 
         model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.count == 1)
@@ -145,7 +145,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
 
         // Same unit as the placeholder, but a size the user chose.
         model.productDrafts.append(RecipeProductDraft(size: 4, unitSymbol: ProductUnit.partsOfBatch.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.count == 1)
@@ -157,13 +157,13 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         _ = container
         let model = try makeProductlessModel(ctx: ctx)
         model.productDrafts = [RecipeProductDraft(size: 4, unitSymbol: ProductUnit.partsOfBatch.rawValue)]
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         // Shrinking a real product back to a single part must not make it
         // vanish on the next save — the row was never the seeded one.
         model.productDrafts[0].size = 1
         #expect(model.productDrafts[0].isSeededPlaceholder == false)
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.count == 1)
@@ -184,7 +184,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         model.productDrafts[index].unitSymbol = ProductUnit.partsOfBatch.rawValue
         model.productDrafts[index].size = 1
         #expect(model.productDrafts[index].isSeededPlaceholder == false)
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.count == 1)
@@ -199,7 +199,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
 
         model.productDrafts[0].size = 4
         #expect(model.productDrafts[0].isSeededPlaceholder == false)
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.count == 1)
@@ -213,7 +213,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
 
         model.productDrafts[0].unitSymbol = ProductUnit.grams.rawValue
         #expect(model.productDrafts[0].isSeededPlaceholder == false)
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.count == 1)
@@ -245,7 +245,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         #expect(before.count == 2)
 
         model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         // A full `save(context:)` deletes and reinserts every line item; the
         // narrow path must leave the very same rows in place.
@@ -258,12 +258,12 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         _ = container
         let model = try makeLoadedModel(ctx: ctx)
         model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
         let recipe = try #require(model.editingRecipe)
         let before = Set(recipe.ingredients.map(\.persistentModelID))
 
         model.productDrafts.removeAll { $0.unitSymbol == ProductUnit.grams.rawValue }
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         #expect(Set(recipe.ingredients.map(\.persistentModelID)) == before)
         #expect(try ctx.fetch(FetchDescriptor<RecipeIngredient>()).count == 2)
@@ -276,7 +276,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         let recipe = try #require(model.editingRecipe)
 
         model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        model.saveProducts(context: ctx)
+        try model.saveProducts(context: ctx)
 
         let oil = try #require(recipe.ingredients.first { $0.ingredientRole == .oil })
         let additive = try #require(recipe.ingredients.first { $0.ingredientRole == .additive })
