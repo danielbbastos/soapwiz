@@ -237,10 +237,10 @@ struct RecipeExtrasTests: RecipeFormTestHelpers {
         #expect(target.isOverTarget == false)
     }
     @Test func fragranceTarget_PercentageUnit_ReturnsNil() {
-        // Default unit in percentage mode is "% of oils".
         let model = RecipeFormViewModel()
         model.weightUnit = "%"
         model.totalOilWeight = 1000
+        model.setFragranceUnit(.percentOfOils)
         model.addOil(Ingredient(name: "Olive Oil"))
         model.addFragrance(Ingredient(name: "Lavender EO"))
         #expect(model.fragranceTarget == nil)

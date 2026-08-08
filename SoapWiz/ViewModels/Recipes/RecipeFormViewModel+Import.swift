@@ -135,7 +135,8 @@ extension RecipeFormViewModel {
             if !unitAdopted {
                 unitAdopted = true
                 let options = FragranceUnit.allCases.map(\.rawValue)
-                let unit = resolvedUnit(row.imported.unit, among: options, fallback: defaultFragranceUnit.rawValue)
+                let fallback = importedFragranceUnitFallback.rawValue
+                let unit = resolvedUnit(row.imported.unit, among: options, fallback: fallback)
                 setFragranceUnit(FragranceUnit.resolve(unit))
             }
             addFragrance(ingredient)
@@ -144,6 +145,18 @@ extension RecipeFormViewModel {
             }) else { continue }
             userEditedFragrance(id: draft.id, amount: row.imported.amount)
         }
+    }
+
+    /// What an imported fragrance falls back to when the source states a unit
+    /// the form can't offer, or none at all.
+    ///
+    /// Deliberately not the form's own default of shares-of-the-blend: an
+    /// imported recipe is describing quantities, and "Lavender 3" in a recipe
+    /// written in ounces means three ounces, not three shares. So a percentage
+    /// recipe reads it against the oils and a weight recipe reads it as a
+    /// weight, which is what the source most likely meant.
+    private var importedFragranceUnitFallback: FragranceUnit {
+        weightUnitIsPercentage ? .percentOfOils : FragranceUnit(rawValue: weightUnit) ?? .grams
     }
 
     /// Keeps the source's unit when the form can offer it, and falls back to the

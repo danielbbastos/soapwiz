@@ -22,13 +22,14 @@ final class RecipeFormViewModel {
     /// `setFragranceUnit(_:)` (or `load`, which reconciles stored rows), so
     /// every draft's `unit` string stays in sync — the calculator and
     /// persistence read the drafts, not this property.
-    var fragranceUnit: FragranceUnit = .percentOfOils
-
-    /// Whether the unit was chosen deliberately (picker, load, import) rather
-    /// than still holding its initial value. Until then, the first fragrance
-    /// added adopts `defaultFragranceUnit` for the recipe's weight mode.
-    @ObservationIgnored
-    var fragranceUnitExplicitlySet = false
+    ///
+    /// A new recipe starts on shares of the blend: it is the one unit that
+    /// reads the same whether the recipe is written in percentages or in
+    /// weights, since the absolute load comes from `fragrancePercentage`
+    /// either way. `Recipe.fragranceUnit`'s schema default is deliberately
+    /// different — a recipe stored before the unit became recipe-wide has to
+    /// come back as "% of oils".
+    var fragranceUnit: FragranceUnit = .percentOfFragrances
     var useHybrid: Bool = false
     var kohPercentage: Double = 90
     var naohPercentage: Double = 10
@@ -74,13 +75,6 @@ final class RecipeFormViewModel {
 
     var displayWeightUnit: String {
         weightUnitIsPercentage ? oilWeightUnit : weightUnit
-    }
-
-    /// Default fragrance unit: percentage-of-oils when the recipe is measured in
-    /// percentages, otherwise the recipe's weight unit (grams when that unit
-    /// isn't one fragrances can be entered in).
-    var defaultFragranceUnit: FragranceUnit {
-        weightUnitIsPercentage ? .percentOfOils : FragranceUnit(rawValue: weightUnit) ?? .grams
     }
 
     /// Default unit for new additive rows. Additives are conventionally entered
@@ -292,9 +286,6 @@ final class RecipeFormViewModel {
         guard !fragranceDrafts.contains(where: {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
-        if fragranceDrafts.isEmpty && !fragranceUnitExplicitlySet {
-            fragranceUnit = defaultFragranceUnit
-        }
         fragranceDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: fragranceUnit.rawValue))
         redistributeFragrancePercentages()
     }
@@ -328,7 +319,6 @@ final class RecipeFormViewModel {
     /// the blend the user already built; entering `% of oils` redistributes the
     /// target load evenly; the absolute units keep the entered numbers.
     func setFragranceUnit(_ unit: FragranceUnit) {
-        fragranceUnitExplicitlySet = true
         guard unit != fragranceUnit else { return }
         fragranceUnit = unit
         for idx in fragranceDrafts.indices {
@@ -359,7 +349,6 @@ final class RecipeFormViewModel {
     /// are unlocked and re-derived by one redistribution. No-op when the rows
     /// already agree, so loading a clean recipe never rewrites amounts.
     func reconcileLoadedFragranceRows(with unit: FragranceUnit) {
-        fragranceUnitExplicitlySet = true
         fragranceUnit = unit
         guard fragranceDrafts.contains(where: { $0.unit != unit.rawValue }) else { return }
         let redistributes = redistributionTotal != nil
