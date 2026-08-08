@@ -133,7 +133,24 @@ struct RecipeImportFormMappingTests: RecipeImportTestHelpers {
         ))
 
         let fragrance = try #require(model.fragranceDrafts.first)
-        #expect(RecipeUnitOptions.fragrance.contains(fragrance.unit))
+        #expect(FragranceUnit(rawValue: fragrance.unit) != nil)
+    }
+
+    @Test func applyImport_MixedFragranceUnits_AdoptsTheFirstRowsUnit() {
+        let cedar = Ingredient(name: "Cedarwood Essential Oil", unit: "g")
+        context.insert(cedar)
+
+        let draft = RecipeImportDraft.mock(fragrances: [
+            ImportedIngredient(name: "Lavender Essential Oil", amount: 20, unit: "g"),
+            ImportedIngredient(name: "Cedarwood Essential Oil", amount: 10, unit: "% of oils")
+        ])
+        let model = apply(draft, inventory: inventory + [cedar])
+
+        // The unit is recipe-wide: the first row's unit wins, and later rows'
+        // amounts are read in it.
+        #expect(model.fragranceUnit == .grams)
+        #expect(model.fragranceDrafts.map(\.unit) == ["g", "g"])
+        #expect(model.fragranceDrafts.map(\.amount) == [20, 10])
     }
 
     @Test func applyImport_Additive_KeepsItsUnitAndAmount() throws {

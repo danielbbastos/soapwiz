@@ -94,6 +94,9 @@ extension BackupData {
         var waterParts: Double
         var superFat: Double
         var fragrancePercentage: Double
+        /// `nil` in backups written before the unit became recipe-wide; those
+        /// restore to the default and self-heal from the rows' units on load.
+        var fragranceUnit: String?
         var useHybrid: Bool
         var kohPercentage: Double
         var naohPercentage: Double

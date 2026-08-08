@@ -97,6 +97,7 @@ enum BackupService {
             waterParts: recipe.waterParts,
             superFat: recipe.superFat,
             fragrancePercentage: recipe.fragrancePercentage,
+            fragranceUnit: recipe.fragranceUnit,
             useHybrid: recipe.useHybrid,
             kohPercentage: recipe.kohPercentage,
             naohPercentage: recipe.naohPercentage,
@@ -271,6 +272,7 @@ enum BackupService {
         recipe.waterParts = dto.waterParts
         recipe.superFat = dto.superFat
         recipe.fragrancePercentage = dto.fragrancePercentage
+        recipe.fragranceUnit = dto.fragranceUnit ?? FragranceUnit.percentOfOils.rawValue
         recipe.useHybrid = dto.useHybrid
         recipe.kohPercentage = dto.kohPercentage
         recipe.naohPercentage = dto.naohPercentage

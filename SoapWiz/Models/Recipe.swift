@@ -13,6 +13,11 @@ final class Recipe {
     var superFat: Double = 5
     var fragrancePercentage: Double = 3
 
+    /// Recipe-wide unit for every fragrance row. Raw value of `FragranceUnit`.
+    /// Fragrance rows ignore their own `additiveUnit`; this is the single source
+    /// of truth.
+    var fragranceUnit: String = FragranceUnit.percentOfOils.rawValue
+
     /// When `true` the recipe uses a KOH + NaOH blend (`kohPercentage` /
     /// `naohPercentage`, each with its own purity) instead of the single-lye
     /// path driven by `lyeType` / `lyePurity`.

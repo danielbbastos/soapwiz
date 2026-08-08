@@ -8,6 +8,8 @@ struct RecipeCostCalculator {
     let lye: LyeCalculator
     let additiveDrafts: [IngredientAmountDraft]
     let fragranceDrafts: [IngredientAmountDraft]
+    let fragranceUnit: FragranceUnit
+    let fragrancePercentage: Double
     let displayWeightUnit: String
     let lyeIngredient: Ingredient?
     let kohLyeIngredient: Ingredient?
@@ -63,8 +65,27 @@ struct RecipeCostCalculator {
         breakdown(for: additiveDrafts)
     }
 
+    /// For `% of fragrances` the rows are shares of the blend, so they can't be
+    /// resolved one at a time: the total load (`fragrancePercentage` of the
+    /// oils) is computed once and split across the rows in proportion to their
+    /// amounts. Normalising by the actual sum rather than assuming 100 keeps
+    /// the maths sane while the user is mid-edit and the rows don't yet add up.
     private var fragranceBatchBreakdown: [IngredientProductBreakdown] {
-        breakdown(for: fragranceDrafts)
+        guard fragranceUnit == .percentOfFragrances else {
+            return breakdown(for: fragranceDrafts)
+        }
+        let load = lye.totalOilBatchWeight * fragrancePercentage / 100
+        let shareSum = fragranceDrafts.reduce(0) { $0 + $1.amount }
+        guard load > 0, shareSum > 0 else { return [] }
+        return fragranceDrafts.compactMap { draft in
+            guard draft.amount > 0 else { return nil }
+            let batchAmount = load * (draft.amount / shareSum)
+            return IngredientProductBreakdown(
+                ingredient: draft.ingredient,
+                ingredientAmount: batchAmount,
+                cost: cost(ofBatchAmount: batchAmount, for: draft.ingredient)
+            )
+        }
     }
 
     /// Breakdown rows for additive/fragrance drafts, with amounts in the batch

@@ -65,6 +65,7 @@ struct RecipeFormSnapshot: Equatable {
     var fragranceDrafts: [IngredientAmountDraft]
     var productDrafts: [RecipeProductDraft]
     var fragrancePercentage: Double
+    var fragranceUnit: FragranceUnit
     var useHybrid: Bool
     var kohPercentage: Double
     var naohPercentage: Double
@@ -77,12 +78,40 @@ struct RecipeFormSnapshot: Equatable {
     var kohLyeIngredient: Ingredient?
 }
 
-/// The units the recipe form offers for additive and fragrance rows. Shared so
-/// recipe import can check an imported unit against the same list the pickers
-/// show, rather than keeping a second copy that can drift.
+/// The units the recipe form offers for additive rows. Shared so recipe import
+/// can check an imported unit against the same list the picker shows, rather
+/// than keeping a second copy that can drift. Additives stay stringly-typed;
+/// fragrances have the typed `FragranceUnit`.
 enum RecipeUnitOptions {
     static let additive = ["g", "kg", "oz", "lb", "ml", "L", "% of batch", "% of liquids", "% of oils"]
-    static let fragrance = ["g", "oz", "ml", "% of batch", "% of liquids", "% of oils"]
+
+    /// The single string test for "is this a percentage-based unit", shared by
+    /// additives (whose units stay raw strings) and `FragranceUnit.isPercentage`.
+    static func isPercentage(_ unit: String) -> Bool {
+        unit.hasPrefix("%")
+    }
+}
+
+/// The recipe-wide unit every fragrance row is entered in, stored on `Recipe`
+/// as its raw value. `percentOfFragrances` means share of the fragrance blend:
+/// rows sum to 100% and the absolute load comes from the recipe-level
+/// `fragrancePercentage` (% of oils), so changing the load scales the weights
+/// while the blend ratios hold.
+enum FragranceUnit: String, CaseIterable {
+    case grams = "g"
+    case ounces = "oz"
+    case milliliters = "ml"
+    case percentOfBatch = "% of batch"
+    case percentOfLiquids = "% of liquids"
+    case percentOfOils = "% of oils"
+    case percentOfFragrances = "% of fragrances"
+
+    var isPercentage: Bool { RecipeUnitOptions.isPercentage(rawValue) }
+
+    /// Resolves a stored raw value to a case, defaulting to percent of oils.
+    static func resolve(_ raw: String) -> FragranceUnit {
+        FragranceUnit(rawValue: raw) ?? .percentOfOils
+    }
 }
 
 // MARK: - Soap method types

@@ -177,8 +177,9 @@ struct RecipeCostBreakdownTests: RecipeFormTestHelpers {
         model.weightUnit = "g"
         model.addOil(oil)
         model.oilDrafts[0].amount = 1000
+        model.setFragranceUnit(.grams)
         model.addFragrance(fragrance)
-        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 30, unit: "g")
+        model.userEditedFragrance(id: model.fragranceDrafts[0].id, amount: 30)
         return model
     }
 

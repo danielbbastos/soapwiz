@@ -196,7 +196,7 @@ struct RecipeDetailView: View {
     /// expressed as a percentage; absolute units (g, kg, ml, …) stand alone.
     private func ingredientAmountText(_ draft: IngredientAmountDraft, batchWeight: Double?) -> String {
         let primary = amountText(draft.amount, unit: draft.unit)
-        guard draft.unit.hasPrefix("%"), let batchWeight, batchWeight > 0 else { return primary }
+        guard RecipeUnitOptions.isPercentage(draft.unit), let batchWeight, batchWeight > 0 else { return primary }
         return "\(primary) (\(weightText(batchWeight)))"
     }
 
