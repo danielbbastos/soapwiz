@@ -122,10 +122,10 @@ extension RecipeFormViewModel {
 
     /// The recipe-wide fragrance unit is adopted from the first applied row —
     /// the unit is one per recipe now, so later rows written in something else
-    /// are read as amounts in the adopted unit, mirroring how loading a legacy
-    /// recipe reconciles its rows. With the unit settled up front, each row is
-    /// added and given its amount in one pass; the amounts lock their rows as
-    /// they go, so a later row can't redistribute an earlier one away.
+    /// are read as amounts in the adopted unit. With the unit settled up front,
+    /// each row is added and given its amount in one pass; the amounts lock
+    /// their rows as they go, so a later row can't redistribute an earlier one
+    /// away.
     private func applyFragrances(_ rows: [RecipeImportRow], repeated: inout [String]) {
         var seen: Set<PersistentIdentifier> = []
         var unitAdopted = false

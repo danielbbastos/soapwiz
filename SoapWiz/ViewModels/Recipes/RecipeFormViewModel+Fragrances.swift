@@ -92,8 +92,8 @@ extension RecipeFormViewModel {
         }
     }
 
-    /// Collapses loaded rows onto `unit` and locks the ones already stored in
-    /// it, so what the user saved survives the rest of the session.
+    /// Adopts the recipe's stored unit and locks the rows that came with it, so
+    /// what the user saved survives the rest of the session.
     ///
     /// Locking is what separates editing from creating. A new recipe's rows are
     /// all unlocked, so each fragrance added splits the total afresh — three
@@ -102,18 +102,15 @@ extension RecipeFormViewModel {
     /// row what is left, which is nothing until the user rebalances. Rewriting
     /// the saved amounts would throw away the numbers they are editing against.
     ///
-    /// Rows in some other unit — only possible on recipes saved before the unit
-    /// became recipe-wide — can't be preserved, so they stay unlocked and one
-    /// redistribution re-derives them from whatever the locked rows leave.
-    func reconcileLoadedFragranceRows(with unit: FragranceUnit) {
+    /// Only the units that spread a budget across the rows need the lock; the
+    /// absolute ones never redistribute, so their amounts stand on their own.
+    func lockLoadedFragranceRows(with unit: FragranceUnit) {
         fragranceUnit = unit
         let redistributes = redistributionTotal != nil
-        let hasMismatch = fragranceDrafts.contains { $0.unit != unit.rawValue }
         for idx in fragranceDrafts.indices {
-            fragranceDrafts[idx].isLocked = redistributes && fragranceDrafts[idx].unit == unit.rawValue
+            fragranceDrafts[idx].isLocked = redistributes
             fragranceDrafts[idx].unit = unit.rawValue
         }
-        if redistributes && hasMismatch { redistributeFragrancePercentages() }
     }
 
     // MARK: - Redistribution

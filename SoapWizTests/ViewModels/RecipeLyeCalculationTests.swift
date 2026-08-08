@@ -234,6 +234,7 @@ struct RecipeLyeCalculationTests: RecipeFormTestHelpers {
         let ingredient = Ingredient(name: "Lavender EO", unit: "ml")
         ctx.insert(ingredient)
         let recipe = Recipe(name: "Test", desc: "")
+        recipe.fragranceUnit = FragranceUnit.milliliters.rawValue
         ctx.insert(recipe)
         let recipeIngredient = RecipeIngredient(ingredient: ingredient, percentage: 0, role: .fragrance)
         recipeIngredient.additiveAmount = 10

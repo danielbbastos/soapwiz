@@ -45,13 +45,7 @@ extension RecipeFormViewModel {
             .filter { $0.ingredientRole == .fragrance }
             .compactMap(Self.amountDraft)
 
-        // The first row wins over the stored recipe value: rows written before
-        // the unit became recipe-wide are the user's actual data, and a recipe
-        // saved since stamps every row anyway, so the two only disagree on
-        // legacy data. The resolved unit persists on the next save.
-        let storedFragranceUnit = fragranceDrafts.first.map { FragranceUnit.resolve($0.unit) }
-            ?? FragranceUnit.resolve(recipe.fragranceUnit)
-        reconcileLoadedFragranceRows(with: storedFragranceUnit)
+        lockLoadedFragranceRows(with: FragranceUnit.resolve(recipe.fragranceUnit))
 
         productDrafts = recipe.products.map {
             RecipeProductDraft(size: $0.size, unitSymbol: $0.unitSymbol, modelID: $0.persistentModelID)

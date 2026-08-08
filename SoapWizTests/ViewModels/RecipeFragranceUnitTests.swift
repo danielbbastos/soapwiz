@@ -23,7 +23,9 @@ struct RecipeFragranceUnitTests: RecipeFormTestHelpers {
         return model
     }
 
-    // A migrated (or CloudKit-seeded) recipe must come back as `% of oils`.
+    // A recipe built outside the form — seeded, restored, or CloudKit-synced —
+    // must come back as `% of oils`, which is a separate question from what a
+    // new form offers.
     @Test func recipe_SchemaDefault_IsPercentOfOils() {
         #expect(Recipe(name: "New").fragranceUnit == FragranceUnit.percentOfOils.rawValue)
     }
@@ -129,17 +131,19 @@ struct RecipeFragranceUnitTests: RecipeFormTestHelpers {
         #expect(model.fragranceBlendTotal == nil)
     }
 
-    // MARK: - Load reconciliation
+    // MARK: - Loading a stored recipe
 
     private func makeStoredRecipe(
         _ ctx: ModelContext,
+        unit: FragranceUnit = .percentOfOils,
         rowUnits: [(amount: Double, unit: String)]
     ) -> Recipe {
-        let recipe = Recipe(name: "Legacy", desc: "")
+        let recipe = Recipe(name: "Stored", desc: "")
         recipe.weightUnit = "%"
         recipe.totalOilWeight = 1000
         recipe.oilWeightUnit = "g"
         recipe.fragrancePercentage = 3
+        recipe.fragranceUnit = unit.rawValue
         ctx.insert(recipe)
         for (index, row) in rowUnits.enumerated() {
             let ingredient = Ingredient(name: "Fragrance \(index)")
@@ -166,67 +170,63 @@ struct RecipeFragranceUnitTests: RecipeFormTestHelpers {
         #expect(Set(model.fragranceDrafts.map(\.amount)) == [2.5, 0.5])
     }
 
-    @Test func load_RowUnitWinsOverTheStoredRecipeUnit() throws {
+    @Test func load_StoredRecipeUnitWins_RowUnitIsIgnored() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        // The recipe still holds the schema default ("% of oils"); the row is
-        // the user's actual data and wins.
-        let recipe = makeStoredRecipe(ctx, rowUnits: [(30, "g")])
-
-        let model = RecipeFormViewModel()
-        model.load(from: recipe)
-
-        #expect(model.fragranceUnit == .grams)
-        #expect(model.fragranceDrafts.map(\.amount) == [30])
-    }
-
-    @Test func load_UnrecognisedRowUnit_FallsBackToPercentOfOils() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let recipe = makeStoredRecipe(ctx, rowUnits: [(1, "kg")])
+        // The unit is one per recipe, so the row's own unit string carries no
+        // authority — the amount is read against the recipe's unit.
+        let recipe = makeStoredRecipe(ctx, unit: .percentOfOils, rowUnits: [(2.5, "g")])
 
         let model = RecipeFormViewModel()
         model.load(from: recipe)
 
         #expect(model.fragranceUnit == .percentOfOils)
         #expect(model.fragranceDrafts.map(\.unit) == ["% of oils"])
-        // The row didn't match the adopted unit, so it takes the whole 3% load.
-        #expect(model.fragranceDrafts.map(\.amount) == [3])
+        #expect(model.fragranceDrafts.map(\.amount) == [2.5])
     }
 
-    // Reconciliation of rows that disagree is tested on the drafts directly:
-    // `recipe.ingredients` is unordered in SwiftData, so which row "wins" a
-    // load of mismatched legacy rows is not deterministic enough to assert on.
+    @Test func load_UnrecognisedRecipeUnit_FallsBackToPercentOfOils() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = makeStoredRecipe(ctx, rowUnits: [(2, "% of oils")])
+        recipe.fragranceUnit = "kg"
 
-    @Test func reconcile_MassUnit_KeepsEveryAmount() {
         let model = RecipeFormViewModel()
-        model.fragrancePercentage = 3
-        model.fragranceDrafts = [
-            IngredientAmountDraft(ingredient: Ingredient(name: "A"), amount: 20, unit: "g"),
-            IngredientAmountDraft(ingredient: Ingredient(name: "B"), amount: 5, unit: "% of oils")
-        ]
+        model.load(from: recipe)
 
-        model.reconcileLoadedFragranceRows(with: .grams)
-
-        // A mass unit has no budget to redistribute, so both amounts survive.
-        #expect(model.fragranceDrafts.allSatisfy { $0.unit == "g" })
-        #expect(model.fragranceDrafts.map(\.amount) == [20, 5])
+        #expect(model.fragranceUnit == .percentOfOils)
+        #expect(model.fragranceDrafts.map(\.unit) == ["% of oils"])
+        #expect(model.fragranceDrafts.map(\.amount) == [2])
     }
 
-    @Test func reconcile_PercentOfOils_RederivesTheMismatchedRows() {
+    @Test func load_MassUnit_LeavesRowsUnlocked() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = makeStoredRecipe(ctx, unit: .grams, rowUnits: [(20, "g"), (5, "g")])
+
         let model = RecipeFormViewModel()
-        model.fragrancePercentage = 3
-        model.fragranceDrafts = [
-            IngredientAmountDraft(ingredient: Ingredient(name: "A"), amount: 2, unit: "% of oils"),
-            IngredientAmountDraft(ingredient: Ingredient(name: "B"), amount: 30, unit: "g")
-        ]
+        model.load(from: recipe)
 
-        model.reconcileLoadedFragranceRows(with: .percentOfOils)
+        // A mass unit has no budget to spread, so there is nothing for a lock to
+        // protect the amounts from.
+        #expect(model.fragranceDrafts.allSatisfy { !$0.isLocked })
+        #expect(Set(model.fragranceDrafts.map(\.amount)) == [20, 5])
+    }
 
-        // The matching row keeps its 2%; the stray gram row is re-derived from
-        // the remaining 1% of the 3% load.
-        #expect(model.fragranceDrafts.allSatisfy { $0.unit == "% of oils" })
-        #expect(model.fragranceDrafts.map(\.amount) == [2, 1])
+    @Test func load_RedistributingUnit_LocksEveryRow() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = makeStoredRecipe(
+            ctx,
+            unit: .percentOfFragrances,
+            rowUnits: [(60, "% of fragrances"), (40, "% of fragrances")]
+        )
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+
+        #expect(model.fragranceDrafts.allSatisfy { $0.isLocked })
+        #expect(Set(model.fragranceDrafts.map(\.amount)) == [60, 40])
     }
 
     @Test func load_NoFragranceRows_UsesTheStoredRecipeUnit() throws {
@@ -261,7 +261,7 @@ struct RecipeFragranceUnitTests: RecipeFormTestHelpers {
     @Test func addFragrance_SavedRecipe_StartsAtZeroAndKeepsTheSavedBlend() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let recipe = makeStoredRecipe(ctx, rowUnits: [
+        let recipe = makeStoredRecipe(ctx, unit: .percentOfFragrances, rowUnits: [
             (60, "% of fragrances"), (40, "% of fragrances")
         ])
 
@@ -275,7 +275,7 @@ struct RecipeFragranceUnitTests: RecipeFormTestHelpers {
     @Test func addFragrance_SavedRecipe_ThenEditingASavedRowFeedsTheNewOne() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let recipe = makeStoredRecipe(ctx, rowUnits: [
+        let recipe = makeStoredRecipe(ctx, unit: .percentOfFragrances, rowUnits: [
             (60, "% of fragrances"), (40, "% of fragrances")
         ])
 
@@ -291,7 +291,7 @@ struct RecipeFragranceUnitTests: RecipeFormTestHelpers {
     @Test func removeFragrance_SavedRecipe_LeavesTheOtherAmountsAlone() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let recipe = makeStoredRecipe(ctx, rowUnits: [
+        let recipe = makeStoredRecipe(ctx, unit: .percentOfFragrances, rowUnits: [
             (60, "% of fragrances"), (40, "% of fragrances")
         ])
 
@@ -319,10 +319,10 @@ struct RecipeFragranceUnitTests: RecipeFormTestHelpers {
         #expect(model.fragranceDrafts.map(\.amount) == [2, 1, 0])
     }
 
-    @Test func load_ThenCaptureSnapshot_ReconciliationAloneIsNotDirty() throws {
+    @Test func load_ThenCaptureSnapshot_StampingAloneIsNotDirty() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let recipe = makeStoredRecipe(ctx, rowUnits: [(20, "g"), (5, "% of oils")])
+        let recipe = makeStoredRecipe(ctx, unit: .grams, rowUnits: [(20, "g"), (5, "g")])
 
         let model = RecipeFormViewModel()
         model.load(from: recipe)
@@ -336,13 +336,11 @@ struct RecipeFragranceUnitTests: RecipeFormTestHelpers {
     @Test func save_StampsRecipeUnitAndEveryFragranceRow() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        // The rows agree on grams while the recipe still holds the schema
-        // default, as a pre-change recipe would after the schema migration.
-        let recipe = makeStoredRecipe(ctx, rowUnits: [(20, "g"), (5, "g")])
+        let recipe = makeStoredRecipe(ctx, unit: .grams, rowUnits: [(20, "g"), (5, "g")])
 
         let model = RecipeFormViewModel()
         model.load(from: recipe)
-        model.name = "Legacy"
+        model.name = "Renamed"
         model.save(context: ctx)
 
         #expect(recipe.fragranceUnit == FragranceUnit.grams.rawValue)
