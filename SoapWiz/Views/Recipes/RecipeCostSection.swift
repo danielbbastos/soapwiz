@@ -6,7 +6,7 @@ import SwiftData
 /// figures from the view model and the app's RRP factor from settings, and
 /// writes back only the recipe's products, which can be added and deleted here.
 struct RecipeCostSection: View {
-    @Bindable var model: RecipeFormViewModel
+    let model: RecipeFormViewModel
     let batch: ProductCostBreakdown
 
     @Environment(\.modelContext) private var modelContext

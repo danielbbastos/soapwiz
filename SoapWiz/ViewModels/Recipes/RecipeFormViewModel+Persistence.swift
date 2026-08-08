@@ -112,11 +112,13 @@ extension RecipeFormViewModel {
         do {
             try context.save()
         } catch {
-            // The ids would still be temporary, and stamping a temporary id is
-            // what makes the following reconcile destructive. Left unstamped,
-            // the drafts simply look new and the next pass re-inserts them.
-            // The error is rethrown so the caller can tell the user.
+            // The reconcile is already applied to the model graph, so the
+            // context is rolled back to keep it aligned with the drafts the
+            // caller restores. The ids are left unstamped — stamping a
+            // temporary id is what makes the following reconcile destructive —
+            // and the error is rethrown so the caller can tell the user.
             Self.log.error("Saving recipe products failed: \(error, privacy: .public)")
+            context.rollback()
             throw error
         }
         for (index, product) in inserted {
