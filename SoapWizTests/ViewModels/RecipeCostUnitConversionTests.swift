@@ -255,8 +255,9 @@ struct RecipeCostUnitConversionTests: RecipeFormTestHelpers {
         model.oilWeightUnit = "g"
         model.totalOilWeight = 1000
         model.addOil(oil)
+        model.setFragranceUnit(.milliliters)
         model.addFragrance(fragrance)
-        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 30, unit: "ml")
+        model.userEditedFragrance(id: model.fragranceDrafts[0].id, amount: 30)
 
         let row = try #require(model.wholeBatchBreakdown.fragrances.first)
         // 30 ml × 0.89 g/ml = 26.7 g in the batch (oils) unit

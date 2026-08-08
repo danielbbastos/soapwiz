@@ -83,6 +83,7 @@ struct BackupServiceTests {
         let recipe = Recipe(name: "Castile", desc: "100% olive")
         recipe.totalOilWeight = 1000
         recipe.superFat = 7
+        recipe.fragranceUnit = FragranceUnit.percentOfFragrances.rawValue
         recipe.lyeIngredient = oil
         ctx.insert(recipe)
         let line = RecipeIngredient(ingredient: oil, percentage: 100, role: .oil)
@@ -181,11 +182,27 @@ struct BackupServiceTests {
 
         let recipe = try #require(try ctx.fetch(FetchDescriptor<Recipe>()).first)
         #expect(recipe.superFat == 7)
+        #expect(recipe.fragranceUnit == FragranceUnit.percentOfFragrances.rawValue)
         #expect(recipe.lyeIngredient?.name == "Olive Oil")
         #expect(recipe.ingredients.count == 1)
         #expect(recipe.ingredients.first?.ingredient?.name == "Olive Oil")
         #expect(recipe.ingredients.first?.percentage == 100)
         #expect(recipe.products.first?.size == 100)
+    }
+
+    @Test func restore_BackupWithoutFragranceUnit_DefaultsToPercentOfOils() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedFullGraph(ctx)
+        var backup = try BackupService.makeBackup(from: ctx)
+        // A backup written before the field existed simply lacks the key.
+        backup.recipes[0].fragranceUnit = nil
+        let data = try BackupService.encode(backup)
+        let decoded = try BackupService.decode(data)
+        try BackupService.restore(decoded, into: ctx)
+
+        let recipe = try #require(try ctx.fetch(FetchDescriptor<Recipe>()).first)
+        #expect(recipe.fragranceUnit == FragranceUnit.percentOfOils.rawValue)
     }
 
     @Test func roundTrip_BatchLineItemsRelinkToParentsAndPreserveDraws() throws {

@@ -45,6 +45,8 @@ extension RecipeFormViewModel {
             .filter { $0.ingredientRole == .fragrance }
             .compactMap(Self.amountDraft)
 
+        lockLoadedFragranceRows(with: FragranceUnit.resolve(recipe.fragranceUnit))
+
         productDrafts = recipe.products.map {
             RecipeProductDraft(size: $0.size, unitSymbol: $0.unitSymbol, modelID: $0.persistentModelID)
         }
@@ -70,6 +72,7 @@ extension RecipeFormViewModel {
         recipe.waterParts = waterParts
         recipe.superFat = superFat
         recipe.fragrancePercentage = fragrancePercentage
+        recipe.fragranceUnit = fragranceUnit.rawValue
         recipe.useHybrid = useHybrid
         recipe.kohPercentage = kohPercentage
         recipe.naohPercentage = naohPercentage

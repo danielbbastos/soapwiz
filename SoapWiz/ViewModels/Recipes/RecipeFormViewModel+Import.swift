@@ -120,33 +120,43 @@ extension RecipeFormViewModel {
         }
     }
 
-    /// Every row is added and given its unit before any row is given its amount.
-    ///
-    /// `updateFragrance(unit:)` unlocks *every* fragrance row and redistributes,
-    /// so a row's amount only sticks if no later row sets a unit after it. Doing
-    /// the units in one pass makes that unlocking harmless — nothing is locked
-    /// yet — and the amounts in a second pass then lock each row as they go. By
-    /// the last one there is nothing left unlocked to redistribute into.
-    ///
-    /// Interleaved, a second fragrance wiped the first: 5% and 2% against a 3%
-    /// target left the first row holding 1%, and 20 g and 10 g left it at zero.
+    /// The recipe-wide fragrance unit is adopted from the first applied row —
+    /// the unit is one per recipe now, so later rows written in something else
+    /// are read as amounts in the adopted unit. With the unit settled up front,
+    /// each row is added and given its amount in one pass; the amounts lock
+    /// their rows as they go, so a later row can't redistribute an earlier one
+    /// away.
     private func applyFragrances(_ rows: [RecipeImportRow], repeated: inout [String]) {
         var seen: Set<PersistentIdentifier> = []
-        var amounts: [(id: UUID, amount: Double)] = []
+        var unitAdopted = false
         for row in rows {
             guard let ingredient = row.ingredient else { continue }
             guard !isRepeat(row, of: ingredient, seen: &seen, repeated: &repeated) else { continue }
+            if !unitAdopted {
+                unitAdopted = true
+                let options = FragranceUnit.allCases.map(\.rawValue)
+                let fallback = importedFragranceUnitFallback.rawValue
+                let unit = resolvedUnit(row.imported.unit, among: options, fallback: fallback)
+                setFragranceUnit(FragranceUnit.resolve(unit))
+            }
             addFragrance(ingredient)
             guard let draft = fragranceDrafts.last(where: {
                 $0.ingredient.persistentModelID == ingredient.persistentModelID
             }) else { continue }
-            let unit = resolvedUnit(row.imported.unit, among: RecipeUnitOptions.fragrance, fallback: defaultFragranceUnit)
-            updateFragrance(id: draft.id, unit: unit)
-            amounts.append((draft.id, row.imported.amount))
+            userEditedFragrance(id: draft.id, amount: row.imported.amount)
         }
-        for (id, amount) in amounts {
-            userEditedFragrance(id: id, amount: amount)
-        }
+    }
+
+    /// What an imported fragrance falls back to when the source states a unit
+    /// the form can't offer, or none at all.
+    ///
+    /// Deliberately not the form's own default of shares-of-the-blend: an
+    /// imported recipe is describing quantities, and "Lavender 3" in a recipe
+    /// written in ounces means three ounces, not three shares. So a percentage
+    /// recipe reads it against the oils and a weight recipe reads it as a
+    /// weight, which is what the source most likely meant.
+    private var importedFragranceUnitFallback: FragranceUnit {
+        weightUnitIsPercentage ? .percentOfOils : FragranceUnit(rawValue: weightUnit) ?? .grams
     }
 
     /// Keeps the source's unit when the form can offer it, and falls back to the

@@ -11,6 +11,7 @@ extension RecipeFormViewModel {
             waterParts: waterParts, superFat: superFat, oilDrafts: oilDrafts,
             additiveDrafts: additiveDrafts, fragranceDrafts: fragranceDrafts,
             productDrafts: productDrafts, fragrancePercentage: fragrancePercentage,
+            fragranceUnit: fragranceUnit,
             useHybrid: useHybrid, kohPercentage: kohPercentage, naohPercentage: naohPercentage,
             kohPurity: kohPurity, naohPurity: naohPurity, isCreamSoap: isCreamSoap,
             useCFM: useCFM, cfmNeutralizer: cfmNeutralizer, lyeIngredient: lyeIngredient,

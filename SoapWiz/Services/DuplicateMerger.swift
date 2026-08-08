@@ -2,18 +2,12 @@ import Foundation
 import OSLog
 import SwiftData
 
-/// A model carrying the synced identity the merge tie-breaks on. Settable so
-/// `DuplicateMerger` can repair rows that came out of a migration sharing one
-/// value — see `mintDistinctUUIDs`.
-@MainActor
-protocol UUIDIdentified: PersistentModel {
-    var uuid: UUID { get set }
-}
-
 /// A lookup entity that CloudKit can duplicate: two devices offline both create
 /// "Oils", they sync, and now there are two rows for one logical category.
 @MainActor
-protocol MergeableLookup: UUIDIdentified {
+protocol MergeableLookup: PersistentModel {
+    /// The synced identity the merge tie-breaks on.
+    var uuid: UUID { get }
     var name: String { get }
 
     /// Moves everything pointing at `loser` onto `winner` and folds across any
@@ -59,15 +53,13 @@ enum DuplicateMerger {
     /// Collapses every duplicate in the store. Safe to call repeatedly — a second
     /// pass finds only groups of one and saves nothing.
     static func mergeAll(in context: ModelContext) throws {
-        let minted = try mintDistinctUUIDs(in: context)
-
         var losers: [any PersistentModel] = []
         losers += try collapse(IngredientCategory.self, in: context)
         losers += try collapse(Provider.self, in: context)
         losers += try collapse(StorageLocation.self, in: context)
         losers += try collapseSettings(in: context)
 
-        guard minted > 0 || !losers.isEmpty else { return }
+        guard !losers.isEmpty else { return }
 
         // Two phases. If a loser's deletion reaches another device before the
         // repointing does, that device applies `.nullify` and an ingredient loses
@@ -75,59 +67,12 @@ enum DuplicateMerger {
         // the repoints first pushes them to CloudKit ahead of the tombstones.
         try context.save()
 
-        guard !losers.isEmpty else { return }
-
         for loser in losers {
             context.delete(loser)
         }
         try context.save()
 
         log.notice("Merged \(losers.count, privacy: .public) duplicate record(s).")
-    }
-
-    /// `uuid` was added to models that already had rows on disk, and those rows
-    /// are filled in by automatic lightweight migration — which takes the new
-    /// attribute's default from the schema and evaluates it once, so every
-    /// pre-existing row can migrate carrying the *same* uuid.
-    ///
-    /// A value shared by every row is not a tiebreaker. `collapse` would fall back
-    /// to fetch order, which SQLite does not guarantee, and two devices could then
-    /// pick different winners and delete each other's — the split-brain this whole
-    /// design exists to prevent. So nothing may read a uuid before they are
-    /// distinct.
-    ///
-    /// A `SchemaMigrationPlan` with a `MigrationStage.custom` is the textbook home
-    /// for this, but it needs a `VersionedSchema` describing the pre-`uuid` shape:
-    /// a second copy of all eleven models, since every relationship inverse has to
-    /// point at the old types. Doing it here needs no duplicate schema, and it also
-    /// repairs stores that have already migrated. Once the values are distinct this
-    /// is a no-op, so the standing cost is one fetch per type per pass.
-    private static func mintDistinctUUIDs(in context: ModelContext) throws -> Int {
-        var minted = 0
-        minted += try mintDistinctUUIDs(IngredientCategory.self, in: context)
-        minted += try mintDistinctUUIDs(Provider.self, in: context)
-        minted += try mintDistinctUUIDs(StorageLocation.self, in: context)
-        minted += try mintDistinctUUIDs(AppSettings.self, in: context)
-        if minted > 0 {
-            log.notice("Minted \(minted, privacy: .public) replacement uuid(s) for rows sharing one.")
-        }
-        return minted
-    }
-
-    private static func mintDistinctUUIDs<T: UUIDIdentified>(
-        _ type: T.Type,
-        in context: ModelContext
-    ) throws -> Int {
-        var seen: Set<UUID> = []
-        var minted = 0
-
-        for row in try context.fetch(FetchDescriptor<T>()) where !seen.insert(row.uuid).inserted {
-            let fresh = UUID()
-            seen.insert(fresh)
-            row.uuid = fresh
-            minted += 1
-        }
-        return minted
     }
 
     /// Groups by normalised name, keeps the lowest `uuid` of each group, and hands
@@ -173,10 +118,6 @@ enum DuplicateMerger {
         return Array(ordered.dropFirst())
     }
 }
-
-/// Not a `MergeableLookup` — it is a singleton with no name to group on — but its
-/// rows are tie-broken on `uuid` just the same, so they need the same repair.
-extension AppSettings: UUIDIdentified {}
 
 extension IngredientCategory: MergeableLookup {
     static func adopt(_ loser: IngredientCategory, into winner: IngredientCategory) {

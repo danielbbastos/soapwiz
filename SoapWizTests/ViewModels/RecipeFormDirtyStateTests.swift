@@ -136,6 +136,15 @@ struct RecipeFormDirtyStateTests: RecipeFormTestHelpers {
         #expect(model.isDirty)
     }
 
+    @Test func isDirty_FragranceUnitChanged_IsTrue() {
+        let model = RecipeFormViewModel()
+        model.captureSnapshot()
+
+        model.setFragranceUnit(.grams)
+
+        #expect(model.isDirty)
+    }
+
     @Test func isDirty_ProductAdded_IsTrue() {
         let model = RecipeFormViewModel()
         model.captureSnapshot()

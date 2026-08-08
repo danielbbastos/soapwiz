@@ -224,6 +224,7 @@ struct BatchProductionViewModelTests: BatchProductionTestHelpers {
         // 1000 g oils → 200 g lye (sap 0.2, 100% purity, 0% super fat)
         // → 300 g water (1.5 water parts), plus 30 g of fragrance.
         let recipe = makeRecipe(ctx, oil: oil, oilWeight: 1000)
+        recipe.fragranceUnit = FragranceUnit.grams.rawValue
         let fragranceLine = RecipeIngredient(ingredient: fragrance, percentage: 0, role: .fragrance)
         fragranceLine.additiveAmount = 30
         fragranceLine.additiveUnit = "g"

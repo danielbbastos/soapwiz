@@ -195,13 +195,17 @@ struct RecipeIngredientsTabView: View {
                         HStack(spacing: 4) {
                             Text(target.text)
                                 .foregroundStyle(target.isOverTarget ? Color.red : Color.secondary)
-                            InfoPopoverIcon(
-                                text: "Recommended fragrance load: "
-                                    + "\(model.formatPercentage(target.percentage))% of total oils, "
-                                    + "set on the Config tab."
-                            )
+                            InfoPopoverIcon(text: fragranceTargetInfoText(for: target))
                         }
                     }
+                    Picker("Unit", selection: Binding(
+                        get: { model.fragranceUnit },
+                        set: { model.setFragranceUnit($0) }
+                    )) {
+                        ForEach(FragranceUnit.allCases, id: \.self) { Text($0.rawValue) }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
                 }
                 ForEach(model.fragranceDrafts) { draft in
                     HStack {
@@ -210,27 +214,42 @@ struct RecipeIngredientsTabView: View {
                         Spacer()
                         NumericTextField(prompt: "0", value: Binding(
                             get: { draft.amount },
-                            set: { newVal in
-                                if draft.unit == "% of oils" {
-                                    model.userEditedFragrance(id: draft.id, amount: newVal)
-                                } else {
-                                    model.updateFragrance(id: draft.id, amount: newVal)
-                                }
-                            }
+                            set: { model.userEditedFragrance(id: draft.id, amount: $0) }
                         ), fractionLength: 0...3, width: 55)
-                        Picker("Unit", selection: Binding(
-                            get: { draft.unit },
-                            set: { model.updateFragrance(id: draft.id, unit: $0) }
-                        )) {
-                            ForEach(RecipeUnitOptions.fragrance, id: \.self) { Text($0) }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
+                        Text(model.fragranceUnit.rawValue)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .onDelete { model.removeFragrance(at: $0) }
+                blendTotalWarning
             }
         }
+    }
+
+    /// Shown when the blend shares don't add up to 100%. The maths still
+    /// resolves — shares are normalised by their actual sum — so this is a
+    /// nudge, not an error.
+    @ViewBuilder
+    private var blendTotalWarning: some View {
+        if let blendTotal = model.fragranceBlendTotal, abs(blendTotal - 100) > 0.5 {
+            Label {
+                Text("Blend shares total \(model.formatPercentage(blendTotal))%. "
+                    + "They are applied as shares of that total, not of 100%.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
+
+    private func fragranceTargetInfoText(for target: FragranceTarget) -> String {
+        let load = "Recommended fragrance load: "
+            + "\(model.formatPercentage(target.percentage))% of total oils, "
+            + "set on the Config tab."
+        guard model.fragranceUnit == .percentOfFragrances else { return load }
+        return load + " Each row is its share of that load; the shares should total 100%."
     }
 
     // MARK: - Calculated amounts

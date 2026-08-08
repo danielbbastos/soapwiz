@@ -209,7 +209,7 @@ struct RecipeExtrasTests: RecipeFormTestHelpers {
         #expect(model.isExtraAdded(Ingredient(name: "Citric Acid", unit: "g")) == false)
     }
     @Test func fragranceTarget_MassUnit_ShowsTargetTotalAndPercentage() throws {
-        let model = makeModelWithOilsAndFragrance(fragranceUnit: "g")
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: .grams)
         let target = try #require(model.fragranceTarget)
         #expect(target.percentage == 3)
         // 3% of 1000 g oils = 30 g
@@ -218,43 +218,43 @@ struct RecipeExtrasTests: RecipeFormTestHelpers {
         #expect(target.text.contains("3%"))
     }
     @Test func fragranceTarget_OzUnit_ConvertsTargetToThatUnit() throws {
-        let model = makeModelWithOilsAndFragrance(fragranceUnit: "oz")
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: .ounces)
         let target = try #require(model.fragranceTarget)
         #expect(target.text.contains("oz"))
         #expect(target.text.contains("3%"))
     }
     @Test func fragranceTarget_EnteredOverTarget_SetsFlag() throws {
-        let model = makeModelWithOilsAndFragrance(fragranceUnit: "g")
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: .grams)
         // Target is 3% of 1000 g = 30 g; enter 60 g.
-        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 60)
+        model.userEditedFragrance(id: model.fragranceDrafts[0].id, amount: 60)
         let target = try #require(model.fragranceTarget)
         #expect(target.isOverTarget == true)
     }
     @Test func fragranceTarget_EnteredUnderTarget_FlagFalse() throws {
-        let model = makeModelWithOilsAndFragrance(fragranceUnit: "g")
-        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 20)
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: .grams)
+        model.userEditedFragrance(id: model.fragranceDrafts[0].id, amount: 20)
         let target = try #require(model.fragranceTarget)
         #expect(target.isOverTarget == false)
     }
     @Test func fragranceTarget_PercentageUnit_ReturnsNil() {
-        // Default unit in percentage mode is "% of oils".
         let model = RecipeFormViewModel()
         model.weightUnit = "%"
         model.totalOilWeight = 1000
+        model.setFragranceUnit(.percentOfOils)
         model.addOil(Ingredient(name: "Olive Oil"))
         model.addFragrance(Ingredient(name: "Lavender EO"))
         #expect(model.fragranceTarget == nil)
     }
-    @Test func fragranceTarget_MixedUnits_ReturnsNil() {
-        let model = RecipeFormViewModel()
-        model.weightUnit = "%"
-        model.totalOilWeight = 1000
-        model.addOil(Ingredient(name: "Olive Oil"))
-        model.addFragrance(Ingredient(name: "A"))
-        model.addFragrance(Ingredient(name: "B"))
-        model.updateFragrance(id: model.fragranceDrafts[0].id, unit: "g")
-        model.updateFragrance(id: model.fragranceDrafts[1].id, unit: "oz")
-        #expect(model.fragranceTarget == nil)
+    @Test func fragranceTarget_PercentOfFragrances_ShowsLoadAndNeverOverTarget() throws {
+        let model = makeModelWithOilsAndFragrance(fragranceUnit: .percentOfFragrances)
+        model.userEditedFragrance(id: model.fragranceDrafts[0].id, amount: 250)
+        let target = try #require(model.fragranceTarget)
+        // The load is 3% of 1000 g oils = 30 g; shares are normalised, so even
+        // a share sum far past 100 can't exceed it.
+        #expect(target.percentage == 3)
+        #expect(target.text.contains("30"))
+        #expect(target.text.contains("3%"))
+        #expect(target.isOverTarget == false)
     }
     @Test func fragranceTarget_NoFragrances_ReturnsNil() {
         let model = makeModelWithOils()
@@ -263,8 +263,8 @@ struct RecipeExtrasTests: RecipeFormTestHelpers {
     @Test func fragranceTarget_NoOils_ReturnsNil() {
         let model = RecipeFormViewModel()
         model.weightUnit = "%"
+        model.setFragranceUnit(.grams)
         model.addFragrance(Ingredient(name: "Lavender EO"))
-        model.updateFragrance(id: model.fragranceDrafts[0].id, unit: "g")
         #expect(model.fragranceTarget == nil)
     }
 }

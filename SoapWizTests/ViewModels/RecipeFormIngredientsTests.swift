@@ -69,23 +69,24 @@ struct RecipeFormIngredientsTests: RecipeFormTestHelpers {
         #expect(model.fragranceDrafts.count == 1)
         #expect(model.fragranceDrafts[0].ingredient.name == "Rose EO")
     }
-    @Test func updateFragrance_Amount() {
+    @Test func userEditedFragrance_Amount() {
         let model = RecipeFormViewModel()
         model.addFragrance(Ingredient(name: "Lavender EO"))
         let id = model.fragranceDrafts[0].id
 
-        model.updateFragrance(id: id, amount: 10)
+        model.userEditedFragrance(id: id, amount: 10)
 
         #expect(model.fragranceDrafts[0].amount == 10)
     }
-    @Test func updateFragrance_Unit() {
+    @Test func setFragranceUnit_StampsEveryDraft() {
         let model = RecipeFormViewModel()
         model.addFragrance(Ingredient(name: "Lavender EO"))
-        let id = model.fragranceDrafts[0].id
+        model.addFragrance(Ingredient(name: "Rose EO"))
 
-        model.updateFragrance(id: id, unit: "g")
+        model.setFragranceUnit(.grams)
 
-        #expect(model.fragranceDrafts[0].unit == "g")
+        #expect(model.fragranceUnit == .grams)
+        #expect(model.fragranceDrafts.allSatisfy { $0.unit == "g" })
     }
     @Test func save_AdditiveAndFragrance_RoundTrip() throws {
         let (container, ctx) = try makeContext()
@@ -99,8 +100,9 @@ struct RecipeFormIngredientsTests: RecipeFormTestHelpers {
         model.name = "Test"
         model.addAdditive(additive)
         model.updateAdditive(id: model.additiveDrafts[0].id, amount: 5, unit: "g")
+        model.setFragranceUnit(.milliliters)
         model.addFragrance(fragrance)
-        model.updateFragrance(id: model.fragranceDrafts[0].id, amount: 10, unit: "ml")
+        model.userEditedFragrance(id: model.fragranceDrafts[0].id, amount: 10)
         let recipe = model.save(context: ctx)
         _ = recipe
 
@@ -134,15 +136,15 @@ struct RecipeFormIngredientsTests: RecipeFormTestHelpers {
         #expect(model.additiveDrafts[0].amount == 5)
         #expect(model.additiveDrafts[0].unit == "g")
     }
-    @Test func defaultFragranceUnit_PercentageMode_IsPercentageOfOils() {
-        let model = RecipeFormViewModel()
-        model.weightUnit = "%"
-        #expect(model.defaultFragranceUnit == "% of oils")
+    @Test func fragranceUnit_NewRecipe_DefaultsToPercentOfFragrances() {
+        #expect(RecipeFormViewModel().fragranceUnit == .percentOfFragrances)
     }
-    @Test func defaultFragranceUnit_AbsoluteMode_MatchesWeightUnit() {
+    @Test func fragranceUnit_NewRecipe_IgnoresTheWeightMode() {
+        // Shares of the blend read the same either way, so unlike additives the
+        // fragrance default doesn't follow the recipe's weight unit.
         let model = RecipeFormViewModel()
         model.weightUnit = "oz"
-        #expect(model.defaultFragranceUnit == "oz")
+        #expect(model.fragranceUnit == .percentOfFragrances)
     }
     @Test func defaultAdditiveUnit_PercentageMode_IsGrams() {
         let model = RecipeFormViewModel()
@@ -168,16 +170,23 @@ struct RecipeFormIngredientsTests: RecipeFormTestHelpers {
         model.addAdditive(Ingredient(name: "Salt"))
         #expect(model.additiveDrafts[0].unit == "oz")
     }
-    @Test func addFragrance_PercentageMode_DefaultsToPercentageOfOils() {
+    @Test func addFragrance_StampsTheRecipeWideUnit() {
+        let model = RecipeFormViewModel()
+        model.weightUnit = "oz"
+        model.addFragrance(Ingredient(name: "Lavender EO"))
+        #expect(model.fragranceDrafts[0].unit == "% of fragrances")
+    }
+    @Test func addFragrance_BlendMode_SplitsSharesEvenly() {
+        let model = RecipeFormViewModel()
+        model.addFragrance(Ingredient(name: "Lavender EO"))
+        model.addFragrance(Ingredient(name: "Cedarwood EO"))
+        #expect(model.fragranceDrafts.map(\.amount) == [50, 50])
+    }
+    @Test func addFragrance_ExplicitUnitSet_KeepsItOverTheDefault() {
         let model = RecipeFormViewModel()
         model.weightUnit = "%"
+        model.setFragranceUnit(.grams)
         model.addFragrance(Ingredient(name: "Lavender EO"))
-        #expect(model.fragranceDrafts[0].unit == "% of oils")
-    }
-    @Test func addFragrance_AbsoluteMode_DefaultsToWeightUnit() {
-        let model = RecipeFormViewModel()
-        model.weightUnit = "kg"
-        model.addFragrance(Ingredient(name: "Lavender EO"))
-        #expect(model.fragranceDrafts[0].unit == "kg")
+        #expect(model.fragranceDrafts[0].unit == "g")
     }
 }

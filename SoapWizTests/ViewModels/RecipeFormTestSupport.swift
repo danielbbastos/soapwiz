@@ -69,15 +69,15 @@ extension RecipeFormTestHelpers {
         model.addOil(oil)
         return model
     }
-    func makeModelWithOilsAndFragrance(fragranceUnit: String) -> RecipeFormViewModel {
+    func makeModelWithOilsAndFragrance(fragranceUnit: FragranceUnit) -> RecipeFormViewModel {
         let model = RecipeFormViewModel()
         model.weightUnit = "%"
         model.oilWeightUnit = "g"
         model.totalOilWeight = 1000
         model.fragrancePercentage = 3
         model.addOil(Ingredient(name: "Olive Oil"))          // 100% → 1000 g oils
+        model.setFragranceUnit(fragranceUnit)
         model.addFragrance(Ingredient(name: "Lavender EO"))
-        model.updateFragrance(id: model.fragranceDrafts[0].id, unit: fragranceUnit)
         return model
     }
 }

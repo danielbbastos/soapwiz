@@ -94,6 +94,11 @@ extension BackupData {
         var waterParts: Double
         var superFat: Double
         var fragrancePercentage: Double
+        /// Optional so a file without the key still decodes. It restores to the
+        /// schema default and the rows are stamped to match on load — the
+        /// recipe-wide unit is authoritative, so a row's own unit is discarded
+        /// rather than consulted.
+        var fragranceUnit: String?
         var useHybrid: Bool
         var kohPercentage: Double
         var naohPercentage: Double

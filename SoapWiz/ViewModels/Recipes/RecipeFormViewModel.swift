@@ -17,6 +17,19 @@ final class RecipeFormViewModel {
     var fragranceDrafts: [IngredientAmountDraft] = []
     var productDrafts: [RecipeProductDraft] = []
     var fragrancePercentage: Double = 3
+
+    /// The recipe-wide unit every fragrance row is entered in. Mutate through
+    /// `setFragranceUnit(_:)` (or `load`, which reconciles stored rows), so
+    /// every draft's `unit` string stays in sync — the calculator and
+    /// persistence read the drafts, not this property.
+    ///
+    /// A new recipe starts on shares of the blend: it is the one unit that
+    /// reads the same whether the recipe is written in percentages or in
+    /// weights, since the absolute load comes from `fragrancePercentage`
+    /// either way. `Recipe.fragranceUnit`'s schema default is deliberately
+    /// different — a recipe stored before the unit became recipe-wide has to
+    /// come back as "% of oils".
+    var fragranceUnit: FragranceUnit = .percentOfFragrances
     var useHybrid: Bool = false
     var kohPercentage: Double = 90
     var naohPercentage: Double = 10
@@ -64,12 +77,6 @@ final class RecipeFormViewModel {
         weightUnitIsPercentage ? oilWeightUnit : weightUnit
     }
 
-    /// Default unit for new fragrance rows: percentage-of-oils when the recipe is
-    /// measured in percentages, otherwise the recipe's oil weight unit.
-    var defaultFragranceUnit: String {
-        weightUnitIsPercentage ? "% of oils" : weightUnit
-    }
-
     /// Default unit for new additive rows. Additives are conventionally entered
     /// as a weight, so they default to grams in percentage mode (rather than
     /// "% of oils") to avoid silently applying a percentage of the oils.
@@ -106,6 +113,8 @@ final class RecipeFormViewModel {
             lye: lyeCalculator,
             additiveDrafts: additiveDrafts,
             fragranceDrafts: fragranceDrafts,
+            fragranceUnit: fragranceUnit,
+            fragrancePercentage: fragrancePercentage,
             displayWeightUnit: displayWeightUnit,
             lyeIngredient: lyeIngredient,
             kohLyeIngredient: kohLyeIngredient
@@ -159,33 +168,6 @@ final class RecipeFormViewModel {
         let clamped = min(max(value, 0), 100)
         naohPercentage = clamped
         kohPercentage = 100 - clamped
-    }
-
-    // MARK: - Fragrance target
-
-    var fragranceTargetPercentage: Double { fragrancePercentage }
-
-    /// Recommended fragrance load shown beside the fragrance section header — but
-    /// only when fragrances are entered in an absolute mass unit. For percentage
-    /// units (% of oils / batch / liquids) it isn't shown: the user is either
-    /// already working in % of oils, or deliberately using a different base.
-    var fragranceTarget: FragranceTarget? {
-        guard !fragranceDrafts.isEmpty else { return nil }
-        let units = Set(fragranceDrafts.map(\.unit))
-        guard units.count == 1, let unit = fragranceDrafts.first?.unit,
-              MassUnitConverter.isMass(unit) else { return nil }
-        let totalOilBatchWeight = lyeCalculator.totalOilBatchWeight
-        guard totalOilBatchWeight > 0 else { return nil }
-
-        let targetInOilUnit = totalOilBatchWeight * fragranceTargetPercentage / 100
-        let target = MassUnitConverter.convert(targetInOilUnit, from: displayWeightUnit, to: unit) ?? targetInOilUnit
-        let amountText = target.formatted(.number.precision(.fractionLength(0...2)))
-        let enteredSum = fragranceDrafts.reduce(0) { $0 + $1.amount }
-        return FragranceTarget(
-            text: "\(amountText) \(unit) (\(formatPercentage(fragranceTargetPercentage))%)",
-            percentage: fragranceTargetPercentage,
-            isOverTarget: target > 0 && enteredSum > target * 1.005
-        )
     }
 
     // MARK: - Cost / breakdown (delegated to RecipeCostCalculator)
@@ -257,20 +239,6 @@ final class RecipeFormViewModel {
         if let unit { additiveDrafts[idx].unit = unit }
     }
 
-    func addFragrance(_ ingredient: Ingredient) {
-        guard !fragranceDrafts.contains(where: {
-            $0.ingredient.persistentModelID == ingredient.persistentModelID
-        }) else { return }
-        let unit = fragranceUnitIsPercentageOfOils ? "% of oils" : defaultFragranceUnit
-        fragranceDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: unit))
-        if unit == "% of oils" { redistributeFragrancePercentages() }
-    }
-
-    func removeFragrance(at offsets: IndexSet) {
-        fragranceDrafts.remove(atOffsets: offsets)
-        if fragranceUnitIsPercentageOfOils { redistributeFragrancePercentages() }
-    }
-
     private var hasSeeded = false
 
     /// Pre-fills the form from an inventory selection, routing each ingredient to
@@ -285,44 +253,6 @@ final class RecipeFormViewModel {
             case .additive: addAdditive(ingredient)
             case .fragrance: addFragrance(ingredient)
             case nil: continue
-            }
-        }
-    }
-
-    func updateFragrance(id: UUID, amount: Double? = nil, unit: String? = nil) {
-        guard let idx = fragranceDrafts.firstIndex(where: { $0.id == id }) else { return }
-        if let amount { fragranceDrafts[idx].amount = amount }
-        if let unit {
-            fragranceDrafts[idx].unit = unit
-            fragranceDrafts.indices.forEach { fragranceDrafts[$0].isLocked = false }
-            if unit == "% of oils" { redistributeFragrancePercentages() }
-        }
-    }
-
-    func userEditedFragrance(id: UUID, amount: Double) {
-        guard let idx = fragranceDrafts.firstIndex(where: { $0.id == id }) else { return }
-        fragranceDrafts[idx].amount = amount
-        fragranceDrafts[idx].isLocked = true
-        redistributeFragrancePercentages()
-    }
-
-    private var fragranceUnitIsPercentageOfOils: Bool {
-        fragranceDrafts.first?.unit == "% of oils"
-    }
-
-    private func redistributeFragrancePercentages() {
-        let target = fragranceTargetPercentage
-        let lockedSum = fragranceDrafts.filter(\.isLocked).reduce(0) { $0 + $1.amount }
-        let remaining = max(0, target - lockedSum)
-        let unlockedIndices = fragranceDrafts.indices.filter { !fragranceDrafts[$0].isLocked }
-        guard !unlockedIndices.isEmpty else { return }
-        let share = (remaining / Double(unlockedIndices.count) * 10).rounded() / 10
-        for (enumIdx, idx) in unlockedIndices.enumerated() {
-            if enumIdx == unlockedIndices.count - 1 {
-                let assignedSum = unlockedIndices.dropLast().reduce(0.0) { $0 + fragranceDrafts[$1].amount }
-                fragranceDrafts[idx].amount = max(0, remaining - assignedSum)
-            } else {
-                fragranceDrafts[idx].amount = share
             }
         }
     }

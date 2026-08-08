@@ -107,6 +107,7 @@ extension DataSeeder {
         recipe.waterParts = 1.5
         recipe.superFat = 5
         recipe.fragrancePercentage = seed.fragrance?.1 ?? 0
+        recipe.fragranceUnit = FragranceUnit.percentOfOils.rawValue
         recipe.lyeIngredient = ingredient(named: "Sodium Hydroxide (Lye)")
         context.insert(recipe)
 
@@ -120,7 +121,7 @@ extension DataSeeder {
         if let (fragranceName, pct) = seed.fragrance, let ing = ingredient(named: fragranceName) {
             let recipeIngredient = RecipeIngredient(ingredient: ing, percentage: 0, role: .fragrance)
             recipeIngredient.additiveAmount = pct
-            recipeIngredient.additiveUnit = "% of oils"
+            recipeIngredient.additiveUnit = FragranceUnit.percentOfOils.rawValue
             recipeIngredient.recipe = recipe
             context.insert(recipeIngredient)
         }
