@@ -20,9 +20,31 @@ struct IngredientAmountDraft: Identifiable, Equatable {
 
 struct RecipeProductDraft: Identifiable, Equatable {
     let id = UUID()
-    var size: Double = 0
-    var unitSymbol: String = ""
+    var size: Double = 0 {
+        didSet { if size != oldValue { isSeededPlaceholder = false } }
+    }
+    var unitSymbol: String = "" {
+        didSet { if unitSymbol != oldValue { isSeededPlaceholder = false } }
+    }
     var modelID: PersistentIdentifier?
+
+    /// Marks the unsaved row the form seeds itself with when a recipe has no
+    /// products of its own. It stands for the whole batch, which already has its
+    /// own figures wherever products are listed, so it is never written to the
+    /// store — persisting it would leave behind a product the user never asked
+    /// for and no screen shows. Touching either field hands the row to the user
+    /// and clears the mark, so an edited seed is saved like any other product.
+    ///
+    /// Stamped rather than inferred from the row's shape: a product the user
+    /// added can end up looking exactly like the seed — picking "parts of batch"
+    /// for a fresh row snaps its size to 1 — and that row must still be saved.
+    private(set) var isSeededPlaceholder = false
+
+    static func seededPlaceholder() -> RecipeProductDraft {
+        var draft = RecipeProductDraft(size: 1, unitSymbol: ProductUnit.partsOfBatch.rawValue)
+        draft.isSeededPlaceholder = true
+        return draft
+    }
 }
 
 /// Every user-editable field of the recipe form, captured so the form can tell

@@ -47,11 +47,7 @@ final class RecipeFormViewModel {
     var hasImported = false
 
     init() {
-        productDrafts = [Self.defaultProductDraft()]
-    }
-
-    static func defaultProductDraft() -> RecipeProductDraft {
-        RecipeProductDraft(size: 1, unitSymbol: ProductUnit.partsOfBatch.rawValue)
+        productDrafts = [.seededPlaceholder()]
     }
 
     var weightUnitIsPercentage: Bool { weightUnit == "%" }
