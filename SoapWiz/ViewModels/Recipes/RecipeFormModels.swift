@@ -85,8 +85,9 @@ struct RecipeFormSnapshot: Equatable {
 enum RecipeUnitOptions {
     static let additive = ["g", "kg", "oz", "lb", "ml", "L", "% of batch", "% of liquids", "% of oils"]
 
-    /// The single string test for "is this a percentage-based unit", shared by
-    /// additives (whose units stay raw strings) and `FragranceUnit.isPercentage`.
+    /// The single string test for "is this a percentage-based unit". Both
+    /// additive and fragrance rows reach it as raw strings, through the
+    /// `IngredientAmountDraft` the detail view renders.
     static func isPercentage(_ unit: String) -> Bool {
         unit.hasPrefix("%")
     }
@@ -105,8 +106,6 @@ enum FragranceUnit: String, CaseIterable {
     case percentOfLiquids = "% of liquids"
     case percentOfOils = "% of oils"
     case percentOfFragrances = "% of fragrances"
-
-    var isPercentage: Bool { RecipeUnitOptions.isPercentage(rawValue) }
 
     /// Resolves a stored raw value to a case, defaulting to percent of oils.
     static func resolve(_ raw: String) -> FragranceUnit {
