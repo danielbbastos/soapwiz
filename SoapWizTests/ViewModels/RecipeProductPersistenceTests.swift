@@ -160,7 +160,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         model.saveProducts(context: ctx)
 
         // Shrinking a real product back to a single part must not make it
-        // vanish on the next save — it has a modelID, so it is not a placeholder.
+        // vanish on the next save — the row was never the seeded one.
         model.productDrafts[0].size = 1
         #expect(model.productDrafts[0].isSeededPlaceholder == false)
         model.saveProducts(context: ctx)
@@ -168,6 +168,70 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.count == 1)
         #expect(recipe.products.first?.size == 1)
+    }
+
+    @Test func saveProducts_AddedRowSnappedToASinglePart_IsPersisted() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = try makeProductlessModel(ctx: ctx)
+
+        // What the card's unit popover does to a freshly added row: picking a
+        // unit that needs a size snaps an unset size to 1, which leaves the row
+        // shaped exactly like the seeded placeholder. It is still the user's
+        // product and has to be saved.
+        model.addProduct(defaultUnitSymbol: ProductUnit.grams.rawValue)
+        let index = model.productDrafts.count - 1
+        model.productDrafts[index].unitSymbol = ProductUnit.partsOfBatch.rawValue
+        model.productDrafts[index].size = 1
+        #expect(model.productDrafts[index].isSeededPlaceholder == false)
+        model.saveProducts(context: ctx)
+
+        let recipe = try #require(model.editingRecipe)
+        #expect(recipe.products.count == 1)
+        #expect(recipe.products.first?.unitSymbol == ProductUnit.partsOfBatch.rawValue)
+        #expect(recipe.products.first?.size == 1)
+    }
+
+    @Test func saveProducts_ResizedPlaceholder_IsPersisted() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = try makeProductlessModel(ctx: ctx)
+
+        model.productDrafts[0].size = 4
+        #expect(model.productDrafts[0].isSeededPlaceholder == false)
+        model.saveProducts(context: ctx)
+
+        let recipe = try #require(model.editingRecipe)
+        #expect(recipe.products.count == 1)
+        #expect(recipe.products.first?.size == 4)
+    }
+
+    @Test func saveProducts_PlaceholderGivenAnotherUnit_IsPersisted() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = try makeProductlessModel(ctx: ctx)
+
+        model.productDrafts[0].unitSymbol = ProductUnit.grams.rawValue
+        #expect(model.productDrafts[0].isSeededPlaceholder == false)
+        model.saveProducts(context: ctx)
+
+        let recipe = try #require(model.editingRecipe)
+        #expect(recipe.products.count == 1)
+        #expect(recipe.products.first?.unitSymbol == ProductUnit.grams.rawValue)
+    }
+
+    @Test func isSeededPlaceholder_RewrittenWithTheSameValues_StaysMarked() {
+        // A SwiftUI binding writes on every pass, same value or not; only a real
+        // change hands the row to the user.
+        var draft = RecipeProductDraft.seededPlaceholder()
+        draft.size = 1
+        draft.unitSymbol = ProductUnit.partsOfBatch.rawValue
+
+        #expect(draft.isSeededPlaceholder)
+    }
+
+    @Test func isSeededPlaceholder_DraftBuiltByHand_IsFalse() {
+        #expect(RecipeProductDraft(size: 1, unitSymbol: ProductUnit.partsOfBatch.rawValue).isSeededPlaceholder == false)
     }
 
     // MARK: - Ingredients are untouched

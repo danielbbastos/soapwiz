@@ -49,7 +49,7 @@ extension RecipeFormViewModel {
             RecipeProductDraft(size: $0.size, unitSymbol: $0.unitSymbol, modelID: $0.persistentModelID)
         }
         if productDrafts.isEmpty {
-            productDrafts = [Self.defaultProductDraft()]
+            productDrafts = [.seededPlaceholder()]
         }
     }
 
