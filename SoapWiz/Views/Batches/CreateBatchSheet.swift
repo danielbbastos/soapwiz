@@ -69,7 +69,7 @@ struct CreateBatchSheet: View {
                     }
                     .listRowBackground(Color.cardBackground)
                 } else if !shortages.isEmpty {
-                    Section("Not enough stock") {
+                    Section {
                         ForEach(shortages) { req in
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(req.ingredient.name)
@@ -78,6 +78,11 @@ struct CreateBatchSheet: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
+                    } header: {
+                        // Red, unlike the orange advisory warnings elsewhere: this
+                        // one blocks creation rather than merely cautioning.
+                        Label("Not enough stock", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
                     }
                     .listRowBackground(Color.cardBackground)
                 }
