@@ -3,8 +3,9 @@ import SwiftData
 
 /// Drives the sequential bulk-import flow: walks an ordered queue of ingredients,
 /// presenting a purchase form for each one in turn. Shared fields (provider,
-/// purchase date, journal code) carry over from each committed entry to the next
-/// to cut repetition across a single purchase order.
+/// purchase date) carry over from each committed entry to the next to cut
+/// repetition across a single purchase order. The journal code does not: it is
+/// numbered per ingredient, so each form derives its own.
 @MainActor
 @Observable
 final class BulkImportFlowViewModel {
@@ -15,7 +16,6 @@ final class BulkImportFlowViewModel {
     /// Values carried forward to pre-fill the next entry in the queue.
     private var carriedProvider: Provider?
     private var carriedDate: Date = Date()
-    private var carriedJournalCode: String = ""
 
     init(ingredients: [Ingredient]) {
         precondition(!ingredients.isEmpty, "Bulk import requires at least one ingredient")
@@ -43,7 +43,6 @@ final class BulkImportFlowViewModel {
         currentForm.save(context: context)
         carriedProvider = currentForm.selectedProvider
         carriedDate = currentForm.dateOfPurchase
-        carriedJournalCode = currentForm.journalCode
         advance()
     }
 
@@ -58,7 +57,6 @@ final class BulkImportFlowViewModel {
         let form = PurchaseFormViewModel(ingredient: ingredients[index])
         form.selectedProvider = carriedProvider
         form.dateOfPurchase = carriedDate
-        form.journalCode = carriedJournalCode
         currentForm = form
     }
 }

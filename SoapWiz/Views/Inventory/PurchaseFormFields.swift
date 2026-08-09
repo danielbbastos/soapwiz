@@ -74,7 +74,7 @@ struct PurchaseFormFields: View {
             if model.hasExpiryDate {
                 DatePicker("Expiry Date", selection: $model.expiryDate, displayedComponents: .date)
             }
-            Toggle("Has Opening Date", isOn: $model.hasOpeningDate)
+            Toggle("Has Been Opened", isOn: $model.hasOpeningDate)
             if model.hasOpeningDate {
                 DatePicker("Opening Date", selection: $model.openingDate, displayedComponents: .date)
             }

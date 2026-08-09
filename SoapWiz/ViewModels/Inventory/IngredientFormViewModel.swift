@@ -24,6 +24,18 @@ final class IngredientFormViewModel {
 
     let ingredient: Ingredient?
 
+    private struct Snapshot {
+        let name: String
+        let code: String
+        let unit: IngredientUnit?
+        let category: IngredientCategory?
+        let lowStockThreshold: String
+        let sapValue: String
+        let density: String
+    }
+
+    private var snapshot: Snapshot?
+
     init(ingredient: Ingredient? = nil, defaultCategory: IngredientCategory? = nil, prefilledName: String? = nil) {
         self.ingredient = ingredient
         selectedCategory = defaultCategory
@@ -45,6 +57,35 @@ final class IngredientFormViewModel {
                 density = dens.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
             }
         }
+        // A new ingredient gets a baseline too: without one an untouched
+        // New Ingredient sheet would read as dirty and refuse to dismiss.
+        captureSnapshot()
+    }
+
+    /// Records the current values as the clean baseline. Call again once any
+    /// post-init derivation has run, so it doesn't count as a user edit.
+    func captureSnapshot() {
+        snapshot = Snapshot(
+            name: name,
+            code: code,
+            unit: selectedUnit,
+            category: selectedCategory,
+            lowStockThreshold: lowStockThreshold,
+            sapValue: sapValue,
+            density: density
+        )
+    }
+
+    /// Whether leaving the form now would lose work.
+    var isDirty: Bool {
+        guard let snapshot else { return false }
+        return name != snapshot.name
+            || code != snapshot.code
+            || selectedUnit != snapshot.unit
+            || selectedCategory !== snapshot.category
+            || lowStockThreshold != snapshot.lowStockThreshold
+            || sapValue != snapshot.sapValue
+            || density != snapshot.density
     }
 
     var isEditing: Bool { ingredient != nil }
