@@ -121,9 +121,12 @@ struct IngredientFormView: View {
             // A prefilled name arrives before the field exists, so the
             // `onChange` that derives the code never fires for it.
             .task {
-                guard !model.isEditing, !model.name.isEmpty, model.code.isEmpty else { return }
-                model.applyNameChange(existingCodes: existingCodes)
+                if !model.isEditing, !model.name.isEmpty, model.code.isEmpty {
+                    model.applyNameChange(existingCodes: existingCodes)
+                }
+                model.captureSnapshot()
             }
+            .interactiveDismissDisabled(model.isDirty)
             .sheet(isPresented: $showingNewCategory) {
                 CategoryFormView { newCategory in
                     model.selectedCategory = newCategory

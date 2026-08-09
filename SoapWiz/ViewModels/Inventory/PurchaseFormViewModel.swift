@@ -78,8 +78,42 @@ final class PurchaseFormViewModel {
                 location: purchase.storageLocation
             )
         } else {
+            journalCode = Self.suggestedJournalCode(for: ingredient)
             initialSnapshot = nil
         }
+    }
+
+    /// Numbers below this are zero-padded out to three digits, so a fresh
+    /// sequence reads `AO-001` rather than `AO-1`.
+    private static let journalNumberWidth = 3
+
+    /// The next journal code in the ingredient's own sequence: `<CODE>-<n>`,
+    /// where `n` is one past the highest number already recorded against it.
+    /// Codes the user typed by hand don't match the pattern and are skipped, so
+    /// one custom entry never stalls the sequence. Empty when the ingredient has
+    /// no code — a bare `-001` would mean nothing.
+    ///
+    /// Padding widens to whatever the ingredient already uses, so an existing
+    /// `AO-0007` continues as `AO-0008` instead of dropping a digit.
+    static func suggestedJournalCode(for ingredient: Ingredient) -> String {
+        let code = ingredient.code.trimmingCharacters(in: .whitespaces)
+        guard !code.isEmpty else { return "" }
+
+        let prefix = "\(code.uppercased())-"
+        var highest = 0
+        var width = journalNumberWidth
+        for purchase in ingredient.purchases {
+            let journal = purchase.journalCode.trimmingCharacters(in: .whitespaces)
+            guard journal.uppercased().hasPrefix(prefix) else { continue }
+            let digits = journal.dropFirst(prefix.count)
+            guard !digits.isEmpty, digits.allSatisfy({ $0.isASCII && $0.isNumber }),
+                  let number = Int(digits) else { continue }
+            highest = max(highest, number)
+            width = max(width, digits.count)
+        }
+        let next = String(highest + 1)
+        let padding = String(repeating: "0", count: max(0, width - next.count))
+        return "\(code)-\(padding)\(next)"
     }
 
     var isEditing: Bool { purchase != nil }

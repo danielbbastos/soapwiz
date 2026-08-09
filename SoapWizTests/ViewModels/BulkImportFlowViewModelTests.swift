@@ -151,7 +151,7 @@ struct BulkImportFlowViewModelTests {
 
     // MARK: - Carry-over of shared fields
 
-    @Test func commitAndAdvance_CarriesProviderDateAndJournalToNextEntry() throws {
+    @Test func commitAndAdvance_CarriesProviderAndDateToNextEntry() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let provider = Provider(name: "Soapery Co")
@@ -163,32 +163,46 @@ struct BulkImportFlowViewModelTests {
         sut.currentForm.quantityText = "500"
         sut.currentForm.selectedProvider = provider
         sut.currentForm.dateOfPurchase = purchaseDate
-        sut.currentForm.journalCode = "PO-42"
         sut.commitAndAdvance(context: ctx)
 
         #expect(sut.currentForm.selectedProvider === provider)
         #expect(sut.currentForm.dateOfPurchase == purchaseDate)
-        #expect(sut.currentForm.journalCode == "PO-42")
         // Per-item fields are not carried over.
         #expect(sut.currentForm.quantityText.isEmpty)
     }
 
-    @Test func skip_StillCarriesPreviouslyCommittedSharedFields() throws {
+    @Test func commitAndAdvance_DerivesJournalCodePerIngredientInsteadOfCarrying() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredients = makeIngredients(["Olive Oil", "Coconut Oil"], in: ctx)
+        ingredients[0].code = "OLI"
+        ingredients[1].code = "COC"
+
+        let sut = BulkImportFlowViewModel(ingredients: ingredients)
+        #expect(sut.currentForm.journalCode == "OLI-001")
+        sut.currentForm.quantityText = "500"
+        sut.currentForm.journalCode = "PO-42"
+        sut.commitAndAdvance(context: ctx)
+
+        #expect(sut.currentForm.journalCode == "COC-001")
+    }
+
+    @Test func skip_StillCarriesPreviouslyCommittedProvider() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let provider = Provider(name: "Soapery Co")
         ctx.insert(provider)
         let ingredients = makeIngredients(["Olive Oil", "Coconut Oil", "Lye"], in: ctx)
+        ingredients[2].code = "LYE"
 
         let sut = BulkImportFlowViewModel(ingredients: ingredients)
         sut.currentForm.quantityText = "500"
         sut.currentForm.selectedProvider = provider
-        sut.currentForm.journalCode = "PO-42"
-        sut.commitAndAdvance(context: ctx)   // -> Coconut Oil, carries provider/journal
+        sut.commitAndAdvance(context: ctx)   // -> Coconut Oil, carries provider
         sut.skip()                           // -> Lye, should still carry
 
         #expect(sut.currentIngredient.name == "Lye")
         #expect(sut.currentForm.selectedProvider === provider)
-        #expect(sut.currentForm.journalCode == "PO-42")
+        #expect(sut.currentForm.journalCode == "LYE-001")
     }
 }
