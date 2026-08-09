@@ -15,17 +15,21 @@ struct RecipeExtraIngredientsSection: View {
     @ViewBuilder
     var body: some View {
         if let creamRows = model.creamSoapAdditions {
-            Section(header: CollapsibleSectionHeader(title: "Cream Soap Additions", expanded: $creamExpanded)) {
+            Section(header: CollapsibleSectionHeader(title: "Cream Soap Additions", expanded: $creamExpanded)
+                .expandingSectionHeader(RecipeFormSection.creamSoapAdditions, expanded: creamExpanded)) {
                 if creamExpanded {
                     extraSectionB(rows: creamRows)
+                        .expandingSectionEnd(RecipeFormSection.creamSoapAdditions)
                 }
             }
         }
         if let data = model.extraIngredientData {
-            Section(header: CollapsibleSectionHeader(title: "Extra Ingredients", expanded: $expanded)) {
+            Section(header: CollapsibleSectionHeader(title: "Extra Ingredients", expanded: $expanded)
+                .expandingSectionHeader(RecipeFormSection.extraIngredients, expanded: expanded)) {
                 if expanded {
                     extraSectionA(rows: data.sectionA)
                     extraSectionB(rows: data.sectionB)
+                        .expandingSectionEnd(RecipeFormSection.extraIngredients)
                 }
             }
         }

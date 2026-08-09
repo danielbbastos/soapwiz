@@ -62,7 +62,9 @@ struct RecipeIngredientsTabView: View {
         .onPreferenceChange(AvailableHeightKey.self) { if !costBreakdownExpanded { availableHeight = $0 } }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             CostBreakdownBarView(model: model, isExpanded: $costBreakdownExpanded, availableHeight: availableHeight)
+                .expandingSectionScrollOverlay()
         }
+        .expandingSectionScrollContainer()
         .sheet(item: $activePicker) { section in
             IngredientPickerView(
                 addedIDs: addedIDs(for: section),
@@ -108,7 +110,8 @@ struct RecipeIngredientsTabView: View {
     // MARK: - Oils
 
     private var oilsSection: some View {
-        Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.oils, expanded: $oilsExpanded)) {
+        Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.oils, expanded: $oilsExpanded)
+            .expandingSectionHeader(RecipeFormSection.oils, expanded: oilsExpanded)) {
             if oilsExpanded {
                 HStack {
                     Button {
@@ -126,6 +129,7 @@ struct RecipeIngredientsTabView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
+                .expandingSectionEnd(RecipeFormSection.oils, if: model.oilDrafts.isEmpty)
                 ForEach(model.oilDrafts) { draft in
                     HStack {
                         Text(draft.ingredient.name)
@@ -137,6 +141,7 @@ struct RecipeIngredientsTabView: View {
                         Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
                             .foregroundStyle(.secondary)
                     }
+                    .expandingSectionEnd(RecipeFormSection.oils, if: draft.id == model.oilDrafts.last?.id)
                 }
                 .onDelete { model.removeOil(at: $0) }
             }
@@ -146,7 +151,8 @@ struct RecipeIngredientsTabView: View {
     // MARK: - Additives
 
     private var additivesSection: some View {
-        Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.additives, expanded: $additivesExpanded)) {
+        Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.additives, expanded: $additivesExpanded)
+            .expandingSectionHeader(RecipeFormSection.additives, expanded: additivesExpanded)) {
             if additivesExpanded {
                 Button {
                     activePicker = .additives
@@ -154,6 +160,7 @@ struct RecipeIngredientsTabView: View {
                     Label("Add additive", systemImage: "plus")
                         .labelStyle(TightLabelStyle())
                 }
+                .expandingSectionEnd(RecipeFormSection.additives, if: model.additiveDrafts.isEmpty)
                 ForEach(model.additiveDrafts) { draft in
                     HStack {
                         Text(draft.ingredient.name)
@@ -172,6 +179,9 @@ struct RecipeIngredientsTabView: View {
                         .labelsHidden()
                         .pickerStyle(.menu)
                     }
+                    .expandingSectionEnd(
+                        RecipeFormSection.additives, if: draft.id == model.additiveDrafts.last?.id
+                    )
                 }
                 .onDelete { model.removeAdditive(at: $0) }
             }
@@ -181,7 +191,8 @@ struct RecipeIngredientsTabView: View {
     // MARK: - Fragrances
 
     private var fragrancesSection: some View {
-        Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.fragrances, expanded: $fragrancesExpanded)) {
+        Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.fragrances, expanded: $fragrancesExpanded)
+            .expandingSectionHeader(RecipeFormSection.fragrances, expanded: fragrancesExpanded)) {
             if fragrancesExpanded {
                 HStack {
                     Button {
@@ -207,6 +218,9 @@ struct RecipeIngredientsTabView: View {
                     .labelsHidden()
                     .pickerStyle(.menu)
                 }
+                .expandingSectionEnd(
+                    RecipeFormSection.fragrances, if: model.fragranceDrafts.isEmpty && !showsBlendTotalWarning
+                )
                 ForEach(model.fragranceDrafts) { draft in
                     HStack {
                         Text(draft.ingredient.name)
@@ -219,11 +233,23 @@ struct RecipeIngredientsTabView: View {
                         Text(model.fragranceUnit.rawValue)
                             .foregroundStyle(.secondary)
                     }
+                    .expandingSectionEnd(
+                        RecipeFormSection.fragrances,
+                        if: draft.id == model.fragranceDrafts.last?.id && !showsBlendTotalWarning
+                    )
                 }
                 .onDelete { model.removeFragrance(at: $0) }
                 blendTotalWarning
+                    .expandingSectionEnd(RecipeFormSection.fragrances, if: showsBlendTotalWarning)
             }
         }
+    }
+
+    /// Whether `blendTotalWarning` renders anything — it is the section's last
+    /// row when it does.
+    private var showsBlendTotalWarning: Bool {
+        guard let blendTotal = model.fragranceBlendTotal else { return false }
+        return abs(blendTotal - 100) > 0.5
     }
 
     /// Shown when the blend shares don't add up to 100%. The maths still
@@ -231,7 +257,7 @@ struct RecipeIngredientsTabView: View {
     /// nudge, not an error.
     @ViewBuilder
     private var blendTotalWarning: some View {
-        if let blendTotal = model.fragranceBlendTotal, abs(blendTotal - 100) > 0.5 {
+        if showsBlendTotalWarning, let blendTotal = model.fragranceBlendTotal {
             Label {
                 Text("Blend shares total \(model.formatPercentage(blendTotal))%. "
                     + "They are applied as shares of that total, not of 100%.")
@@ -257,7 +283,8 @@ struct RecipeIngredientsTabView: View {
     @ViewBuilder
     private var calculatedAmountsSection: some View {
         if let rows = model.calculatedAmountRows {
-            Section(header: CollapsibleSectionHeader(title: "Calculated amounts", expanded: $calculatedAmountsExpanded)) {
+            Section(header: CollapsibleSectionHeader(title: "Calculated amounts", expanded: $calculatedAmountsExpanded)
+                .expandingSectionHeader(RecipeFormSection.calculatedAmounts, expanded: calculatedAmountsExpanded)) {
                 if calculatedAmountsExpanded {
                     VStack(spacing: 0) {
                         amountHeader
@@ -267,6 +294,7 @@ struct RecipeIngredientsTabView: View {
                         }
                     }
                     .listRowInsets(EdgeInsets())
+                    .expandingSectionEnd(RecipeFormSection.calculatedAmounts)
                 }
             }
         }

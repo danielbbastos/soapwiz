@@ -46,14 +46,28 @@ struct SoapPropertiesSection: View {
                 title: "INS",
                 value: stats.ins,
                 recommended: SoapMetric.insRange,
-                scale: SoapMetric.insScale
+                scale: SoapMetric.insScale,
+                infoTitle: "INS",
+                infoText: Self.insExplanation
             )
             SoapPropertyIndicatorView(
                 title: "Iodine",
                 value: stats.iodineValue,
                 recommended: SoapMetric.iodineRange,
-                scale: SoapMetric.iodineScale
+                scale: SoapMetric.iodineScale,
+                infoTitle: "Iodine value",
+                infoText: Self.iodineExplanation
             )
         }
     }
+
+    private static let insExplanation =
+        "INS estimates a bar's overall hardness from the blend's saponification and iodine values. "
+        + "136–170 is the usual target: lower blends tend to be soft, higher ones brittle. "
+        + "Treat it as a rough guide — the individual properties tell you more."
+
+    private static let iodineExplanation =
+        "The iodine value measures how unsaturated the oils are. Higher values mean softer bars "
+        + "that are more prone to rancidity (DOS); lower values mean harder, longer-lasting bars. "
+        + "41–70 is the usual target."
 }
