@@ -53,6 +53,7 @@ struct RecipeDetailView: View {
             soapPropertiesSection
             RecipeCostSection(model: model, batch: batch)
         }
+        .expandingSectionScrollContainer()
         .navigationTitle(recipe.name)
         .navigationBarTitleDisplayMode(.inline)
         .warmNavigationTitle(recipe.name)

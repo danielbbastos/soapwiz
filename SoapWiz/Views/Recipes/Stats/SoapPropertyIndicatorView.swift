@@ -5,6 +5,8 @@ struct SoapPropertyIndicatorView: View {
     let value: Double
     let recommended: ClosedRange<Double>
     let scale: ClosedRange<Double>
+    var infoTitle: String?
+    var infoText: String?
 
     @State private var showingRange = false
 
@@ -32,6 +34,11 @@ struct SoapPropertyIndicatorView: View {
                 + Text(value, format: .number.precision(.fractionLength(1)))
                     .font(.body.weight(.semibold))
                     .monospacedDigit()
+                // A sibling of the concatenation rather than part of it: a view
+                // can't join a `Text` + `Text` chain.
+                if let infoText {
+                    InfoPopoverIcon(title: infoTitle, text: infoText)
+                }
                 Spacer()
                 Text(status.label)
                     .font(.caption.weight(.semibold))
