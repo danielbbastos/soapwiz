@@ -218,9 +218,7 @@ struct RecipeIngredientsTabView: View {
                     .labelsHidden()
                     .pickerStyle(.menu)
                 }
-                .expandingSectionEnd(
-                    RecipeFormSection.fragrances, if: model.fragranceDrafts.isEmpty && !showsBlendTotalWarning
-                )
+                .expandingSectionEnd(RecipeFormSection.fragrances, if: model.fragranceDrafts.isEmpty)
                 ForEach(model.fragranceDrafts) { draft in
                     HStack {
                         Text(draft.ingredient.name)
@@ -233,23 +231,18 @@ struct RecipeIngredientsTabView: View {
                         Text(model.fragranceUnit.rawValue)
                             .foregroundStyle(.secondary)
                     }
+                    // Tagged unconditionally: the tag applies an `.id`, and a
+                    // condition that flips as the blend total is typed would
+                    // rebuild the very field being edited and drop its focus.
+                    // The warning below is left out of the measured section.
                     .expandingSectionEnd(
-                        RecipeFormSection.fragrances,
-                        if: draft.id == model.fragranceDrafts.last?.id && !showsBlendTotalWarning
+                        RecipeFormSection.fragrances, if: draft.id == model.fragranceDrafts.last?.id
                     )
                 }
                 .onDelete { model.removeFragrance(at: $0) }
                 blendTotalWarning
-                    .expandingSectionEnd(RecipeFormSection.fragrances, if: showsBlendTotalWarning)
             }
         }
-    }
-
-    /// Whether `blendTotalWarning` renders anything — it is the section's last
-    /// row when it does.
-    private var showsBlendTotalWarning: Bool {
-        guard let blendTotal = model.fragranceBlendTotal else { return false }
-        return abs(blendTotal - 100) > 0.5
     }
 
     /// Shown when the blend shares don't add up to 100%. The maths still
@@ -257,7 +250,7 @@ struct RecipeIngredientsTabView: View {
     /// nudge, not an error.
     @ViewBuilder
     private var blendTotalWarning: some View {
-        if showsBlendTotalWarning, let blendTotal = model.fragranceBlendTotal {
+        if let blendTotal = model.fragranceBlendTotal, abs(blendTotal - 100) > 0.5 {
             Label {
                 Text("Blend shares total \(model.formatPercentage(blendTotal))%. "
                     + "They are applied as shares of that total, not of 100%.")
