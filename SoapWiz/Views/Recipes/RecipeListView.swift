@@ -10,6 +10,12 @@ struct RecipeListView: View {
     @State private var navigationPath = NavigationPath()
     @State private var showingImport = false
 
+    // Favourites can't be part of the `@Query` sort: `SortDescriptor` has no `Bool`
+    // overload, so the pinning is applied here over the alphabetical fetch.
+    private var displayedRecipes: [Recipe] {
+        recipes.favoritesFirst
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottomTrailing) {
@@ -22,9 +28,14 @@ struct RecipeListView: View {
                         )
                     } else {
                         List {
-                            ForEach(recipes) { recipe in
+                            ForEach(displayedRecipes) { recipe in
                                 NavigationLink(value: recipe) {
-                                    RecipeRowView(recipe: recipe)
+                                    RecipeRowView(recipe: recipe) {
+                                        model.toggleFavorite(recipe)
+                                    }
+                                }
+                                .favoriteSwipeAction(isFavorite: recipe.isFavorite) {
+                                    model.toggleFavorite(recipe)
                                 }
                                 .swipeActions(edge: .trailing) {
                                     Button("Delete", role: .destructive) {

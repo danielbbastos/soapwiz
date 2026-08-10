@@ -4,6 +4,7 @@ import SwiftData
 final class Recipe {
     var name: String = ""
     var desc: String = ""
+    var isFavorite: Bool = false
     var weightUnit: String = "g"
     var totalOilWeight: Double = 0
     var oilWeightUnit: String = "g"

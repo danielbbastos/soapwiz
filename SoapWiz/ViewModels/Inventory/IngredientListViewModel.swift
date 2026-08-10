@@ -93,6 +93,10 @@ final class IngredientListViewModel {
         }
     }
 
+    func toggleFavorite(_ ingredient: Ingredient) {
+        ingredient.isFavorite.toggle()
+    }
+
     /// At most this many names are spelled out before the rest are summarised.
     /// Alert messages don't scroll, so an unbounded list stops being readable —
     /// the exact count carries the information anyway.

@@ -56,6 +56,7 @@ enum BackupService {
             name: ingredient.name,
             code: ingredient.code,
             unit: ingredient.unit,
+            isFavorite: ingredient.isFavorite,
             categoryIndex: ingredient.category.flatMap { categoryIndex[$0.persistentModelID] },
             lowStockThreshold: ingredient.lowStockThreshold,
             sapValue: ingredient.sapValue,
@@ -89,6 +90,7 @@ enum BackupService {
         BackupData.RecipeDTO(
             name: recipe.name,
             desc: recipe.desc,
+            isFavorite: recipe.isFavorite,
             weightUnit: recipe.weightUnit,
             totalOilWeight: recipe.totalOilWeight,
             oilWeightUnit: recipe.oilWeightUnit,
@@ -230,6 +232,7 @@ enum BackupService {
     ) -> Ingredient {
         let ingredient = Ingredient(name: dto.name, unit: dto.unit)
         ingredient.code = dto.code
+        ingredient.isFavorite = dto.isFavorite ?? false
         ingredient.category = element(categories, at: dto.categoryIndex)
         ingredient.lowStockThreshold = dto.lowStockThreshold
         ingredient.sapValue = dto.sapValue
@@ -264,6 +267,7 @@ enum BackupService {
         into context: ModelContext
     ) -> Recipe {
         let recipe = Recipe(name: dto.name, desc: dto.desc)
+        recipe.isFavorite = dto.isFavorite ?? false
         recipe.weightUnit = dto.weightUnit
         recipe.totalOilWeight = dto.totalOilWeight
         recipe.oilWeightUnit = dto.oilWeightUnit

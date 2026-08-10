@@ -10,8 +10,10 @@ struct IngredientListView: View {
     @State private var model = IngredientListViewModel()
     @State private var navigationPath = NavigationPath()
 
+    // Favourites can't be part of the `@Query` sort: `SortDescriptor` has no `Bool`
+    // overload, so the pinning is applied here, after filtering.
     private var displayedIngredients: [Ingredient] {
-        model.filtered(ingredients)
+        model.filtered(ingredients).favoritesFirst
     }
 
     private var selectedIngredients: [Ingredient] {
@@ -42,7 +44,12 @@ struct IngredientListView: View {
                         List(selection: $model.selection) {
                             ForEach(displayedIngredients) { ingredient in
                                 NavigationLink(value: ingredient) {
-                                    IngredientRowView(ingredient: ingredient)
+                                    IngredientRowView(ingredient: ingredient) {
+                                        model.toggleFavorite(ingredient)
+                                    }
+                                }
+                                .favoriteSwipeAction(isFavorite: ingredient.isFavorite) {
+                                    model.toggleFavorite(ingredient)
                                 }
                                 .swipeActions(edge: .trailing) {
                                     Button("Delete", role: .destructive) {

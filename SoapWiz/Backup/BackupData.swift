@@ -55,6 +55,9 @@ extension BackupData {
         var name: String
         var code: String
         var unit: String
+        /// Optional so a file written before favourites existed still decodes; it
+        /// restores to the schema default of `false`.
+        var isFavorite: Bool?
         /// Index into `BackupData.categories`, or `nil` when uncategorised.
         var categoryIndex: Int?
         var lowStockThreshold: Double?
@@ -86,6 +89,9 @@ extension BackupData {
     struct RecipeDTO: Codable {
         var name: String
         var desc: String
+        /// Optional so a file written before favourites existed still decodes; it
+        /// restores to the schema default of `false`.
+        var isFavorite: Bool?
         var weightUnit: String
         var totalOilWeight: Double
         var oilWeightUnit: String

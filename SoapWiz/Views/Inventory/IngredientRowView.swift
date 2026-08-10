@@ -2,6 +2,9 @@ import SwiftUI
 
 struct IngredientRowView: View {
     let ingredient: Ingredient
+    let onToggleFavorite: () -> Void
+
+    @Environment(\.editMode) private var editMode
 
     @State private var showingExpiryPopover = false
     @State private var showingLowStockPopover = false
@@ -60,6 +63,12 @@ struct IngredientRowView: View {
                                 .padding()
                                 .presentationCompactAdaptation(.popover)
                         }
+                    }
+                    // Hidden while selecting, the same way the FAB is: the star
+                    // would otherwise consume the tap that is meant to select
+                    // the row for a bulk delete.
+                    if editMode?.wrappedValue != .active {
+                        FavoriteStarButton(isFavorite: ingredient.isFavorite, action: onToggleFavorite)
                     }
                 }
                 Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
