@@ -16,6 +16,20 @@ struct RecipeListView: View {
         recipes.favoritesFirst
     }
 
+    private func row(_ recipe: Recipe) -> some View {
+        NavigationLink(value: recipe) {
+            RecipeRowView(recipe: recipe) {
+                model.toggleFavorite(recipe)
+            }
+        }
+        .swipeActions(edge: .trailing) {
+            Button("Delete", role: .destructive) {
+                model.delete(recipe, context: modelContext)
+            }
+        }
+        .listRowBackground(Color.cardBackground)
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottomTrailing) {
@@ -28,22 +42,7 @@ struct RecipeListView: View {
                         )
                     } else {
                         List {
-                            ForEach(displayedRecipes) { recipe in
-                                NavigationLink(value: recipe) {
-                                    RecipeRowView(recipe: recipe) {
-                                        model.toggleFavorite(recipe)
-                                    }
-                                }
-                                .favoriteSwipeAction(isFavorite: recipe.isFavorite) {
-                                    model.toggleFavorite(recipe)
-                                }
-                                .swipeActions(edge: .trailing) {
-                                    Button("Delete", role: .destructive) {
-                                        model.delete(recipe, context: modelContext)
-                                    }
-                                }
-                                .listRowBackground(Color.cardBackground)
-                            }
+                            ForEach(displayedRecipes) { row($0) }
                         }
                     }
                 }

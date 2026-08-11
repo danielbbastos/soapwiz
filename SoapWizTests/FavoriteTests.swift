@@ -72,6 +72,18 @@ struct FavoriteTests {
         #expect(ordered == ["Aloe", "Cedar", "Elder", "Basil", "Dill", "Fennel"])
     }
 
+    /// Every element survives the partition — none dropped, none duplicated.
+    @Test func favoritesFirst_KeepsEveryElementExactlyOnce() {
+        let recipes = [
+            Recipe.mock(name: "Aloe", isFavorite: true),
+            Recipe.mock(name: "Basil"),
+            Recipe.mock(name: "Cedar", isFavorite: true)
+        ]
+
+        #expect(recipes.favoritesFirst.count == recipes.count)
+        #expect(Set(recipes.favoritesFirst.map(\.name)) == Set(recipes.map(\.name)))
+    }
+
     @Test func favoritesFirst_EmptyList_ReturnsEmpty() {
         #expect([Recipe]().favoritesFirst.isEmpty)
     }

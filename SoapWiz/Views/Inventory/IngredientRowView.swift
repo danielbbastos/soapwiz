@@ -64,16 +64,20 @@ struct IngredientRowView: View {
                                 .presentationCompactAdaptation(.popover)
                         }
                     }
-                    // Hidden while selecting, the same way the FAB is: the star
-                    // would otherwise consume the tap that is meant to select
-                    // the row for a bulk delete.
-                    if editMode?.wrappedValue != .active {
-                        FavoriteStarButton(isFavorite: ingredient.isFavorite, action: onToggleFavorite)
-                    }
                 }
                 Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(ingredient.totalRemaining > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+            }
+            // Beside the warnings-and-quantity column rather than stacked above it.
+            // Inside it, the star adds a line to every row — including the many
+            // rows with no warning icon, whose icon row is otherwise empty and
+            // zero-height — and makes the whole list taller.
+            //
+            // Hidden while selecting, the same way the FAB is: the star would
+            // otherwise consume the tap meant to select the row for a bulk delete.
+            if editMode?.wrappedValue != .active {
+                FavoriteStarButton(isFavorite: ingredient.isFavorite, action: onToggleFavorite)
             }
         }
         .padding(.vertical, 2)

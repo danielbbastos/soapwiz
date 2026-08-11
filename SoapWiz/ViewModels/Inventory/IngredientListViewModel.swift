@@ -93,8 +93,12 @@ final class IngredientListViewModel {
         }
     }
 
+    /// Animated so the row's move to or from the pinned group reads as a move
+    /// rather than a jump.
     func toggleFavorite(_ ingredient: Ingredient) {
-        ingredient.isFavorite.toggle()
+        withAnimation {
+            ingredient.isFavorite.toggle()
+        }
     }
 
     /// At most this many names are spelled out before the rest are summarised.

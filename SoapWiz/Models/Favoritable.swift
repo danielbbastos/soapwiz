@@ -8,7 +8,8 @@ extension Ingredient: Favoritable {}
 
 extension Array where Element: Favoritable {
     /// Favourites first, each group keeping the order it arrived in — which is the
-    /// alphabetical order the `@Query` sorted by.
+    /// alphabetical order the `@Query` sorted by. Toggling inside `withAnimation`
+    /// then reads as the row sliding to its new position.
     ///
     /// Partitioned rather than sorted with a comparator: `sort` is introsort and is
     /// not documented as stable, so a comparator that only ranks `isFavorite` would

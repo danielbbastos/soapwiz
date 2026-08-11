@@ -20,6 +20,20 @@ struct IngredientListView: View {
         ingredients.filter { model.selection.contains($0.persistentModelID) }
     }
 
+    private func row(_ ingredient: Ingredient) -> some View {
+        NavigationLink(value: ingredient) {
+            IngredientRowView(ingredient: ingredient) {
+                model.toggleFavorite(ingredient)
+            }
+        }
+        .swipeActions(edge: .trailing) {
+            Button("Delete", role: .destructive) {
+                model.delete(ingredient)
+            }
+        }
+        .listRowBackground(Color.cardBackground)
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottomTrailing) {
@@ -42,22 +56,7 @@ struct IngredientListView: View {
                         }
                     } else {
                         List(selection: $model.selection) {
-                            ForEach(displayedIngredients) { ingredient in
-                                NavigationLink(value: ingredient) {
-                                    IngredientRowView(ingredient: ingredient) {
-                                        model.toggleFavorite(ingredient)
-                                    }
-                                }
-                                .favoriteSwipeAction(isFavorite: ingredient.isFavorite) {
-                                    model.toggleFavorite(ingredient)
-                                }
-                                .swipeActions(edge: .trailing) {
-                                    Button("Delete", role: .destructive) {
-                                        model.delete(ingredient)
-                                    }
-                                }
-                                .listRowBackground(Color.cardBackground)
-                            }
+                            ForEach(displayedIngredients) { row($0) }
                         }
                         .environment(\.editMode, $model.editMode)
                     }
