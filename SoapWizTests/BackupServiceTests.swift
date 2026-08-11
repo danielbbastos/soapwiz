@@ -190,6 +190,39 @@ struct BackupServiceTests {
         #expect(recipe.products.first?.size == 100)
     }
 
+    @Test func roundTrip_PreservesFavorites() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedFullGraph(ctx)
+        try #require(try ctx.fetch(FetchDescriptor<Ingredient>()).first).isFavorite = true
+        try #require(try ctx.fetch(FetchDescriptor<Recipe>()).first).isFavorite = true
+        try ctx.save()
+
+        let backup = try BackupService.makeBackup(from: ctx)
+        let data = try BackupService.encode(backup)
+        let decoded = try BackupService.decode(data)
+        try BackupService.restore(decoded, into: ctx)
+
+        #expect(try #require(try ctx.fetch(FetchDescriptor<Ingredient>()).first).isFavorite)
+        #expect(try #require(try ctx.fetch(FetchDescriptor<Recipe>()).first).isFavorite)
+    }
+
+    @Test func restore_BackupWithoutFavorites_DefaultsToNotFavorite() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedFullGraph(ctx)
+        var backup = try BackupService.makeBackup(from: ctx)
+        // A backup written before the field existed simply lacks the key.
+        backup.ingredients[0].isFavorite = nil
+        backup.recipes[0].isFavorite = nil
+        let data = try BackupService.encode(backup)
+        let decoded = try BackupService.decode(data)
+        try BackupService.restore(decoded, into: ctx)
+
+        #expect(try #require(try ctx.fetch(FetchDescriptor<Ingredient>()).first).isFavorite == false)
+        #expect(try #require(try ctx.fetch(FetchDescriptor<Recipe>()).first).isFavorite == false)
+    }
+
     @Test func restore_BackupWithoutFragranceUnit_DefaultsToPercentOfOils() throws {
         let (container, ctx) = try makeContext()
         _ = container

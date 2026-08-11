@@ -7,6 +7,7 @@ final class Ingredient {
     var code: String = ""
     var category: IngredientCategory?
     var unit: String = ""
+    var isFavorite: Bool = false
 
     var lowStockThreshold: Double?
     var sapValue: Double?

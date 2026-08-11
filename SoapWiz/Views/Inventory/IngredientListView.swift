@@ -10,12 +10,28 @@ struct IngredientListView: View {
     @State private var model = IngredientListViewModel()
     @State private var navigationPath = NavigationPath()
 
+    // Favourites can't be part of the `@Query` sort: `SortDescriptor` has no `Bool`
+    // overload, so the pinning is applied here, after filtering.
     private var displayedIngredients: [Ingredient] {
-        model.filtered(ingredients)
+        model.filtered(ingredients).favoritesFirst
     }
 
     private var selectedIngredients: [Ingredient] {
         ingredients.filter { model.selection.contains($0.persistentModelID) }
+    }
+
+    private func row(_ ingredient: Ingredient) -> some View {
+        NavigationLink(value: ingredient) {
+            IngredientRowView(ingredient: ingredient) {
+                model.toggleFavorite(ingredient)
+            }
+        }
+        .swipeActions(edge: .trailing) {
+            Button("Delete", role: .destructive) {
+                model.delete(ingredient)
+            }
+        }
+        .listRowBackground(Color.cardBackground)
     }
 
     var body: some View {
@@ -40,17 +56,7 @@ struct IngredientListView: View {
                         }
                     } else {
                         List(selection: $model.selection) {
-                            ForEach(displayedIngredients) { ingredient in
-                                NavigationLink(value: ingredient) {
-                                    IngredientRowView(ingredient: ingredient)
-                                }
-                                .swipeActions(edge: .trailing) {
-                                    Button("Delete", role: .destructive) {
-                                        model.delete(ingredient)
-                                    }
-                                }
-                                .listRowBackground(Color.cardBackground)
-                            }
+                            ForEach(displayedIngredients) { row($0) }
                         }
                         .environment(\.editMode, $model.editMode)
                     }

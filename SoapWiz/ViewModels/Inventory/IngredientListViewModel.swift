@@ -93,6 +93,14 @@ final class IngredientListViewModel {
         }
     }
 
+    /// Animated so the row's move to or from the pinned group reads as a move
+    /// rather than a jump.
+    func toggleFavorite(_ ingredient: Ingredient) {
+        withAnimation {
+            ingredient.isFavorite.toggle()
+        }
+    }
+
     /// At most this many names are spelled out before the rest are summarised.
     /// Alert messages don't scroll, so an unbounded list stops being readable —
     /// the exact count carries the information anyway.
