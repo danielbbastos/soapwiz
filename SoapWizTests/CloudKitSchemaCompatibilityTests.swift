@@ -14,7 +14,7 @@ struct CloudKitSchemaCompatibilityTests {
         let schema = Schema([
             Ingredient.self, IngredientPurchase.self, IngredientCategory.self,
             StorageLocation.self, Provider.self,
-            Recipe.self, RecipeIngredient.self, RecipeProduct.self,
+            Recipe.self, RecipeIngredient.self, RecipeProduct.self, RecipeCollection.self,
             Batch.self, BatchLineItem.self, AppSettings.self
         ])
         let container = try ModelContainer(
@@ -333,7 +333,7 @@ struct ModelContainerFactoryTests {
         let expected: Set = [
             "Ingredient", "IngredientPurchase", "IngredientCategory",
             "StorageLocation", "Provider",
-            "Recipe", "RecipeIngredient", "RecipeProduct",
+            "Recipe", "RecipeIngredient", "RecipeProduct", "RecipeCollection",
             "Batch", "BatchLineItem", "AppSettings"
         ]
 

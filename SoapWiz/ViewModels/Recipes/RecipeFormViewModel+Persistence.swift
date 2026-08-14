@@ -29,6 +29,7 @@ extension RecipeFormViewModel {
         cfmNeutralizer = CFMNeutralizer.resolve(recipe.cfmNeutralizer)
         lyeIngredient = recipe.lyeIngredient
         kohLyeIngredient = recipe.kohLyeIngredient
+        selectedCollections = recipe.collections.sortedByName
 
         unresolvedLineItemCount = recipe.ingredients.count { $0.ingredient == nil }
 
@@ -83,6 +84,7 @@ extension RecipeFormViewModel {
         recipe.cfmNeutralizer = cfmNeutralizer.rawValue
         recipe.lyeIngredient = lyeIngredient
         recipe.kohLyeIngredient = kohLyeIngredient
+        recipe.collections = selectedCollections
 
         // Line items with no ingredient survive the rebuild: the ingredient may
         // simply not have synced yet, and deleting the row would destroy it for

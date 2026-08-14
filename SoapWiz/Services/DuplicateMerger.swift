@@ -57,6 +57,7 @@ enum DuplicateMerger {
         losers += try collapse(IngredientCategory.self, in: context)
         losers += try collapse(Provider.self, in: context)
         losers += try collapse(StorageLocation.self, in: context)
+        losers += try collapse(RecipeCollection.self, in: context)
         losers += try collapseSettings(in: context)
 
         guard !losers.isEmpty else { return }
@@ -136,6 +137,19 @@ extension Provider: MergeableLookup {
         }
         if winner.website.isEmpty { winner.website = loser.website }
         if winner.notes.isEmpty { winner.notes = loser.notes }
+    }
+}
+
+extension RecipeCollection: MergeableLookup {
+    /// Membership is many-to-many, so the two rows can already share a recipe —
+    /// the union is taken rather than appending blindly, which would file the
+    /// same recipe under the winner twice.
+    static func adopt(_ loser: RecipeCollection, into winner: RecipeCollection) {
+        let recipes = loser.recipes
+        for recipe in recipes where !recipe.collections.contains(where: { $0 === winner }) {
+            recipe.collections.append(winner)
+        }
+        if winner.colorName.isEmpty { winner.colorName = loser.colorName }
     }
 }
 

@@ -24,10 +24,13 @@ struct RecipeFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Query(filter: lyesPredicate)
     private var lyeIngredients: [Ingredient]
+    @Query(sort: \RecipeCollection.name)
+    private var collections: [RecipeCollection]
 
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
     @State private var showMoldCalculator = false
+    @State private var showNewCollection = false
     @State private var showDiscardConfirmation = false
     @FocusState private var oilWeightFocused: Bool
 
@@ -140,6 +143,11 @@ private extension RecipeFormView {
                 model.totalOilWeight = weight
             }
         }
+        .sheet(isPresented: $showNewCollection) {
+            RecipeCollectionFormView { newCollection in
+                model.toggleCollection(newCollection)
+            }
+        }
     }
 
     var detailsSection: some View {
@@ -147,7 +155,30 @@ private extension RecipeFormView {
             TextField("Name", text: $model.name)
             TextField("Description", text: $model.desc, axis: .vertical)
                 .lineLimit(3...6)
+            collectionsMenu
         }
+    }
+
+    /// Multi-select, so the menu stays open-and-tap rather than a picker: a
+    /// recipe belongs to several themes at once, which is the whole reason
+    /// collections aren't folders.
+    var collectionsMenu: some View {
+        Menu {
+            Button { showNewCollection = true } label: {
+                Label("New Collection", systemImage: "plus")
+            }
+            if !collections.isEmpty {
+                Divider()
+                ForEach(collections) { collection in
+                    Button { model.toggleCollection(collection) } label: {
+                        MenuSelectionLabel(collection.name, isSelected: model.isSelected(collection))
+                    }
+                }
+            }
+        } label: {
+            PickerMenuRowLabel(title: "Collections", value: model.collectionsLabel)
+        }
+        .tint(.primary)
     }
 
     var weightSection: some View {

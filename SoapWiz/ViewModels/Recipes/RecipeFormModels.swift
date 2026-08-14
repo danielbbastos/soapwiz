@@ -76,6 +76,7 @@ struct RecipeFormSnapshot: Equatable {
     var cfmNeutralizer: CFMNeutralizer
     var lyeIngredient: Ingredient?
     var kohLyeIngredient: Ingredient?
+    var selectedCollections: [RecipeCollection]
 }
 
 /// The units the recipe form offers for additive rows. Shared so recipe import

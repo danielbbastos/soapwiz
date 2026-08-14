@@ -46,6 +46,7 @@ struct RecipeDetailView: View {
                 .listRowBackground(Color.cardBackground)
             }
 
+            collectionsSection
             oilsSection
             additivesSection(batch: batch)
             fragrancesSection(batch: batch)
@@ -101,6 +102,33 @@ struct RecipeDetailView: View {
     private func reload() {
         model.load(from: recipe)
         model.resolveDefaultLyeIngredient(from: lyeIngredients)
+    }
+
+    // MARK: - Collections
+
+    /// Read-only: filing a recipe happens in the form or from the list's
+    /// long-press menu, so this is a label rather than a control. Hidden
+    /// entirely when the recipe is unfiled, so a user who never made a
+    /// collection never sees an empty row.
+    @ViewBuilder
+    private var collectionsSection: some View {
+        let collections = recipe.collections.sortedByName
+        if !collections.isEmpty {
+            Section("Collections") {
+                collectionNames(collections)
+            }
+            .listRowBackground(Color.cardBackground)
+        }
+    }
+
+    /// One `Text` rather than a row of views, so the names wrap as a sentence
+    /// on a narrow width while each still carries its collection's colour.
+    private func collectionNames(_ collections: [RecipeCollection]) -> Text {
+        collections.enumerated().reduce(Text("")) { partial, entry in
+            let separator = entry.offset == 0 ? Text("") : Text(", ")
+            return partial + separator
+                + Text(entry.element.name).foregroundStyle(entry.element.color.tint)
+        }
     }
 
     // MARK: - Oils

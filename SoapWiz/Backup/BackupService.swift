@@ -20,12 +20,14 @@ enum BackupService {
         let ingredients = try context.fetch(FetchDescriptor<Ingredient>())
         let recipes = try context.fetch(FetchDescriptor<Recipe>())
         let batches = try context.fetch(FetchDescriptor<Batch>())
+        let collections = try context.fetch(FetchDescriptor<RecipeCollection>())
 
         let categoryIndex = indexMap(categories)
         let providerIndex = indexMap(providers)
         let storageIndex = indexMap(storageLocations)
         let ingredientIndex = indexMap(ingredients)
         let recipeIndex = indexMap(recipes)
+        let collectionIndex = indexMap(collections)
 
         return BackupData(
             version: BackupData.currentVersion,
@@ -41,8 +43,13 @@ enum BackupService {
             ingredients: ingredients.map {
                 ingredientDTO($0, categoryIndex: categoryIndex, providerIndex: providerIndex, storageIndex: storageIndex)
             },
-            recipes: recipes.map { recipeDTO($0, ingredientIndex: ingredientIndex) },
-            batches: batches.map { batchDTO($0, recipeIndex: recipeIndex, ingredientIndex: ingredientIndex) }
+            recipes: recipes.map {
+                recipeDTO($0, ingredientIndex: ingredientIndex, collectionIndex: collectionIndex)
+            },
+            batches: batches.map { batchDTO($0, recipeIndex: recipeIndex, ingredientIndex: ingredientIndex) },
+            collections: collections.map {
+                BackupData.RecipeCollectionDTO(name: $0.name, colorName: $0.colorName)
+            }
         )
     }
 
@@ -85,7 +92,8 @@ enum BackupService {
 
     private static func recipeDTO(
         _ recipe: Recipe,
-        ingredientIndex: [PersistentIdentifier: Int]
+        ingredientIndex: [PersistentIdentifier: Int],
+        collectionIndex: [PersistentIdentifier: Int]
     ) -> BackupData.RecipeDTO {
         BackupData.RecipeDTO(
             name: recipe.name,
@@ -110,6 +118,12 @@ enum BackupService {
             cfmNeutralizer: recipe.cfmNeutralizer,
             lyeIngredientIndex: recipe.lyeIngredient.flatMap { ingredientIndex[$0.persistentModelID] },
             kohLyeIngredientIndex: recipe.kohLyeIngredient.flatMap { ingredientIndex[$0.persistentModelID] },
+            // Sorted so the exported file is stable: the relationship array's
+            // own order is not, and an unsorted export would differ between two
+            // runs over an unchanged store.
+            collectionIndices: recipe.collections
+                .compactMap { collectionIndex[$0.persistentModelID] }
+                .sorted(),
             ingredients: recipe.ingredients.compactMap { line in
                 line.ingredient.flatMap { ingredientIndex[$0.persistentModelID] }.map { idx in
                     BackupData.RecipeIngredientDTO(
@@ -206,10 +220,17 @@ enum BackupService {
                 context.insert(location)
                 return location
             }
+            let collections = (backup.collections ?? []).map { dto -> RecipeCollection in
+                let collection = RecipeCollection(name: dto.name, colorName: dto.colorName)
+                context.insert(collection)
+                return collection
+            }
             let ingredients = backup.ingredients.map {
                 restoreIngredient($0, categories: categories, providers: providers, storageLocations: storageLocations, into: context)
             }
-            let recipes = backup.recipes.map { restoreRecipe($0, ingredients: ingredients, into: context) }
+            let recipes = backup.recipes.map {
+                restoreRecipe($0, ingredients: ingredients, collections: collections, into: context)
+            }
             for dto in backup.batches {
                 restoreBatch(dto, recipes: recipes, ingredients: ingredients, into: context)
             }
@@ -264,6 +285,7 @@ enum BackupService {
     private static func restoreRecipe(
         _ dto: BackupData.RecipeDTO,
         ingredients: [Ingredient],
+        collections: [RecipeCollection],
         into context: ModelContext
     ) -> Recipe {
         let recipe = Recipe(name: dto.name, desc: dto.desc)
@@ -287,6 +309,7 @@ enum BackupService {
         recipe.cfmNeutralizer = dto.cfmNeutralizer
         recipe.lyeIngredient = element(ingredients, at: dto.lyeIngredientIndex)
         recipe.kohLyeIngredient = element(ingredients, at: dto.kohLyeIngredientIndex)
+        recipe.collections = (dto.collectionIndices ?? []).compactMap { element(collections, at: $0) }
         context.insert(recipe)
 
         for lineDTO in dto.ingredients {
@@ -363,6 +386,7 @@ enum BackupService {
     private static func wipe(_ context: ModelContext) throws {
         try deleteAll(Batch.self, in: context)
         try deleteAll(Recipe.self, in: context)
+        try deleteAll(RecipeCollection.self, in: context)
         try deleteAll(Ingredient.self, in: context)
         try deleteAll(IngredientCategory.self, in: context)
         try deleteAll(Provider.self, in: context)

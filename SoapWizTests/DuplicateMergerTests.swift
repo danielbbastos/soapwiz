@@ -164,6 +164,78 @@ struct DuplicateMergerTests {
         #expect(keep.locationDescription == "by the window")
     }
 
+    /// Collection membership is many-to-many, so the winner takes the union
+    /// rather than one side's list — a recipe filed under either duplicate has to
+    /// come out filed under the survivor.
+    @Test func mergeAll_DuplicateCollections_KeepTheUnionOfTheirRecipes() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let keep = RecipeCollection(name: "Christmas")
+        keep.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
+        let drop = RecipeCollection(name: "  christmas ", colorName: "red")
+        drop.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002"))
+        ctx.insert(keep)
+        ctx.insert(drop)
+
+        let cinnamon = Recipe(name: "Cinnamon Bar")
+        let spiced = Recipe(name: "Spiced Gift Bar")
+        let orange = Recipe(name: "Orange Bar")
+        for recipe in [cinnamon, spiced, orange] {
+            ctx.insert(recipe)
+        }
+        cinnamon.collections = [keep]
+        spiced.collections = [drop]
+        orange.collections = [drop]
+        try ctx.save()
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        let collections = try ctx.fetch(FetchDescriptor<RecipeCollection>())
+        #expect(collections.count == 1)
+        #expect(try ctx.fetch(FetchDescriptor<Recipe>()).count == 3)
+        #expect(Set(keep.recipes.map(\.name)) == ["Cinnamon Bar", "Spiced Gift Bar", "Orange Bar"])
+        #expect(keep.colorName == "red")
+    }
+
+    /// A recipe already filed under both duplicates must end up filed once, not
+    /// twice — the failure mode a blind append would produce.
+    @Test func mergeAll_RecipeInBothDuplicates_IsFiledOnce() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let keep = RecipeCollection(name: "Gifts")
+        keep.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
+        let drop = RecipeCollection(name: "GIFTS")
+        drop.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002"))
+        ctx.insert(keep)
+        ctx.insert(drop)
+        let recipe = Recipe(name: "Castile")
+        ctx.insert(recipe)
+        recipe.collections = [keep, drop]
+        try ctx.save()
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        #expect(try ctx.fetch(FetchDescriptor<RecipeCollection>()).count == 1)
+        #expect(recipe.collections.count == 1)
+        #expect(keep.recipes.count == 1)
+    }
+
+    @Test func mergeAll_DuplicateCollections_WinnerKeepsItsOwnColor() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let keep = RecipeCollection(name: "Gifts", colorName: "blue")
+        keep.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
+        let drop = RecipeCollection(name: "Gifts", colorName: "red")
+        drop.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002"))
+        ctx.insert(keep)
+        ctx.insert(drop)
+        try ctx.save()
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        #expect(keep.colorName == "blue")
+    }
+
     // MARK: - Name normalisation
 
     @Test func mergeAll_NamesDifferingByCaseAccentsOrSpacing_AllCollapse() throws {
