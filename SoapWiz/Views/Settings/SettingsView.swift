@@ -10,6 +10,7 @@ struct SettingsView: View {
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
     @Query private var providers: [Provider]
+    @Query private var collections: [RecipeCollection]
     @Query private var settingsRecords: [AppSettings]
     private var settings: AppSettings? { AppSettings.canonical(from: settingsRecords) }
 
@@ -27,6 +28,7 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 inventorySection
+                recipesSection
                 if let settings {
                     notificationsSection(settings)
                     pricingSection(settings)
@@ -102,6 +104,18 @@ struct SettingsView: View {
             }
             NavigationLink(destination: ProviderListView()) {
                 LabeledContent("Providers", value: "\(providers.count)")
+            }
+        }
+        .listRowBackground(Color.cardBackground)
+    }
+
+    /// Collections sit apart from the inventory lookups above: they group
+    /// recipes, and the two axes never meet — an ingredient's category also
+    /// decides what it can be picked as, which a theme must never do.
+    private var recipesSection: some View {
+        Section("Recipes") {
+            NavigationLink(destination: RecipeCollectionListView()) {
+                LabeledContent("Collections", value: "\(collections.count)")
             }
         }
         .listRowBackground(Color.cardBackground)

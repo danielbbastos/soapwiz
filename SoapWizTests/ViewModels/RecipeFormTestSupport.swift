@@ -10,7 +10,7 @@ protocol RecipeFormTestHelpers {}
 extension RecipeFormTestHelpers {
     func makeContext() throws -> (ModelContainer, ModelContext) {
         let schema = Schema([
-            Recipe.self, RecipeIngredient.self, RecipeProduct.self,
+            Recipe.self, RecipeIngredient.self, RecipeProduct.self, RecipeCollection.self,
             Ingredient.self, IngredientPurchase.self, IngredientCategory.self
         ])
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])

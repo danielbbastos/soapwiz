@@ -41,6 +41,10 @@ final class RecipeFormViewModel {
     var lyeIngredient: Ingredient?
     var kohLyeIngredient: Ingredient?
 
+    /// Themes this recipe is filed under. Kept in `sortedByName` order so the
+    /// dirty check compares two stable lists rather than two arbitrary ones.
+    var selectedCollections: [RecipeCollection] = []
+
     /// Line items whose ingredient could not be resolved. With CloudKit
     /// mirroring on, a `RecipeIngredient` can arrive before the `Ingredient` it
     /// points at, so these rows are surfaced and preserved rather than dropped.
@@ -254,6 +258,31 @@ final class RecipeFormViewModel {
             case .fragrance: addFragrance(ingredient)
             case nil: continue
             }
+        }
+    }
+
+    // MARK: - Collections
+
+    func isSelected(_ collection: RecipeCollection) -> Bool {
+        selectedCollections.contains { $0 === collection }
+    }
+
+    func toggleCollection(_ collection: RecipeCollection) {
+        if let index = selectedCollections.firstIndex(where: { $0 === collection }) {
+            selectedCollections.remove(at: index)
+        } else {
+            selectedCollections = (selectedCollections + [collection]).sortedByName
+        }
+    }
+
+    /// What the picker row shows on the right. Spelled out for a single
+    /// collection, counted beyond that — a row of names would overflow the
+    /// narrow side of the form long before it stayed readable.
+    var collectionsLabel: String {
+        switch selectedCollections.count {
+        case 0: "None"
+        case 1: selectedCollections[0].name
+        default: "\(selectedCollections.count) selected"
         }
     }
 

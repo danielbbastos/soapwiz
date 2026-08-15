@@ -10,7 +10,9 @@ import Foundation
 struct BackupData: Codable {
     /// Bumped whenever the on-disk format changes in a way that needs migration.
     /// Imports reject any file whose `version` is newer than this.
-    static let currentVersion = 1
+    ///
+    /// Version 2 added recipe collections.
+    static let currentVersion = 2
 
     var version: Int
     var exportedAt: Date
@@ -21,6 +23,9 @@ struct BackupData: Codable {
     var ingredients: [IngredientDTO]
     var recipes: [RecipeDTO]
     var batches: [BatchDTO]
+    /// Optional so a version-1 file, written before collections existed, still
+    /// decodes — it restores with none.
+    var collections: [RecipeCollectionDTO]?
 
     /// True when the snapshot holds nothing worth restoring. `settings` is excluded
     /// deliberately — it always exists, and a default pricing factor is not data the
@@ -28,6 +33,7 @@ struct BackupData: Codable {
     var isEmpty: Bool {
         categories.isEmpty && providers.isEmpty && storageLocations.isEmpty
             && ingredients.isEmpty && recipes.isEmpty && batches.isEmpty
+            && (collections ?? []).isEmpty
     }
 }
 
@@ -49,6 +55,11 @@ extension BackupData {
     struct StorageLocationDTO: Codable {
         var name: String
         var locationDescription: String
+    }
+
+    struct RecipeCollectionDTO: Codable {
+        var name: String
+        var colorName: String
     }
 
     struct IngredientDTO: Codable {
@@ -116,6 +127,9 @@ extension BackupData {
         /// Index into `BackupData.ingredients`, or `nil`.
         var lyeIngredientIndex: Int?
         var kohLyeIngredientIndex: Int?
+        /// Indices into `BackupData.collections`. Optional so a version-1 file
+        /// still decodes; it restores unfiled.
+        var collectionIndices: [Int]?
         var ingredients: [RecipeIngredientDTO]
         var products: [RecipeProductDTO]
     }

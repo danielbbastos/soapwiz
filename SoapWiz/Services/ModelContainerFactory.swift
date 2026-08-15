@@ -44,6 +44,7 @@ enum ModelContainerFactory {
         Recipe.self,
         RecipeIngredient.self,
         RecipeProduct.self,
+        RecipeCollection.self,
         Batch.self,
         BatchLineItem.self,
         AppSettings.self

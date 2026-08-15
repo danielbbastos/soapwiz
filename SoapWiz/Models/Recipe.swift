@@ -69,6 +69,21 @@ final class Recipe {
         set { productsStorage = newValue }
     }
 
+    /// Themes this recipe is filed under. Many-to-many and `.nullify` on both
+    /// sides — the inverse and delete rule are declared on
+    /// `RecipeCollection.recipesStorage`, so deleting a collection unfiles the
+    /// recipe rather than deleting it.
+    ///
+    /// Optional for CloudKit; read and write through `collections`. Neither name
+    /// is usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .nullify, originalName: "collections")
+    var collectionsStorage: [RecipeCollection]? = []
+
+    var collections: [RecipeCollection] {
+        get { collectionsStorage ?? [] }
+        set { collectionsStorage = newValue }
+    }
+
     /// Batches made from this recipe. Deleting the recipe nullifies each batch's
     /// back-link (`.nullify`) rather than deleting it — batch history is an
     /// immutable record that must outlive the recipe.
