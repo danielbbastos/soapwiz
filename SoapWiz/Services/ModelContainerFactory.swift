@@ -13,6 +13,22 @@ enum ModelContainerFactory {
 
     static let cloudKitContainerIdentifier = "iCloud.pt.daphnia.SoapWiz"
 
+    /// Which of the two stores `makeProduction()` actually opened.
+    ///
+    /// SW-99 carried this briefly and removed it as unread. It is back because
+    /// something now reads it: `SyncHealthMonitor` cannot tell a store that is
+    /// mirroring quietly from one that never tried, and only this function knows.
+    enum ActiveStore: Equatable {
+        case mirrored
+        /// Mirroring was requested and refused before the store opened.
+        case localFallback(reason: String)
+        /// Mirroring was never asked for — a build without the iCloud entitlement.
+        case notMirrored
+    }
+
+    /// `nil` until `makeProduction()` runs. In-memory test containers never set it.
+    static private(set) var activeStore: ActiveStore?
+
     /// Every model here obeys the constraints `NSPersistentCloudKitContainer`
     /// imposes on its automatic schema mapping: no unique constraints, no `.deny`
     /// delete rules, every attribute optional or defaulted, and every
@@ -80,6 +96,7 @@ enum ModelContainerFactory {
         // `DataSeeder` and the debug-only paths along with it.
         #if LOCAL_ONLY_STORE
         log.notice("Built without CloudKit; using a local store.")
+        activeStore = .notMirrored
         #else
         let mirrored = ModelConfiguration(
             schema: schema,
@@ -89,9 +106,16 @@ enum ModelContainerFactory {
         do {
             let container = try ModelContainer(for: schema, configurations: [mirrored])
             log.notice("Store is CloudKit-mirrored.")
+            activeStore = .mirrored
             return container
         } catch {
             log.error("CloudKit mirroring unavailable, falling back to a local store: \(error, privacy: .public)")
+            // Persisted, not just held in memory: the next launch may well
+            // mirror successfully, and then nothing would record that this
+            // session's writes went to a store that was not syncing.
+            let reason = error.localizedDescription
+            activeStore = .localFallback(reason: reason)
+            SyncStatusStore().recordLocalFallback(reason: reason)
         }
         #endif
 
