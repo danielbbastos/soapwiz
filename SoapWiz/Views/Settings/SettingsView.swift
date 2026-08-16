@@ -7,6 +7,7 @@ struct SettingsView: View {
     /// Confirming an import tears this view down, so the confirmation and everything
     /// that follows it live on `ContentView`. This screen only stages the file.
     @Environment(RestoreCoordinator.self) private var restore
+    @Environment(SyncHealthMonitor.self) private var syncHealth
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
     @Query private var providers: [Provider]
@@ -34,6 +35,7 @@ struct SettingsView: View {
                     pricingSection(settings)
                 }
                 recipeImportSection
+                syncSection
                 backupSection
             }
             .sheet(item: $dataTransfer.exportFile) { file in
@@ -164,6 +166,52 @@ struct SettingsView: View {
     private func statusTint(for availability: RecipeImportAvailability) -> Color {
         if availability.isAvailable { return .green }
         return availability.isActionable ? .orange : .secondary
+    }
+
+    /// States whether the user's data is actually leaving the device.
+    ///
+    /// It sits directly above Backup on purpose: every state that means "not
+    /// syncing" ends by pointing at Export Data, and a footer that says so reads
+    /// better immediately above the button it is talking about.
+    private var syncSection: some View {
+        let health = syncHealth.health
+        return Section {
+            LabeledContent("Status") {
+                Label(health.statusText, systemImage: health.statusSymbol)
+                    .labelStyle(.titleAndIcon)
+                    .foregroundStyle(syncTint(for: health.severity))
+            }
+            if let lastSync = syncHealth.lastSuccessfulSync {
+                LabeledContent(
+                    "Last Synced",
+                    value: lastSync.formatted(.relative(presentation: .named))
+                )
+            }
+        } header: {
+            Text("iCloud")
+        } footer: {
+            Text(syncFooter)
+        }
+        .listRowBackground(Color.cardBackground)
+    }
+
+    private var syncFooter: String {
+        guard let fallback = syncHealth.unresolvedFallback else {
+            return syncHealth.health.settingsFooter
+        }
+        let when = fallback.formatted(date: .abbreviated, time: .shortened)
+        return syncHealth.health.settingsFooter
+            + "\n\nSoapWiz could not reach iCloud on \(when). Anything changed since then may "
+            + "still be only on this device — use Export Data below to keep your own copy."
+    }
+
+    private func syncTint(for severity: SyncSeverity) -> Color {
+        switch severity {
+        case .good: .green
+        case .info: .secondary
+        case .actionable: .orange
+        case .fault: .red
+        }
     }
 
     private var backupSection: some View {
