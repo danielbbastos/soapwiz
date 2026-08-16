@@ -6,7 +6,8 @@ import Foundation
 extension RecipeFormViewModel {
     private var currentSnapshot: RecipeFormSnapshot {
         RecipeFormSnapshot(
-            name: name, desc: desc, weightUnit: weightUnit, totalOilWeight: totalOilWeight,
+            name: name, desc: desc, imageData: imageData,
+            weightUnit: weightUnit, totalOilWeight: totalOilWeight,
             oilWeightUnit: oilWeightUnit, lyeType: lyeType, lyePurity: lyePurity,
             waterParts: waterParts, superFat: superFat, oilDrafts: oilDrafts,
             additiveDrafts: additiveDrafts, fragranceDrafts: fragranceDrafts,

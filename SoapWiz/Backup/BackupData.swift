@@ -103,6 +103,12 @@ extension BackupData {
         /// Optional so a file written before favourites existed still decodes; it
         /// restores to the schema default of `false`.
         var isFavorite: Bool?
+        /// The recipe's photo at display size, base64-encoded by `Codable`.
+        /// Optional so a file written before photos existed still decodes, and
+        /// so a recipe without one costs nothing. The thumbnail is deliberately
+        /// absent: it is derived from this on restore, and carrying both would
+        /// grow the file for something the app can recompute.
+        var imageData: Data?
         var weightUnit: String
         var totalOilWeight: Double
         var oilWeightUnit: String

@@ -44,6 +44,7 @@ struct RecipeConfigTabView: View {
             TextField("Name", text: $model.name)
             TextField("Description", text: $model.desc, axis: .vertical)
                 .lineLimit(3...6)
+            PhotoField(imageData: $model.imageData)
             collectionsMenu
         }
     }

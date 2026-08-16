@@ -52,7 +52,7 @@ struct RecipeRowView: View {
     private var phoneLayout: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .top, spacing: 12) {
-                RecipeRowThumbnail(side: 56)
+                RecipeRowThumbnail(imageData: recipe.thumbnailData, side: 56)
                 VStack(alignment: .leading, spacing: 3) {
                     titleLine
                     subtitleText
@@ -69,7 +69,7 @@ struct RecipeRowView: View {
     /// carry it without the description wrapping short.
     private var wideLayout: some View {
         HStack(alignment: .top, spacing: 12) {
-            RecipeRowThumbnail()
+            RecipeRowThumbnail(imageData: recipe.thumbnailData)
             VStack(alignment: .leading, spacing: 3) {
                 titleLine
                 subtitleText

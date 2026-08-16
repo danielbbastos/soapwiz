@@ -99,6 +99,7 @@ enum BackupService {
             name: recipe.name,
             desc: recipe.desc,
             isFavorite: recipe.isFavorite,
+            imageData: recipe.imageData,
             weightUnit: recipe.weightUnit,
             totalOilWeight: recipe.totalOilWeight,
             oilWeightUnit: recipe.oilWeightUnit,
