@@ -12,13 +12,20 @@ struct FavoriteStarButton: View {
     let isFavorite: Bool
     let action: () -> Void
 
+    /// Defaults to the size the star has always been, so rows that never asked
+    /// for one are untouched. The recipe list passes a larger value: its star
+    /// is the row's only accessory now that the chevron is gone, and at body
+    /// size it read as an afterthought rather than a control.
+    var font: Font = .body
+
     var body: some View {
         Button(action: action) {
             Image(systemName: isFavorite ? "star.fill" : "star")
+                .font(font)
                 .foregroundStyle(isFavorite ? AnyShapeStyle(.yellow) : AnyShapeStyle(.tertiary))
         }
-        // Without this the whole row's `NavigationLink` swallows the tap and
-        // pushes the detail screen instead of toggling.
+        // Without this the row's own tap target swallows the tap and opens the
+        // detail screen instead of toggling.
         .buttonStyle(.borderless)
         .accessibilityLabel(isFavorite ? "Remove from Favourites" : "Add to Favourites")
     }

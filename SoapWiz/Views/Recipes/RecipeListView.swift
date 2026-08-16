@@ -17,12 +17,24 @@ struct RecipeListView: View {
         model.filtered(recipes.favoritesFirst)
     }
 
+    /// A `Button` rather than a `NavigationLink` purely to drop the disclosure
+    /// chevron: a link used as a row's root always draws one, and there is no
+    /// modifier to suppress it. The push is the same, just issued by hand.
+    /// `.plain` keeps the row from taking on button tinting; the star inside
+    /// stays tappable because it is `.borderless`.
     private func row(_ recipe: Recipe) -> some View {
-        NavigationLink(value: recipe) {
+        Button {
+            navigationPath.append(recipe)
+        } label: {
             RecipeRowView(recipe: recipe) {
                 model.toggleFavorite(recipe)
             }
+            // A `Button` is hit-tested over its drawn content only, so without
+            // this the row's padding and the gap left of the star are dead to
+            // touch — a `NavigationLink` row was tappable across the whole cell.
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .swipeActions(edge: .trailing) {
             Button("Delete", role: .destructive) {
                 model.delete(recipe, context: modelContext)
