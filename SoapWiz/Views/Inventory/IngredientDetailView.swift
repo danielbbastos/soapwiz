@@ -1,13 +1,38 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct IngredientDetailView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var model: IngredientDetailViewModel
 
+    /// Driven by the hero header: true while the photo is still behind the
+    /// navigation bar, which decides whether the title is drawn for a
+    /// photograph or for the app's own background.
+    @State private var photoCoversNavigationBar = false
+
     init(ingredient: Ingredient, autoAddPurchase: Bool = false) {
         _model = State(initialValue: IngredientDetailViewModel(ingredient: ingredient, showingAddPurchase: autoAddPurchase))
+    }
+
+    /// Taller than the recipe screen's crop. A photographed bar is laid flat and
+    /// shot from above; a photographed ingredient is a bottle or a bag standing
+    /// up, so a landscape band across it keeps the label and drops the rest.
+    ///
+    /// Deliberately the device idiom rather than `horizontalSizeClass`, for the
+    /// reason spelled out in `RecipeRowView`: `ContentView` pins the whole
+    /// `TabView` to `.compact`, which leaves the size class saying "compact"
+    /// everywhere.
+    private static let heroAspectRatio: CGFloat =
+        UIDevice.current.userInterfaceIdiom == .phone ? 4.0 / 3.0 : 2.0 / 1.0
+
+    /// Nil for an ingredient with no photo, which leaves the screen laid out
+    /// exactly as it was. The letter avatar deliberately doesn't stand in here:
+    /// at the top of the screen it would be a third of a page of flat colour
+    /// saying no more than the title already does.
+    private var heroImage: UIImage? {
+        model.ingredient.imageData.flatMap(UIImage.init(data:))
     }
 
     var body: some View {
@@ -71,9 +96,15 @@ struct IngredientDetailView: View {
                 }
                 .listRowBackground(Color.cardBackground)
             }
+            // Before `warmBackground`, whose fill would otherwise cover the photo.
+            .heroPhotoHeader(
+                image: heroImage,
+                aspectRatio: Self.heroAspectRatio,
+                coversNavigationBar: $photoCoversNavigationBar
+            )
             .navigationTitle(model.ingredient.name)
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle(model.ingredient.name)
+            .warmNavigationTitle(model.ingredient.name, overPhoto: photoCoversNavigationBar)
             .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

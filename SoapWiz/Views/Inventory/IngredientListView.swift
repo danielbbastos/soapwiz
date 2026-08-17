@@ -54,8 +54,25 @@ struct IngredientListView: View {
                                 description: Text("Try adjusting your filters.")
                             )
                         }
-                    } else {
+                    } else if model.editMode == .active {
+                        // The selection binding is attached only while selecting,
+                        // because on iPad it is live outside edit mode too: a
+                        // plain tap marks the row selected on the way into the
+                        // detail screen, and the row comes back drawn in the
+                        // selected style — white label text, over the row
+                        // background this app supplies itself, which hides the
+                        // tinted fill that white is meant to be read against.
+                        // The row then looks empty until something forces a
+                        // redraw, and empty again as soon as that goes away.
+                        //
+                        // Nothing outside edit mode reads `selection`: it exists
+                        // for the bulk delete, which only Select mode offers.
                         List(selection: $model.selection) {
+                            ForEach(displayedIngredients) { row($0) }
+                        }
+                        .environment(\.editMode, $model.editMode)
+                    } else {
+                        List {
                             ForEach(displayedIngredients) { row($0) }
                         }
                         .environment(\.editMode, $model.editMode)

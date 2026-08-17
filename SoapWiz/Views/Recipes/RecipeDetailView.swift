@@ -62,7 +62,7 @@ struct RecipeDetailView: View {
         }
         .expandingSectionScrollContainer()
         // Before `warmBackground`, whose fill would otherwise cover the photo.
-        .recipeHeroHeader(
+        .heroPhotoHeader(
             image: heroImage,
             aspectRatio: Self.heroAspectRatio,
             coversNavigationBar: $photoCoversNavigationBar
