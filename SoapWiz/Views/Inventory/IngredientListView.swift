@@ -20,18 +20,43 @@ struct IngredientListView: View {
         ingredients.filter { model.selection.contains($0.persistentModelID) }
     }
 
+    /// A `Button` rather than a `NavigationLink`, purely to drop the disclosure
+    /// chevron: a link used as a row's root always draws one and there is no
+    /// modifier to suppress it. The push is the same, just issued by hand. This
+    /// is what the recipe list already does.
+    ///
+    /// While selecting, the row is its bare content instead: the list is then
+    /// handling taps itself to build the selection, and a button in the way
+    /// would take them.
+    @ViewBuilder
     private func row(_ ingredient: Ingredient) -> some View {
-        NavigationLink(value: ingredient) {
-            IngredientRowView(ingredient: ingredient) {
-                model.toggleFavorite(ingredient)
-            }
+        let content = IngredientRowView(ingredient: ingredient) {
+            model.toggleFavorite(ingredient)
         }
-        .swipeActions(edge: .trailing) {
-            Button("Delete", role: .destructive) {
-                model.delete(ingredient)
+        if model.editMode == .active {
+            content
+                .listRowBackground(Color.cardBackground)
+        } else {
+            Button {
+                navigationPath.append(ingredient)
+            } label: {
+                // A `Button` is hit-tested over its drawn content only, so
+                // without this the row's padding and the gap left of the star
+                // are dead to touch — a `NavigationLink` row was tappable
+                // across the whole cell.
+                content
+                    .contentShape(Rectangle())
             }
+            // Keeps the row from taking on button tinting; the star inside stays
+            // tappable because it is `.borderless`.
+            .buttonStyle(.plain)
+            .swipeActions(edge: .trailing) {
+                Button("Delete", role: .destructive) {
+                    model.delete(ingredient)
+                }
+            }
+            .listRowBackground(Color.cardBackground)
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     var body: some View {

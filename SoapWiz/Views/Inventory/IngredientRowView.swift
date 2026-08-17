@@ -94,6 +94,11 @@ struct IngredientRowView: View {
             // otherwise consume the tap meant to select the row for a bulk delete.
             if editMode?.wrappedValue != .active {
                 FavoriteStarButton(isFavorite: ingredient.isFavorite, action: onToggleFavorite)
+                    // Set apart from the quantity rather than sitting against
+                    // it: the two carry unrelated things — how much is left,
+                    // and whether this is a favourite — and at the star's size
+                    // a default gap reads as one clump at the row's end.
+                    .padding(.leading, 12)
             }
         }
         .padding(.vertical, 2)

@@ -12,11 +12,11 @@ struct FavoriteStarButton: View {
     let isFavorite: Bool
     let action: () -> Void
 
-    /// Defaults to the size the star has always been, so rows that never asked
-    /// for one are untouched. The recipe list passes a larger value: its star
-    /// is the row's only accessory now that the chevron is gone, and at body
-    /// size it read as an afterthought rather than a control.
-    var font: Font = .body
+    /// One size for every list that shows a star, so the inventory and the
+    /// recipes read as the same app. It is the row's only accessory now that
+    /// neither list draws a chevron, and it holds the trailing edge on its own —
+    /// at body size that looked like an afterthought rather than a control.
+    var font: Font = .title2
 
     var body: some View {
         Button(action: action) {
