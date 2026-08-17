@@ -102,6 +102,10 @@ extension BackupService {
     ) -> Recipe {
         let recipe = Recipe(name: dto.name, desc: dto.desc)
         recipe.isFavorite = dto.isFavorite ?? false
+        recipe.imageData = dto.imageData
+        // Rebuilt rather than restored: the file carries only the display image,
+        // and a thumbnail is a few milliseconds of work per photographed recipe.
+        recipe.thumbnailData = dto.imageData.flatMap(ImageDownscaler.thumbnail(from:))
         recipe.weightUnit = dto.weightUnit
         recipe.totalOilWeight = dto.totalOilWeight
         recipe.oilWeightUnit = dto.oilWeightUnit

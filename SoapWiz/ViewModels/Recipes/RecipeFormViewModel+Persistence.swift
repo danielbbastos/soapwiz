@@ -11,6 +11,7 @@ extension RecipeFormViewModel {
         editingRecipe = recipe
         name = recipe.name
         desc = recipe.desc
+        imageData = recipe.imageData
         weightUnit = recipe.weightUnit
         totalOilWeight = recipe.totalOilWeight
         oilWeightUnit = recipe.oilWeightUnit
@@ -65,6 +66,7 @@ extension RecipeFormViewModel {
         }()
         recipe.name = name.trimmingCharacters(in: .whitespaces)
         recipe.desc = desc.trimmingCharacters(in: .whitespaces)
+        applyImage(to: recipe)
         recipe.weightUnit = weightUnit
         recipe.totalOilWeight = totalOilWeight
         recipe.oilWeightUnit = oilWeightUnit
@@ -99,6 +101,20 @@ extension RecipeFormViewModel {
         // returns would see every row twice.
         context.processPendingChanges()
         return recipe
+    }
+
+    /// Writes the photo and the thumbnail derived from it. The two always move
+    /// together: a stale thumbnail beside a replaced photo would show the old
+    /// picture in the list and the new one on the detail screen, and a thumbnail
+    /// left behind by a removed photo would show a recipe that no longer has one.
+    ///
+    /// The image is only rewritten when it actually changed, so re-saving an
+    /// untouched recipe doesn't rewrite the external file and hand CloudKit an
+    /// asset to re-upload.
+    private func applyImage(to recipe: Recipe) {
+        guard recipe.imageData != imageData else { return }
+        recipe.imageData = imageData
+        recipe.thumbnailData = imageData.flatMap(ImageDownscaler.thumbnail(from:))
     }
 
     /// Writes only the recipe's `RecipeProduct` rows, leaving ingredients and

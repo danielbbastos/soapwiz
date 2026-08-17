@@ -5,6 +5,11 @@ import SwiftData
 final class RecipeFormViewModel {
     var name: String = ""
     var desc: String = ""
+
+    /// The recipe's photo at display size. `PhotoField` downscales whatever the
+    /// user picks before it lands here, and `save` derives the thumbnail from
+    /// it — nothing else needs to know the difference between the two copies.
+    var imageData: Data?
     var weightUnit: String = "%"
     var totalOilWeight: Double = 1000
     var oilWeightUnit: String = "g"

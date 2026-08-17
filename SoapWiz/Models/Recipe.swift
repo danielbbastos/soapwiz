@@ -1,3 +1,4 @@
+import Foundation
 import SwiftData
 
 @Model
@@ -5,6 +6,18 @@ final class Recipe {
     var name: String = ""
     var desc: String = ""
     var isFavorite: Bool = false
+
+    /// The recipe's photo, already downscaled by `ImageDownscaler` before it is
+    /// assigned. `.externalStorage` keeps it in a file beside the store rather
+    /// than in the row, so fetching a list of recipes doesn't drag every photo
+    /// into memory with it; CloudKit mirrors it as an asset for the same reason.
+    @Attribute(.externalStorage) var imageData: Data?
+
+    /// The list row's copy of `imageData`, derived from it on save and never set
+    /// independently. Deliberately not external: it is small, and a row that had
+    /// to fault in a file to draw its thumbnail would defeat the point of having
+    /// one.
+    var thumbnailData: Data?
     var weightUnit: String = "g"
     var totalOilWeight: Double = 0
     var oilWeightUnit: String = "g"

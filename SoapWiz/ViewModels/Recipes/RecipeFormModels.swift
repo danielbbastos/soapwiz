@@ -53,6 +53,7 @@ struct RecipeProductDraft: Identifiable, Equatable {
 struct RecipeFormSnapshot: Equatable {
     var name: String
     var desc: String
+    var imageData: Data?
     var weightUnit: String
     var totalOilWeight: Double
     var oilWeightUnit: String

@@ -17,8 +17,9 @@ import UIKit
 /// Hidden from accessibility on purpose: it carries no information the row's
 /// text does not already state.
 struct RecipeRowThumbnail: View {
-    /// SW-116 will pass `recipe.thumbnailData` here. Until then it is always
-    /// nil and every row shows the placeholder.
+    /// The recipe's `thumbnailData` — the small copy derived on save, not the
+    /// display image. Nil when the recipe has no photo, which shows the
+    /// placeholder.
     var imageData: Data?
 
     /// The row picks this: a phone row gives the well less room than an iPad

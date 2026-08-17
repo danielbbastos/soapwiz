@@ -15,6 +15,10 @@ enum RecipeDuplicator {
     @discardableResult
     static func duplicate(_ recipe: Recipe, among existing: [Recipe], into context: ModelContext) -> Recipe {
         let copy = Recipe(name: copyName(of: recipe.name, among: existing), desc: recipe.desc)
+        // Copied rather than re-derived: the thumbnail is already the small copy
+        // of this exact image, so there is nothing to recompute.
+        copy.imageData = recipe.imageData
+        copy.thumbnailData = recipe.thumbnailData
         copy.weightUnit = recipe.weightUnit
         copy.totalOilWeight = recipe.totalOilWeight
         copy.oilWeightUnit = recipe.oilWeightUnit
