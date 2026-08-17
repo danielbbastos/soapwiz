@@ -14,25 +14,39 @@ enum ImageDownscaler {
     /// Longest edge of the image kept for display. Enough for a full-width hero
     /// on the largest iPad at 2×, and past the point where more pixels stop
     /// being visible on a phone.
-    static let heroMaxDimension: CGFloat = 1280
+    nonisolated static let heroMaxDimension: CGFloat = 1280
 
     /// Longest edge of the list thumbnail. The row's well is 80pt, so this
     /// covers it at 3× with room for the crop that filling it costs.
-    static let thumbnailMaxDimension: CGFloat = 240
+    nonisolated static let thumbnailMaxDimension: CGFloat = 240
 
-    private static let heroCompression: CGFloat = 0.8
+    nonisolated private static let heroCompression: CGFloat = 0.8
 
     /// Lower than the hero's: at thumbnail size the artefacts are invisible, and
     /// this copy is the one stored inline in the record rather than as an
     /// external file, so its size is the one that matters to sync.
-    private static let thumbnailCompression: CGFloat = 0.7
+    nonisolated private static let thumbnailCompression: CGFloat = 0.7
 
-    nonisolated static func hero(from image: UIImage) -> Data? {
+    /// `@concurrent`, and so `async`, because this is the expensive direction:
+    /// the input is whatever the camera or the library handed over, and decoding,
+    /// redrawing and re-encoding a 12-megapixel photo takes long enough to drop
+    /// frames.
+    ///
+    /// `nonisolated` alone would not move it. This project builds with
+    /// approachable concurrency and main-actor default isolation, under which a
+    /// nonisolated function — synchronous or async — runs on the caller's
+    /// executor, and every caller here is the main actor. The work would land on
+    /// the main thread and freeze the very "Loading…" label the form shows while
+    /// it runs.
+    @concurrent
+    static func hero(from image: sending UIImage) async -> Data? {
         downscale(image, maxDimension: heroMaxDimension, compression: heroCompression)
     }
 
-    nonisolated static func hero(from data: Data) -> Data? {
-        UIImage(data: data).flatMap(hero)
+    @concurrent
+    static func hero(from data: Data) async -> Data? {
+        guard let image = UIImage(data: data) else { return nil }
+        return downscale(image, maxDimension: heroMaxDimension, compression: heroCompression)
     }
 
     nonisolated static func thumbnail(from image: UIImage) -> Data? {
@@ -42,6 +56,11 @@ enum ImageDownscaler {
     /// Derives the list thumbnail from the stored display image, so the two are
     /// always the same picture. Returns `nil` for data that isn't an image,
     /// which is also how a caller clears a thumbnail alongside a removed photo.
+    ///
+    /// Stays synchronous, unlike `hero`: its input is the already-downscaled
+    /// display copy rather than a camera original, so it costs a fraction as
+    /// much, and it is derived inside `RecipeFormViewModel.save(context:)` where
+    /// it has to land on the model in the same turn as every other field.
     nonisolated static func thumbnail(from data: Data) -> Data? {
         UIImage(data: data).flatMap(thumbnail)
     }

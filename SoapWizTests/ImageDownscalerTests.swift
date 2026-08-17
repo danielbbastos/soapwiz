@@ -7,39 +7,39 @@ struct ImageDownscalerTests {
 
     // MARK: - Hero
 
-    @Test func hero_ImageLargerThanTheLimit_FitsWithinIt() throws {
-        let image = try #require(decode(ImageDownscaler.hero(from: makeImage(width: 3000, height: 2000))))
+    @Test func hero_ImageLargerThanTheLimit_FitsWithinIt() async throws {
+        let image = try #require(decode(await ImageDownscaler.hero(from: makeImage(width: 3000, height: 2000))))
         #expect(max(image.size.width, image.size.height) == ImageDownscaler.heroMaxDimension)
     }
 
-    @Test func hero_ImageLargerThanTheLimit_KeepsItsAspectRatio() throws {
-        let image = try #require(decode(ImageDownscaler.hero(from: makeImage(width: 3000, height: 2000))))
+    @Test func hero_ImageLargerThanTheLimit_KeepsItsAspectRatio() async throws {
+        let image = try #require(decode(await ImageDownscaler.hero(from: makeImage(width: 3000, height: 2000))))
         #expect(abs(image.size.width / image.size.height - 1.5) < 0.01)
     }
 
     /// Enlarging a small photo would cost bytes and add no detail, so the
     /// original dimensions survive untouched.
-    @Test func hero_ImageSmallerThanTheLimit_IsNotUpscaled() throws {
-        let image = try #require(decode(ImageDownscaler.hero(from: makeImage(width: 400, height: 300))))
+    @Test func hero_ImageSmallerThanTheLimit_IsNotUpscaled() async throws {
+        let image = try #require(decode(await ImageDownscaler.hero(from: makeImage(width: 400, height: 300))))
         #expect(image.size == CGSize(width: 400, height: 300))
     }
 
     /// A photo taken with the phone rotated carries its rotation as metadata
     /// rather than in its pixels. Redrawing has to bake it in, or the stored
     /// image comes back on its side wherever the metadata isn't consulted.
-    @Test func hero_ImageCarryingARotation_ComesBackUpright() throws {
+    @Test func hero_ImageCarryingARotation_ComesBackUpright() async throws {
         let landscape = makeImage(width: 400, height: 200)
         let cgImage = try #require(landscape.cgImage)
         let rotated = UIImage(cgImage: cgImage, scale: 1, orientation: .right)
 
-        let image = try #require(decode(ImageDownscaler.hero(from: rotated)))
+        let image = try #require(decode(await ImageDownscaler.hero(from: rotated)))
 
         #expect(image.size == CGSize(width: 200, height: 400))
         #expect(image.imageOrientation == .up)
     }
 
-    @Test func hero_DataThatIsNotAnImage_ReturnsNil() {
-        #expect(ImageDownscaler.hero(from: Data("not an image".utf8)) == nil)
+    @Test func hero_DataThatIsNotAnImage_ReturnsNil() async {
+        #expect(await ImageDownscaler.hero(from: Data("not an image".utf8)) == nil)
     }
 
     // MARK: - Thumbnail
@@ -52,9 +52,9 @@ struct ImageDownscalerTests {
     /// The two sizes are derived from the same picture, so the one that goes in
     /// a list row has to be the smaller of them — that is the whole reason it
     /// exists.
-    @Test func thumbnail_DerivedFromAHero_IsSmallerThanIt() throws {
+    @Test func thumbnail_DerivedFromAHero_IsSmallerThanIt() async throws {
         let source = makeImage(width: 3000, height: 2000)
-        let hero = try #require(ImageDownscaler.hero(from: source))
+        let hero = try #require(await ImageDownscaler.hero(from: source))
         let thumbnail = try #require(ImageDownscaler.thumbnail(from: hero))
 
         let heroImage = try #require(UIImage(data: hero))

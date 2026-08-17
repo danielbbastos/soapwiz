@@ -60,7 +60,10 @@ struct PhotoField: View {
         .photosPicker(isPresented: $showingLibrary, selection: $pickerItem, matching: .images)
         .fullScreenCover(isPresented: $showingCamera) {
             CameraPicker { captured in
-                apply(ImageDownscaler.hero(from: captured))
+                // The task starts on the main actor on purpose: everything before
+                // the `await` is this view's own state, and the downscale hops off
+                // by itself.
+                Task { await downscale(captured) }
             }
             .ignoresSafeArea()
         }
@@ -131,7 +134,17 @@ struct PhotoField: View {
             problem = "Couldn't open that photo. Try another one."
             return
         }
-        apply(ImageDownscaler.hero(from: data))
+        apply(await ImageDownscaler.hero(from: data))
+    }
+
+    /// Shrinks a freshly captured photo, keeping the row's "Loading…" hint up
+    /// while it happens. The downscale is `@concurrent`, so the main actor is
+    /// free to draw that hint rather than being blocked by the work it describes.
+    private func downscale(_ captured: UIImage) async {
+        isLoading = true
+        problem = nil
+        defer { isLoading = false }
+        apply(await ImageDownscaler.hero(from: captured))
     }
 
     private func apply(_ downscaled: Data?) {

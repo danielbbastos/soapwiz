@@ -10,11 +10,11 @@ import UIKit
 @MainActor
 struct BackupRecipePhotoTests: BackupTestHelpers {
 
-    @Test func roundTrip_PreservesTheRecipesPhoto() throws {
+    @Test func roundTrip_PreservesTheRecipesPhoto() async throws {
         let (container, ctx) = try makeContext()
         _ = container
         seedFullGraph(ctx)
-        let image = try #require(ImageDownscaler.hero(from: makeImage()))
+        let image = try #require(await ImageDownscaler.hero(from: makeImage()))
         try seededRecipe(ctx).imageData = image
         try ctx.save()
 
@@ -27,11 +27,11 @@ struct BackupRecipePhotoTests: BackupTestHelpers {
     /// The thumbnail is never written to the file — it is derivable, and
     /// carrying it would grow every export for nothing. Restore has to rebuild
     /// it, or a restored library shows placeholder rows for photographed recipes.
-    @Test func roundTrip_RebuildsTheThumbnailFromTheRestoredPhoto() throws {
+    @Test func roundTrip_RebuildsTheThumbnailFromTheRestoredPhoto() async throws {
         let (container, ctx) = try makeContext()
         _ = container
         seedFullGraph(ctx)
-        let image = try #require(ImageDownscaler.hero(from: makeImage()))
+        let image = try #require(await ImageDownscaler.hero(from: makeImage()))
         try seededRecipe(ctx).imageData = image
         try ctx.save()
 
@@ -43,12 +43,12 @@ struct BackupRecipePhotoTests: BackupTestHelpers {
         #expect(thumbnail.count < image.count)
     }
 
-    @Test func export_RecipePhoto_DoesNotWriteTheThumbnail() throws {
+    @Test func export_RecipePhoto_DoesNotWriteTheThumbnail() async throws {
         let (container, ctx) = try makeContext()
         _ = container
         seedFullGraph(ctx)
         let recipe = try seededRecipe(ctx)
-        recipe.imageData = try #require(ImageDownscaler.hero(from: makeImage()))
+        recipe.imageData = try #require(await ImageDownscaler.hero(from: makeImage()))
         recipe.thumbnailData = recipe.imageData.flatMap(ImageDownscaler.thumbnail(from:))
         try ctx.save()
 
@@ -75,11 +75,11 @@ struct BackupRecipePhotoTests: BackupTestHelpers {
 
     /// A file written before photos existed has no such key at all, and must
     /// still decode rather than being rejected as malformed.
-    @Test func restore_BackupWrittenBeforePhotos_RestoresWithoutOne() throws {
+    @Test func restore_BackupWrittenBeforePhotos_RestoresWithoutOne() async throws {
         let (container, ctx) = try makeContext()
         _ = container
         seedFullGraph(ctx)
-        try seededRecipe(ctx).imageData = try #require(ImageDownscaler.hero(from: makeImage()))
+        try seededRecipe(ctx).imageData = try #require(await ImageDownscaler.hero(from: makeImage()))
         try ctx.save()
 
         let data = try BackupService.encode(try BackupService.makeBackup(from: ctx))
