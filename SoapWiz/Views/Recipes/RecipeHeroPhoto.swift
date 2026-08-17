@@ -11,6 +11,14 @@ struct RecipeHeroPhoto: View {
     let image: UIImage
     let size: CGSize
 
+    /// Where the top edge of the page sits, in this view's own coordinates. The
+    /// shadow the page casts is drawn here rather than by the page itself, so
+    /// that it is clipped to the photo: a shadow is only visible on the surface
+    /// receiving it, and beside the photo's rounded corners there is no surface —
+    /// only the app's background, where a shadow with nothing above it reads as a
+    /// smudge.
+    let pageEdge: CGFloat
+
     /// Matched to the form's own cards, so the photo reads as one more card of
     /// the page rather than as a banner stuck above it. Shared with the page
     /// that slides over the photo, whose top edge takes the same curve.
@@ -33,10 +41,31 @@ struct RecipeHeroPhoto: View {
             .scaledToFill()
             .frame(width: size.width, height: size.height)
             .overlay(alignment: .top) { navigationBarScrim }
-            // After the overlay, so it crops the photo rather than only the scrim.
+            .overlay(alignment: .top) { pageShadow }
+            // After the overlays, so it crops the photo rather than only them.
             .clipShape(shape)
             // Carries no information the screen does not already state in words.
             .accessibilityHidden(true)
+    }
+
+    /// Casts the page's leading edge onto the photo, which is what makes the page
+    /// read as riding over the photo rather than being cut into it.
+    ///
+    /// A stand-in for the page rather than the page itself: it carries the same
+    /// shape and fill, sits at the same place, and is completely covered by the
+    /// real page drawn on top of it — so only its shadow is ever seen. Its height
+    /// runs past the bottom of the photo so that the shape still exists (and so
+    /// still casts) when the page is resting exactly at the photo's bottom edge.
+    private var pageShadow: some View {
+        UnevenRoundedRectangle(
+            topLeadingRadius: Self.cornerRadius,
+            topTrailingRadius: Self.cornerRadius,
+            style: .continuous
+        )
+        .fill(Color.warmBackground)
+        .frame(height: size.height)
+        .shadow(color: .black.opacity(0.22), radius: 8, y: -3)
+        .offset(y: pageEdge)
     }
 
     /// Darkens the top of the photo, where the title and the buttons sit.
@@ -86,14 +115,21 @@ struct RecipeHeroHeader: ViewModifier {
     /// as unreadable as brown type over a bright picture.
     @Binding var coversNavigationBar: Bool
 
-    /// Measured rather than assumed. It decides both the photo's own frame and
-    /// the space the form reserves above its first section, and the two have to
-    /// agree exactly or the photo is overlapped or trailed by a gap.
-    @State private var width: CGFloat = 0
+    /// Measured rather than assumed. The width decides both the photo's own
+    /// frame and the space the form reserves above its first section, and the
+    /// two have to agree exactly or the photo is overlapped or trailed by a gap.
+    /// The height is what keeps the page reaching the bottom of the screen as it
+    /// rides up.
+    @State private var container: CGSize = .zero
     @State private var scrolled: CGFloat = 0
-    /// Read before the safe area is ignored, which is the only place it still
-    /// reports the navigation bar's height.
-    @State private var safeAreaTop: CGFloat = 0
+
+    /// Height of the status bar, taken from the window.
+    ///
+    /// Neither SwiftUI route reports it here: a scroll view absorbs the safe area
+    /// into its content insets, so `safeAreaInsets.top` on this view is zero, and
+    /// `ScrollGeometry.contentInsets` leaves out content margins, so the inset it
+    /// reports is zero too. The window is the one place that still knows.
+    @State private var statusBarHeight: CGFloat = 0
 
     /// An inline navigation bar, below the status bar. A system metric rather
     /// than a guess, and the same on both idioms.
@@ -104,17 +140,39 @@ struct RecipeHeroHeader: ViewModifier {
     /// own sections, so the photo reads as one more band of the page.
     private static let spacingBelowPhoto: CGFloat = 16
 
-    private var size: CGSize { CGSize(width: width, height: width / aspectRatio) }
+    private var size: CGSize {
+        CGSize(width: container.width, height: container.width / aspectRatio)
+    }
+
+    /// What the form reserves above its first section for the photo to show
+    /// through. The scroll view's inset is this plus the safe area.
+    private var reservedTop: CGFloat { size.height + Self.spacingBelowPhoto }
 
     /// Where the top edge of the page sits on screen. It starts at the bottom of
     /// the photo — the gap below the photo belongs to the page, not to the
     /// photo, so it travels up with the cards rather than staying behind.
     private var pageTop: CGFloat { size.height - max(0, scrolled) }
 
+    /// The bottom of the navigation bar, measured down from the top of the
+    /// screen: the status bar, plus the bar itself.
+    private var navigationBarBottom: CGFloat {
+        statusBarHeight + Self.navigationBarHeight
+    }
+
+    /// Re-read whenever the container is measured, which is also when it can have
+    /// changed — a rotation resizes the screen and the status bar together.
+    private static func windowStatusBarHeight() -> CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow }?
+            .safeAreaInsets.top ?? 0
+    }
+
     /// True while the page has yet to reach the navigation bar, which is exactly
     /// while the title is drawn over the photo.
     private func covers(scrolled: CGFloat) -> Bool {
-        size.height - max(0, scrolled) > safeAreaTop + Self.navigationBarHeight
+        size.height - max(0, scrolled) > navigationBarBottom
     }
 
     func body(content: Content) -> some View {
@@ -123,21 +181,17 @@ struct RecipeHeroHeader: ViewModifier {
                 // The photo's own height plus the gap below it. The scroll
                 // offset is measured against this inset, so the photo still
                 // sits flush with the top of the screen at rest.
-                .contentMargins(.top, size.height + Self.spacingBelowPhoto, for: .scrollContent)
+                .contentMargins(.top, reservedTop, for: .scrollContent)
                 .onScrollGeometryChange(for: CGFloat.self) { geometry in
                     geometry.contentOffset.y + geometry.contentInsets.top
                 } action: { _, offset in
                     scrolled = offset
                     coversNavigationBar = covers(scrolled: offset)
                 }
-                .onGeometryChange(for: CGFloat.self) { $0.safeAreaInsets.top } action: { top in
-                    safeAreaTop = top
-                    coversNavigationBar = covers(scrolled: scrolled)
-                }
                 .ignoresSafeArea(edges: .top)
                 .background(alignment: .top) {
                     ZStack(alignment: .top) {
-                        RecipeHeroPhoto(image: image, size: size)
+                        RecipeHeroPhoto(image: image, size: size, pageEdge: pageTop)
                         page
                     }
                     // The scroll content already starts at the top of the
@@ -146,8 +200,9 @@ struct RecipeHeroHeader: ViewModifier {
                     // exactly the height of that bar.
                     .ignoresSafeArea(edges: .top)
                 }
-                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { newWidth in
-                    width = newWidth
+                .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
+                    container = size
+                    statusBarHeight = Self.windowStatusBarHeight()
                     coversNavigationBar = covers(scrolled: scrolled)
                 }
         } else {
@@ -164,8 +219,13 @@ struct RecipeHeroHeader: ViewModifier {
     /// bottom sits above the page's rounded top, and while scrolling the corners
     /// let a sliver of the photo through as the page rides over it.
     ///
-    /// Offset rather than laid out: it has to move every frame the scroll moves,
-    /// and its height is whatever is left of the screen either way.
+    /// Casts no shadow of its own — `RecipeHeroPhoto` draws that, clipped to
+    /// itself, so it can only fall where there is a photo to receive it.
+    ///
+    /// The height grows by however far the page has risen, so its bottom edge
+    /// stays pinned to the bottom of the screen. Sized to one screen and merely
+    /// offset, that edge climbs into view as the page rises and the photo shows
+    /// through the gaps between the cards below it.
     private var page: some View {
         UnevenRoundedRectangle(
             topLeadingRadius: RecipeHeroPhoto.cornerRadius,
@@ -173,7 +233,7 @@ struct RecipeHeroHeader: ViewModifier {
             style: .continuous
         )
         .fill(Color.warmBackground)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(height: max(0, container.height - pageTop))
         .offset(y: pageTop)
     }
 }
