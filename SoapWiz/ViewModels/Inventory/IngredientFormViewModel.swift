@@ -12,6 +12,11 @@ final class IngredientFormViewModel {
     var sapValue: String = ""
     var density: String = ""
 
+    /// The display-sized photo, already downscaled by `PhotoField` before it
+    /// lands here. The thumbnail is derived from it on save rather than carried
+    /// alongside it, so the two can never disagree.
+    var imageData: Data?
+
     var showsSapValue: Bool {
         selectedCategory?.showsSapValue ?? false
     }
@@ -24,6 +29,15 @@ final class IngredientFormViewModel {
 
     let ingredient: Ingredient?
 
+    /// The colour the form's avatar shows, and the one a new ingredient is saved
+    /// with. Drawn once here rather than left to `Ingredient.init` so the well
+    /// the user looked at while filling the form is the colour the row ends up
+    /// wearing.
+    let avatarColor: AvatarColor
+
+    /// The initial the avatar draws, following the name as it is typed.
+    var avatarLetter: String { name.avatarInitial }
+
     private struct Snapshot {
         let name: String
         let code: String
@@ -32,12 +46,14 @@ final class IngredientFormViewModel {
         let lowStockThreshold: String
         let sapValue: String
         let density: String
+        let imageData: Data?
     }
 
     private var snapshot: Snapshot?
 
     init(ingredient: Ingredient? = nil, defaultCategory: IngredientCategory? = nil, prefilledName: String? = nil) {
         self.ingredient = ingredient
+        avatarColor = ingredient?.avatarColor ?? .random()
         selectedCategory = defaultCategory
         if let prefilledName {
             name = prefilledName
@@ -56,6 +72,7 @@ final class IngredientFormViewModel {
             if let dens = ingredient.density {
                 density = dens.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
             }
+            imageData = ingredient.imageData
         }
         // A new ingredient gets a baseline too: without one an untouched
         // New Ingredient sheet would read as dirty and refuse to dismiss.
@@ -72,7 +89,8 @@ final class IngredientFormViewModel {
             category: selectedCategory,
             lowStockThreshold: lowStockThreshold,
             sapValue: sapValue,
-            density: density
+            density: density,
+            imageData: imageData
         )
     }
 
@@ -86,6 +104,7 @@ final class IngredientFormViewModel {
             || lowStockThreshold != snapshot.lowStockThreshold
             || sapValue != snapshot.sapValue
             || density != snapshot.density
+            || imageData != snapshot.imageData
     }
 
     var isEditing: Bool { ingredient != nil }
@@ -150,6 +169,13 @@ final class IngredientFormViewModel {
         let parsedDensity = Double(density.replacingOccurrences(of: ",", with: "."))
         let savedCode = trimmedCode
         if let ingredient {
+            // An ingredient that predates avatars has no stored colour and takes
+            // one derived from its name, so renaming it would move it to a
+            // different colour. Written down here, while the old name is still
+            // in place, it keeps the colour the user has been looking at.
+            if ingredient.avatarColorName.isEmpty {
+                ingredient.avatarColorName = ingredient.avatarColor.rawValue
+            }
             ingredient.name = trimmedName
             ingredient.code = savedCode
             ingredient.category = selectedCategory
@@ -157,15 +183,33 @@ final class IngredientFormViewModel {
             ingredient.lowStockThreshold = parsedThreshold
             ingredient.sapValue = showsSapValue ? parsedSap : nil
             ingredient.density = showsDensity ? parsedDensity : nil
+            applyImage(to: ingredient)
             return nil
         } else {
             let newIngredient = Ingredient(name: trimmedName, category: selectedCategory, unit: selectedUnit?.rawValue ?? "")
+            newIngredient.avatarColorName = avatarColor.rawValue
             newIngredient.code = savedCode
             newIngredient.lowStockThreshold = parsedThreshold
             newIngredient.sapValue = showsSapValue ? parsedSap : nil
             newIngredient.density = showsDensity ? parsedDensity : nil
+            applyImage(to: newIngredient)
             context.insert(newIngredient)
             return newIngredient
         }
+    }
+
+    /// Writes the photo and the thumbnail derived from it. The two always move
+    /// together: a stale thumbnail beside a replaced photo would show the old
+    /// picture in the list and the new one on the detail screen, and a thumbnail
+    /// left behind by a removed photo would show an ingredient that no longer
+    /// has one.
+    ///
+    /// The image is only rewritten when it actually changed, so re-saving an
+    /// untouched ingredient doesn't rewrite the external file and hand CloudKit
+    /// an asset to re-upload.
+    private func applyImage(to ingredient: Ingredient) {
+        guard ingredient.imageData != imageData else { return }
+        ingredient.imageData = imageData
+        ingredient.thumbnailData = imageData.flatMap(ImageDownscaler.thumbnail(from:))
     }
 }

@@ -69,6 +69,18 @@ extension BackupData {
         /// Optional so a file written before favourites existed still decodes; it
         /// restores to the schema default of `false`.
         var isFavorite: Bool?
+        /// The display image only, base64 in the JSON. The thumbnail is derived
+        /// from it on restore rather than exported beside it — storing both
+        /// would grow every file for something a few milliseconds of work
+        /// reproduces exactly.
+        ///
+        /// Photographed libraries make for substantially larger backups: forty
+        /// photographed ingredients add roughly 10–20 MB.
+        var imageData: Data?
+        /// The avatar colour, so a restored library looks like the one that was
+        /// backed up. Optional: a file written before avatars existed restores
+        /// with none, and the colour is then derived from the name.
+        var avatarColorName: String?
         /// Index into `BackupData.categories`, or `nil` when uncategorised.
         var categoryIndex: Int?
         var lowStockThreshold: Double?

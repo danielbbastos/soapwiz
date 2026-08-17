@@ -8,10 +8,16 @@ import SwiftUI
 /// camera never reaches the caller, let alone the store. That keeps the resizing
 /// decision in one place instead of at each call site, and means a caller only
 /// has to derive its thumbnail.
-struct PhotoField: View {
+///
+/// `placeholder` fills the well while there is no photo, so the row previews the
+/// same stand-in the model is drawn with elsewhere — a camera glyph for a
+/// recipe, the coloured initial for an ingredient. It defaults to the glyph.
+struct PhotoField<Placeholder: View>: View {
     @Binding var imageData: Data?
 
     var label: String = "Photo"
+
+    @ViewBuilder var placeholder: Placeholder
 
     @State private var pickerItem: PhotosPickerItem?
     @State private var showingLibrary = false
@@ -101,23 +107,24 @@ struct PhotoField: View {
 
     /// A fixed square whether or not there is a photo, so the row is the same
     /// height either way and choosing one doesn't shift the fields around it.
+    @ViewBuilder
     private var well: some View {
-        let shape = RoundedRectangle(cornerRadius: 10, style: .continuous)
-        return shape
-            .fill(Color.accentColor.opacity(0.12))
-            .frame(width: 56, height: 56)
-            .overlay {
-                if let image {
+        if let image {
+            let shape = RoundedRectangle(cornerRadius: PhotoFieldWell.cornerRadius, style: .continuous)
+            shape
+                .fill(Color.accentColor.opacity(0.12))
+                .frame(width: PhotoFieldWell.side, height: PhotoFieldWell.side)
+                .overlay {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
-                } else {
-                    Image(systemName: "camera.fill")
-                        .foregroundStyle(Color.accentColor.opacity(0.55))
                 }
-            }
-            // After the overlay, so it crops the photo rather than only the well.
-            .clipShape(shape)
+                // After the overlay, so it crops the photo rather than only the well.
+                .clipShape(shape)
+        } else {
+            placeholder
+                .frame(width: PhotoFieldWell.side, height: PhotoFieldWell.side)
+        }
     }
 
     /// Reads the picked item as data and downscales it off the display path.
@@ -154,5 +161,33 @@ struct PhotoField: View {
         }
         problem = nil
         imageData = downscaled
+    }
+}
+
+/// The well's metrics, shared with whatever a caller passes as the placeholder
+/// so the two agree on the square the row reserves.
+enum PhotoFieldWell {
+    static let side: CGFloat = 56
+    static let cornerRadius: CGFloat = 10
+}
+
+/// The default stand-in: a camera glyph on the app's accent, for a model with no
+/// picture of its own to fall back on.
+struct PhotoFieldCameraPlaceholder: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: PhotoFieldWell.cornerRadius, style: .continuous)
+            .fill(Color.accentColor.opacity(0.12))
+            .overlay {
+                Image(systemName: "camera.fill")
+                    .foregroundStyle(Color.accentColor.opacity(0.55))
+            }
+    }
+}
+
+extension PhotoField where Placeholder == PhotoFieldCameraPlaceholder {
+    init(imageData: Binding<Data?>, label: String = "Photo") {
+        self.init(imageData: imageData, label: label) {
+            PhotoFieldCameraPlaceholder()
+        }
     }
 }

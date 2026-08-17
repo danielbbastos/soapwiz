@@ -11,6 +11,11 @@ struct IngredientRowView: View {
 
     var body: some View {
         HStack(alignment: .center) {
+            IngredientAvatar(
+                imageData: ingredient.thumbnailData,
+                letter: ingredient.avatarLetter,
+                color: ingredient.avatarColor
+            )
             VStack(alignment: .leading, spacing: 4) {
                 Text(ingredient.name)
                     .font(.body.weight(.medium))
@@ -78,8 +83,22 @@ struct IngredientRowView: View {
             // otherwise consume the tap meant to select the row for a bulk delete.
             if editMode?.wrappedValue != .active {
                 FavoriteStarButton(isFavorite: ingredient.isFavorite, action: onToggleFavorite)
+                    // Set apart from the quantity rather than sitting against
+                    // it: the two carry unrelated things — how much is left,
+                    // and whether this is a favourite — and at the star's size
+                    // a default gap reads as one clump at the row's end.
+                    .padding(.leading, 12)
             }
         }
+        // A selected row draws its labels white, for the tinted fill the system
+        // would put behind them — which this list never shows, because every row
+        // carries `Color.cardBackground` of its own. The text would be white on
+        // white, and the row would read as empty. Naming the base here covers
+        // both columns, including the `.secondary` styles inside them: those are
+        // hierarchical, so they are muted versions of whatever the row's
+        // foreground happens to be. The avatar and the star are untouched —
+        // both name their own colours.
+        .foregroundStyle(Color.primary)
         .padding(.vertical, 2)
     }
 }

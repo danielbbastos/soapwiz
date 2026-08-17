@@ -66,6 +66,17 @@ extension BackupService {
         let ingredient = Ingredient(name: dto.name, unit: dto.unit)
         ingredient.code = dto.code
         ingredient.isFavorite = dto.isFavorite ?? false
+        // Left at the random colour `Ingredient.init` drew when the file predates
+        // avatars, rather than blanked: a restore should never make a library
+        // look less finished than the one it came from.
+        if let colorName = dto.avatarColorName, !colorName.isEmpty {
+            ingredient.avatarColorName = colorName
+        }
+        ingredient.imageData = dto.imageData
+        // Rebuilt rather than restored: the file carries only the display image,
+        // and a thumbnail is a few milliseconds of work per photographed
+        // ingredient.
+        ingredient.thumbnailData = dto.imageData.flatMap(ImageDownscaler.thumbnail(from:))
         ingredient.category = element(categories, at: dto.categoryIndex)
         ingredient.lowStockThreshold = dto.lowStockThreshold
         ingredient.sapValue = dto.sapValue

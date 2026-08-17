@@ -64,6 +64,8 @@ enum BackupService {
             code: ingredient.code,
             unit: ingredient.unit,
             isFavorite: ingredient.isFavorite,
+            imageData: ingredient.imageData,
+            avatarColorName: ingredient.avatarColorName,
             categoryIndex: ingredient.category.flatMap { categoryIndex[$0.persistentModelID] },
             lowStockThreshold: ingredient.lowStockThreshold,
             sapValue: ingredient.sapValue,

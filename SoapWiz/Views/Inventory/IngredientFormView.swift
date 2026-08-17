@@ -37,6 +37,13 @@ struct IngredientFormView: View {
         NavigationStack {
             Form {
                 Section("Details") {
+                    PhotoField(imageData: $model.imageData) {
+                        IngredientAvatar(
+                            letter: model.avatarLetter,
+                            color: model.avatarColor,
+                            side: PhotoFieldWell.side
+                        )
+                    }
                     TextField("Name", text: $model.name)
                         .onChange(of: model.name) { _, _ in
                             model.applyNameChange(existingCodes: existingCodes)

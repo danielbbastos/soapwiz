@@ -9,6 +9,25 @@ final class Ingredient {
     var unit: String = ""
     var isFavorite: Bool = false
 
+    /// A photo of the actual bottle or bag, already downscaled by
+    /// `ImageDownscaler` before it is assigned. `.externalStorage` keeps it in a
+    /// file beside the store rather than in the row, so fetching the inventory
+    /// doesn't drag every photo into memory with it; CloudKit mirrors it as an
+    /// asset for the same reason.
+    @Attribute(.externalStorage) var imageData: Data?
+
+    /// The list row's copy of `imageData`, derived from it on save and never set
+    /// independently. Deliberately not external: it is small, and a row that had
+    /// to fault in a file to draw its thumbnail would defeat the point of having
+    /// one.
+    var thumbnailData: Data?
+
+    /// Raw value of `AvatarColor`, assigned at random in `init` and never
+    /// changed afterwards. Empty on a row written before this attribute existed,
+    /// or arriving from a device on an older build; `avatarColor` derives one
+    /// from the name in that case rather than leaving the row uncoloured.
+    var avatarColorName: String = ""
+
     var lowStockThreshold: Double?
     var sapValue: Double?
     var kohSapValue: Double?
@@ -89,6 +108,13 @@ final class Ingredient {
 
     var isUsedInRecipes: Bool { !recipesUsingThis.isEmpty }
 
+    var avatarColor: AvatarColor {
+        AvatarColor.resolve(avatarColorName, fallbackSeed: name)
+    }
+
+    /// The initial drawn in place of a photo.
+    var avatarLetter: String { name.avatarInitial }
+
     var totalRemaining: Double {
         purchases.reduce(0) { $0 + $1.remainingAmount }
     }
@@ -112,9 +138,13 @@ final class Ingredient {
             .min()
     }
 
+    /// Every path that creates an ingredient — the form, the seeder, a bulk
+    /// import, a restore — comes through here, so assigning the avatar colour
+    /// once in the initialiser leaves no site that can forget it.
     init(name: String, category: IngredientCategory? = nil, unit: String = "") {
         self.name = name
         self.category = category
         self.unit = unit
+        self.avatarColorName = AvatarColor.random().rawValue
     }
 }

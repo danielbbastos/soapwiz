@@ -1,13 +1,14 @@
 import SwiftUI
 import UIKit
 
-/// The recipe's photo at the top of its detail screen, run to the left and
-/// right edges of the screen and up behind the navigation bar.
+/// A model's photo at the top of its detail screen, run to the left and right
+/// edges of the screen and up behind the navigation bar. Shared by the recipe
+/// and ingredient detail screens.
 ///
 /// Full bleed rather than a card: this is the one image on the screen and the
 /// first thing the user sees, and an inset photo with rounded corners reads as
-/// another row of the form rather than as the recipe's own picture.
-struct RecipeHeroPhoto: View {
+/// another row of the form rather than as the model's own picture.
+struct HeroPhoto: View {
     let image: UIImage
     let size: CGSize
 
@@ -99,14 +100,14 @@ struct RecipeHeroPhoto: View {
 /// Overscroll is deliberately excluded from that tracking: at the top of the
 /// screen the content rubber-bands over a photo that stays put, rather than
 /// dragging the page down and opening a gap above it.
-struct RecipeHeroHeader: ViewModifier {
-    /// Nil leaves the screen exactly as it was — a recipe without a photo keeps
+struct HeroPhotoHeader: ViewModifier {
+    /// Nil leaves the screen exactly as it was — a model without a photo keeps
     /// the ordinary layout that starts below the navigation bar.
     let image: UIImage?
 
     /// Width to height. The caller picks it: a phone and an iPad have very
     /// different widths to fill, and one ratio across both either buries the
-    /// recipe below the fold or reduces the photo to a letterbox strip.
+    /// content below the fold or reduces the photo to a letterbox strip.
     let aspectRatio: CGFloat
 
     /// Whether the photo currently reaches up behind the navigation bar, so the
@@ -191,7 +192,7 @@ struct RecipeHeroHeader: ViewModifier {
                 .ignoresSafeArea(edges: .top)
                 .background(alignment: .top) {
                     ZStack(alignment: .top) {
-                        RecipeHeroPhoto(image: image, size: size, pageEdge: pageTop)
+                        HeroPhoto(image: image, size: size, pageEdge: pageTop)
                         page
                     }
                     // The scroll content already starts at the top of the
@@ -219,7 +220,7 @@ struct RecipeHeroHeader: ViewModifier {
     /// bottom sits above the page's rounded top, and while scrolling the corners
     /// let a sliver of the photo through as the page rides over it.
     ///
-    /// Casts no shadow of its own — `RecipeHeroPhoto` draws that, clipped to
+    /// Casts no shadow of its own — `HeroPhoto` draws that, clipped to
     /// itself, so it can only fall where there is a photo to receive it.
     ///
     /// The height grows by however far the page has risen, so its bottom edge
@@ -228,8 +229,8 @@ struct RecipeHeroHeader: ViewModifier {
     /// through the gaps between the cards below it.
     private var page: some View {
         UnevenRoundedRectangle(
-            topLeadingRadius: RecipeHeroPhoto.cornerRadius,
-            topTrailingRadius: RecipeHeroPhoto.cornerRadius,
+            topLeadingRadius: HeroPhoto.cornerRadius,
+            topTrailingRadius: HeroPhoto.cornerRadius,
             style: .continuous
         )
         .fill(Color.warmBackground)
@@ -242,13 +243,13 @@ extension View {
     /// Draws `image` full bleed behind the top of this scrolling screen. Apply
     /// it before any modifier that puts a background of its own behind the
     /// screen, or the photo is hidden by it.
-    func recipeHeroHeader(
+    func heroPhotoHeader(
         image: UIImage?,
         aspectRatio: CGFloat,
         coversNavigationBar: Binding<Bool>
     ) -> some View {
         modifier(
-            RecipeHeroHeader(
+            HeroPhotoHeader(
                 image: image, aspectRatio: aspectRatio, coversNavigationBar: coversNavigationBar
             )
         )

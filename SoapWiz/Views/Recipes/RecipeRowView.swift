@@ -36,11 +36,7 @@ struct RecipeRowView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            FavoriteStarButton(
-                isFavorite: recipe.isFavorite,
-                action: onToggleFavorite,
-                font: .title3
-            )
+            FavoriteStarButton(isFavorite: recipe.isFavorite, action: onToggleFavorite)
         }
         .padding(.vertical, 6)
     }
