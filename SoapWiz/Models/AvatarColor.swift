@@ -9,8 +9,9 @@ import Foundation
 /// whose raw value is the empty string, and here the empty string has to mean
 /// "not assigned yet" so it can be derived instead.
 ///
-/// Every colour is saturated enough to carry white type. Yellow is deliberately
-/// absent for that reason.
+/// Every colour has to work twice over: washed out behind the letter, and
+/// muted towards the app's ink as the letter itself. Yellow is deliberately
+/// absent — there is no strength of it that stays legible in the second role.
 enum AvatarColor: String, CaseIterable {
     case red
     case orange
@@ -50,7 +51,7 @@ enum AvatarColor: String, CaseIterable {
     /// "olive oil" to "Olive Oil" keeps the colour it had.
     static func derived(from seed: String) -> AvatarColor {
         var hash: UInt64 = 0xcbf2_9ce4_8422_2325
-        for byte in Data(seed.lookupKey.utf8) {
+        for byte in seed.lookupKey.utf8 {
             hash ^= UInt64(byte)
             hash = hash &* 0x0000_0100_0000_01b3
         }

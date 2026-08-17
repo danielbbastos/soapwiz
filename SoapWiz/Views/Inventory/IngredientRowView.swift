@@ -25,12 +25,6 @@ struct IngredientRowView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            // A selected row draws its labels white, for the tinted fill the
-            // system would put behind them — which this list never shows,
-            // because every row carries `Color.cardBackground` of its own. The
-            // text would be white on white, and the row would read as empty.
-            // Stated explicitly, the colours survive selection.
-            .foregroundStyle(Color.primary)
             Spacer()
             VStack(alignment: .trailing, spacing: 4) {
                 HStack(spacing: 6) {
@@ -80,11 +74,6 @@ struct IngredientRowView: View {
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(ingredient.totalRemaining > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
             }
-            // For the same reason as the leading column: `.secondary` is a
-            // hierarchical style, so it is a muted version of whatever the row's
-            // foreground happens to be — white, on a selected row. Naming the
-            // base keeps the quantity readable while the row is selected.
-            .foregroundStyle(Color.primary)
             // Beside the warnings-and-quantity column rather than stacked above it.
             // Inside it, the star adds a line to every row — including the many
             // rows with no warning icon, whose icon row is otherwise empty and
@@ -101,6 +90,15 @@ struct IngredientRowView: View {
                     .padding(.leading, 12)
             }
         }
+        // A selected row draws its labels white, for the tinted fill the system
+        // would put behind them — which this list never shows, because every row
+        // carries `Color.cardBackground` of its own. The text would be white on
+        // white, and the row would read as empty. Naming the base here covers
+        // both columns, including the `.secondary` styles inside them: those are
+        // hierarchical, so they are muted versions of whatever the row's
+        // foreground happens to be. The avatar and the star are untouched —
+        // both name their own colours.
+        .foregroundStyle(Color.primary)
         .padding(.vertical, 2)
     }
 }
