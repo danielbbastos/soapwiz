@@ -7,7 +7,11 @@ struct IngredientPickerView: View {
     @Environment(\.dismiss) private var dismiss
 
     let addedIDs: Set<PersistentIdentifier>
-    var allowedRole: RecipeIngredientRole?
+
+    /// Roles the picker will offer. `nil` means every role. A non-soap recipe's
+    /// merged Ingredients section passes both `.oil` and `.additive`, so waxes,
+    /// fats, butters and additives all appear in one list.
+    var allowedRoles: Set<RecipeIngredientRole>?
     let onSelect: ([Ingredient]) -> Void
 
     @State private var searchText = ""
@@ -16,8 +20,10 @@ struct IngredientPickerView: View {
     @State private var showingNewIngredient = false
 
     private var categories: [IngredientCategory] {
-        guard let role = allowedRole else { return allCategories }
-        return allCategories.filter { $0.ingredientRole == role }
+        guard let allowedRoles else { return allCategories }
+        return allCategories.filter { category in
+            category.ingredientRole.map(allowedRoles.contains) ?? false
+        }
     }
 
     /// Category to pre-select when creating a new ingredient inline: the chosen
@@ -28,7 +34,9 @@ struct IngredientPickerView: View {
 
     private var filtered: [Ingredient] {
         allIngredients.filter { ingredient in
-            let matchesAllowed = allowedRole.map { ingredient.category?.ingredientRole == $0 } ?? true
+            let matchesAllowed = allowedRoles.map { roles in
+                ingredient.category?.ingredientRole.map(roles.contains) ?? false
+            } ?? true
             let matchesSearch = searchText.isEmpty ||
                 ingredient.name.localizedCaseInsensitiveContains(searchText)
             let matchesCategory = selectedCategory == nil ||

@@ -4,8 +4,8 @@ import SwiftData
 private let weightUnits = ["g", "oz", "lb", "kg", "%"]
 private let absoluteWeightUnits = ["g", "oz", "lb", "kg"]
 
-/// The recipe form's Config tab: name, collections, oil weight, lye and
-/// fragrance settings. Its own view rather than an extension on
+/// The recipe form's Config tab: name, collections, what the recipe makes,
+/// weight, lye and fragrance settings. Its own view rather than an extension on
 /// `RecipeFormView`, matching the Ingredients and Stats tabs, so the state it
 /// alone uses (the mold sheet, the new-collection sheet, the oil-weight focus)
 /// lives with it instead of on the form.
@@ -21,12 +21,16 @@ struct RecipeConfigTabView: View {
     var body: some View {
         Form {
             detailsSection
+            productKindSection
             weightSection
-            lyeSection
-            soapMethodSection
+            if model.makesSoap {
+                lyeSection
+                soapMethodSection
+            }
             fragranceSection
         }
         .scrollClipDisabled()
+        .animation(.default, value: model.makesSoap)
         .sheet(isPresented: $showMoldCalculator) {
             MoldCalculatorView(oilWeightUnit: model.oilWeightUnit) { weight in
                 model.totalOilWeight = weight
@@ -71,8 +75,23 @@ struct RecipeConfigTabView: View {
         .tint(.primary)
     }
 
+    /// Hidden rather than disabled: a greyed-out superfat stepper on a candle
+    /// recipe is noise. The lye fields keep their stored values while this is on,
+    /// so switching back is lossless.
+    private var productKindSection: some View {
+        Section {
+            Toggle("Non-soap product", isOn: $model.isNonSoapProduct)
+        } footer: {
+            if model.isNonSoapProduct {
+                Text("Lye, water, super fat and the soap method options don't apply to "
+                     + "candles, balms and salves, so they're hidden. Their settings are kept "
+                     + "in case you switch back.")
+            }
+        }
+    }
+
     private var weightSection: some View {
-        Section("Oils weight & unit") {
+        Section(model.makesSoap ? "Oils weight & unit" : "Weight & unit") {
             HStack {
                 Text("Measurement unit")
                 Spacer()
@@ -86,11 +105,11 @@ struct RecipeConfigTabView: View {
 
             if model.weightUnitIsPercentage {
                 HStack {
-                    Text("Total oil weight")
+                    Text(model.baseWeightLabel)
                     Spacer()
                     NumericTextField(prompt: "0", value: $model.totalOilWeight,
                                      width: 80, focus: $oilWeightFocused)
-                    Picker("Oil unit", selection: $model.oilWeightUnit) {
+                    Picker(model.baseWeightLabel, selection: $model.oilWeightUnit) {
                         ForEach(absoluteWeightUnits, id: \.self) { Text($0) }
                     }
                     .pickerStyle(.menu)
@@ -286,9 +305,9 @@ struct RecipeConfigTabView: View {
                 Text("EO / Fragrances")
                 InfoPopoverIcon(
                     title: "EO / Fragrances %",
-                    text: "The target percentage of total oil weight reserved for essential oils "
-                        + "and fragrance oils. Used to calculate the recommended amount and to "
-                        + "track usage in the Ingredients tab."
+                    text: "The target percentage of \(model.makesSoap ? "total oil weight" : "total weight") "
+                        + "reserved for essential oils and fragrance oils. Used to calculate the "
+                        + "recommended amount and to track usage in the Ingredients tab."
                 )
                 Spacer()
                 NumericTextField(prompt: "3", value: $model.fragrancePercentage)

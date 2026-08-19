@@ -21,13 +21,16 @@ private struct TightLabelStyle: LabelStyle {
 
 private enum PickerSection: String, Identifiable {
     case oils, additives, fragrances
+    /// The merged section a non-soap recipe uses in place of oils + additives.
+    case ingredients
     var id: String { rawValue }
 
-    var role: RecipeIngredientRole {
+    var roles: Set<RecipeIngredientRole> {
         switch self {
-        case .oils: return .oil
-        case .additives: return .additive
-        case .fragrances: return .fragrance
+        case .oils: return [.oil]
+        case .additives: return [.additive]
+        case .fragrances: return [.fragrance]
+        case .ingredients: return [.oil, .additive]
         }
     }
 }
@@ -37,6 +40,7 @@ struct RecipeIngredientsTabView: View {
     @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
     @State private var activePicker: PickerSection?
     @State private var oilsExpanded = true
+    @State private var ingredientsExpanded = true
     @State private var additivesExpanded = true
     @State private var fragrancesExpanded = true
     @State private var calculatedAmountsExpanded = true
@@ -46,8 +50,12 @@ struct RecipeIngredientsTabView: View {
     var body: some View {
         Form {
             unresolvedLineItemsSection
-            oilsSection
-            additivesSection
+            if model.makesSoap {
+                oilsSection
+                additivesSection
+            } else {
+                ingredientsSection
+            }
             fragrancesSection
             calculatedAmountsSection
             RecipeExtraIngredientsSection(model: model)
@@ -68,7 +76,7 @@ struct RecipeIngredientsTabView: View {
         .sheet(item: $activePicker) { section in
             IngredientPickerView(
                 addedIDs: addedIDs(for: section),
-                allowedRole: section.role,
+                allowedRoles: section.roles,
                 onSelect: selectAction(for: section)
             )
         }
@@ -144,6 +152,80 @@ struct RecipeIngredientsTabView: View {
                     .expandingSectionEnd(RecipeFormSection.oils, if: draft.id == model.oilDrafts.last?.id)
                 }
                 .onDelete { model.removeOil(at: $0) }
+            }
+        }
+    }
+
+    // MARK: - Ingredients (non-soap)
+
+    /// The merged section a non-soap recipe shows in place of Oils and
+    /// Additives. The split is a soap distinction — a candle's wax and its
+    /// stearic acid are both just ingredients — so the header goes away, while
+    /// the rows keep their own entry style and their stored role, which is what
+    /// makes switching back to soap lossless.
+    private var ingredientsSection: some View {
+        Section(header: CollapsibleSectionHeader(title: "Ingredients", expanded: $ingredientsExpanded)
+            .expandingSectionHeader(RecipeFormSection.ingredients, expanded: ingredientsExpanded)) {
+            if ingredientsExpanded {
+                HStack {
+                    Button {
+                        activePicker = .ingredients
+                    } label: {
+                        Label("Add ingredient", systemImage: "plus")
+                            .labelStyle(TightLabelStyle())
+                    }
+                    Spacer()
+                    if model.weightUnitIsPercentage && !model.oilDrafts.isEmpty {
+                        Text(model.totalPercentageText)
+                            .foregroundStyle(abs(model.totalPercentage - 100) < 0.1 ? Color.green : Color.red)
+                            .frame(width: 60, alignment: .trailing)
+                        Text("%")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .expandingSectionEnd(
+                    RecipeFormSection.ingredients,
+                    if: model.oilDrafts.isEmpty && model.additiveDrafts.isEmpty
+                )
+                ForEach(model.oilDrafts) { draft in
+                    HStack {
+                        Text(draft.ingredient.name)
+                            .lineLimit(1)
+                        Spacer()
+                        NumericTextField(prompt: "0", value: Binding(
+                            get: { draft.amount },
+                            set: { model.userEdited(id: draft.id, amount: $0) }
+                        ))
+                        Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
+                            .foregroundStyle(.secondary)
+                    }
+                    .expandingSectionEnd(
+                        RecipeFormSection.ingredients,
+                        if: model.additiveDrafts.isEmpty && draft.id == model.oilDrafts.last?.id
+                    )
+                }
+                .onDelete { model.removeOil(at: $0) }
+                ForEach(model.additiveDrafts) { draft in
+                    HStack {
+                        Text(draft.ingredient.name)
+                            .lineLimit(1)
+                        Spacer()
+                        NumericTextField(prompt: "0", value: Binding(
+                            get: { draft.amount },
+                            set: { model.updateAdditive(id: draft.id, amount: $0) }
+                        ), fractionLength: 0...3, width: 55)
+                        // Static, not a menu: on a non-soap recipe the unit is
+                        // derived from the recipe's measurement unit and the
+                        // ingredient's own, so every row reads the same way and
+                        // there is nothing to choose.
+                        Text(model.unitLabel(for: draft.unit))
+                            .foregroundStyle(.secondary)
+                    }
+                    .expandingSectionEnd(
+                        RecipeFormSection.ingredients, if: draft.id == model.additiveDrafts.last?.id
+                    )
+                }
+                .onDelete { model.removeAdditive(at: $0) }
             }
         }
     }
@@ -345,6 +427,9 @@ struct RecipeIngredientsTabView: View {
         case .oils: Set(model.oilDrafts.map(\.ingredient.persistentModelID))
         case .additives: Set(model.additiveDrafts.map(\.ingredient.persistentModelID))
         case .fragrances: Set(model.fragranceDrafts.map(\.ingredient.persistentModelID))
+        case .ingredients:
+            Set(model.oilDrafts.map(\.ingredient.persistentModelID))
+                .union(model.additiveDrafts.map(\.ingredient.persistentModelID))
         }
     }
 
@@ -353,6 +438,10 @@ struct RecipeIngredientsTabView: View {
         case .oils: { ingredients in ingredients.forEach { self.model.addOil($0) } }
         case .additives: { ingredients in ingredients.forEach { self.model.addAdditive($0) } }
         case .fragrances: { ingredients in ingredients.forEach { self.model.addFragrance($0) } }
+        // Routed by the ingredient's own category, so a wax lands in the
+        // percentage rows and a clay in the amount rows without the user having
+        // to know the recipe still keeps them apart.
+        case .ingredients: { ingredients in ingredients.forEach { self.model.addIngredient($0) } }
         }
     }
 }

@@ -7,7 +7,7 @@ extension RecipeFormViewModel {
     private var currentSnapshot: RecipeFormSnapshot {
         RecipeFormSnapshot(
             name: name, desc: desc, imageData: imageData,
-            weightUnit: weightUnit, totalOilWeight: totalOilWeight,
+            weightUnit: weightUnit, recipeKind: recipeKind, totalOilWeight: totalOilWeight,
             oilWeightUnit: oilWeightUnit, lyeType: lyeType, lyePurity: lyePurity,
             waterParts: waterParts, superFat: superFat, oilDrafts: oilDrafts,
             additiveDrafts: additiveDrafts, fragranceDrafts: fragranceDrafts,

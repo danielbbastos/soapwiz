@@ -55,6 +55,7 @@ struct RecipeFormSnapshot: Equatable {
     var desc: String
     var imageData: Data?
     var weightUnit: String
+    var recipeKind: RecipeKind
     var totalOilWeight: Double
     var oilWeightUnit: String
     var lyeType: String
@@ -85,7 +86,18 @@ struct RecipeFormSnapshot: Equatable {
 /// than keeping a second copy that can drift. Additives stay stringly-typed;
 /// fragrances have the typed `FragranceUnit`.
 enum RecipeUnitOptions {
-    static let additive = ["g", "kg", "oz", "lb", "ml", "L", "% of batch", "% of liquids", "% of oils"]
+    /// Countable inventory unit. A row in it is a component — a wick, a jar, a
+    /// label — rather than part of the mixture: it carries cost and consumes
+    /// stock, but contributes no weight, because a count has no mass to convert.
+    static let count = "un"
+
+    /// Share of the recipe's declared total weight. The one percentage scale a
+    /// non-soap recipe uses, so its base ingredients and its additives add up to
+    /// 100% together rather than the additives sitting on top of a base that is
+    /// already 100%.
+    static let percentOfTotal = "% of total"
+
+    static let additive = ["g", "kg", "oz", "lb", "ml", "L", "% of batch", "% of liquids", "% of oils", count]
 
     /// The single string test for "is this a percentage-based unit". Both
     /// additive and fragrance rows reach it as raw strings, through the
@@ -93,6 +105,8 @@ enum RecipeUnitOptions {
     static func isPercentage(_ unit: String) -> Bool {
         unit.hasPrefix("%")
     }
+
+    static func isCount(_ unit: String) -> Bool { unit == count }
 }
 
 /// The recipe-wide unit every fragrance row is entered in, stored on `Recipe`
@@ -159,8 +173,16 @@ struct FragranceTarget {
 
 struct IngredientProductBreakdown {
     let ingredient: Ingredient
+
+    /// The amount in the batch (oils) unit — or, for a count row, the count
+    /// itself. `isCountBased` is what tells the two apart.
     let ingredientAmount: Double
     let cost: Double
+
+    /// Whether `ingredientAmount` is a count rather than a weight. Count rows
+    /// are priced and deducted like any other, but are left out of every weight
+    /// total: adding "1" to a gram figure would be meaningless.
+    var isCountBased: Bool = false
 }
 
 struct BreakdownAmountDisplay {

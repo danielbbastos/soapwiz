@@ -9,7 +9,9 @@ extension RecipeFormViewModel {
         RecipeExtrasBuilder(
             lye: lyeCalculator,
             fragranceTargetPercentage: fragranceTargetPercentage,
-            isCreamSoap: isCreamSoap
+            // A recipe switched to non-soap keeps its stored cream-soap flag so
+            // switching back is lossless, so the kind has to veto it here.
+            isCreamSoap: makesSoap && isCreamSoap
         )
     }
 

@@ -4,6 +4,12 @@ import Foundation
 /// saponification, super-fat discounting, and acid neutralisation. Built on
 /// demand from `RecipeFormViewModel` state and shared by the cost and extras
 /// calculators.
+///
+/// A general (non-soap) recipe still runs through here for its per-ingredient
+/// weights — resolving percentages against the base weight is the same maths
+/// either way — but `producesLye` is false, so it contributes no lye, no water,
+/// and no neutraliser. Gating here rather than at every call site means the cost
+/// and extras calculators get the right answer without knowing about the kind.
 struct LyeCalculator {
     let oilDrafts: [OilIngredientDraft]
     let additiveDrafts: [IngredientAmountDraft]
@@ -21,6 +27,10 @@ struct LyeCalculator {
     let displayWeightUnit: String
     let useCFM: Bool
     let cfmNeutralizer: CFMNeutralizer
+
+    /// Whether the recipe saponifies. False for a general recipe, which zeroes
+    /// every lye-derived figure below.
+    let producesLye: Bool
 
     /// Fraction of the soap weight dosed as the Failor neutraliser solution
     /// (¾ oz per lb of soap = 0.75/16).
@@ -48,9 +58,9 @@ struct LyeCalculator {
         SoapType.classify(useHybrid: useHybrid, naohPercentage: naohPercentage, lyeType: lyeType)
     }
 
-    /// Whether the Catherine Failor method is in effect: requested and the soap
-    /// isn't a solid bar.
-    var cfmActive: Bool { useCFM && soapType != .solid }
+    /// Whether the Catherine Failor method is in effect: requested, the recipe
+    /// makes soap, and the soap isn't a solid bar.
+    var cfmActive: Bool { producesLye && useCFM && soapType != .solid }
 
     /// Normal lye factor — the super-fat discount applied to full saponification.
     private var superFatFactor: Double { 1 - superFat / 100 }
@@ -65,7 +75,9 @@ struct LyeCalculator {
     /// normal, or full-saponification basis from the same resolution.
     private func oilCalculations(factor: Double) -> [OilAmountCalculation]? {
         guard !oilDrafts.isEmpty else { return nil }
-        guard lyeConfigIsValid else { return nil }
+        // A general recipe has no lye configuration to be invalid; its rows
+        // resolve to weights alone.
+        guard !producesLye || lyeConfigIsValid else { return nil }
 
         if weightUnitIsPercentage {
             guard totalOilWeight > 0 else { return nil }
@@ -102,6 +114,9 @@ struct LyeCalculator {
     /// share and own purity; single lye uses `lyePurity` and the sap value of the
     /// chosen `lyeType`.
     private func lyeContribution(weight: Double, draft: OilIngredientDraft, factor: Double) -> OilAmountCalculation {
+        guard producesLye else {
+            return OilAmountCalculation(id: draft.id, ingredient: draft.ingredient, weight: weight, naohLye: 0, kohLye: 0)
+        }
         let naohSap = draft.ingredient.sapValue ?? 0
         let kohSap = draft.ingredient.kohSapValue ?? 0
 
@@ -121,16 +136,20 @@ struct LyeCalculator {
     }
 
     /// Total NaOH lye, including the NaOH share of acid neutralisation.
+    /// `nil` — absent, not zero — when the recipe doesn't saponify.
     var calculatedNaOHLyeAmount: Double? {
-        oilAmountCalculations.map { $0.reduce(0) { $0 + $1.naohLye } + acidNeutralization.naoh }
+        guard producesLye else { return nil }
+        return oilAmountCalculations.map { $0.reduce(0) { $0 + $1.naohLye } + acidNeutralization.naoh }
     }
 
     /// Total KOH lye, including the KOH share of acid neutralisation.
     var calculatedKOHLyeAmount: Double? {
-        oilAmountCalculations.map { $0.reduce(0) { $0 + $1.kohLye } + acidNeutralization.koh }
+        guard producesLye else { return nil }
+        return oilAmountCalculations.map { $0.reduce(0) { $0 + $1.kohLye } + acidNeutralization.koh }
     }
 
     var calculatedLyeAmount: Double? {
+        guard producesLye else { return nil }
         let acid = acidNeutralization
         return oilAmountCalculations.map { $0.reduce(0) { $0 + $1.lye } + acid.naoh + acid.koh }
     }
@@ -139,7 +158,8 @@ struct LyeCalculator {
     /// Water is sized from this so the 10% excess lye doesn't inflate the water
     /// (matching LightCalc); without CFM it equals `calculatedLyeAmount`.
     var normalSuperFatLyeAmount: Double? {
-        oilCalculations(factor: superFatFactor)
+        guard producesLye else { return nil }
+        return oilCalculations(factor: superFatFactor)
             .map { $0.reduce(0) { $0 + $1.lye } + acidNeutralization.naoh + acidNeutralization.koh }
     }
 
@@ -182,6 +202,14 @@ struct LyeCalculator {
         )
     }
 
+    /// The weight a "% of total" row resolves against. In percentage mode that
+    /// is the total the user declared on the Config tab, so base ingredients and
+    /// additives divide up one fixed batch; in absolute mode there is no
+    /// declared total, so it falls back to the summed base rows.
+    var declaredTotalWeight: Double {
+        weightUnitIsPercentage ? totalOilWeight : totalOilBatchWeight
+    }
+
     /// Total oil weight in the batch (oils) unit.
     var totalOilBatchWeight: Double {
         oilAmountCalculations?.reduce(0) { $0 + $1.weight } ?? 0
@@ -215,6 +243,7 @@ struct LyeCalculator {
     /// drafts are skipped: "% of batch" and "% of liquids" resolve against the
     /// lye amount this value feeds, which would recurse.
     var acidNeutralization: LyeSplit {
+        guard producesLye else { return LyeSplit(naoh: 0, koh: 0) }
         var naoh = 0.0
         var koh = 0.0
         for draft in additiveDrafts {
@@ -231,7 +260,12 @@ struct LyeCalculator {
         return LyeSplit(naoh: naoh, koh: koh)
     }
 
+    /// `nil` for a general recipe: its calculated amounts have to account for
+    /// additives and fragrances, whose units are resolved by
+    /// `RecipeCostCalculator`, so `RecipeFormViewModel` builds that table from
+    /// the cost breakdown instead.
     var calculatedAmountRows: [CalculatedAmountRow]? {
+        guard producesLye else { return nil }
         guard let calculations = oilAmountCalculations,
               let totalLye = calculatedLyeAmount,
               let totalWater = calculatedWaterAmount else { return nil }

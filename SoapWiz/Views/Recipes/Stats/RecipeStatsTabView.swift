@@ -4,11 +4,15 @@ struct RecipeStatsTabView: View {
     @Bindable var model: RecipeFormViewModel
 
     var body: some View {
-        let stats = RecipeStats(oilDrafts: model.oilDrafts)
+        let stats = RecipeStats(oilDrafts: model.oilDrafts, makesSoap: model.makesSoap)
         Form {
-            propertiesSection(stats)
+            if stats.makesSoap {
+                propertiesSection(stats)
+            }
             fattyAcidSection(stats)
-            calculatedValuesSection(stats)
+            if stats.makesSoap {
+                calculatedValuesSection(stats)
+            }
         }
         .scrollClipDisabled()
     }
@@ -21,46 +25,32 @@ struct RecipeStatsTabView: View {
         }
     }
 
+    /// Shown for both kinds. A non-soap recipe carries the iodine value here,
+    /// since it has no Soap properties section to host it.
     @ViewBuilder
     private func fattyAcidSection(_ stats: RecipeStats) -> some View {
-        if stats.hasOils {
+        if stats.hasFattyAcidData {
             Section("Fatty acid profile") {
-                fattyAcidRow("Lauric", stats.fattyAcidProfile.lauric)
-                fattyAcidRow("Myristic", stats.fattyAcidProfile.myristic)
-                fattyAcidRow("Palmitic", stats.fattyAcidProfile.palmitic)
-                fattyAcidRow("Stearic", stats.fattyAcidProfile.stearic)
-                fattyAcidRow("Oleic", stats.fattyAcidProfile.oleic)
-                fattyAcidRow("Linoleic", stats.fattyAcidProfile.linoleic)
-                fattyAcidRow("Linolenic", stats.fattyAcidProfile.linolenic)
-                fattyAcidRow("Ricinoleic", stats.fattyAcidProfile.ricinoleic)
-                Divider()
-                fattyAcidRow("Saturated", stats.fattyAcidProfile.saturated, emphasis: true)
-                fattyAcidRow("Mono-unsaturated", stats.fattyAcidProfile.monoUnsaturated, emphasis: true)
-                fattyAcidRow("Poly-unsaturated", stats.fattyAcidProfile.polyUnsaturated, emphasis: true)
+                FattyAcidBreakdownRows(stats: stats)
+            }
+            Section(RecipeStatsCopy.totalsHeader) {
+                FattyAcidTotalsRows(stats: stats, showsIodine: !stats.makesSoap)
+            }
+        } else if !stats.makesSoap {
+            Section("Fatty acid profile") {
+                Text(RecipeStatsCopy.noFattyAcidData)
+                    .foregroundStyle(.secondary)
             }
         }
     }
 
     @ViewBuilder
     private func calculatedValuesSection(_ stats: RecipeStats) -> some View {
-        if stats.hasOils {
+        if stats.hasOils, let naoh = stats.totalNaOHSap, let koh = stats.totalKOHSap {
             Section("Calculated values") {
-                statRow("Total NaOH SAP", value: stats.totalNaOHSap, fractionDigits: 4)
-                statRow("Total KOH SAP", value: stats.totalKOHSap, fractionDigits: 4)
+                statRow("Total NaOH SAP", value: naoh, fractionDigits: 4)
+                statRow("Total KOH SAP", value: koh, fractionDigits: 4)
             }
-        }
-    }
-
-    private func fattyAcidRow(_ label: String, _ value: Double, emphasis: Bool = false) -> some View {
-        HStack {
-            Text(label)
-                .fontWeight(emphasis ? .semibold : .regular)
-            Spacer()
-            Text(value, format: .number.precision(.fractionLength(2)))
-                .monospacedDigit()
-                .foregroundStyle(emphasis ? .primary : .secondary)
-            Text("%")
-                .foregroundStyle(.secondary)
         }
     }
 

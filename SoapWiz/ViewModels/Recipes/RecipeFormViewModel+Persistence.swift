@@ -13,6 +13,7 @@ extension RecipeFormViewModel {
         desc = recipe.desc
         imageData = recipe.imageData
         weightUnit = recipe.weightUnit
+        recipeKind = RecipeKind.resolve(recipe.recipeKind)
         totalOilWeight = recipe.totalOilWeight
         oilWeightUnit = recipe.oilWeightUnit
         lyeType = recipe.lyeType
@@ -55,6 +56,12 @@ extension RecipeFormViewModel {
         if productDrafts.isEmpty {
             productDrafts = [.seededPlaceholder()]
         }
+
+        // The drafts are assigned after the kind and the measurement unit, so
+        // the reconcile their setters would have run hasn't seen them. Run it
+        // here instead, before the form captures its clean baseline, so a recipe
+        // stored under one kind opens coherent under the one it now has.
+        normalizeAdditiveUnits()
     }
 
     @discardableResult
@@ -68,6 +75,7 @@ extension RecipeFormViewModel {
         recipe.desc = desc.trimmingCharacters(in: .whitespaces)
         applyImage(to: recipe)
         recipe.weightUnit = weightUnit
+        recipe.recipeKind = recipeKind.rawValue
         recipe.totalOilWeight = totalOilWeight
         recipe.oilWeightUnit = oilWeightUnit
         recipe.lyeType = lyeType

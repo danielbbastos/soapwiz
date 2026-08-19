@@ -103,6 +103,7 @@ enum BackupService {
             isFavorite: recipe.isFavorite,
             imageData: recipe.imageData,
             weightUnit: recipe.weightUnit,
+            recipeKind: recipe.recipeKind,
             totalOilWeight: recipe.totalOilWeight,
             oilWeightUnit: recipe.oilWeightUnit,
             lyeType: recipe.lyeType,

@@ -10,7 +10,22 @@ final class RecipeFormViewModel {
     /// user picks before it lands here, and `save` derives the thumbnail from
     /// it — nothing else needs to know the difference between the two copies.
     var imageData: Data?
-    var weightUnit: String = "%"
+    var weightUnit: String = "%" {
+        didSet {
+            guard weightUnit != oldValue else { return }
+            reconcileAdditiveUnits()
+        }
+    }
+
+    /// What the recipe makes. Drives every saponification-specific field and
+    /// section: a general recipe hides them rather than disabling them, and
+    /// leaves their stored values untouched so switching back is lossless.
+    var recipeKind: RecipeKind = .soap {
+        didSet {
+            guard recipeKind != oldValue else { return }
+            reconcileAdditiveUnits()
+        }
+    }
     var totalOilWeight: Double = 1000
     var oilWeightUnit: String = "g"
     var lyeType: String = "NaOH"
@@ -74,10 +89,39 @@ final class RecipeFormViewModel {
 
     var weightUnitIsPercentage: Bool { weightUnit == "%" }
 
+    /// The Config tab's "Non-soap product" toggle. A toggle rather than a
+    /// two-value picker because soap is the ordinary case and the alternative is
+    /// the deliberate one; the kind itself stays an enum so a third one can be
+    /// added without reshaping the model.
+    var isNonSoapProduct: Bool {
+        get { recipeKind == .general }
+        set { recipeKind = newValue ? .general : .soap }
+    }
+
+    /// Whether the recipe saponifies, and so whether the lye maths, the soap
+    /// method options, and the soap-property stats apply to it at all.
+    var makesSoap: Bool { recipeKind == .soap }
+
+    /// What the base weight is called. A soap recipe's percentages resolve
+    /// against its oils; a general recipe's resolve against a plain total.
+    var baseWeightLabel: String { makesSoap ? "Total oil weight" : "Total weight" }
+
     var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
 
+    /// What the Ingredients section's running total shows. On a non-soap recipe
+    /// the base rows and the percentage additives share one 100% scale, so both
+    /// count toward it; a soap recipe keeps additives on top of an oil total
+    /// that is already 100%, which is the soap-making convention.
     var totalPercentage: Double {
-        oilDrafts.reduce(0) { $0 + $1.amount }
+        oilDrafts.reduce(0) { $0 + $1.amount } + (makesSoap ? 0 : percentageAdditiveTotal)
+    }
+
+    /// Sum of the additive rows entered as a share of the total. Only these
+    /// participate in the 100% scale — a gram or a count doesn't.
+    var percentageAdditiveTotal: Double {
+        additiveDrafts
+            .filter { $0.unit == RecipeUnitOptions.percentOfTotal }
+            .reduce(0) { $0 + $1.amount }
     }
 
     var totalPercentageText: String { formatPercentage(totalPercentage) }
@@ -86,11 +130,59 @@ final class RecipeFormViewModel {
         weightUnitIsPercentage ? oilWeightUnit : weightUnit
     }
 
-    /// Default unit for new additive rows. Additives are conventionally entered
-    /// as a weight, so they default to grams in percentage mode (rather than
-    /// "% of oils") to avoid silently applying a percentage of the oils.
+    /// Default unit for a mass row.
+    ///
+    /// On a soap recipe additives are conventionally entered as a weight, so
+    /// they default to grams in percentage mode (rather than "% of oils") to
+    /// avoid silently applying a percentage of the oils. A non-soap recipe in
+    /// percentage mode defaults to the shared "% of total" scale instead, so a
+    /// formula reads as one set of percentages rather than a mix of percentages
+    /// and weights.
     var defaultAdditiveUnit: String {
-        weightUnitIsPercentage ? "g" : weightUnit
+        guard weightUnitIsPercentage else { return weightUnit }
+        return makesSoap ? "g" : RecipeUnitOptions.percentOfTotal
+    }
+
+    /// The unit a row takes for this ingredient.
+    ///
+    /// On a non-soap recipe this is the whole story — units are derived, never
+    /// chosen, so a formula reads in one unit throughout. An ingredient stocked
+    /// by the piece is a component rather than part of the mixture and stays a
+    /// count in either kind: no percentage of a wick means anything.
+    func derivedUnit(for ingredient: Ingredient) -> String {
+        ingredient.unit == RecipeUnitOptions.count ? RecipeUnitOptions.count : defaultAdditiveUnit
+    }
+
+    /// How a row's unit reads in the ingredients list. A non-soap recipe has one
+    /// percentage scale, so "% of total" is shown as plain "%" — the same thing
+    /// the base rows show, which is what makes the merged section read as one
+    /// list. The stored value keeps its longer name, which is what distinguishes
+    /// it from soap's "% of oils".
+    func unitLabel(for unit: String) -> String {
+        unit == RecipeUnitOptions.percentOfTotal ? "%" : unit
+    }
+
+    /// Rewrites the units the current kind can't express, leaving the rest alone.
+    ///
+    /// A non-soap recipe has exactly one mass unit — whatever the Config tab
+    /// declared — so anything else becomes it. A soap recipe can't express
+    /// "% of total", so only that is rewritten; its own "% of oils", grams and
+    /// millilitres are deliberate choices and survive a round trip through the
+    /// other kind. Counts are never touched.
+    func normalizeAdditiveUnits() { reconcileAdditiveUnits() }
+
+    private func reconcileAdditiveUnits() {
+        for index in additiveDrafts.indices {
+            let unit = additiveDrafts[index].unit
+            guard !RecipeUnitOptions.isCount(unit) else { continue }
+            if makesSoap {
+                if unit == RecipeUnitOptions.percentOfTotal {
+                    additiveDrafts[index].unit = defaultAdditiveUnit
+                }
+            } else if unit != defaultAdditiveUnit {
+                additiveDrafts[index].unit = defaultAdditiveUnit
+            }
+        }
     }
 
     // MARK: - Calculators
@@ -113,7 +205,8 @@ final class RecipeFormViewModel {
             totalOilWeight: totalOilWeight,
             displayWeightUnit: displayWeightUnit,
             useCFM: useCFM,
-            cfmNeutralizer: cfmNeutralizer
+            cfmNeutralizer: cfmNeutralizer,
+            producesLye: makesSoap
         )
     }
 
@@ -137,7 +230,38 @@ final class RecipeFormViewModel {
     var calculatedKOHLyeAmount: Double? { lyeCalculator.calculatedKOHLyeAmount }
     var calculatedLyeAmount: Double? { lyeCalculator.calculatedLyeAmount }
     var calculatedWaterAmount: Double? { lyeCalculator.calculatedWaterAmount }
-    var calculatedAmountRows: [CalculatedAmountRow]? { lyeCalculator.calculatedAmountRows }
+    /// The calculated-amounts table. A soap recipe's comes from the lye
+    /// calculator; a non-soap recipe's is built from the resolved cost
+    /// breakdown, which is the only place additive and fragrance units have
+    /// already been turned into weights.
+    var calculatedAmountRows: [CalculatedAmountRow]? {
+        makesSoap ? lyeCalculator.calculatedAmountRows : generalCalculatedAmountRows
+    }
+
+    /// Every line item at its resolved weight, then the batch total — which is
+    /// the total the Config tab declared, since the percentages now share one
+    /// 100% scale.
+    ///
+    /// Count rows are left out: this table is weights in a single unit, and a
+    /// jar has none. They stay visible in the cost breakdown, priced in `un`.
+    private var generalCalculatedAmountRows: [CalculatedAmountRow]? {
+        let batch = wholeBatchBreakdown
+        let weighed = (batch.oils + batch.additives + batch.fragrances)
+            .filter { !$0.isCountBased && $0.ingredientAmount > 0 }
+        guard !weighed.isEmpty else { return nil }
+
+        let total = weighed.reduce(0.0) { $0 + $1.ingredientAmount }
+        var rows = weighed.map { row in
+            CalculatedAmountRow(
+                label: row.ingredient.name,
+                weight: row.ingredientAmount,
+                pct: total > 0 ? row.ingredientAmount / total * 100 : 0,
+                isSummary: false
+            )
+        }
+        rows.append(CalculatedAmountRow(label: "Batch total", weight: total, pct: 100, isSummary: true))
+        return rows
+    }
 
     var soapType: SoapType {
         SoapType.classify(
@@ -231,21 +355,47 @@ final class RecipeFormViewModel {
         }
     }
 
+    /// Adds an ingredient to whichever section its category maps to. Used by the
+    /// non-soap form, whose single Ingredients list spans both roles: the user
+    /// picks from one list and the recipe still files each row correctly, so the
+    /// roles survive a switch back to soap. A fragrance picked here is routed
+    /// too rather than dropped, since the picker's role filter is advisory.
+    func addIngredient(_ ingredient: Ingredient) {
+        switch ingredient.category?.ingredientRole {
+        case .oil: addOil(ingredient)
+        case .fragrance: addFragrance(ingredient)
+        case .additive, nil: addAdditive(ingredient)
+        }
+    }
+
     func addAdditive(_ ingredient: Ingredient) {
         guard !additiveDrafts.contains(where: {
             $0.ingredient.persistentModelID == ingredient.persistentModelID
         }) else { return }
-        additiveDrafts.append(IngredientAmountDraft(ingredient: ingredient, unit: defaultAdditiveUnit))
+        additiveDrafts.append(
+            IngredientAmountDraft(ingredient: ingredient, unit: derivedUnit(for: ingredient))
+        )
+        rebalanceForSharedPercentageScale()
     }
 
     func removeAdditive(at offsets: IndexSet) {
         additiveDrafts.remove(atOffsets: offsets)
+        rebalanceForSharedPercentageScale()
     }
 
     func updateAdditive(id: UUID, amount: Double? = nil, unit: String? = nil) {
         guard let idx = additiveDrafts.firstIndex(where: { $0.id == id }) else { return }
         if let amount { additiveDrafts[idx].amount = amount }
         if let unit { additiveDrafts[idx].unit = unit }
+        rebalanceForSharedPercentageScale()
+    }
+
+    /// Re-runs the base-row redistribution after an additive changed, so the one
+    /// 100% scale a non-soap recipe uses stays at 100. A soap recipe's additives
+    /// sit outside the oil total, so nothing needs rebalancing there.
+    private func rebalanceForSharedPercentageScale() {
+        guard !makesSoap, weightUnitIsPercentage else { return }
+        redistributePercentages()
     }
 
     private var hasSeeded = false
@@ -317,8 +467,15 @@ final class RecipeFormViewModel {
         }
     }
 
+    /// Shares the remainder of the 100% scale across the unlocked base rows.
+    ///
+    /// On a non-soap recipe the percentage additives are claimants on the same
+    /// 100 as the base rows, so they count against the remainder exactly like a
+    /// locked base row: setting an additive to 1% pulls the base rows down to
+    /// 99% between them rather than pushing the formula to 101%.
     private func redistributePercentages() {
-        let lockedSum = oilDrafts.filter(\.isLocked).reduce(0) { $0 + $1.amount }
+        let lockedOils = oilDrafts.filter(\.isLocked).reduce(0) { $0 + $1.amount }
+        let lockedSum = lockedOils + (makesSoap ? 0 : percentageAdditiveTotal)
         let remaining = max(0, 100 - lockedSum)
         let unlockedIndices = oilDrafts.indices.filter { !oilDrafts[$0].isLocked }
         guard !unlockedIndices.isEmpty else { return }
