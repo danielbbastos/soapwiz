@@ -10,8 +10,14 @@ import SwiftData
 @MainActor
 struct BatchProductionCountUnitTests: BatchProductionTestHelpers {
 
+    private struct Seeded {
+        let recipe: Recipe
+        let oil: Ingredient
+        let jar: Ingredient
+    }
+
     /// 1 000 g of one oil plus one jar, as a non-soap recipe measured in grams.
-    private func seed(_ ctx: ModelContext) -> (recipe: Recipe, oil: Ingredient, jar: Ingredient) {
+    private func seed(_ ctx: ModelContext) -> Seeded {
         let oils = IngredientCategory(name: IngredientCategory.Name.oils)
         let packages = IngredientCategory(name: "Packages")
         ctx.insert(oils)
@@ -32,7 +38,7 @@ struct BatchProductionCountUnitTests: BatchProductionTestHelpers {
         jarLine.additiveUnit = RecipeUnitOptions.count
         jarLine.recipe = recipe
         ctx.insert(jarLine)
-        return (recipe, oil, jar)
+        return Seeded(recipe: recipe, oil: oil, jar: jar)
     }
 
     @Test func requirements_CountRow_IsRequestedByThePiece() throws {

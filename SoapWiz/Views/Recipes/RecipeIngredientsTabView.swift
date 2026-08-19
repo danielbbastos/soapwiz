@@ -43,7 +43,6 @@ struct RecipeIngredientsTabView: View {
     @State private var ingredientsExpanded = true
     @State private var additivesExpanded = true
     @State private var fragrancesExpanded = true
-    @State private var calculatedAmountsExpanded = true
     @State private var costBreakdownExpanded = false
     @State private var availableHeight: CGFloat = 0
 
@@ -57,7 +56,7 @@ struct RecipeIngredientsTabView: View {
                 ingredientsSection
             }
             fragrancesSection
-            calculatedAmountsSection
+            RecipeCalculatedAmountsSection(model: model)
             RecipeExtraIngredientsSection(model: model)
         }
         .scrollClipDisabled()
@@ -348,73 +347,6 @@ struct RecipeIngredientsTabView: View {
             + "set on the Config tab."
         guard model.fragranceUnit == .percentOfFragrances else { return load }
         return load + " Each row is its share of that load; the shares should total 100%."
-    }
-
-    // MARK: - Calculated amounts
-
-    @ViewBuilder
-    private var calculatedAmountsSection: some View {
-        if let rows = model.calculatedAmountRows {
-            Section(header: CollapsibleSectionHeader(title: "Calculated amounts", expanded: $calculatedAmountsExpanded)
-                .expandingSectionHeader(RecipeFormSection.calculatedAmounts, expanded: calculatedAmountsExpanded)) {
-                if calculatedAmountsExpanded {
-                    VStack(spacing: 0) {
-                        amountHeader
-                        ForEach(Array(rows.enumerated()), id: \.element.id) { _, row in
-                            Divider().padding(.leading, row.isSummary ? 0 : 16)
-                            amountRow(row.label, weight: row.weight, pct: row.pct, summary: row.isSummary)
-                        }
-                    }
-                    .listRowInsets(EdgeInsets())
-                    .expandingSectionEnd(RecipeFormSection.calculatedAmounts)
-                }
-            }
-        }
-    }
-
-    private var amountHeader: some View {
-        HStack(spacing: 8) {
-            Text("Ingredient")
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Text("Weight")
-                .frame(width: 90, alignment: .trailing)
-            Text("%")
-                .frame(width: 64, alignment: .trailing)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .font(.footnote)
-        .fontWeight(.medium)
-        .foregroundStyle(.secondary)
-        .background(Color.cardBackground)
-    }
-
-    private func amountRow(_ label: String, weight: Double, pct: Double, summary: Bool) -> some View {
-        HStack(spacing: 8) {
-            Text(label)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .lineLimit(1)
-            Text(formatWeight(weight))
-                .frame(width: 90, alignment: .trailing)
-                .monospacedDigit()
-            Text(formatPct(pct))
-                .frame(width: 64, alignment: .trailing)
-                .monospacedDigit()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .font(.footnote)
-        .fontWeight(summary ? .medium : .regular)
-        .foregroundStyle(summary ? Color.primary : Color.secondary)
-    }
-
-    private func formatWeight(_ value: Double) -> String {
-        let formatted = value.formatted(.number.precision(.fractionLength(0...2)).grouping(.automatic))
-        return "\(formatted) \(model.displayWeightUnit)"
-    }
-
-    private func formatPct(_ pct: Double) -> String {
-        String(format: "%.1f%%", pct)
     }
 
     // MARK: - Helpers

@@ -135,6 +135,21 @@ struct RecipeStatsTests {
         #expect(RecipeStats(oilDrafts: []).hasFattyAcidData == false)
     }
 
+    /// A soap recipe whose oils carry no profile must still say so rather than
+    /// dropping the section — the state is diagnosable only if it is visible.
+    @Test func hasOilsButNoProfile_IsDistinguishableFromHavingNoOils() {
+        let unknown = Ingredient(name: "Unknown", unit: "g")
+        var draft = OilIngredientDraft(ingredient: unknown); draft.amount = 100
+
+        let withOils = RecipeStats(oilDrafts: [draft])
+        let empty = RecipeStats(oilDrafts: [])
+
+        #expect(withOils.hasOils)
+        #expect(withOils.hasFattyAcidData == false)
+        #expect(empty.hasOils == false)
+        #expect(empty.hasFattyAcidData == false)
+    }
+
     @Test func stats_MakesSoapDefaultsToTrue() {
         #expect(RecipeStats(oilDrafts: []).makesSoap)
     }
