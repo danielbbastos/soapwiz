@@ -122,6 +122,10 @@ extension BackupData {
         /// grow the file for something the app can recompute.
         var imageData: Data?
         var weightUnit: String
+        /// Raw value of `RecipeKind`. Optional so a file written before non-soap
+        /// recipes existed still decodes; every recipe in one was soap, which is
+        /// what the missing key restores to.
+        var recipeKind: String?
         var totalOilWeight: Double
         var oilWeightUnit: String
         var lyeType: String

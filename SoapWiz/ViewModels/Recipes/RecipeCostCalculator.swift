@@ -92,10 +92,21 @@ struct RecipeCostCalculator {
     /// (oils) unit and cost derived from the gram-equivalent.
     private func breakdown(for drafts: [IngredientAmountDraft]) -> [IngredientProductBreakdown] {
         drafts.compactMap { draft in
-            guard draft.amount > 0,
-                  let batchAmount = amountInBatchUnit(
-                      amount: draft.amount, unit: draft.unit, density: draft.ingredient.density
-                  ) else { return nil }
+            guard draft.amount > 0 else { return nil }
+            // A count is priced straight off the inventory unit — there is no
+            // weight to convert through, and going via the gram fallback would
+            // price one jar as one gram of jar.
+            if RecipeUnitOptions.isCount(draft.unit) {
+                return IngredientProductBreakdown(
+                    ingredient: draft.ingredient,
+                    ingredientAmount: draft.amount,
+                    cost: draft.amount * weightedCostPerUnit(for: draft.ingredient),
+                    isCountBased: true
+                )
+            }
+            guard let batchAmount = amountInBatchUnit(
+                amount: draft.amount, unit: draft.unit, density: draft.ingredient.density
+            ) else { return nil }
             return IngredientProductBreakdown(
                 ingredient: draft.ingredient,
                 ingredientAmount: batchAmount,
@@ -136,8 +147,9 @@ struct RecipeCostCalculator {
     /// absent from `wholeBatchBreakdown` and batch requirements too. A CFM batch's
     /// weight is therefore understated by the neutraliser dose.
     func batchTotalWeight(from batch: ProductCostBreakdown) -> Double {
-        let additives = batch.additives.reduce(0) { $0 + $1.ingredientAmount }
-        let fragrances = batch.fragrances.reduce(0) { $0 + $1.ingredientAmount }
+        // Counts carry no mass, so they are left out of every weight total.
+        let additives = batch.additives.lazy.filter { !$0.isCountBased }.reduce(0) { $0 + $1.ingredientAmount }
+        let fragrances = batch.fragrances.lazy.filter { !$0.isCountBased }.reduce(0) { $0 + $1.ingredientAmount }
         let lyeAmount = lye.calculatedLyeAmount ?? 0
         let water = lye.calculatedWaterAmount ?? 0
         return lye.totalOilBatchWeight + additives + fragrances + lyeAmount + water
@@ -149,7 +161,10 @@ struct RecipeCostCalculator {
                 IngredientProductBreakdown(
                     ingredient: $0.ingredient,
                     ingredientAmount: $0.ingredientAmount * factor,
-                    cost: $0.cost * factor
+                    cost: $0.cost * factor,
+                    // Carried through, or a scaled count would render as a
+                    // weight in the per-product breakdown.
+                    isCountBased: $0.isCountBased
                 )
             }
         }
@@ -188,6 +203,11 @@ struct RecipeCostCalculator {
     /// entered units are converted back — volume units via the ingredient's
     /// density, surfaced in `conversionNote` alongside the mass equivalent.
     func displayedAmount(for row: IngredientProductBreakdown, usesEnteredUnit: Bool) -> BreakdownAmountDisplay {
+        if row.isCountBased {
+            return BreakdownAmountDisplay(
+                amount: row.ingredientAmount, unit: RecipeUnitOptions.count, conversionNote: nil
+            )
+        }
         if usesEnteredUnit, let unit = enteredUnit(for: row.ingredient),
            let result = IngredientUnitConverter.convert(
                row.ingredientAmount, from: displayWeightUnit, to: unit, density: row.ingredient.density
@@ -276,6 +296,9 @@ struct RecipeCostCalculator {
         case "% of liquids":
             guard let lyeAmount = lye.calculatedLyeAmount, let water = lye.calculatedWaterAmount else { return nil }
             return (lyeAmount + water) * fraction
+        case RecipeUnitOptions.percentOfTotal:
+            let base = lye.declaredTotalWeight
+            return base > 0 ? base * fraction : nil
         default: return nil
         }
     }

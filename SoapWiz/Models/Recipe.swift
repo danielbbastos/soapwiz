@@ -19,6 +19,17 @@ final class Recipe {
     /// one.
     var thumbnailData: Data?
     var weightUnit: String = "g"
+
+    /// Raw value of `RecipeKind`. Stored as a `String` rather than the enum,
+    /// matching `lyeType`, `fragranceUnit`, and `cfmNeutralizer` — SwiftData and
+    /// CloudKit want a primitive here. Defaulted rather than optional so every
+    /// recipe stored before the kind existed reads back as soap.
+    var recipeKind: String = RecipeKind.soap.rawValue
+
+    /// The weight the recipe's percentages resolve against. Named for the soap
+    /// case, where the oils are the base, but a general recipe uses the same
+    /// field as its plain total weight — a second weight property would mean two
+    /// sources of truth and every calculator downstream having to pick.
     var totalOilWeight: Double = 0
     var oilWeightUnit: String = "g"
     var lyeType: String = "NaOH"

@@ -53,8 +53,12 @@ struct RecipeDetailView: View {
             }
 
             collectionsSection
-            oilsSection
-            additivesSection(batch: batch)
+            if model.makesSoap {
+                oilsSection
+                additivesSection(batch: batch)
+            } else {
+                ingredientsSection(batch: batch)
+            }
             fragrancesSection(batch: batch)
             calculatedAmountsSection
             soapPropertiesSection
@@ -201,6 +205,47 @@ struct RecipeDetailView: View {
         .listRowBackground(Color.cardBackground)
     }
 
+    /// The merged section a non-soap recipe shows in place of Oils and
+    /// Additives, mirroring the form's Ingredients tab — the same recipe should
+    /// not be split one way on the edit screen and another way here.
+    @ViewBuilder
+    private func ingredientsSection(batch: ProductCostBreakdown) -> some View {
+        let oilWeights = oilBatchWeightByDraftId
+        let additiveWeights = batchWeightLookup(batch.additives)
+        Section("Ingredients") {
+            if sortedOils.isEmpty && model.additiveDrafts.isEmpty {
+                Text("No ingredients added")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(sortedOils) { draft in
+                    amountRow(
+                        name: draft.ingredient.name,
+                        value: oilAmountText(draft, batchWeight: oilWeights[draft.id])
+                    )
+                }
+                ForEach(model.additiveDrafts) { draft in
+                    amountRow(
+                        name: draft.ingredient.name,
+                        value: ingredientAmountText(
+                            draft, batchWeight: additiveWeights[draft.ingredient.persistentModelID]
+                        )
+                    )
+                }
+            }
+        }
+        .listRowBackground(Color.cardBackground)
+    }
+
+    private func amountRow(name: String, value: String) -> some View {
+        HStack {
+            Text(name)
+            Spacer()
+            Text(value)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        }
+    }
+
     private func oilAmountText(_ draft: OilIngredientDraft, batchWeight: Double?) -> String {
         if model.weightUnitIsPercentage {
             let primary = model.formatPercentage(draft.amount) + "%"
@@ -270,7 +315,7 @@ struct RecipeDetailView: View {
 
     private func amountText(_ amount: Double, unit: String) -> String {
         let fmt = amount.formatted(.number.precision(.fractionLength(0...2)))
-        return "\(fmt) \(unit)"
+        return "\(fmt) \(model.unitLabel(for: unit))"
     }
 
     // MARK: - Calculated amounts
@@ -311,16 +356,39 @@ struct RecipeDetailView: View {
 
     // MARK: - Soap properties
 
+    /// A soap recipe gets the qualities chart and its INS/iodine indicators; a
+    /// non-soap one gets the blend's fatty acid composition instead, which is
+    /// the part of this that still means something without saponification.
+    @ViewBuilder
     private var soapPropertiesSection: some View {
-        let stats = RecipeStats(oilDrafts: model.oilDrafts)
-        return Section("Soap properties") {
-            if stats.hasOils {
-                SoapPropertiesSection(stats: stats)
+        let stats = RecipeStats(oilDrafts: model.oilDrafts, makesSoap: model.makesSoap)
+        if stats.makesSoap {
+            Section("Soap properties") {
+                if stats.hasOils {
+                    SoapPropertiesSection(stats: stats)
+                } else {
+                    Text("Add oils to see soap properties")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .listRowBackground(Color.cardBackground)
+        } else {
+            if stats.hasFattyAcidData {
+                Section("Fatty acid profile") {
+                    FattyAcidBreakdownRows(stats: stats)
+                }
+                .listRowBackground(Color.cardBackground)
+                Section(RecipeStatsCopy.totalsHeader) {
+                    FattyAcidTotalsRows(stats: stats, showsIodine: true)
+                }
+                .listRowBackground(Color.cardBackground)
             } else {
-                Text("Add oils to see soap properties")
-                    .foregroundStyle(.secondary)
+                Section("Fatty acid profile") {
+                    Text(RecipeStatsCopy.noFattyAcidData)
+                        .foregroundStyle(.secondary)
+                }
+                .listRowBackground(Color.cardBackground)
             }
         }
-        .listRowBackground(Color.cardBackground)
     }
 }

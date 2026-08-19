@@ -122,6 +122,19 @@ struct RecipeDuplicatorTests {
         #expect(copy.cfmNeutralizer == CFMNeutralizer.borax.rawValue)
         #expect(copy.fragranceUnit == FragranceUnit.percentOfFragrances.rawValue)
         #expect(copy.lyeIngredient?.name == "Sodium Hydroxide")
+        #expect(copy.recipeKind == RecipeKind.soap.rawValue)
+    }
+
+    @Test func duplicate_NonSoapRecipe_CopyStaysNonSoap() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+        recipe.recipeKind = RecipeKind.general.rawValue
+
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        try ctx.save()
+
+        #expect(copy.recipeKind == RecipeKind.general.rawValue)
     }
 
     @Test func duplicate_CopiesLineItemsAsNewRowsSharingTheIngredients() throws {

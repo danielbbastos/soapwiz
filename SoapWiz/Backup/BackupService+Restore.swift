@@ -118,6 +118,7 @@ extension BackupService {
         // and a thumbnail is a few milliseconds of work per photographed recipe.
         recipe.thumbnailData = dto.imageData.flatMap(ImageDownscaler.thumbnail(from:))
         recipe.weightUnit = dto.weightUnit
+        recipe.recipeKind = dto.recipeKind ?? RecipeKind.soap.rawValue
         recipe.totalOilWeight = dto.totalOilWeight
         recipe.oilWeightUnit = dto.oilWeightUnit
         recipe.lyeType = dto.lyeType

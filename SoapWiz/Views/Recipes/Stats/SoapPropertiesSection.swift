@@ -41,10 +41,10 @@ struct SoapPropertiesSection: View {
             .transition(.opacity.combined(with: .move(edge: .top)))
         }
 
-        if stats.hasOils {
+        if stats.hasOils, let ins = stats.ins {
             SoapPropertyIndicatorView(
                 title: "INS",
-                value: stats.ins,
+                value: ins,
                 recommended: SoapMetric.insRange,
                 scale: SoapMetric.insScale,
                 infoTitle: "INS",

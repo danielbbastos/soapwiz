@@ -27,7 +27,10 @@ struct RecipeRowSummary {
     /// How many oils the composition line names before it gives up and truncates.
     static let compositionLimit = 3
 
-    let soapType: SoapType
+    /// How the lye configuration classifies the soap, or `nil` for a non-soap
+    /// recipe: a candle has no lye to classify, so the row leads with a neutral
+    /// label instead of announcing itself as a solid bar.
+    let soapType: SoapType?
 
     /// Total oil weight of the batch, expressed in `displayWeightUnit`. Zero
     /// when the recipe has nothing to size yet, which the subtitle omits rather
@@ -58,14 +61,18 @@ struct RecipeRowSummary {
     /// the only part that distinguishes two recipes built from the same oils.
     let summaryDescription: String?
 
-    /// Soap type and batch size, e.g. "Solid bar soap · 1,000 g".
+    /// What the recipe makes: the soap type, or a neutral label when it isn't
+    /// soap.
+    var kindLabel: String { soapType?.label ?? "Non-soap product" }
+
+    /// Kind and batch size, e.g. "Solid bar soap · 1,000 g".
     ///
-    /// Drops to the soap type alone when there is no weight to state. A recipe
-    /// in percentage mode that has not been given a total oil weight would
+    /// Drops to the kind alone when there is no weight to state. A recipe in
+    /// percentage mode that has not been given a total oil weight would
     /// otherwise announce itself as "0 g".
     var subtitle: String {
-        guard oilWeight > 0 else { return soapType.label }
-        return "\(soapType.label) · \(formatted(oilWeight)) \(displayWeightUnit)"
+        guard oilWeight > 0 else { return kindLabel }
+        return "\(kindLabel) · \(formatted(oilWeight)) \(displayWeightUnit)"
     }
 
     /// The composition line — "Olive 70% · Coconut 20%" in percentage mode,
@@ -81,11 +88,13 @@ struct RecipeRowSummary {
     }
 
     init(recipe: Recipe) {
-        soapType = SoapType.classify(
-            useHybrid: recipe.useHybrid,
-            naohPercentage: recipe.naohPercentage,
-            lyeType: recipe.lyeType
-        )
+        soapType = RecipeKind.resolve(recipe.recipeKind) == .soap
+            ? SoapType.classify(
+                useHybrid: recipe.useHybrid,
+                naohPercentage: recipe.naohPercentage,
+                lyeType: recipe.lyeType
+              )
+            : nil
         let usesPercentages = recipe.weightUnit == RecipeRowSummary.percentageUnit
         sharesArePercentages = usesPercentages
         displayWeightUnit = usesPercentages ? recipe.oilWeightUnit : recipe.weightUnit

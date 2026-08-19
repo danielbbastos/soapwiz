@@ -22,6 +22,7 @@ enum RecipeDuplicator {
         copy.weightUnit = recipe.weightUnit
         copy.totalOilWeight = recipe.totalOilWeight
         copy.oilWeightUnit = recipe.oilWeightUnit
+        copy.recipeKind = recipe.recipeKind
         copy.lyeType = recipe.lyeType
         copy.lyePurity = recipe.lyePurity
         copy.waterParts = recipe.waterParts
