@@ -118,7 +118,7 @@ final class RecipeFormViewModel {
 
     /// Sum of the additive rows entered as a share of the total. Only these
     /// participate in the 100% scale — a gram or a count doesn't.
-    var percentageAdditiveTotal: Double {
+    private var percentageAdditiveTotal: Double {
         additiveDrafts
             .filter { $0.unit == RecipeUnitOptions.percentOfTotal }
             .reduce(0) { $0 + $1.amount }
@@ -169,19 +169,18 @@ final class RecipeFormViewModel {
     /// "% of total", so only that is rewritten; its own "% of oils", grams and
     /// millilitres are deliberate choices and survive a round trip through the
     /// other kind. Counts are never touched.
-    func normalizeAdditiveUnits() { reconcileAdditiveUnits() }
-
-    private func reconcileAdditiveUnits() {
+    ///
+    /// Called from the kind and measurement-unit setters, and once more at the
+    /// end of `load` — the drafts are assigned after both of those, so the
+    /// setters' own reconcile hasn't seen them.
+    func reconcileAdditiveUnits() {
         for index in additiveDrafts.indices {
             let unit = additiveDrafts[index].unit
             guard !RecipeUnitOptions.isCount(unit) else { continue }
-            if makesSoap {
-                if unit == RecipeUnitOptions.percentOfTotal {
-                    additiveDrafts[index].unit = defaultAdditiveUnit
-                }
-            } else if unit != defaultAdditiveUnit {
-                additiveDrafts[index].unit = defaultAdditiveUnit
-            }
+            let cannotExpress = makesSoap
+                ? unit == RecipeUnitOptions.percentOfTotal
+                : unit != defaultAdditiveUnit
+            if cannotExpress { additiveDrafts[index].unit = defaultAdditiveUnit }
         }
     }
 

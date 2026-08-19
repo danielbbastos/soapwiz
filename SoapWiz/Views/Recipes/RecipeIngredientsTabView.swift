@@ -122,34 +122,16 @@ struct RecipeIngredientsTabView: View {
             .expandingSectionHeader(RecipeFormSection.oils, expanded: oilsExpanded)) {
             if oilsExpanded {
                 HStack {
-                    Button {
-                        activePicker = .oils
-                    } label: {
-                        Label("Add oil", systemImage: "plus")
-                            .labelStyle(TightLabelStyle())
-                    }
+                    addButton("Add oil") { activePicker = .oils }
                     Spacer()
-                    if model.weightUnitIsPercentage && !model.oilDrafts.isEmpty {
-                        Text(model.totalPercentageText)
-                            .foregroundStyle(abs(model.totalPercentage - 100) < 0.1 ? Color.green : Color.red)
-                            .frame(width: 60, alignment: .trailing)
-                        Text("%")
-                            .foregroundStyle(.secondary)
-                    }
+                    percentageTotal
                 }
                 .expandingSectionEnd(RecipeFormSection.oils, if: model.oilDrafts.isEmpty)
                 ForEach(model.oilDrafts) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                        Spacer()
-                        NumericTextField(prompt: "0", value: Binding(
-                            get: { draft.amount },
-                            set: { model.userEdited(id: draft.id, amount: $0) }
-                        ))
-                        Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
-                            .foregroundStyle(.secondary)
-                    }
-                    .expandingSectionEnd(RecipeFormSection.oils, if: draft.id == model.oilDrafts.last?.id)
+                    baseRow(draft)
+                        .expandingSectionEnd(
+                            RecipeFormSection.oils, if: draft.id == model.oilDrafts.last?.id
+                        )
                 }
                 .onDelete { model.removeOil(at: $0) }
             }
@@ -160,49 +142,30 @@ struct RecipeIngredientsTabView: View {
 
     /// The merged section a non-soap recipe shows in place of Oils and
     /// Additives. The split is a soap distinction — a candle's wax and its
-    /// stearic acid are both just ingredients — so the header goes away, while
-    /// the rows keep their own entry style and their stored role, which is what
-    /// makes switching back to soap lossless.
+    /// stearic acid are both just ingredients — so the two headers become one.
+    ///
+    /// The rows keep their stored role underneath, which is what lets a switch
+    /// back to soap restore the two sections intact. Base rows still carry the
+    /// redistribution that holds the formula at 100%; the rest do not.
     private var ingredientsSection: some View {
         Section(header: CollapsibleSectionHeader(title: "Ingredients", expanded: $ingredientsExpanded)
             .expandingSectionHeader(RecipeFormSection.ingredients, expanded: ingredientsExpanded)) {
             if ingredientsExpanded {
                 HStack {
-                    Button {
-                        activePicker = .ingredients
-                    } label: {
-                        Label("Add ingredient", systemImage: "plus")
-                            .labelStyle(TightLabelStyle())
-                    }
+                    addButton("Add ingredient") { activePicker = .ingredients }
                     Spacer()
-                    if model.weightUnitIsPercentage && !model.oilDrafts.isEmpty {
-                        Text(model.totalPercentageText)
-                            .foregroundStyle(abs(model.totalPercentage - 100) < 0.1 ? Color.green : Color.red)
-                            .frame(width: 60, alignment: .trailing)
-                        Text("%")
-                            .foregroundStyle(.secondary)
-                    }
+                    percentageTotal
                 }
                 .expandingSectionEnd(
                     RecipeFormSection.ingredients,
                     if: model.oilDrafts.isEmpty && model.additiveDrafts.isEmpty
                 )
                 ForEach(model.oilDrafts) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                            .lineLimit(1)
-                        Spacer()
-                        NumericTextField(prompt: "0", value: Binding(
-                            get: { draft.amount },
-                            set: { model.userEdited(id: draft.id, amount: $0) }
-                        ))
-                        Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
-                            .foregroundStyle(.secondary)
-                    }
-                    .expandingSectionEnd(
-                        RecipeFormSection.ingredients,
-                        if: model.additiveDrafts.isEmpty && draft.id == model.oilDrafts.last?.id
-                    )
+                    baseRow(draft)
+                        .expandingSectionEnd(
+                            RecipeFormSection.ingredients,
+                            if: model.additiveDrafts.isEmpty && draft.id == model.oilDrafts.last?.id
+                        )
                 }
                 .onDelete { model.removeOil(at: $0) }
                 ForEach(model.additiveDrafts) { draft in
@@ -230,19 +193,53 @@ struct RecipeIngredientsTabView: View {
         }
     }
 
+    // MARK: - Shared rows
+
+    private func addButton(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(title, systemImage: "plus")
+                .labelStyle(TightLabelStyle())
+        }
+    }
+
+    /// The running total of the percentage scale, green once it reaches 100.
+    /// Shown only in percentage mode, and only once there is something to total.
+    @ViewBuilder
+    private var percentageTotal: some View {
+        if model.weightUnitIsPercentage && !model.oilDrafts.isEmpty {
+            Text(model.totalPercentageText)
+                .foregroundStyle(abs(model.totalPercentage - 100) < 0.1 ? Color.green : Color.red)
+                .frame(width: 60, alignment: .trailing)
+            Text("%")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// A base-ingredient row: the amount redistributes against the other
+    /// unlocked base rows to hold the scale at 100%. The caller tags it for its
+    /// own section.
+    private func baseRow(_ draft: OilIngredientDraft) -> some View {
+        HStack {
+            Text(draft.ingredient.name)
+                .lineLimit(1)
+            Spacer()
+            NumericTextField(prompt: "0", value: Binding(
+                get: { draft.amount },
+                set: { model.userEdited(id: draft.id, amount: $0) }
+            ))
+            Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     // MARK: - Additives
 
     private var additivesSection: some View {
         Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.additives, expanded: $additivesExpanded)
             .expandingSectionHeader(RecipeFormSection.additives, expanded: additivesExpanded)) {
             if additivesExpanded {
-                Button {
-                    activePicker = .additives
-                } label: {
-                    Label("Add additive", systemImage: "plus")
-                        .labelStyle(TightLabelStyle())
-                }
-                .expandingSectionEnd(RecipeFormSection.additives, if: model.additiveDrafts.isEmpty)
+                addButton("Add additive") { activePicker = .additives }
+                    .expandingSectionEnd(RecipeFormSection.additives, if: model.additiveDrafts.isEmpty)
                 ForEach(model.additiveDrafts) { draft in
                     HStack {
                         Text(draft.ingredient.name)

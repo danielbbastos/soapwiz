@@ -57,11 +57,9 @@ extension RecipeFormViewModel {
             productDrafts = [.seededPlaceholder()]
         }
 
-        // The drafts are assigned after the kind and the measurement unit, so
-        // the reconcile their setters would have run hasn't seen them. Run it
-        // here instead, before the form captures its clean baseline, so a recipe
-        // stored under one kind opens coherent under the one it now has.
-        normalizeAdditiveUnits()
+        // Before the form captures its clean baseline, so a recipe stored under
+        // one kind opens coherent under the one it now has.
+        reconcileAdditiveUnits()
     }
 
     @discardableResult
