@@ -351,6 +351,93 @@ struct RecipeGeneralUnitTests: RecipeFormTestHelpers {
         #expect(model.displayedAmount(for: row, usesEnteredUnit: true).unit == RecipeUnitOptions.count)
     }
 
+    // MARK: - Rebalancing a saved recipe
+
+    /// The regression: `load` locks every base row, and the old equal-share
+    /// redistribution bailed out when nothing was unlocked — so a reopened
+    /// recipe drifted past 100% with no correction.
+    @Test func savedRecipe_AdditivePercentage_StillRebalancesTheBaseRows() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeGeneralModel(ctx)
+        model.addAdditive(makeIngredient(ctx, name: "Activated Charcoal"))
+        let saved = model.save(context: ctx)
+
+        let reloaded = RecipeFormViewModel()
+        reloaded.load(from: saved)
+        reloaded.updateAdditive(id: reloaded.additiveDrafts[0].id, amount: 5)
+
+        #expect(reloaded.oilDrafts[0].amount == 95)
+        #expect(reloaded.totalPercentage == 100)
+    }
+
+    /// Proportional, not equal-share: making room for an additive must not
+    /// flatten the blend's ratios.
+    @Test func rebalance_KeepsTheBaseRowsInProportion() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = RecipeFormViewModel()
+        model.isNonSoapProduct = true
+        model.weightUnit = "%"
+        model.totalOilWeight = 1000
+        model.addOil(makeIngredient(ctx, name: "Apricot", category: IngredientCategory.Name.oils))
+        model.addOil(makeIngredient(ctx, name: "Coconut", category: IngredientCategory.Name.oils))
+        model.userEdited(id: model.oilDrafts[0].id, amount: 60)
+        model.userEdited(id: model.oilDrafts[1].id, amount: 40)
+
+        model.addAdditive(makeIngredient(ctx, name: "Activated Charcoal"))
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 10)
+
+        #expect(model.oilDrafts[0].amount == 54)
+        #expect(model.oilDrafts[1].amount == 36)
+        #expect(model.totalPercentage == 100)
+    }
+
+    @Test func rebalance_RemovingTheAdditive_ReturnsTheBaseRowsToFull() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeGeneralModel(ctx)
+        model.addAdditive(makeIngredient(ctx, name: "Activated Charcoal"))
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 20)
+        #expect(model.oilDrafts[0].amount == 80)
+
+        model.removeAdditive(at: IndexSet(integer: 0))
+
+        #expect(model.oilDrafts[0].amount == 100)
+    }
+
+    @Test func rebalance_AdditiveOverTheWholeScale_ClampsTheBaseRowsAtZero() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeGeneralModel(ctx)
+        model.addAdditive(makeIngredient(ctx, name: "Activated Charcoal"))
+
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 140)
+
+        #expect(model.oilDrafts[0].amount == 0)
+    }
+
+    @Test func rebalance_CountAndGramRows_LeaveTheBaseRowsAlone() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeGeneralModel(ctx)
+        model.addAdditive(makeIngredient(ctx, name: "Glass Jar", unit: RecipeUnitOptions.count))
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 3)
+
+        #expect(model.oilDrafts[0].amount == 100)
+    }
+
+    @Test func rebalance_SoapRecipe_IsUntouched() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeGeneralModel(ctx)
+        model.isNonSoapProduct = false
+        model.addAdditive(makeIngredient(ctx, name: "Sodium Lactate"))
+        model.updateAdditive(id: model.additiveDrafts[0].id, amount: 5, unit: "% of oils")
+
+        #expect(model.oilDrafts[0].amount == 100)
+    }
+
     // MARK: - Calculated amounts
 
     /// The regression behind this: with additives sharing the 100% scale, a

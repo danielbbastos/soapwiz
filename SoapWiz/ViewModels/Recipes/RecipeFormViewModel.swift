@@ -389,12 +389,34 @@ final class RecipeFormViewModel {
         rebalanceForSharedPercentageScale()
     }
 
-    /// Re-runs the base-row redistribution after an additive changed, so the one
-    /// 100% scale a non-soap recipe uses stays at 100. A soap recipe's additives
-    /// sit outside the oil total, so nothing needs rebalancing there.
+    /// Rescales the base rows after an additive changed, so they and the
+    /// percentage additives still total 100%. A soap recipe's additives sit
+    /// outside the oil total, so nothing needs rebalancing there.
+    ///
+    /// Proportional, rather than the equal-share redistribution `addOil` uses:
+    /// the base rows are a formula whose ratios the maker chose, and making room
+    /// for 5% of an additive shouldn't flatten a 60/40 blend into 47.5/47.5.
+    /// Scaling also works when every base row is locked, which is how they all
+    /// come back from `load` — the equal-share path bails out there, which left
+    /// a reopened recipe totalling more than 100.
     private func rebalanceForSharedPercentageScale() {
-        guard !makesSoap, weightUnitIsPercentage else { return }
-        redistributePercentages()
+        guard !makesSoap, weightUnitIsPercentage, !oilDrafts.isEmpty else { return }
+        let target = max(0, 100 - percentageAdditiveTotal)
+        let baseTotal = oilDrafts.reduce(0) { $0 + $1.amount }
+        guard baseTotal > 0, abs(baseTotal - target) > 0.0001 else { return }
+
+        // The last row takes the remainder rather than its own scaled value, so
+        // rounding each row to a tenth can't leave the formula off 100.
+        let factor = target / baseTotal
+        var assigned = 0.0
+        for index in oilDrafts.indices.dropLast() {
+            let scaled = (oilDrafts[index].amount * factor * 10).rounded() / 10
+            oilDrafts[index].amount = scaled
+            assigned += scaled
+        }
+        if let last = oilDrafts.indices.last {
+            oilDrafts[last].amount = max(0, target - assigned)
+        }
     }
 
     private var hasSeeded = false

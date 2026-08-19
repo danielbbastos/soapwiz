@@ -53,8 +53,12 @@ struct RecipeDetailView: View {
             }
 
             collectionsSection
-            oilsSection
-            additivesSection(batch: batch)
+            if model.makesSoap {
+                oilsSection
+                additivesSection(batch: batch)
+            } else {
+                ingredientsSection(batch: batch)
+            }
             fragrancesSection(batch: batch)
             calculatedAmountsSection
             soapPropertiesSection
@@ -201,6 +205,47 @@ struct RecipeDetailView: View {
         .listRowBackground(Color.cardBackground)
     }
 
+    /// The merged section a non-soap recipe shows in place of Oils and
+    /// Additives, mirroring the form's Ingredients tab — the same recipe should
+    /// not be split one way on the edit screen and another way here.
+    @ViewBuilder
+    private func ingredientsSection(batch: ProductCostBreakdown) -> some View {
+        let oilWeights = oilBatchWeightByDraftId
+        let additiveWeights = batchWeightLookup(batch.additives)
+        Section("Ingredients") {
+            if sortedOils.isEmpty && model.additiveDrafts.isEmpty {
+                Text("No ingredients added")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(sortedOils) { draft in
+                    amountRow(
+                        name: draft.ingredient.name,
+                        value: oilAmountText(draft, batchWeight: oilWeights[draft.id])
+                    )
+                }
+                ForEach(model.additiveDrafts) { draft in
+                    amountRow(
+                        name: draft.ingredient.name,
+                        value: ingredientAmountText(
+                            draft, batchWeight: additiveWeights[draft.ingredient.persistentModelID]
+                        )
+                    )
+                }
+            }
+        }
+        .listRowBackground(Color.cardBackground)
+    }
+
+    private func amountRow(name: String, value: String) -> some View {
+        HStack {
+            Text(name)
+            Spacer()
+            Text(value)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+        }
+    }
+
     private func oilAmountText(_ draft: OilIngredientDraft, batchWeight: Double?) -> String {
         if model.weightUnitIsPercentage {
             let primary = model.formatPercentage(draft.amount) + "%"
@@ -270,7 +315,7 @@ struct RecipeDetailView: View {
 
     private func amountText(_ amount: Double, unit: String) -> String {
         let fmt = amount.formatted(.number.precision(.fractionLength(0...2)))
-        return "\(fmt) \(unit)"
+        return "\(fmt) \(model.unitLabel(for: unit))"
     }
 
     // MARK: - Calculated amounts
