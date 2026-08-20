@@ -291,7 +291,7 @@ struct RecipeIngredientsTabView: View {
                         get: { model.fragranceUnit },
                         set: { model.setFragranceUnit($0) }
                     )) {
-                        ForEach(FragranceUnit.allCases, id: \.self) { Text($0.rawValue) }
+                        ForEach(model.availableFragranceUnits, id: \.self) { Text($0.rawValue) }
                     }
                     .labelsHidden()
                     .pickerStyle(.menu)

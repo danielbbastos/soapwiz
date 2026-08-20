@@ -24,6 +24,7 @@ final class RecipeFormViewModel {
         didSet {
             guard recipeKind != oldValue else { return }
             reconcileAdditiveUnits()
+            reconcileFragranceUnit()
         }
     }
     var totalOilWeight: Double = 1000

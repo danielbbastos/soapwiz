@@ -60,6 +60,7 @@ extension RecipeFormViewModel {
         // Before the form captures its clean baseline, so a recipe stored under
         // one kind opens coherent under the one it now has.
         reconcileAdditiveUnits()
+        reconcileFragranceUnit()
     }
 
     @discardableResult

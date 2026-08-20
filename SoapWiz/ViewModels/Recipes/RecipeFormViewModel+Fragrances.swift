@@ -47,6 +47,36 @@ extension RecipeFormViewModel {
         return fragranceDrafts.reduce(0) { $0 + $1.amount }
     }
 
+    /// The fragrance units this recipe's kind can express.
+    ///
+    /// `% of batch` and `% of liquids` both resolve against the lye and the
+    /// water, which a general recipe doesn't have. Left selectable, they don't
+    /// merely read oddly — the row resolves to nothing, drops out of the cost
+    /// breakdown, and is never deducted at batch creation, so the recipe lists
+    /// a fragrance the batch silently doesn't consume.
+    var availableFragranceUnits: [FragranceUnit] {
+        guard !makesSoap else { return FragranceUnit.allCases }
+        return FragranceUnit.allCases.filter { $0 != .percentOfBatch && $0 != .percentOfLiquids }
+    }
+
+    /// Rewrites a fragrance unit the current kind can't express, leaving the
+    /// rows' amounts alone.
+    ///
+    /// Deliberately not `setFragranceUnit`: that re-expresses the amounts for
+    /// the new basis, which would rewrite the blend the user typed as a side
+    /// effect of flipping the kind. `% of oils` is the nearest surviving unit
+    /// and keeps the numbers reading as percentages.
+    ///
+    /// Called from the kind setter and the end of `load`, alongside
+    /// `reconcileAdditiveUnits`.
+    func reconcileFragranceUnit() {
+        guard !availableFragranceUnits.contains(fragranceUnit) else { return }
+        fragranceUnit = .percentOfOils
+        for idx in fragranceDrafts.indices {
+            fragranceDrafts[idx].unit = fragranceUnit.rawValue
+        }
+    }
+
     // MARK: - Mutation
 
     func addFragrance(_ ingredient: Ingredient) {
