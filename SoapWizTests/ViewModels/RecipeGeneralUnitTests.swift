@@ -203,4 +203,67 @@ struct RecipeGeneralUnitTests: RecipeFormTestHelpers {
 
         #expect(model.additiveDrafts[0].unit == RecipeUnitOptions.count)
     }
+
+    // MARK: - Fragrance units
+
+    @Test func availableFragranceUnits_SoapRecipe_OffersEveryUnit() {
+        let model = RecipeFormViewModel()
+
+        #expect(model.availableFragranceUnits == FragranceUnit.allCases)
+    }
+
+    /// Both resolve against the lye and the water, which a general recipe has
+    /// none of.
+    @Test func availableFragranceUnits_NonSoapRecipe_DropsTheLyeBasedUnits() {
+        let model = RecipeFormViewModel()
+        model.isNonSoapProduct = true
+
+        #expect(!model.availableFragranceUnits.contains(.percentOfBatch))
+        #expect(!model.availableFragranceUnits.contains(.percentOfLiquids))
+        #expect(model.availableFragranceUnits.contains(.percentOfFragrances))
+        #expect(model.availableFragranceUnits.contains(.grams))
+    }
+
+    @Test func switchingToNonSoap_RewritesAFragranceUnitItCannotExpress() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeGeneralModel(ctx)
+        model.isNonSoapProduct = false
+        model.addFragrance(makeIngredient(ctx, name: "Lavender EO", category: IngredientCategory.Name.fragrances))
+        model.setFragranceUnit(.percentOfBatch)
+
+        model.isNonSoapProduct = true
+
+        #expect(model.fragranceUnit == .percentOfOils)
+        #expect(model.fragranceDrafts.allSatisfy { $0.unit == "% of oils" })
+    }
+
+    /// Reconciling preserves the entered numbers — unlike `setFragranceUnit`,
+    /// which re-expresses them for the new basis.
+    @Test func switchingToNonSoap_KeepsTheFragranceAmounts() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeGeneralModel(ctx)
+        model.isNonSoapProduct = false
+        model.addFragrance(makeIngredient(ctx, name: "Lavender EO", category: IngredientCategory.Name.fragrances))
+        model.setFragranceUnit(.percentOfBatch)
+        model.userEditedFragrance(id: model.fragranceDrafts[0].id, amount: 4)
+
+        model.isNonSoapProduct = true
+
+        #expect(model.fragranceDrafts[0].amount == 4)
+    }
+
+    @Test func switchingToNonSoap_LeavesAnExpressibleFragranceUnitAlone() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeGeneralModel(ctx)
+        model.isNonSoapProduct = false
+        model.addFragrance(makeIngredient(ctx, name: "Lavender EO", category: IngredientCategory.Name.fragrances))
+        model.setFragranceUnit(.grams)
+
+        model.isNonSoapProduct = true
+
+        #expect(model.fragranceUnit == .grams)
+    }
 }
