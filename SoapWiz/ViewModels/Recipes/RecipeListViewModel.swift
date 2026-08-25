@@ -76,7 +76,7 @@ final class RecipeListViewModel {
     }
 
     func copyToPasteboard(_ recipe: Recipe) {
-        UIPasteboard.general.string = RecipeTextExporter.text(for: recipe)
+        UIPasteboard.general.string = RecipeTextExporter.clipboardText(for: recipe)
     }
 
     /// Animated so the row's move to or from the pinned group reads as a move

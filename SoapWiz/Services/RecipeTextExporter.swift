@@ -11,6 +11,25 @@ import SwiftData
 @MainActor
 enum RecipeTextExporter {
 
+    /// What "Copy Recipe" actually puts on the clipboard: the readable text,
+    /// then the exact payload on one final line.
+    ///
+    /// One action serving two audiences. A person pastes this into a message and
+    /// reads the recipe, ignoring the last line; SoapWiz pastes it into the
+    /// importer and reads the last line, ignoring the rest. Keeping them in one
+    /// clipboard entry is what stops the user having to pick the right copy
+    /// command, which they would sometimes get wrong.
+    ///
+    /// The payload is appended, never substituted: if it can't be built the
+    /// readable text still goes to the clipboard on its own.
+    static func clipboardText(for recipe: Recipe) -> String {
+        let readable = text(for: recipe)
+        guard let marker = RecipeTransferMarker.line(for: RecipeTransferEncoder.payload(for: [recipe])) else {
+            return readable
+        }
+        return "\(readable)\n\n\(marker)"
+    }
+
     static func text(for recipe: Recipe) -> String {
         let model = RecipeFormViewModel()
         model.load(from: recipe)
