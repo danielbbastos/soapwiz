@@ -19,6 +19,12 @@ struct RecipeDetailView: View {
     /// photograph or for the app's own background.
     @State private var photoCoversNavigationBar = false
 
+    /// Set when the user taps Share; presents the share sheet.
+    @State private var exportFile: ExportFile?
+
+    /// Shown when the recipe couldn't be written out.
+    @State private var exportErrorMessage: String?
+
     /// The unit the summaries (calculated amounts + cost breakdown) are shown in:
     /// the recipe's oil weight unit, or grams when the user toggles it.
     private var displayUnit: String { showInGrams ? "g" : model.displayWeightUnit }
@@ -88,11 +94,35 @@ struct RecipeDetailView: View {
             .padding(.bottom, 8)
         }
         .toolbar {
+            // Share sits beside Edit rather than in a menu behind it: sending a
+            // recipe to someone is a thing people do often enough that burying
+            // it costs more than the toolbar space it takes.
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    share()
+                } label: {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: RecipeEditRoute(recipe: recipe)) {
                     Text("Edit")
                 }
             }
+        }
+        .sheet(item: $exportFile) { file in
+            ShareSheet(items: [file.url])
+        }
+        .alert(
+            "Couldn’t share",
+            isPresented: Binding(
+                get: { exportErrorMessage != nil },
+                set: { if !$0 { exportErrorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { exportErrorMessage = nil }
+        } message: {
+            Text(exportErrorMessage ?? "")
         }
         .sheet(isPresented: $showCreateBatch) {
             CreateBatchSheet(recipe: recipe, lyeCandidates: lyeIngredients) { batch in
@@ -118,6 +148,15 @@ struct RecipeDetailView: View {
     private func reload() {
         model.load(from: recipe)
         model.resolveDefaultLyeIngredient(from: lyeIngredients)
+    }
+
+    /// Writes the recipe out and hands it to the share sheet.
+    private func share() {
+        do {
+            exportFile = try RecipeTransferExport.file(for: [recipe])
+        } catch {
+            exportErrorMessage = "Couldn’t prepare this recipe for sharing. Please try again."
+        }
     }
 
     // MARK: - Photo
