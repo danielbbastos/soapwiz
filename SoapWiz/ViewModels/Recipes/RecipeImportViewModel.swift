@@ -5,15 +5,23 @@ enum RecipeImportPhase: Equatable {
     case input
     case extracting
     case review
+
+    /// An exact payload was read and is waiting to be confirmed. Distinct from
+    /// `.review` because the two screens show different things and confirming
+    /// them does different things: this one writes to the library.
+    case exactReview
     case failed(RecipeImportError)
 }
 
-/// Drives the import flow: paste, extract, reconcile, review.
+/// Drives the import flow, whichever way a recipe arrives.
 ///
-/// Nothing here touches the store. The only write the whole flow performs is
-/// creating an `Ingredient` the user explicitly asks for, and that goes through
-/// the normal ingredient form. The recipe itself isn't written until the user
-/// presses Save on the recipe form afterwards.
+/// Two paths meet here. A `.soapwizrecipe` file, or text carrying the marker
+/// "Copy Recipe" appends, is decoded exactly and needs no language model at all.
+/// Anything else is read by the on-device model, as before. Which path applies
+/// is decided by looking, not by asking the user to declare it.
+///
+/// Nothing here writes to the store. `RecipeTransferImporter` does that, from
+/// the plan this builds, once the user confirms.
 @MainActor
 @Observable
 final class RecipeImportViewModel {
@@ -23,6 +31,9 @@ final class RecipeImportViewModel {
     private(set) var rows: [RecipeImportRow] = []
     private(set) var extractedDraft: RecipeImportDraft?
 
+    /// What an exact payload would do, once one has been read.
+    private(set) var transferPlan: RecipeTransferPlan?
+
     /// The draft the review screen renders, empty before anything is extracted
     /// so the view has no optional to unwrap on every row.
     var reviewedDraft: RecipeImportDraft { extractedDraft ?? RecipeImportDraft() }
@@ -30,8 +41,25 @@ final class RecipeImportViewModel {
     @ObservationIgnored
     private let extractor: RecipeDraftExtracting?
 
+    /// Whether the language model can actually run, as opposed to whether an
+    /// extractor object exists.
+    ///
+    /// The two are not the same: `FoundationModelsRecipeExtractor` is
+    /// constructed on any iOS 26 device and only fails when asked to do
+    /// something, so a non-nil extractor says nothing about Apple Intelligence
+    /// being switched on. `RecipeImportAvailability` is the honest answer, and
+    /// the one the FAB used to gate the whole feature on.
+    @ObservationIgnored
+    private let modelIsUsable: Bool
+
     init(extractor: RecipeDraftExtracting? = nil) {
-        self.extractor = extractor ?? Self.defaultExtractor()
+        if let extractor {
+            self.extractor = extractor
+            modelIsUsable = true
+        } else {
+            self.extractor = Self.defaultExtractor()
+            modelIsUsable = RecipeImportAvailability.current.isAvailable
+        }
     }
 
     private static func defaultExtractor() -> RecipeDraftExtracting? {
@@ -46,6 +74,20 @@ final class RecipeImportViewModel {
 
     var canExtract: Bool {
         !rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && phase != .extracting
+    }
+
+    /// Whether the on-device model can be used at all. The exact path needs it
+    /// for nothing, so it decides what the input screen offers rather than
+    /// whether the screen exists.
+    var canReadFreeText: Bool { modelIsUsable }
+
+    /// Whether the text in the box is an exact payload.
+    ///
+    /// Lets the input screen say what will happen before the user commits to it:
+    /// pasting a SoapWiz recipe is about to be read exactly, not interpreted.
+    var textCarriesExactPayload: Bool {
+        if case .payload = RecipeTransferMarker.scan(rawText) { return true }
+        return false
     }
 
     var isExtracting: Bool { phase == .extracting }
@@ -76,10 +118,73 @@ final class RecipeImportViewModel {
         return PreparedRecipeImport(draft: extractedDraft, rows: rows)
     }
 
+    // MARK: - Exact payloads
+
+    /// Reads a `.soapwizrecipe` file the user picked.
+    ///
+    /// A file has no readable text to fall back to, so every failure is
+    /// reported rather than quietly retried another way.
+    func openFile(
+        at url: URL,
+        inventory: [Ingredient],
+        collections: [RecipeCollection]
+    ) {
+        let didScope = url.startAccessingSecurityScopedResource()
+        defer { if didScope { url.stopAccessingSecurityScopedResource() } }
+
+        do {
+            let payload = try RecipeTransferDecoder.payload(fromFile: try Data(contentsOf: url))
+            adopt(payload, inventory: inventory, collections: collections)
+        } catch let error as RecipeTransferError {
+            phase = .failed(.failed(error.errorDescription ?? "That file couldn’t be read."))
+        } catch {
+            phase = .failed(.failed("That file couldn’t be opened."))
+        }
+    }
+
+    /// Whether the pasted text carries an exact payload, and adopting it if so.
+    ///
+    /// Returns `false` when there is nothing to adopt, so the caller falls
+    /// through to the language model. A payload from a newer version is the one
+    /// case that both returns `true` and refuses: the user has a real recipe in
+    /// hand and needs to know an app update stands between them, rather than
+    /// watching the model make a worse job of text it was never meant to read.
+    @discardableResult
+    func adoptPayloadFromText(inventory: [Ingredient], collections: [RecipeCollection]) -> Bool {
+        switch RecipeTransferMarker.scan(rawText) {
+        case .none:
+            return false
+        case .payload(let payload):
+            adopt(payload, inventory: inventory, collections: collections)
+            return true
+        case .rejected(let error):
+            phase = .failed(.failed(error.errorDescription ?? "That recipe couldn’t be read."))
+            return true
+        }
+    }
+
+    private func adopt(
+        _ payload: RecipeTransferData,
+        inventory: [Ingredient],
+        collections: [RecipeCollection]
+    ) {
+        let plan = RecipeTransferPlan(payload: payload, inventory: inventory, collections: collections)
+        guard !plan.isEmpty else {
+            phase = .failed(.nothingRecognised)
+            return
+        }
+        transferPlan = plan
+        phase = .exactReview
+    }
+
     // MARK: - Extraction
 
-    func extract(inventory: [Ingredient]) async {
-        guard let extractor else {
+    func extract(inventory: [Ingredient], collections: [RecipeCollection] = []) async {
+        // Looked at before the model is consulted, and before availability is
+        // even checked: an exact payload needs neither.
+        guard !adoptPayloadFromText(inventory: inventory, collections: collections) else { return }
+
+        guard let extractor, modelIsUsable else {
             phase = .failed(.modelUnavailable(RecipeImportAvailability.current.explanation))
             return
         }
@@ -156,6 +261,25 @@ final class RecipeImportViewModel {
 
     func returnToInput() {
         phase = .input
+        transferPlan = nil
+    }
+
+    /// Writes the reviewed payload into the library.
+    ///
+    /// Returns the recipes created, or `nil` if the save failed. The context is
+    /// rolled back on failure so a half-written import — recipes without their
+    /// line items, ingredients nothing references — never survives.
+    func confirmExactImport(context: ModelContext, categories: [IngredientCategory]) -> [Recipe]? {
+        guard let transferPlan else { return nil }
+        let recipes = RecipeTransferImporter.apply(transferPlan, into: context, categories: categories)
+        do {
+            try context.save()
+            return recipes
+        } catch {
+            context.rollback()
+            phase = .failed(.failed("Those recipes couldn’t be saved. Please try again."))
+            return nil
+        }
     }
 
     private func setResolution(_ resolution: RecipeImportResolution, for rowID: UUID) {

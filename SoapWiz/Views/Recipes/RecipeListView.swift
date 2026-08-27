@@ -207,9 +207,19 @@ struct RecipeListView: View {
                     })
                 }
                 .sheet(isPresented: $showingImport) {
-                    RecipeImportView { prepared in
-                        navigationPath.append(prepared)
-                    }
+                    RecipeImportView(
+                        onConfirm: { prepared in
+                            navigationPath.append(prepared)
+                        },
+                        // An exact import is already saved by the time this
+                        // runs. A single recipe opens so the user can see what
+                        // arrived; a batch of them stays in the list, which is
+                        // where fifteen new recipes are actually reviewed.
+                        onImported: { recipes in
+                            guard recipes.count == 1, let only = recipes.first else { return }
+                            navigationPath.append(only)
+                        }
+                    )
                 }
                 .sheet(item: $model.filingRecipe) { recipe in
                     RecipeCollectionsPickerSheet(recipe: recipe) { collection in
@@ -217,9 +227,10 @@ struct RecipeListView: View {
                     }
                 }
 
-                // Import is offered only when the on-device model can actually
-                // run it. A feature that fails on tap is worse than one that
-                // isn't there.
+                // Import is always offered now. It used to be hidden unless
+                // Apple Intelligence could run, because reading someone's prose
+                // was the only way in; opening a shared file or pasting a
+                // copied recipe is plain decoding and works on every device.
                 //
                 // Hidden while picking recipes to share, the same way it hides
                 // in edit mode: the screen is doing one job, and a New Recipe
@@ -227,9 +238,11 @@ struct RecipeListView: View {
                 if !model.isSelecting {
                     ExpandableFloatingActionButton(
                         primaryAction: { navigationPath.append(true) },
-                        secondaryActions: RecipeImportAvailability.current.isAvailable
-                            ? [FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") { showingImport = true }]
-                            : []
+                        secondaryActions: [
+                            FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") {
+                                showingImport = true
+                            }
+                        ]
                     )
                 }
             }
