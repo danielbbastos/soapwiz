@@ -41,7 +41,13 @@ struct RecipeTransferRoundTripTests {
     ) throws -> [Recipe] {
         let inventory = try destination.context.fetch(FetchDescriptor<Ingredient>())
         let categories = try destination.context.fetch(FetchDescriptor<IngredientCategory>())
-        let plan = RecipeTransferPlan(payload: payload, inventory: inventory, collections: collections)
+        let existing = try destination.context.fetch(FetchDescriptor<Recipe>())
+        let plan = RecipeTransferPlan(
+            payload: payload,
+            inventory: inventory,
+            collections: collections,
+            recipes: existing
+        )
         let imported = RecipeTransferImporter.apply(plan, into: destination.context, categories: categories)
         destination.context.processPendingChanges()
         return imported
@@ -307,6 +313,47 @@ struct RecipeTransferRoundTripTests {
                 == IngredientCategory.Name.fragrances
         )
         #expect(created.first { $0.name == "Sodium Lactate" }?.category?.name == IngredientCategory.Name.additives)
+    }
+
+    // MARK: - Names
+
+    /// Importing a recipe you already have must not leave two rows the user
+    /// can't tell apart. The saved recipe carries the suffixed name, not just
+    /// the review screen.
+    @Test func roundTrip_NameAlreadyInTheLibrary_SavesUnderACopyName() throws {
+        let mine = destination.recipe(named: "Lavender Bar")
+        destination.addOil(destination.oil("Olive Oil"), percentage: 100, to: mine)
+        destination.context.processPendingChanges()
+
+        let imported = try #require(try roundTrip([source.populatedRecipe(named: "Lavender Bar")]).first)
+
+        #expect(imported.name == "Lavender Bar (copy)")
+        #expect(mine.name == "Lavender Bar")
+        let names = try destination.context.fetch(FetchDescriptor<Recipe>()).map(\.name).sorted()
+        #expect(names == ["Lavender Bar", "Lavender Bar (copy)"])
+    }
+
+    @Test func roundTrip_NameNotInTheLibrary_KeepsItsOwnName() throws {
+        let imported = try #require(try roundTrip([source.populatedRecipe(named: "Brand New Bar")]).first)
+
+        #expect(imported.name == "Brand New Bar")
+    }
+
+    /// Everything but the name still comes through: the rename must not be a
+    /// different recipe, only a differently-labelled one.
+    @Test func roundTrip_RenamedRecipe_KeepsEveryOtherField() throws {
+        let mine = destination.recipe(named: "Round Trip Bar")
+        destination.context.processPendingChanges()
+        let original = source.populatedRecipe(named: "Round Trip Bar")
+
+        let imported = try #require(try roundTrip([original]).first)
+
+        #expect(imported.name == "Round Trip Bar (copy)")
+        #expect(mine.name == "Round Trip Bar")
+        #expect(imported.desc == original.desc)
+        #expect(imported.totalOilWeight == original.totalOilWeight)
+        #expect(imported.useHybrid == original.useHybrid)
+        #expect(imported.ingredients.count == original.ingredients.count)
     }
 
     // MARK: - Collections

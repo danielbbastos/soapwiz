@@ -19,8 +19,8 @@ enum RecipeTransferImporter {
     @discardableResult
     static func apply(_ plan: RecipeTransferPlan, into context: ModelContext, categories: [IngredientCategory]) -> [Recipe] {
         let resolved = resolveIngredients(plan, into: context, categories: categories)
-        return plan.payload.recipes.map { incoming in
-            recipe(from: incoming, plan: plan, ingredients: resolved, into: context)
+        return plan.recipeSummaries.map { summary in
+            recipe(from: summary, plan: plan, ingredients: resolved, into: context)
         }
     }
 
@@ -65,12 +65,16 @@ enum RecipeTransferImporter {
     // MARK: - Recipe
 
     private static func recipe(
-        from incoming: RecipeTransferRecipe,
+        from summary: RecipeTransferRecipeSummary,
         plan: RecipeTransferPlan,
         ingredients: [Ingredient],
         into context: ModelContext
     ) -> Recipe {
-        let recipe = Recipe(name: incoming.name, desc: incoming.desc)
+        let incoming = summary.recipe
+        // The plan's name, not the payload's: it has already been checked
+        // against the library and suffixed if it collided, and the review
+        // screen has already told the user that is what will happen.
+        let recipe = Recipe(name: summary.resolvedName, desc: incoming.desc)
         context.insert(recipe)
 
         recipe.recipeKind = incoming.recipeKind

@@ -23,16 +23,20 @@ struct RecipeTransferPlan {
     /// library with a stranger's folders.
     let unmatchedCollectionNames: [String]
 
-    var recipeCount: Int { payload.recipes.count }
-
-    /// The incoming recipes, each with an identity of its own.
+    /// The incoming recipes, each with an identity of its own and the name it
+    /// will actually be saved under.
     ///
     /// Identified by position rather than by name: nothing stops a file holding
     /// two recipes called "Bar", and on a screen whose entire job is to say what
     /// is about to be added, two rows collapsing into one would be the worst
     /// possible place to lose something.
-    var recipeSummaries: [RecipeTransferRecipeSummary] {
-        payload.recipes.enumerated().map(RecipeTransferRecipeSummary.init)
+    let recipeSummaries: [RecipeTransferRecipeSummary]
+
+    var recipeCount: Int { payload.recipes.count }
+
+    /// Recipes arriving under a name the library already uses.
+    var renamedRecipes: [RecipeTransferRecipeSummary] {
+        recipeSummaries.filter(\.isRenamed)
     }
 
     var ingredientsToCreate: [RecipeTransferIngredientPlan] {
@@ -56,8 +60,14 @@ struct RecipeTransferPlan {
     /// and would otherwise present a review screen with nothing on it.
     var isEmpty: Bool { payload.recipes.isEmpty }
 
-    init(payload: RecipeTransferData, inventory: [Ingredient], collections: [RecipeCollection]) {
+    init(
+        payload: RecipeTransferData,
+        inventory: [Ingredient],
+        collections: [RecipeCollection],
+        recipes: [Recipe] = []
+    ) {
         self.payload = payload
+        recipeSummaries = Self.summaries(for: payload, among: recipes)
 
         let index = Self.index(of: inventory)
         let roles = Self.rolesByIngredientIndex(in: payload)
@@ -85,6 +95,35 @@ struct RecipeTransferPlan {
         }
         matchedCollections = matched
         unmatchedCollectionNames = unmatched
+    }
+
+    /// Works out what each incoming recipe will be called.
+    ///
+    /// A name the library already uses gets the same "(copy)" suffix the
+    /// Duplicate action produces, rather than a second convention invented for
+    /// import. Two identical rows in the list is the outcome worth avoiding:
+    /// the user has no way to tell which is theirs and which just arrived.
+    ///
+    /// Names claimed earlier in the same payload count as taken, so a file
+    /// holding two recipes called "Bar" produces "Bar" and "Bar (copy)" rather
+    /// than the pair it started with. Deliberately not applied to an untitled
+    /// recipe: " (copy)" reads as nothing at all.
+    private static func summaries(
+        for payload: RecipeTransferData,
+        among recipes: [Recipe]
+    ) -> [RecipeTransferRecipeSummary] {
+        var taken = Set(recipes.map(\.name).map(\.lookupKey))
+        return payload.recipes.enumerated().map { offset, recipe in
+            let incoming = recipe.name.trimmingCharacters(in: .whitespaces)
+            let resolved: String
+            if incoming.isEmpty || !taken.contains(incoming.lookupKey) {
+                resolved = incoming
+            } else {
+                resolved = RecipeDuplicator.copyName(of: incoming, taken: taken)
+            }
+            if !resolved.isEmpty { taken.insert(resolved.lookupKey) }
+            return RecipeTransferRecipeSummary(id: offset, recipe: recipe, resolvedName: resolved)
+        }
     }
 
     /// The role each pooled ingredient is used in, taken from the first line
@@ -131,13 +170,24 @@ struct RecipeTransferRecipeSummary: Identifiable {
     let id: Int
     let recipe: RecipeTransferRecipe
 
-    init(id: Int, recipe: RecipeTransferRecipe) {
-        self.id = id
-        self.recipe = recipe
+    /// The name it will actually be saved under, which differs from the one it
+    /// arrived with when the library already has that name.
+    let resolvedName: String
+
+    /// Whether it had to be renamed to avoid colliding with a recipe the user
+    /// already has.
+    var isRenamed: Bool {
+        resolvedName.lookupKey != recipe.name.trimmingCharacters(in: .whitespaces).lookupKey
     }
 
     var displayName: String {
-        recipe.name.isEmpty ? "Untitled Recipe" : recipe.name
+        resolvedName.isEmpty ? "Untitled Recipe" : resolvedName
+    }
+
+    /// What the sender called it, for the line explaining the rename.
+    var incomingName: String {
+        let name = recipe.name.trimmingCharacters(in: .whitespaces)
+        return name.isEmpty ? "Untitled Recipe" : name
     }
 
     /// Kind and size, so a list of fifteen is scannable and a non-soap recipe

@@ -9,6 +9,7 @@ struct RecipeImportView: View {
     @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
+    @Query(sort: \Recipe.name) private var recipes: [Recipe]
 
     @State private var model = RecipeImportViewModel()
     @State private var photoItem: PhotosPickerItem?
@@ -75,7 +76,7 @@ struct RecipeImportView: View {
         ) { result in
             switch result {
             case .success(let url):
-                model.openFile(at: url, inventory: inventory, collections: collections)
+                model.openFile(at: url, inventory: inventory, collections: collections, recipes: recipes)
             case .failure:
                 readingProblem = "Couldn’t open that file. Try again."
             }
@@ -133,7 +134,7 @@ struct RecipeImportView: View {
 
             Section {
                 Button {
-                    Task { await model.extract(inventory: inventory, collections: collections) }
+                    Task { await model.extract(inventory: inventory, collections: collections, recipes: recipes) }
                 } label: {
                     if model.isExtracting {
                         HStack(spacing: 8) {

@@ -86,7 +86,7 @@ final class RecipeImportViewModel {
     /// Lets the input screen say what will happen before the user commits to it:
     /// pasting a SoapWiz recipe is about to be read exactly, not interpreted.
     var textCarriesExactPayload: Bool {
-        if case .payload = RecipeTransferMarker.scan(rawText) { return true }
+        if case .payload = RecipeTransferDecoder.scan(text: rawText) { return true }
         return false
     }
 
@@ -127,14 +127,15 @@ final class RecipeImportViewModel {
     func openFile(
         at url: URL,
         inventory: [Ingredient],
-        collections: [RecipeCollection]
+        collections: [RecipeCollection],
+        recipes: [Recipe]
     ) {
         let didScope = url.startAccessingSecurityScopedResource()
         defer { if didScope { url.stopAccessingSecurityScopedResource() } }
 
         do {
             let payload = try RecipeTransferDecoder.payload(fromFile: try Data(contentsOf: url))
-            adopt(payload, inventory: inventory, collections: collections)
+            adopt(payload, inventory: inventory, collections: collections, recipes: recipes)
         } catch let error as RecipeTransferError {
             phase = .failed(.failed(error.errorDescription ?? "That file couldn’t be read."))
         } catch {
@@ -150,12 +151,16 @@ final class RecipeImportViewModel {
     /// hand and needs to know an app update stands between them, rather than
     /// watching the model make a worse job of text it was never meant to read.
     @discardableResult
-    func adoptPayloadFromText(inventory: [Ingredient], collections: [RecipeCollection]) -> Bool {
-        switch RecipeTransferMarker.scan(rawText) {
+    func adoptPayloadFromText(
+        inventory: [Ingredient],
+        collections: [RecipeCollection],
+        recipes: [Recipe] = []
+    ) -> Bool {
+        switch RecipeTransferDecoder.scan(text: rawText) {
         case .none:
             return false
         case .payload(let payload):
-            adopt(payload, inventory: inventory, collections: collections)
+            adopt(payload, inventory: inventory, collections: collections, recipes: recipes)
             return true
         case .rejected(let error):
             phase = .failed(.failed(error.errorDescription ?? "That recipe couldn’t be read."))
@@ -166,9 +171,15 @@ final class RecipeImportViewModel {
     private func adopt(
         _ payload: RecipeTransferData,
         inventory: [Ingredient],
-        collections: [RecipeCollection]
+        collections: [RecipeCollection],
+        recipes: [Recipe]
     ) {
-        let plan = RecipeTransferPlan(payload: payload, inventory: inventory, collections: collections)
+        let plan = RecipeTransferPlan(
+            payload: payload,
+            inventory: inventory,
+            collections: collections,
+            recipes: recipes
+        )
         guard !plan.isEmpty else {
             phase = .failed(.nothingRecognised)
             return
@@ -179,10 +190,18 @@ final class RecipeImportViewModel {
 
     // MARK: - Extraction
 
-    func extract(inventory: [Ingredient], collections: [RecipeCollection] = []) async {
+    func extract(
+        inventory: [Ingredient],
+        collections: [RecipeCollection] = [],
+        recipes: [Recipe] = []
+    ) async {
         // Looked at before the model is consulted, and before availability is
         // even checked: an exact payload needs neither.
-        guard !adoptPayloadFromText(inventory: inventory, collections: collections) else { return }
+        guard !adoptPayloadFromText(
+            inventory: inventory,
+            collections: collections,
+            recipes: recipes
+        ) else { return }
 
         guard let extractor, modelIsUsable else {
             phase = .failed(.modelUnavailable(RecipeImportAvailability.current.explanation))

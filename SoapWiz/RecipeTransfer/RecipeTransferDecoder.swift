@@ -18,6 +18,28 @@ enum RecipeTransferDecoder {
         return payload
     }
 
+    /// Reads pasted text however the payload happens to be expressed in it.
+    ///
+    /// Two forms, because the app produces both. "Copy Recipe" appends a marker
+    /// line to readable text. The share sheet's own Copy puts the *file* on the
+    /// pasteboard, and since the type conforms to `public.json` — and so to
+    /// `public.text` — pasting it yields the bare JSON with no marker around it.
+    /// Refusing that would mean the app writing something it then can't read
+    /// back, from a button sitting right next to Save to Files.
+    ///
+    /// The marker is looked for first: text carrying one is readable text with a
+    /// payload appended, and the payload is the authority. Bare JSON is only
+    /// tried when no marker is found, and anything that isn't our payload shape
+    /// simply fails to decode and falls through to the language model.
+    static func scan(text: String) -> RecipeTransferScan {
+        let marker = RecipeTransferMarker.scan(text)
+        guard marker == .none else { return marker }
+
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("{"), let json = trimmed.data(using: .utf8) else { return .none }
+        return scan(json)
+    }
+
     /// Decodes payload JSON without throwing, for the clipboard path.
     static func scan(_ json: Data) -> RecipeTransferScan {
         do {

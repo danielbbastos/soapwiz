@@ -39,6 +39,15 @@ struct RecipeTransferReviewView: View {
                     Text(summary.detail)
                         .font(.footnote)
                         .foregroundStyle(.secondary)
+                    // Said here rather than in an alert. The rename is a fact
+                    // about one row, and a payload can hold fifteen — a prompt
+                    // for each would be a wall of taps between the user and an
+                    // import they already asked for.
+                    if summary.isRenamed {
+                        Text("You already have “\(summary.incomingName)”, so this one is renamed.")
+                            .font(.footnote)
+                            .foregroundStyle(.orange)
+                    }
                 }
             }
         }

@@ -206,6 +206,167 @@ struct RecipeTransferRoutingTests {
         #expect(plan.unmatchedCollectionNames == ["Gifts"])
     }
 
+    // MARK: - Bare payload JSON
+
+    /// The share sheet's own Copy puts the file on the pasteboard, and because
+    /// the type conforms to `public.json` — and so to `public.text` — pasting it
+    /// yields the raw JSON with no marker around it. Refusing that would mean
+    /// the app writing something it then can't read back.
+    @Test func scan_BarePayloadJSON_IsRecognised() throws {
+        let built = payload([fixture.populatedRecipe()])
+        let json = try #require(String(data: try RecipeTransferCoding.encoder.encode(built), encoding: .utf8))
+
+        #expect(RecipeTransferDecoder.scan(text: json) == .payload(built))
+    }
+
+    @Test func scan_BarePayloadJSONWithSurroundingWhitespace_IsStillRecognised() throws {
+        let built = payload([fixture.populatedRecipe()])
+        let json = try #require(String(data: try RecipeTransferCoding.encoder.encode(built), encoding: .utf8))
+
+        #expect(RecipeTransferDecoder.scan(text: "\n\n  \(json)  \n") == .payload(built))
+    }
+
+    @Test func scan_BareJSONFromANewerVersion_IsRejected() throws {
+        var built = payload([fixture.populatedRecipe()])
+        built.version = RecipeTransferData.currentVersion + 1
+        let json = try #require(String(data: try RecipeTransferCoding.encoder.encode(built), encoding: .utf8))
+
+        #expect(RecipeTransferDecoder.scan(text: json) == .rejected(
+            .unsupportedVersion(found: RecipeTransferData.currentVersion + 1, supported: RecipeTransferData.currentVersion)
+        ))
+    }
+
+    @Test func scan_UnrelatedJSON_FallsThroughToTheTextPath() {
+        #expect(RecipeTransferDecoder.scan(text: #"{"hello":"world"}"#) == RecipeTransferScan.none)
+    }
+
+    @Test func scan_OrdinaryRecipeText_IsNotMistakenForJSON() {
+        #expect(RecipeTransferDecoder.scan(text: "Olive Oil 55%\nCoconut Oil 30%") == RecipeTransferScan.none)
+    }
+
+    /// Text carrying both readable recipe and a marker is still read from the
+    /// marker: it is the authority, and the JSON attempt never runs.
+    @Test func scan_MarkerBearingText_StillPrefersTheMarker() throws {
+        let recipe = fixture.populatedRecipe()
+        fixture.context.processPendingChanges()
+
+        let outcome = RecipeTransferDecoder.scan(text: RecipeTextExporter.clipboardText(for: recipe))
+
+        guard case .payload(let decoded) = outcome else {
+            Issue.record("Expected the marker to be read, got \(outcome)")
+            return
+        }
+        #expect(decoded.recipes.first?.name == recipe.name)
+    }
+
+    @Test func extract_BarePayloadJSON_NeverCallsTheExtractor() async throws {
+        let extractor = StubRecipeExtractor(error: .modelUnavailable("should not be reached"))
+        let model = RecipeImportViewModel(extractor: extractor)
+        let built = payload([fixture.populatedRecipe()])
+        model.rawText = try #require(String(data: try RecipeTransferCoding.encoder.encode(built), encoding: .utf8))
+
+        await model.extract(inventory: [], collections: [])
+
+        #expect(model.phase == .exactReview)
+        #expect(extractor.recorder.lastText == nil)
+    }
+
+    // MARK: - Names that collide with the library
+
+    @Test func plan_NameNotInTheLibrary_IsKept() {
+        let plan = RecipeTransferPlan(
+            payload: payload([fixture.populatedRecipe(named: "Brand New Bar")]),
+            inventory: [],
+            collections: [],
+            recipes: []
+        )
+
+        #expect(plan.recipeSummaries.first?.resolvedName == "Brand New Bar")
+        #expect(plan.renamedRecipes.isEmpty)
+    }
+
+    /// Two identical rows in the list is the outcome worth avoiding: the user
+    /// has no way to tell which is theirs and which just arrived.
+    @Test func plan_NameAlreadyInTheLibrary_TakesTheCopySuffix() {
+        let mine = fixture.recipe(named: "Lavender Bar")
+        let incoming = fixture.populatedRecipe(named: "Lavender Bar")
+
+        let plan = RecipeTransferPlan(
+            payload: payload([incoming]),
+            inventory: [],
+            collections: [],
+            recipes: [mine]
+        )
+
+        #expect(plan.recipeSummaries.first?.resolvedName == "Lavender Bar (copy)")
+        #expect(plan.renamedRecipes.count == 1)
+        #expect(plan.recipeSummaries.first?.incomingName == "Lavender Bar")
+    }
+
+    @Test func plan_NameCollidingTwice_WalksToTheNextFreeSuffix() {
+        let mine = fixture.recipe(named: "Lavender Bar")
+        let myCopy = fixture.recipe(named: "Lavender Bar (copy)")
+
+        let plan = RecipeTransferPlan(
+            payload: payload([fixture.populatedRecipe(named: "Lavender Bar")]),
+            inventory: [],
+            collections: [],
+            recipes: [mine, myCopy]
+        )
+
+        #expect(plan.recipeSummaries.first?.resolvedName == "Lavender Bar (copy 2)")
+    }
+
+    @Test func plan_NameCollidingOnCaseOnly_StillCountsAsTaken() {
+        let mine = fixture.recipe(named: "LAVENDER BAR")
+
+        let plan = RecipeTransferPlan(
+            payload: payload([fixture.populatedRecipe(named: "Lavender Bar")]),
+            inventory: [],
+            collections: [],
+            recipes: [mine]
+        )
+
+        #expect(plan.recipeSummaries.first?.isRenamed == true)
+    }
+
+    /// Names claimed earlier in the same payload count as taken too, or a file
+    /// holding two "Bar"s would produce the pair it started with.
+    @Test func plan_TwoIncomingRecipesSharingAName_AreBothMadeUnique() {
+        let first = fixture.recipe(named: "Bar")
+        let second = fixture.recipe(named: "Bar")
+        fixture.addOil(fixture.oil("Olive Oil"), percentage: 100, to: first)
+        fixture.addOil(fixture.oil("Coconut Oil"), percentage: 100, to: second)
+
+        let plan = RecipeTransferPlan(
+            payload: payload([first, second]),
+            inventory: [],
+            collections: [],
+            recipes: []
+        )
+
+        #expect(plan.recipeSummaries.map(\.resolvedName) == ["Bar", "Bar (copy)"])
+    }
+
+    /// " (copy)" reads as nothing at all, so an untitled recipe is left alone.
+    @Test func plan_UntitledRecipes_AreNotSuffixed() {
+        let first = fixture.recipe(named: "")
+        let second = fixture.recipe(named: "")
+        fixture.addOil(fixture.oil("Olive Oil"), percentage: 100, to: first)
+        fixture.addOil(fixture.oil("Coconut Oil"), percentage: 100, to: second)
+
+        let plan = RecipeTransferPlan(
+            payload: payload([first, second]),
+            inventory: [],
+            collections: [],
+            recipes: []
+        )
+
+        #expect(plan.recipeSummaries.allSatisfy { $0.resolvedName.isEmpty })
+        #expect(plan.recipeSummaries.allSatisfy { $0.displayName == "Untitled Recipe" })
+        #expect(plan.renamedRecipes.isEmpty)
+    }
+
     // MARK: - Identity
 
     /// Nothing stops a file holding two recipes with the same name, and the
