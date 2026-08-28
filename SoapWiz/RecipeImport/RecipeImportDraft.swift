@@ -49,10 +49,27 @@ struct RecipeImportDraft: Equatable {
     /// expressed in. One of `RecipeImportDraft.supportedWeightUnits`.
     var batchUnit: String?
 
-    var lyeType: String = "NaOH"
+    /// The lye the source names, or `nil` when it names none.
+    ///
+    /// Optional rather than defaulted, because "NaOH" is a claim about the
+    /// recipe and a default would put that claim on screen for text that never
+    /// mentioned lye — a candle, a balm, a salve. The recipe form still starts
+    /// on NaOH; the difference is that the review screen no longer reports it
+    /// as something the source said.
+    var lyeType: String?
     var superFat: Double?
     var waterParts: Double?
     var fragrancePercentage: Double?
+
+    /// Whether the source said anything about saponifying at all.
+    ///
+    /// The extraction schema has no notion of a recipe kind, so this is the
+    /// closest the text path can get to "is this soap?": a recipe that names no
+    /// lye, no superfat and no water ratio is one the review screen should not
+    /// be describing in those terms.
+    var statesLyeSettings: Bool {
+        lyeType != nil || superFat != nil || waterParts != nil
+    }
 
     /// Weight units the recipe form offers, mirroring `weightUnits` in
     /// `RecipeFormView`. Anything else an import produces is discarded rather

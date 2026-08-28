@@ -69,7 +69,7 @@ extension RecipeFormViewModel {
     /// nothing about superfat keeps the form's default rather than being told
     /// it wants 0%.
     private func applyLyeSettings(from draft: RecipeImportDraft) {
-        setLyeType(draft.lyeType)
+        if let lyeType = draft.lyeType { setLyeType(lyeType) }
         if let superFat = draft.superFat { self.superFat = superFat }
         if let waterParts = draft.waterParts { self.waterParts = waterParts }
         if let fragrancePercentage = draft.fragrancePercentage {
@@ -134,7 +134,14 @@ extension RecipeFormViewModel {
             guard !isRepeat(row, of: ingredient, seen: &seen, repeated: &repeated) else { continue }
             if !unitAdopted {
                 unitAdopted = true
-                let options = FragranceUnit.allCases.map(\.rawValue)
+                // The kind's own units, not every unit that exists. `% of batch`
+                // and `% of liquids` resolve against the lye and the water, which
+                // a general recipe has none of: adopting one there doesn't merely
+                // read oddly, it makes the row resolve to nothing, drop out of
+                // the cost breakdown, and never be deducted at batch creation —
+                // a fragrance the recipe lists and the batch silently doesn't
+                // consume. See SW-121.
+                let options = availableFragranceUnits.map(\.rawValue)
                 let fallback = importedFragranceUnitFallback.rawValue
                 let unit = resolvedUnit(row.imported.unit, among: options, fallback: fallback)
                 setFragranceUnit(FragranceUnit.resolve(unit))

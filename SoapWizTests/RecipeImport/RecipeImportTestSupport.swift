@@ -102,7 +102,7 @@ extension RecipeImportDraft {
         amountsArePercentages: Bool = true,
         batchSize: Double? = 1000,
         batchUnit: String? = "g",
-        lyeType: String = "NaOH",
+        lyeType: String? = "NaOH",
         superFat: Double? = 5,
         waterParts: Double? = 2,
         fragrancePercentage: Double? = 3
