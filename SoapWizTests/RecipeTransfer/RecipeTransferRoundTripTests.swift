@@ -381,6 +381,35 @@ struct RecipeTransferRoundTripTests {
         #expect(try destination.context.fetch(FetchDescriptor<RecipeCollection>()).isEmpty)
     }
 
+    /// Two names can resolve to one collection: a sender with an unmerged
+    /// CloudKit duplicate files a recipe under both "Gifts" rows, so the payload
+    /// carries the name twice and both lookups land on the single match here.
+    ///
+    /// The importer does nothing about this — the relationship itself collapses
+    /// the repeat, so assigning the same collection twice files the recipe once.
+    /// Pinned because that is a property of SwiftData rather than of anything
+    /// visible in `RecipeTransferImporter`: the day the assignment changes shape,
+    /// the recipe would start drawing its chip twice with nothing else to catch it.
+    @Test func roundTrip_SenderHadDuplicateCollections_FilesTheRecipeOnce() throws {
+        let mine = destination.collection("Gifts")
+        destination.context.processPendingChanges()
+
+        let original = source.recipe(named: "Doubly Filed")
+        source.addOil(source.oil("Olive Oil"), percentage: 100, to: original)
+        original.collections = [source.collection("Gifts"), source.collection("Gifts")]
+        source.context.processPendingChanges()
+
+        // The payload really does carry the name twice — the precondition this
+        // test exists for.
+        let payload = RecipeTransferEncoder.payload(for: [original])
+        #expect(payload.recipes.first?.collectionNames == ["Gifts", "Gifts"])
+
+        let imported = try #require(try importIntoDestination(payload, collections: [mine]).first)
+
+        #expect(imported.collections.count == 1)
+        #expect(imported.collections.first === mine)
+    }
+
     @Test func roundTrip_SomeCollectionsMatching_FilesUnderOnlyThose() throws {
         let christmas = destination.collection("Christmas")
         destination.context.processPendingChanges()
