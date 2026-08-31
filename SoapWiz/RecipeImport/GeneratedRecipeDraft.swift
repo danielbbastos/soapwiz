@@ -59,8 +59,13 @@ struct GeneratedRecipeDraft {
     @Guide(description: "The weight unit the source measures in", .anyOf(["g", "kg", "oz", "lb"]))
     var batchUnit: String?
 
-    @Guide(description: "The lye: NaOH for bar soap, KOH for liquid or cream soap", .anyOf(["NaOH", "KOH"]))
-    var lyeType: String
+    /// Optional, so a recipe that isn't soap can come back saying so. A
+    /// non-optional field would make the schema demand a lye for a candle or a
+    /// balm, and the model can only satisfy that by inventing one — the same
+    /// hazard as the `oils` floor described above.
+    @Guide(description: "The lye, when the source names one: NaOH for bar soap, KOH for liquid or cream "
+           + "soap. Leave empty when the recipe doesn't saponify or doesn't say", .anyOf(["NaOH", "KOH"]))
+    var lyeType: String?
 
     @Guide(description: "Superfat, also called lye discount, as a percentage", .range(0.0...20.0))
     var superFat: Double?
@@ -86,7 +91,7 @@ extension GeneratedRecipeDraft {
             amountsArePercentages: amountsArePercentages,
             batchSize: batchSize.flatMap { $0 > 0 ? $0 : nil },
             batchUnit: batchUnit.flatMap { RecipeImportDraft.supportedWeightUnits.contains($0) ? $0 : nil },
-            lyeType: lyeType == "KOH" ? "KOH" : "NaOH",
+            lyeType: lyeType.map { $0 == "KOH" ? "KOH" : "NaOH" },
             superFat: superFat,
             waterParts: waterParts,
             fragrancePercentage: fragrancePercentage

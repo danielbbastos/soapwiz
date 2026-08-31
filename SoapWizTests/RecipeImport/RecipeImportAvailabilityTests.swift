@@ -55,11 +55,25 @@ struct RecipeImportAvailabilityTests {
         }
     }
 
-    /// The available footer has to mention the gesture — the entry point is a
-    /// long press on the Recipes FAB and nothing else on screen reveals it.
-    @Test func settingsFooter_WhenAvailable_ExplainsHowToStart() {
+    /// The footer says where to start. It used to have to name the long press
+    /// as well, because nothing on screen revealed the entry point; tapping +
+    /// now does, so the instruction is one word shorter and the assertion is
+    /// about the destination rather than the gesture.
+    @Test func settingsFooter_WhenAvailable_SaysWhereToStart() {
         let footer = RecipeImportAvailability.available.settingsFooter
-        #expect(footer.lowercased().contains("hold"))
+
         #expect(footer.contains("Recipes"))
+        #expect(!footer.lowercased().contains("hold"))
+    }
+
+    /// Import no longer depends on the language model, so a device that can't
+    /// run one must not be told the feature is unavailable — only that reading
+    /// handwritten recipes is.
+    @Test func settingsFooter_WhenUnavailable_StillPointsAtTheExactPath() {
+        for state in Self.allCases where state != .available {
+            let footer = state.settingsFooter
+            #expect(footer.contains("SoapWiz"), "\(state) doesn't mention the exact path")
+            #expect(footer.contains(state.explanation), "\(state) drops its own explanation")
+        }
     }
 }

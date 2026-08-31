@@ -75,14 +75,22 @@ enum RecipeImportAvailability {
         }
     }
 
-    /// The sentence under the Settings row. The available case gets one too —
-    /// otherwise the only way to learn the feature exists is to find the
-    /// long-press that reveals it.
+    /// The sentence under the Settings row.
+    ///
+    /// This row is now only about the language model, which is the part that
+    /// can be unavailable. Importing itself always works: a shared file or a
+    /// recipe copied out of SoapWiz is read by plain decoding. So the
+    /// unavailable cases explain what is lost rather than implying the feature
+    /// is gone.
+    ///
+    /// It no longer teaches the gesture that reveals import — tapping + on the
+    /// Recipes tab shows it, which is what the instruction was compensating for.
     var settingsFooter: String {
         guard !isAvailable else {
-            return "Paste or scan a recipe and it's read on this device, privately. "
-                + "Touch and hold + on the Recipes tab to start."
+            return "Recipes written by hand — pasted, photographed or scanned — are read on this "
+                + "device, privately. Tap + on the Recipes tab to import."
         }
-        return explanation
+        return "\(explanation) Recipes shared from SoapWiz still import exactly, "
+            + "as a file or copied text."
     }
 }

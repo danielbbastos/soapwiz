@@ -24,10 +24,21 @@ struct RecipeListView: View {
     /// stays tappable because it is `.borderless`.
     private func row(_ recipe: Recipe) -> some View {
         Button {
-            navigationPath.append(recipe)
+            if model.isSelecting {
+                model.toggleSelection(of: recipe)
+            } else {
+                navigationPath.append(recipe)
+            }
         } label: {
-            RecipeRowView(recipe: recipe) {
-                model.toggleFavorite(recipe)
+            HStack(spacing: 12) {
+                if model.isSelecting {
+                    Image(systemName: model.isSelected(recipe) ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(model.isSelected(recipe) ? Color.accentColor : .secondary)
+                        .imageScale(.large)
+                }
+                RecipeRowView(recipe: recipe) {
+                    model.toggleFavorite(recipe)
+                }
             }
             // A `Button` is hit-tested over its drawn content only, so without
             // this the row's padding and the gap left of the star are dead to
@@ -35,12 +46,21 @@ struct RecipeListView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // Deleting and filing are single-recipe actions, and offering them while
+        // the user is ticking a set to share reads as though they would apply to
+        // the set. They come back when the mode ends.
         .swipeActions(edge: .trailing) {
-            Button("Delete", role: .destructive) {
-                model.delete(recipe, context: modelContext)
+            if !model.isSelecting {
+                Button("Delete", role: .destructive) {
+                    model.delete(recipe, context: modelContext)
+                }
             }
         }
-        .contextMenu { rowMenu(recipe) }
+        .contextMenu {
+            if !model.isSelecting {
+                rowMenu(recipe)
+            }
+        }
         .listRowBackground(Color.cardBackground)
     }
 
@@ -69,6 +89,45 @@ struct RecipeListView: View {
             model.delete(recipe, context: modelContext)
         } label: {
             Label("Delete", systemImage: "trash")
+        }
+    }
+
+    /// Entering the mode, and leaving it with or without sharing.
+    ///
+    /// Laid out to match the Inventory tab: the bulk action leading, Select and
+    /// Done trailing. Two lists that both offer a selection mode should not put
+    /// the way out of it in different corners.
+    ///
+    /// How many recipes are selected is shown in the navigation title rather
+    /// than on the button, since a compact toolbar draws the button as its icon
+    /// alone and any count in its label would never be seen.
+    @ToolbarContentBuilder
+    private func selectionToolbar() -> some ToolbarContent {
+        if model.isSelecting {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    // Every selected recipe, not just the ones on screen. A
+                    // collection chip tapped mid-selection changes what is
+                    // displayed, and exporting only the survivors would send
+                    // fewer recipes than the title says are selected.
+                    model.exportSelection(from: recipes)
+                } label: {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+                .accessibilityLabel(model.exportButtonTitle)
+                .disabled(!model.hasSelection)
+            }
+        }
+        if !recipes.isEmpty {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(model.isSelecting ? "Done" : "Select") {
+                    if model.isSelecting {
+                        model.endSelecting()
+                    } else {
+                        model.beginSelecting()
+                    }
+                }
+            }
         }
     }
 
@@ -103,10 +162,25 @@ struct RecipeListView: View {
                         .contentMargins(.top, collections.isEmpty ? nil : 0, for: .scrollContent)
                     }
                 }
-                .navigationTitle("Recipes")
+                .navigationTitle(model.navigationTitle)
                 .navigationBarTitleDisplayMode(.inline)
-                .warmNavigationTitle("Recipes")
+                .warmNavigationTitle(model.navigationTitle)
                 .warmBackground()
+                .toolbar { selectionToolbar() }
+                .sheet(item: $model.exportFile) { file in
+                    ShareSheet(items: [file.url])
+                }
+                .alert(
+                    "Couldn’t share",
+                    isPresented: Binding(
+                        get: { model.exportErrorMessage != nil },
+                        set: { if !$0 { model.exportErrorMessage = nil } }
+                    )
+                ) {
+                    Button("OK", role: .cancel) { model.exportErrorMessage = nil }
+                } message: {
+                    Text(model.exportErrorMessage ?? "")
+                }
                 // No background of its own, so the list keeps scrolling under
                 // the navigation bar's material rather than under a flat band.
                 .safeAreaInset(edge: .top, spacing: 0) {
@@ -133,9 +207,19 @@ struct RecipeListView: View {
                     })
                 }
                 .sheet(isPresented: $showingImport) {
-                    RecipeImportView { prepared in
-                        navigationPath.append(prepared)
-                    }
+                    RecipeImportView(
+                        onConfirm: { prepared in
+                            navigationPath.append(prepared)
+                        },
+                        // An exact import is already saved by the time this
+                        // runs. A single recipe opens so the user can see what
+                        // arrived; a batch of them stays in the list, which is
+                        // where fifteen new recipes are actually reviewed.
+                        onImported: { recipes in
+                            guard recipes.count == 1, let only = recipes.first else { return }
+                            navigationPath.append(only)
+                        }
+                    )
                 }
                 .sheet(item: $model.filingRecipe) { recipe in
                     RecipeCollectionsPickerSheet(recipe: recipe) { collection in
@@ -143,15 +227,24 @@ struct RecipeListView: View {
                     }
                 }
 
-                // Import is offered only when the on-device model can actually
-                // run it. A feature that fails on tap is worse than one that
-                // isn't there.
-                ExpandableFloatingActionButton(
-                    primaryAction: { navigationPath.append(true) },
-                    secondaryActions: RecipeImportAvailability.current.isAvailable
-                        ? [FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") { showingImport = true }]
-                        : []
-                )
+                // Import is always offered now. It used to be hidden unless
+                // Apple Intelligence could run, because reading someone's prose
+                // was the only way in; opening a shared file or pasting a
+                // copied recipe is plain decoding and works on every device.
+                //
+                // Hidden while picking recipes to share, the same way it hides
+                // in edit mode: the screen is doing one job, and a New Recipe
+                // button in the corner is not part of it.
+                if !model.isSelecting {
+                    ExpandableFloatingActionButton(
+                        primaryAction: { navigationPath.append(true) },
+                        secondaryActions: [
+                            FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") {
+                                showingImport = true
+                            }
+                        ]
+                    )
+                }
             }
         }
         // Honour a seeded-recipe request from the inventory selection flow: open

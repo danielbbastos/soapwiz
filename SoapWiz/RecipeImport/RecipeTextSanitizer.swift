@@ -76,6 +76,12 @@ enum RecipeTextSanitizer {
             let collapsed = collapseWhitespace(withoutURLs)
             guard !collapsed.isEmpty else { continue }
             guard !RecipeTextMarkupStripper.isBoilerplate(collapsed) else { continue }
+            // The exact payload "Copy Recipe" appends is meaningless to the
+            // language model and would spend a sixth of the character budget on
+            // base64. Text only reaches here when the payload was absent or
+            // unreadable, so dropping it costs nothing and leaves the whole
+            // budget for the recipe a person can read.
+            guard !RecipeTransferMarker.isMarkerLine(collapsed) else { continue }
             result.append(contentsOf: splitLongLine(collapsed))
         }
         return result

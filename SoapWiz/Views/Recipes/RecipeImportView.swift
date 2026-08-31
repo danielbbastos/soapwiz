@@ -5,16 +5,25 @@ import PhotosUI
 /// The paste screen: where a recipe from anywhere else becomes a recipe here.
 struct RecipeImportView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
+    @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
+    @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
+    @Query(sort: \Recipe.name) private var recipes: [Recipe]
 
     @State private var model = RecipeImportViewModel()
     @State private var photoItem: PhotosPickerItem?
     @State private var isReadingPhoto = false
     @State private var showingScanner = false
+    @State private var showingFilePicker = false
     @State private var textRevision = 0
     @State private var readingProblem: String?
 
     var onConfirm: ((PreparedRecipeImport) -> Void)?
+
+    /// Called with the recipes an exact import added, so the caller can dismiss
+    /// and show them.
+    var onImported: (([Recipe]) -> Void)?
 
     var body: some View {
         NavigationStack {
@@ -24,6 +33,14 @@ struct RecipeImportView: View {
                     inputForm
                 case .review:
                     RecipeImportReviewView(model: model, inventory: inventory, onConfirm: confirm)
+                case .exactReview:
+                    if let plan = model.transferPlan {
+                        RecipeTransferReviewView(
+                            plan: plan,
+                            onConfirm: confirmExactImport,
+                            onCancel: { model.returnToInput() }
+                        )
+                    }
                 case .failed(let error):
                     failureView(error)
                 }
@@ -53,6 +70,17 @@ struct RecipeImportView: View {
             guard let item else { return }
             Task { await readText(from: item) }
         }
+        .fileImporter(
+            isPresented: $showingFilePicker,
+            allowedContentTypes: [.soapWizRecipe]
+        ) { result in
+            switch result {
+            case .success(let url):
+                model.openFile(at: url, inventory: inventory, collections: collections, recipes: recipes)
+            case .failure:
+                readingProblem = "Couldn’t open that file. Try again."
+            }
+        }
         .fullScreenCover(isPresented: $showingScanner) {
             DocumentScannerView(
                 onScan: { pages in
@@ -73,10 +101,25 @@ struct RecipeImportView: View {
 
     private var inputForm: some View {
         Form {
+            // Always first: a shared SoapWiz file is the exact route, and it
+            // works on every device. The text below it is the approximate one.
+            Section {
+                Button {
+                    showingFilePicker = true
+                } label: {
+                    Label("Open Recipe File\u{2026}", systemImage: "doc.badge.plus")
+                }
+            } header: {
+                Text("Shared From SoapWiz")
+            } footer: {
+                Text("A .soapwizrecipe file comes back exactly as it was sent, however many recipes are in it.")
+            }
+            .listRowBackground(Color.cardBackground)
+
             Section {
                 RecipeTextInputView(text: $model.rawText, isEnabled: !model.isExtracting, revision: textRevision)
             } header: {
-                Text("Recipe Text")
+                Text(model.canReadFreeText ? "Recipe Text" : "Paste a Copied Recipe")
             } footer: {
                 Text(inputFooter)
                     .foregroundStyle(readingProblem == nil ? .secondary : Color.orange)
@@ -91,7 +134,7 @@ struct RecipeImportView: View {
 
             Section {
                 Button {
-                    Task { await model.extract(inventory: inventory) }
+                    Task { await model.extract(inventory: inventory, collections: collections, recipes: recipes) }
                 } label: {
                     if model.isExtracting {
                         HStack(spacing: 8) {
@@ -99,15 +142,28 @@ struct RecipeImportView: View {
                             Text("Reading the recipe\u{2026}")
                         }
                     } else {
-                        Text("Read Recipe")
+                        Text(model.textCarriesExactPayload ? "Read Copied Recipe" : "Read Recipe")
                     }
                 }
                 .disabled(!model.canExtract || isReadingPhoto)
             } footer: {
-                Text("Your recipe is read on this device. Nothing is sent anywhere, and nothing is saved until you confirm.")
+                Text(readFooter)
             }
             .listRowBackground(Color.cardBackground)
         }
+    }
+
+    /// Says which of the two paths the text in the box will take, since they
+    /// give very different results and the difference is invisible otherwise.
+    private var readFooter: String {
+        if model.textCarriesExactPayload {
+            return "This was copied from SoapWiz, so it comes back exactly — every setting, not just the oils."
+        }
+        guard model.canReadFreeText else {
+            return "Paste a recipe copied from SoapWiz, or open a shared file above. "
+                + "Reading a recipe written by hand needs Apple Intelligence, which this device can’t use."
+        }
+        return "Your recipe is read on this device. Nothing is sent anywhere, and nothing is saved until you confirm."
     }
 
     /// One row rather than three. Stacked, these cost enough height to push the
@@ -122,17 +178,24 @@ struct RecipeImportView: View {
                 append(pasted)
             }
             .labelStyle(.titleAndIcon)
-            PhotosPicker(selection: $photoItem, matching: .images) {
-                Label("Photo", systemImage: "photo")
-            }
-            .buttonStyle(.bordered)
-            if DocumentScannerView.isSupported {
-                Button {
-                    showingScanner = true
-                } label: {
-                    Label("Scan", systemImage: "text.viewfinder")
+            // Photo and Scan exist to turn a picture into text for the language
+            // model to read. With no model to read it, they would produce a box
+            // of OCR output and no way to do anything with it. Paste stays:
+            // text copied out of SoapWiz carries its own payload and needs no
+            // model at all.
+            if model.canReadFreeText {
+                PhotosPicker(selection: $photoItem, matching: .images) {
+                    Label("Photo", systemImage: "photo")
                 }
                 .buttonStyle(.bordered)
+                if DocumentScannerView.isSupported {
+                    Button {
+                        showingScanner = true
+                    } label: {
+                        Label("Scan", systemImage: "text.viewfinder")
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
             Spacer(minLength: 0)
         }
@@ -146,7 +209,13 @@ struct RecipeImportView: View {
         if let readingProblem { return readingProblem }
         let count = model.rawText.count
         guard count > 0 else {
+            guard model.canReadFreeText else {
+                return "Paste a recipe copied from SoapWiz. It carries everything the recipe needs."
+            }
             return "Paste a recipe from a website, a forum or your notes. Oils, amounts and lye settings are enough."
+        }
+        if model.textCarriesExactPayload {
+            return "A SoapWiz recipe — this will come back exactly as it was sent."
         }
         guard count > RecipeTextSanitizer.defaultCharacterBudget else {
             return "\(count) characters."
@@ -171,6 +240,14 @@ struct RecipeImportView: View {
 
     private func confirm(_ prepared: PreparedRecipeImport) {
         onConfirm?(prepared)
+        dismiss()
+    }
+
+    /// Writes the payload and leaves. Unlike the text path, this does not open
+    /// the recipe form: the recipes are already exactly what the sender had.
+    private func confirmExactImport() {
+        guard let recipes = model.confirmExactImport(context: modelContext, categories: categories) else { return }
+        onImported?(recipes)
         dismiss()
     }
 

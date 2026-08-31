@@ -34,9 +34,19 @@ struct RecipeImportReviewView: View {
 
     // MARK: - Sections
 
+    /// Only what the source actually said.
+    ///
+    /// The lye rows used to show unconditionally, so a pasted candle or balm
+    /// recipe came back reporting "Lye: NaOH" — a claim the text never made, on
+    /// the one screen whose job is to show what was understood. Each row now
+    /// appears only when the source stated it, and a recipe that mentions no
+    /// saponification at all says so plainly instead of being described in
+    /// soap-making terms.
     private var settingsSection: some View {
         Section("Recipe") {
-            LabeledContent("Lye", value: draftSummary.lyeType)
+            if let lyeType = draftSummary.lyeType {
+                LabeledContent("Lye", value: lyeType)
+            }
             if let superFat = draftSummary.superFat {
                 LabeledContent("Super Fat", value: "\(PercentageFormatter.string(superFat))%")
             }
@@ -45,6 +55,12 @@ struct RecipeImportReviewView: View {
             }
             if let fragrance = draftSummary.fragrancePercentage {
                 LabeledContent("Fragrance", value: "\(PercentageFormatter.string(fragrance))%")
+            }
+            if !draftSummary.statesLyeSettings {
+                Text("No lye settings found. The recipe opens with the form's defaults, "
+                     + "which you can change — or turn off soap making entirely in Config.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
             if let trimmedNote {
                 Text(trimmedNote)

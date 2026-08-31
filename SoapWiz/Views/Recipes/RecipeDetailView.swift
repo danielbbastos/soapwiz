@@ -19,6 +19,11 @@ struct RecipeDetailView: View {
     /// photograph or for the app's own background.
     @State private var photoCoversNavigationBar = false
 
+    /// Sharing state, read and written by `RecipeDetailView+Share`: the file
+    /// once it has been written, and the message shown if it couldn't be.
+    @State var exportFile: ExportFile?
+    @State var exportErrorMessage: String?
+
     /// The unit the summaries (calculated amounts + cost breakdown) are shown in:
     /// the recipe's oil weight unit, or grams when the user toggles it.
     private var displayUnit: String { showInGrams ? "g" : model.displayWeightUnit }
@@ -88,12 +93,14 @@ struct RecipeDetailView: View {
             .padding(.bottom, 8)
         }
         .toolbar {
+            shareToolbarItem
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(value: RecipeEditRoute(recipe: recipe)) {
                     Text("Edit")
                 }
             }
         }
+        .modifier(sharingPresentation)
         .sheet(isPresented: $showCreateBatch) {
             CreateBatchSheet(recipe: recipe, lyeCandidates: lyeIngredients) { batch in
                 navigation.showBatch(batch)
@@ -118,33 +125,6 @@ struct RecipeDetailView: View {
     private func reload() {
         model.load(from: recipe)
         model.resolveDefaultLyeIngredient(from: lyeIngredients)
-    }
-
-    // MARK: - Photo
-
-    /// A wider crop on iPad. The photo is as wide as the screen either way, so
-    /// one ratio cannot serve both: a phone ratio across an iPad's width spends
-    /// half the screen on the picture and pushes the recipe itself below the
-    /// fold, while the iPad's ratio on a phone is a letterbox strip.
-    ///
-    /// Both are wide enough that the recipe starts on the first screen, and no
-    /// wider: the frame is filled and cropped, so every step wider trades away
-    /// the top and bottom of the user's photo. A portrait shot is cropped hard
-    /// at any of these — it is a centre crop, which is where the subject of a
-    /// photographed bar almost always is.
-    ///
-    /// Deliberately the device idiom rather than `horizontalSizeClass`, for the
-    /// reason spelled out in `RecipeRowView`: `ContentView` pins the whole
-    /// `TabView` to `.compact`, which leaves the size class saying "compact"
-    /// everywhere.
-    private static let heroAspectRatio: CGFloat =
-        UIDevice.current.userInterfaceIdiom == .phone ? 3.0 / 2.0 : 2.0 / 1.0
-
-    /// Nil for a recipe with no photo, which leaves the screen laid out exactly
-    /// as it was — an empty well at the top of every unphotographed recipe would
-    /// spend a third of the screen saying nothing.
-    private var heroImage: UIImage? {
-        recipe.imageData.flatMap(UIImage.init(data:))
     }
 
     // MARK: - Collections

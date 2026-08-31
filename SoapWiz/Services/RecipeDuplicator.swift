@@ -68,7 +68,15 @@ enum RecipeDuplicator {
     /// duplicating the same recipe repeatedly never collides. Matched on
     /// `lookupKey`, so a differently-cased existing name still counts as taken.
     static func copyName(of name: String, among existing: [Recipe]) -> String {
-        let taken = Set(existing.map(\.name).map(\.lookupKey))
+        copyName(of: name, taken: Set(existing.map(\.name).map(\.lookupKey)))
+    }
+
+    /// The same rule against a set of names rather than a set of recipes.
+    ///
+    /// Import needs this: it allocates names for several incoming recipes at
+    /// once, so each one has to see the names the earlier ones just claimed as
+    /// well as the ones already in the library.
+    static func copyName(of name: String, taken: Set<String>) -> String {
         let first = "\(name) (copy)"
         guard taken.contains(first.lookupKey) else { return first }
 

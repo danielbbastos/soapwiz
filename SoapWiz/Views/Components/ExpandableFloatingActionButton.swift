@@ -119,10 +119,22 @@ struct ExpandableFloatingActionButton: View {
         .accessibilityLabel(item.label)
     }
 
+    /// Tapping opens the choices when there are any, and performs the primary
+    /// action once they are open.
+    ///
+    /// It used to take a long press to reveal them, which meant the only way to
+    /// discover a secondary action was to be told about it — the Settings screen
+    /// had a sentence explaining the gesture, which is a sign the affordance had
+    /// failed. Import and bulk import are ordinary actions, not power-user ones.
+    ///
+    /// The cost is honest: creating a recipe or an ingredient is now two taps
+    /// rather than one. Nothing is hidden in exchange.
     private var plusButton: some View {
-        // A long press must expand without also firing the tap on release, so the
-        // two gestures are exclusive: the long press wins when held, the tap fires
-        // only when it doesn't. A plain `Button` would run both.
+        // The long press is kept as well, so anyone who learned it still gets
+        // the same result. A long press must expand without also firing the tap
+        // on release, so the two gestures are exclusive: the long press wins
+        // when held, the tap fires only when it doesn't. A plain `Button` would
+        // run both.
         icon("plus")
             .contentShape(.circle)
             .gesture(
@@ -132,15 +144,23 @@ struct ExpandableFloatingActionButton: View {
                         expand()
                     },
                     TapGesture().onEnded {
-                        primaryAction()
-                        if isExpanded { collapse() }
+                        guard !secondaryActions.isEmpty, !isExpanded else {
+                            primaryAction()
+                            if isExpanded { collapse() }
+                            return
+                        }
+                        expand()
                     }
                 )
             )
             .accessibilityElement()
-            .accessibilityLabel("Add")
+            .accessibilityLabel(accessibilityLabel)
             .accessibilityAddTraits(.isButton)
-            .accessibilityHint(secondaryActions.isEmpty ? "" : "Long press for more actions")
+    }
+
+    private var accessibilityLabel: String {
+        guard !secondaryActions.isEmpty else { return "Add" }
+        return isExpanded ? "Add" : "Add, shows more actions"
     }
 
     private func icon(_ systemImage: String) -> some View {
