@@ -125,6 +125,32 @@ struct RecipeDuplicatorTests {
         #expect(copy.recipeKind == RecipeKind.soap.rawValue)
     }
 
+    /// A duplicate is a new recipe, not the same one twice. Inheriting the
+    /// identity would make the share format claim they were one recipe, and an
+    /// import matching on it would pick whichever came back first.
+    @Test func duplicate_CopyGetsItsOwnIdentity() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        try ctx.save()
+
+        #expect(copy.uuid != recipe.uuid)
+    }
+
+    @Test func duplicate_TwiceInARow_BothCopiesGetTheirOwnIdentity() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+
+        let first = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let second = RecipeDuplicator.duplicate(recipe, among: [recipe, first], into: ctx)
+        try ctx.save()
+
+        #expect(Set([recipe.uuid, first.uuid, second.uuid]).count == 3)
+    }
+
     @Test func duplicate_NonSoapRecipe_CopyStaysNonSoap() throws {
         let (container, ctx) = try makeContext()
         _ = container

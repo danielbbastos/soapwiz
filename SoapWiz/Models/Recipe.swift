@@ -3,6 +3,14 @@ import SwiftData
 
 @Model
 final class Recipe {
+    /// Stable identity that survives leaving the app and coming back — a
+    /// `.soapwizrecipe` file, a clipboard payload, a backup and restore.
+    /// `RecipeTransferPlan` matches on it in preference to the name, which is
+    /// the only thing a share could identify a recipe by before this existed.
+    ///
+    /// Defaulted rather than optional, matching `RecipeCollection`, so CloudKit
+    /// can mirror it and no reader has to handle its absence.
+    var uuid: UUID = UUID()
     var name: String = ""
     var desc: String = ""
     var isFavorite: Bool = false

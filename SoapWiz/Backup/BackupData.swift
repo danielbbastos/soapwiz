@@ -110,6 +110,11 @@ extension BackupData {
     }
 
     struct RecipeDTO: Codable {
+        /// The recipe's stable identity, so a restored library can still
+        /// recognise a shared recipe as one it already has. Optional so a file
+        /// written before the field existed still decodes; those recipes are
+        /// given a fresh identity on restore rather than a shared one.
+        var uuid: UUID?
         var name: String
         var desc: String
         /// Optional so a file written before favourites existed still decodes; it

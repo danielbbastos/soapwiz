@@ -98,6 +98,7 @@ enum BackupService {
         collectionIndex: [PersistentIdentifier: Int]
     ) -> BackupData.RecipeDTO {
         BackupData.RecipeDTO(
+            uuid: recipe.uuid,
             name: recipe.name,
             desc: recipe.desc,
             isFavorite: recipe.isFavorite,

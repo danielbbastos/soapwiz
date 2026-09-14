@@ -112,6 +112,9 @@ extension BackupService {
         into context: ModelContext
     ) -> Recipe {
         let recipe = Recipe(name: dto.name, desc: dto.desc)
+        // A file written before identities existed leaves every recipe with the
+        // fresh one `Recipe.init` already minted, rather than one shared value.
+        if let uuid = dto.uuid { recipe.uuid = uuid }
         recipe.isFavorite = dto.isFavorite ?? false
         recipe.imageData = dto.imageData
         // Rebuilt rather than restored: the file carries only the display image,

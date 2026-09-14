@@ -75,6 +75,10 @@ enum RecipeTransferImporter {
         // against the library and suffixed if it collided, and the review
         // screen has already told the user that is what will happen.
         let recipe = Recipe(name: summary.resolvedName, desc: incoming.desc)
+        // The plan's identity for the same reason as the plan's name: it has
+        // already been checked against the library, and it is the sender's only
+        // when adopting it cannot leave two rows claiming to be one recipe.
+        recipe.uuid = summary.resolvedUUID
         context.insert(recipe)
 
         recipe.recipeKind = incoming.recipeKind

@@ -202,6 +202,110 @@ struct RecipeTransferPlanTests {
         #expect(plan.renamedRecipes.isEmpty)
     }
 
+    // MARK: - Recognising a recipe by its uuid
+
+    /// The case the name could never handle: the recipe went out, the user
+    /// renamed their own copy, and it came back. The name no longer matches
+    /// anything; the identity still does.
+    @Test func plan_PayloadUUIDMatchingARenamedRecipe_StillRecognisesIt() throws {
+        let mine = fixture.populatedRecipe(named: "Lavender Bar")
+        let payload = fixture.payload([mine])
+        mine.name = "My Own Lavender Bar"
+
+        let plan = RecipeTransferPlan(
+            payload: payload,
+            inventory: [],
+            collections: [],
+            recipes: [mine]
+        )
+
+        let summary = try #require(plan.recipeSummaries.first)
+        #expect(summary.isKnownRecipe)
+        #expect(summary.knownRecipe === mine)
+        #expect(plan.knownRecipes.count == 1)
+    }
+
+    /// The name the user will recognise is the one on their own copy, not the
+    /// one the sender's payload still carries.
+    @Test func plan_RecognisedRecipe_NamesTheUsersOwnCopy() throws {
+        let mine = fixture.populatedRecipe(named: "Lavender Bar")
+        let payload = fixture.payload([mine])
+        mine.name = "My Own Lavender Bar"
+
+        let plan = RecipeTransferPlan(payload: payload, inventory: [], collections: [], recipes: [mine])
+
+        #expect(try #require(plan.recipeSummaries.first).knownRecipeName == "My Own Lavender Bar")
+    }
+
+    /// Recognising it does not change what happens to it — the user's own copy
+    /// is left alone and the arriving one is still named so the two can be told
+    /// apart.
+    @Test func plan_RecognisedRecipeUnderTheSameName_IsStillRenamedAndAdded() throws {
+        let mine = fixture.populatedRecipe(named: "Lavender Bar")
+        let payload = fixture.payload([mine])
+
+        let plan = RecipeTransferPlan(payload: payload, inventory: [], collections: [], recipes: [mine])
+
+        let summary = try #require(plan.recipeSummaries.first)
+        #expect(summary.isKnownRecipe)
+        #expect(summary.resolvedName == "Lavender Bar (copy)")
+    }
+
+    /// Two genuinely different recipes that happen to share a name are no
+    /// longer indistinguishable from one recipe arriving twice.
+    @Test func plan_SameNameDifferentIdentity_IsNotRecognised() throws {
+        let mine = fixture.recipe(named: "Lavender Bar")
+        let theirs = fixture.populatedRecipe(named: "Lavender Bar")
+
+        let plan = RecipeTransferPlan(
+            payload: fixture.payload([theirs]),
+            inventory: [],
+            collections: [],
+            recipes: [mine]
+        )
+
+        let summary = try #require(plan.recipeSummaries.first)
+        #expect(!summary.isKnownRecipe)
+        #expect(summary.isRenamed)
+    }
+
+    @Test func plan_UUIDNotInTheLibrary_IsNotRecognised() throws {
+        let plan = RecipeTransferPlan(
+            payload: fixture.payload([fixture.populatedRecipe(named: "Brand New Bar")]),
+            inventory: [],
+            collections: [],
+            recipes: []
+        )
+
+        #expect(!(try #require(plan.recipeSummaries.first).isKnownRecipe))
+        #expect(plan.knownRecipes.isEmpty)
+    }
+
+    /// A version-1 file, written before the field existed, carries no identity.
+    /// It must resolve by name exactly as it did then.
+    @Test func plan_PayloadWithoutAUUID_FallsBackToMatchingByName() throws {
+        let mine = fixture.recipe(named: "Lavender Bar")
+        var payload = fixture.payload([fixture.populatedRecipe(named: "Lavender Bar")])
+        payload.recipes[0].uuid = nil
+
+        let plan = RecipeTransferPlan(payload: payload, inventory: [], collections: [], recipes: [mine])
+
+        let summary = try #require(plan.recipeSummaries.first)
+        #expect(!summary.isKnownRecipe)
+        #expect(summary.resolvedName == "Lavender Bar (copy)")
+        #expect(plan.renamedRecipes.count == 1)
+    }
+
+    @Test func plan_PayloadWithoutAUUIDAndNoNameCollision_IsKeptAsItIs() throws {
+        var payload = fixture.payload([fixture.populatedRecipe(named: "Brand New Bar")])
+        payload.recipes[0].uuid = nil
+
+        let plan = RecipeTransferPlan(payload: payload, inventory: [], collections: [], recipes: [])
+
+        #expect(plan.recipeSummaries.first?.resolvedName == "Brand New Bar")
+        #expect(plan.renamedRecipes.isEmpty)
+    }
+
     // MARK: - Identity
 
     /// Nothing stops a file holding two recipes with the same name, and the
