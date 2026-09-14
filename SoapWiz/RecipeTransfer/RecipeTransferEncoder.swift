@@ -36,6 +36,7 @@ enum RecipeTransferEncoder {
 
     private static func recipe(_ recipe: Recipe, pool: inout RecipeTransferIngredientPool) -> RecipeTransferRecipe {
         RecipeTransferRecipe(
+            uuid: recipe.uuid,
             name: recipe.name,
             desc: recipe.desc,
             recipeKind: recipe.recipeKind,

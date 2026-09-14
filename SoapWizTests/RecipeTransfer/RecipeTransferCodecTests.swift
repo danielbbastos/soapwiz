@@ -40,6 +40,40 @@ struct RecipeTransferCodecTests {
         #expect(decoded == payload)
     }
 
+    /// A payload written before the identity field existed has no `uuid` key at
+    /// all. Stripping it from a current file is the closest honest stand-in, and
+    /// it must still decode — the format's backward compatibility is the whole
+    /// reason the field is optional.
+    @Test func payloadFromFile_RecipeWithoutAUUIDKey_StillDecodes() throws {
+        let data = try RecipeTransferEncoder.fileData(for: [fixture.populatedRecipe()])
+        var object = try #require(
+            try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        var recipes = try #require(object["recipes"] as? [[String: Any]])
+        recipes = recipes.map { recipe in
+            var stripped = recipe
+            stripped.removeValue(forKey: "uuid")
+            return stripped
+        }
+        object["recipes"] = recipes
+        let legacy = try JSONSerialization.data(withJSONObject: object)
+
+        let decoded = try RecipeTransferDecoder.payload(fromFile: legacy)
+
+        #expect(decoded.recipes.count == 1)
+        #expect(decoded.recipes.first?.uuid == nil)
+        #expect(decoded.recipes.first?.name == "Round Trip Bar")
+    }
+
+    @Test func fileRoundTrip_Recipe_KeepsItsIdentity() throws {
+        let recipe = fixture.populatedRecipe()
+        let payload = RecipeTransferEncoder.payload(for: [recipe])
+
+        let decoded = try RecipeTransferDecoder.payload(fromFile: try RecipeTransferCoding.encoder.encode(payload))
+
+        #expect(decoded.recipes.first?.uuid == recipe.uuid)
+    }
+
     @Test func payloadFromFile_NotJSON_ThrowsMalformed() {
         #expect(throws: RecipeTransferError.malformedFile) {
             try RecipeTransferDecoder.payload(fromFile: Data("not a recipe file".utf8))

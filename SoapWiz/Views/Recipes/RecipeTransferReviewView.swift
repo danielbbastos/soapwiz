@@ -43,7 +43,22 @@ struct RecipeTransferReviewView: View {
                     // about one row, and a payload can hold fifteen — a prompt
                     // for each would be a wall of taps between the user and an
                     // import they already asked for.
-                    if summary.isRenamed {
+                    //
+                    // A recognised recipe is told about instead of the rename,
+                    // never as well: the rename is a consequence of already
+                    // having it, and saying both would read as two problems.
+                    // Secondary rather than orange, because nothing here needs
+                    // checking — the sender's copy and the user's own are both
+                    // kept, which is the least surprising outcome available
+                    // until a screen exists to offer the alternative.
+                    if summary.isKnownRecipe {
+                        Text(
+                            "This is a version of “\(summary.knownRecipeName)”, which you "
+                            + "already have. It will be added separately."
+                        )
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    } else if summary.isRenamed {
                         Text("You already have “\(summary.incomingName)”, so this one is renamed.")
                             .font(.footnote)
                             .foregroundStyle(.orange)

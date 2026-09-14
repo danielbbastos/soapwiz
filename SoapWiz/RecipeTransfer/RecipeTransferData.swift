@@ -63,9 +63,10 @@ struct RecipeTransferData: Codable, Equatable {
 /// One ingredient's identity and the chemistry a recipe needs to stand alone on
 /// a device that has never seen it.
 ///
-/// `Ingredient` has no `uuid`, so `name` is what resolves this against the
-/// recipient's inventory. On the sender's own device every name matches their
-/// own row, which is what makes a same-device round trip exact.
+/// `Ingredient` has no `uuid` — unlike `RecipeTransferRecipe`, which carries
+/// one — so `name` is what resolves this against the recipient's inventory. On
+/// the sender's own device every name matches their own row, which is what
+/// makes a same-device round trip exact.
 ///
 /// Deliberately absent: photos, purchases, prices, stock, category and code.
 /// A recipe needs to know what an oil *is*, not what the sender paid for it or
@@ -91,6 +92,14 @@ struct RecipeTransferIngredient: Codable, Equatable {
 /// device, and the recipient's form resolves its own through
 /// `resolveDefaultLyeIngredient(from:)`.
 struct RecipeTransferRecipe: Codable, Equatable {
+    /// The sender's `Recipe.uuid`, so the recipe can be recognised as itself
+    /// when it comes back — under a name either side has since changed.
+    ///
+    /// Optional so a payload written before the field existed still decodes;
+    /// `RecipeTransferPlan` then falls back to matching by name exactly as it
+    /// did then. An older build reading a newer payload simply ignores the key,
+    /// so carrying it does not bump `currentVersion` either way.
+    var uuid: UUID?
     var name: String
     var desc: String
 

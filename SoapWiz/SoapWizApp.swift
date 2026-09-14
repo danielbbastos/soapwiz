@@ -23,6 +23,10 @@ struct SoapWizApp: App {
         // Before `resolve`, so it only ever has to handle the zero-record case —
         // any duplicate settings rows from a previous sync are already gone.
         DuplicateMerger.mergeAllLoggingFailure(in: container.mainContext)
+        // Repairs the migration that gave `Recipe` its identity, which hands
+        // every recipe that predates the field the same one. Independent of the
+        // merge above — that one never touches recipes.
+        RecipeIdentityBackfill.repairSharedIdentitiesLoggingFailure(in: container.mainContext)
         _ = AppSettings.resolve(in: container.mainContext)
         sharedModelContainer = container
         _syncHealth = State(

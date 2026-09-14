@@ -37,6 +37,25 @@ struct RecipeTransferEncoderTests {
 
     /// The configurations `RecipeImportDraft` cannot express, which are the
     /// whole reason this format exists.
+    /// The identity is what lets the recipe be recognised when it comes back,
+    /// so it has to leave with it.
+    @Test func payload_PopulatedRecipe_CarriesItsIdentity() throws {
+        let recipe = fixture.populatedRecipe()
+
+        let encoded = try #require(RecipeTransferEncoder.payload(for: [recipe]).recipes.first)
+
+        #expect(encoded.uuid == recipe.uuid)
+    }
+
+    @Test func payload_SeveralRecipes_EachCarriesItsOwnIdentity() throws {
+        let recipes = ["Bar One", "Bar Two", "Bar Three"].map { fixture.populatedRecipe(named: $0) }
+        fixture.context.processPendingChanges()
+
+        let encoded = RecipeTransferEncoder.payload(for: recipes).recipes
+
+        #expect(encoded.compactMap(\.uuid) == recipes.map(\.uuid))
+    }
+
     @Test func payload_HybridCreamAndCFMRecipe_CarriesTheSettingsTheDraftCannot() throws {
         let recipe = fixture.populatedRecipe()
 

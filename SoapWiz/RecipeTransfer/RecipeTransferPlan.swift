@@ -39,6 +39,12 @@ struct RecipeTransferPlan {
         recipeSummaries.filter(\.isRenamed)
     }
 
+    /// Recipes the library has seen before, matched on the uuid the payload
+    /// carried rather than on what either side calls them now.
+    var knownRecipes: [RecipeTransferRecipeSummary] {
+        recipeSummaries.filter(\.isKnownRecipe)
+    }
+
     var ingredientsToCreate: [RecipeTransferIngredientPlan] {
         ingredients.filter(\.willBeCreated)
     }
@@ -97,7 +103,22 @@ struct RecipeTransferPlan {
         unmatchedCollectionNames = unmatched
     }
 
-    /// Works out what each incoming recipe will be called.
+    /// Works out what each incoming recipe will be called, and whether the
+    /// library has seen it before.
+    ///
+    /// Whether the library has seen it is answered by the payload's uuid, and
+    /// only by the name when the payload carries none — a version-1 file, or one
+    /// written by a build older than the field. The uuid is the stronger answer
+    /// precisely where the name is the weakest: a recipe renamed on either
+    /// device still matches, and two different recipes that happen to share a
+    /// name no longer look like one recipe arriving twice. The naming rule below
+    /// runs either way, since both recipes still have to be told apart in a list.
+    ///
+    /// Recognising a recipe does not currently change what happens to it. It is
+    /// still added alongside the one already there, because replacing would put
+    /// the sender's copy over the user's own edits and no screen has yet asked
+    /// them whether that is what they want. What changes is what the review
+    /// screen can honestly say about it.
     ///
     /// A name the library already uses gets the same "(copy)" suffix the
     /// Duplicate action produces, rather than a second convention invented for
@@ -112,7 +133,9 @@ struct RecipeTransferPlan {
         for payload: RecipeTransferData,
         among recipes: [Recipe]
     ) -> [RecipeTransferRecipeSummary] {
+        let byUUID = Dictionary(recipes.map { ($0.uuid, $0) }, uniquingKeysWith: { first, _ in first })
         var taken = Set(recipes.map(\.name).map(\.lookupKey))
+        var claimed = Set(recipes.map(\.uuid))
         return payload.recipes.enumerated().map { offset, recipe in
             let incoming = recipe.name.trimmingCharacters(in: .whitespaces)
             let resolved: String
@@ -122,8 +145,34 @@ struct RecipeTransferPlan {
                 resolved = RecipeDuplicator.copyName(of: incoming, taken: taken)
             }
             if !resolved.isEmpty { taken.insert(resolved.lookupKey) }
-            return RecipeTransferRecipeSummary(id: offset, recipe: recipe, resolvedName: resolved)
+
+            let identity = Self.identity(for: recipe, claimed: claimed)
+            claimed.insert(identity)
+            return RecipeTransferRecipeSummary(
+                id: offset,
+                recipe: recipe,
+                resolvedName: resolved,
+                resolvedUUID: identity,
+                knownRecipe: recipe.uuid.flatMap { byUUID[$0] }
+            )
         }
+    }
+
+    /// The identity the imported recipe will be saved under.
+    ///
+    /// The sender's, when the library does not already hold it. That is what
+    /// makes the identity worth carrying at all: a recipe that travels keeps
+    /// being the same recipe, so the friend who improves it and sends it back is
+    /// recognisably returning *this* recipe rather than offering a new one.
+    ///
+    /// Fresh in every other case — the library already has that identity, the
+    /// payload claimed it for an earlier recipe in the same file, or it carried
+    /// none. Import adds a row rather than replacing one, and two rows sharing
+    /// an identity is the one state the format cannot describe: a later payload
+    /// would match both and neither answer would be right.
+    private static func identity(for recipe: RecipeTransferRecipe, claimed: Set<UUID>) -> UUID {
+        guard let incoming = recipe.uuid, !claimed.contains(incoming) else { return UUID() }
+        return incoming
     }
 
     /// The role each pooled ingredient is used in, taken from the first line
@@ -166,6 +215,7 @@ struct RecipeTransferPlan {
 }
 
 /// One incoming recipe, as the review screen lists it.
+@MainActor
 struct RecipeTransferRecipeSummary: Identifiable {
     let id: Int
     let recipe: RecipeTransferRecipe
@@ -173,6 +223,28 @@ struct RecipeTransferRecipeSummary: Identifiable {
     /// The name it will actually be saved under, which differs from the one it
     /// arrived with when the library already has that name.
     let resolvedName: String
+
+    /// The identity it will actually be saved under: the sender's when it is
+    /// new here, a fresh one when the library already holds it. Decided once
+    /// when the plan is built, so the screen and the importer cannot disagree
+    /// about which recipe was written.
+    let resolvedUUID: UUID
+
+    /// The library recipe this one *is*, matched on the payload's uuid, or
+    /// `nil` when it is new here or arrived without an identity.
+    let knownRecipe: Recipe?
+
+    /// Whether the library has seen this exact recipe before.
+    var isKnownRecipe: Bool { knownRecipe != nil }
+
+    /// What the user's own copy is called now, which is the name they will
+    /// recognise — the payload's name may be the one the sender changed.
+    var knownRecipeName: String {
+        guard let name = knownRecipe?.name.trimmingCharacters(in: .whitespaces), !name.isEmpty else {
+            return "Untitled Recipe"
+        }
+        return name
+    }
 
     /// Whether it had to be renamed to avoid colliding with a recipe the user
     /// already has.
