@@ -72,6 +72,10 @@ enum BackupService {
             kohSapValue: ingredient.kohSapValue,
             density: ingredient.density,
             fattyAcidProfile: ingredient.fattyAcidProfile,
+            uuid: ingredient.uuid,
+            librarySlug: ingredient.librarySlug,
+            hasCustomChemistry: ingredient.hasCustomChemistry,
+            isHidden: ingredient.isHidden,
             purchases: ingredient.purchases
                 .sorted { $0.dateOfPurchase < $1.dateOfPurchase }
                 .map { purchase in

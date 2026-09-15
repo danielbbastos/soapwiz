@@ -88,6 +88,13 @@ extension BackupData {
         var kohSapValue: Double?
         var density: Double?
         var fattyAcidProfile: FattyAcidProfile?
+        /// The library fields are optional so a file written before the
+        /// ingredient library existed still decodes: its ingredients restore as
+        /// user-created, with a fresh identity.
+        var uuid: UUID?
+        var librarySlug: String?
+        var hasCustomChemistry: Bool?
+        var isHidden: Bool?
         var purchases: [PurchaseDTO]
     }
 

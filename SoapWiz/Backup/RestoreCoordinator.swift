@@ -51,6 +51,9 @@ final class RestoreCoordinator {
     /// Where the rollback file is written. `nil` means Documents.
     var rollbackDirectory: URL?
 
+    /// The library a restored store is completed from.
+    var ingredientLibrary: IngredientLibrary = .bundled
+
     private static let rollbackPrefix = "SoapWiz-Rollback-"
 
     private var stagedBackup: BackupData?
@@ -137,6 +140,10 @@ final class RestoreCoordinator {
     private func replaceStore(with backup: BackupData, rollback: URL?, in context: ModelContext) {
         do {
             try BackupService.restore(backup, into: context)
+            // A file written before the library existed restores without it, and
+            // this build may know entries the file doesn't. Either way the
+            // inventory should look the way a launch would leave it.
+            IngredientLibraryInstaller.installMissingLoggingFailure(from: ingredientLibrary, in: context)
             rollbackFile = rollback.map(ExportFile.init(url:))
             // Only once the new snapshot is safely written and the restore has
             // actually happened. Pruning any earlier would trade a rollback the

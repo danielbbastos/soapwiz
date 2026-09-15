@@ -1,13 +1,6 @@
 {
   "categories": [
-    "Oils",
-    "Waxes",
-    "Fats",
-    "Additives",
-    "Fragrances",
-    "Packages",
-    "Lyes",
-    "Others"
+    "Packages"
   ],
   "providers": [
     "Plena Natura",
@@ -23,11 +16,7 @@
   ],
   "ingredients": [
     {
-      "name": "Olive Oil",
-      "category": "Oils",
-      "unit": "ml",
-      "sapValue": 0.134,
-      "density": 0.911,
+      "slug": "olive-oil",
       "purchases": [
         {
           "provider": "New Directions",
@@ -53,25 +42,10 @@
           "openingDate": null,
           "remainingAmount": 5000
         }
-      ],
-      "kohSapValue": 0.188,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 14,
-        "stearic": 3,
-        "oleic": 69,
-        "linoleic": 12,
-        "linolenic": 1,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Coconut Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.19,
-      "density": null,
+      "slug": "coconut-oil",
       "purchases": [
         {
           "provider": "Amazon",
@@ -85,25 +59,10 @@
           "openingDate": "2026-03-21",
           "remainingAmount": 1105
         }
-      ],
-      "kohSapValue": 0.266,
-      "fattyAcidProfile": {
-        "lauric": 48,
-        "myristic": 19,
-        "palmitic": 9,
-        "stearic": 3,
-        "oleic": 6,
-        "linoleic": 2,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Palm Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.141,
-      "density": null,
+      "slug": "palm-oil",
       "purchases": [
         {
           "provider": "New Directions",
@@ -117,25 +76,10 @@
           "openingDate": null,
           "remainingAmount": 6304
         }
-      ],
-      "kohSapValue": 0.197,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 1,
-        "palmitic": 44,
-        "stearic": 5,
-        "oleic": 39,
-        "linoleic": 10,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Castor Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.128,
-      "density": null,
+      "slug": "castor-oil",
       "purchases": [
         {
           "provider": "Plena Natura",
@@ -161,25 +105,10 @@
           "openingDate": null,
           "remainingAmount": 800
         }
-      ],
-      "kohSapValue": 0.18,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 1,
-        "stearic": 1,
-        "oleic": 3,
-        "linoleic": 4,
-        "linolenic": 0,
-        "ricinoleic": 90
-      }
+      ]
     },
     {
-      "name": "Sweet Almond Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.136,
-      "density": null,
+      "slug": "sweet-almond-oil",
       "purchases": [
         {
           "provider": "Aroma Zone",
@@ -205,25 +134,10 @@
           "openingDate": "2025-12-23",
           "remainingAmount": 1663
         }
-      ],
-      "kohSapValue": 0.19,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 7,
-        "stearic": 2,
-        "oleic": 69,
-        "linoleic": 17,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Avocado Oil",
-      "category": "Oils",
-      "unit": "ml",
-      "sapValue": 0.133,
-      "density": 0.914,
+      "slug": "avocado-oil",
       "purchases": [
         {
           "provider": "Aroma Zone",
@@ -237,25 +151,10 @@
           "openingDate": "2026-05-20",
           "remainingAmount": 765
         }
-      ],
-      "kohSapValue": 0.187,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 18,
-        "stearic": 1,
-        "oleic": 64,
-        "linoleic": 12,
-        "linolenic": 1,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Sunflower Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.134,
-      "density": null,
+      "slug": "sunflower-oil",
       "purchases": [
         {
           "provider": "Plena Natura",
@@ -269,25 +168,10 @@
           "openingDate": "2026-04-15",
           "remainingAmount": 2645
         }
-      ],
-      "kohSapValue": 0.188,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 7,
-        "stearic": 5,
-        "oleic": 19,
-        "linoleic": 68,
-        "linolenic": 1,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Jojoba Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.069,
-      "density": null,
+      "slug": "jojoba-oil",
       "purchases": [
         {
           "provider": "New Directions",
@@ -313,25 +197,10 @@
           "openingDate": "2025-12-11",
           "remainingAmount": 253
         }
-      ],
-      "kohSapValue": 0.097,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 1,
-        "stearic": 0,
-        "oleic": 11,
-        "linoleic": 1,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Grapeseed Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.126,
-      "density": null,
+      "slug": "grapeseed-oil",
       "purchases": [
         {
           "provider": "Plena Natura",
@@ -357,25 +226,10 @@
           "openingDate": "2026-01-04",
           "remainingAmount": 279
         }
-      ],
-      "kohSapValue": 0.177,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 7,
-        "stearic": 4,
-        "oleic": 16,
-        "linoleic": 70,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Argan Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.136,
-      "density": null,
+      "slug": "argan-oil",
       "purchases": [
         {
           "provider": "New Directions",
@@ -389,25 +243,10 @@
           "openingDate": "2026-04-27",
           "remainingAmount": 606
         }
-      ],
-      "kohSapValue": 0.19,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 12,
-        "stearic": 6,
-        "oleic": 45,
-        "linoleic": 35,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Apricot Kernel Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.135,
-      "density": null,
+      "slug": "apricot-kernel-oil",
       "purchases": [
         {
           "provider": "Amazon",
@@ -433,25 +272,10 @@
           "openingDate": "2026-01-09",
           "remainingAmount": 0
         }
-      ],
-      "kohSapValue": 0.189,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 6,
-        "stearic": 1,
-        "oleic": 60,
-        "linoleic": 30,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Hemp Seed Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.135,
-      "density": null,
+      "slug": "hemp-seed-oil",
       "purchases": [
         {
           "provider": "Plena Natura",
@@ -465,25 +289,10 @@
           "openingDate": "2026-04-18",
           "remainingAmount": 0
         }
-      ],
-      "kohSapValue": 0.189,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 6,
-        "stearic": 2,
-        "oleic": 12,
-        "linoleic": 57,
-        "linolenic": 18,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Rice Bran Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.128,
-      "density": null,
+      "slug": "rice-bran-oil",
       "purchases": [
         {
           "provider": "Amazon",
@@ -509,25 +318,10 @@
           "openingDate": null,
           "remainingAmount": 2480
         }
-      ],
-      "kohSapValue": 0.18,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 1,
-        "palmitic": 22,
-        "stearic": 3,
-        "oleic": 38,
-        "linoleic": 34,
-        "linolenic": 1,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Safflower Oil",
-      "category": "Oils",
-      "unit": "ml",
-      "sapValue": 0.136,
-      "density": 0.924,
+      "slug": "safflower-oil",
       "purchases": [
         {
           "provider": "Aroma Zone",
@@ -553,44 +347,14 @@
           "openingDate": "2025-12-08",
           "remainingAmount": 156
         }
-      ],
-      "kohSapValue": 0.19,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 7,
-        "stearic": 2,
-        "oleic": 13,
-        "linoleic": 78,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Sesame Oil",
-      "category": "Oils",
-      "unit": "ml",
-      "sapValue": 0.133,
-      "density": 0.919,
-      "purchases": [],
-      "kohSapValue": 0.187,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 9,
-        "stearic": 6,
-        "oleic": 41,
-        "linoleic": 43,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      "slug": "sesame-oil",
+      "purchases": []
     },
     {
-      "name": "Canola Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.124,
-      "density": null,
+      "slug": "canola-oil",
       "purchases": [
         {
           "provider": "Aroma Zone",
@@ -604,25 +368,10 @@
           "openingDate": "2026-05-25",
           "remainingAmount": 0
         }
-      ],
-      "kohSapValue": 0.174,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 4,
-        "stearic": 2,
-        "oleic": 62,
-        "linoleic": 22,
-        "linolenic": 10,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Macadamia Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.139,
-      "density": null,
+      "slug": "macadamia-oil",
       "purchases": [
         {
           "provider": "Amazon",
@@ -648,25 +397,10 @@
           "openingDate": "2026-01-01",
           "remainingAmount": 146
         }
-      ],
-      "kohSapValue": 0.195,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 8,
-        "stearic": 4,
-        "oleic": 59,
-        "linoleic": 2,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Neem Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.132,
-      "density": null,
+      "slug": "neem-oil",
       "purchases": [
         {
           "provider": "Plena Natura",
@@ -680,25 +414,10 @@
           "openingDate": null,
           "remainingAmount": 223
         }
-      ],
-      "kohSapValue": 0.185,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 18,
-        "stearic": 16,
-        "oleic": 50,
-        "linoleic": 14,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Babassu Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.175,
-      "density": null,
+      "slug": "babassu-oil",
       "purchases": [
         {
           "provider": "New Directions",
@@ -712,25 +431,10 @@
           "openingDate": "2026-04-05",
           "remainingAmount": 385
         }
-      ],
-      "kohSapValue": 0.246,
-      "fattyAcidProfile": {
-        "lauric": 50,
-        "myristic": 20,
-        "palmitic": 11,
-        "stearic": 4,
-        "oleic": 10,
-        "linoleic": 2,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Palm Kernel Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.156,
-      "density": null,
+      "slug": "palm-kernel-oil",
       "purchases": [
         {
           "provider": "Plena Natura",
@@ -756,25 +460,10 @@
           "openingDate": "2026-01-27",
           "remainingAmount": 574
         }
-      ],
-      "kohSapValue": 0.219,
-      "fattyAcidProfile": {
-        "lauric": 48,
-        "myristic": 16,
-        "palmitic": 8,
-        "stearic": 3,
-        "oleic": 15,
-        "linoleic": 2,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Tamanu Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.12,
-      "density": null,
+      "slug": "tamanu-oil",
       "purchases": [
         {
           "provider": "New Directions",
@@ -788,44 +477,14 @@
           "openingDate": "2026-04-15",
           "remainingAmount": 0
         }
-      ],
-      "kohSapValue": 0.169,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 13,
-        "stearic": 14,
-        "oleic": 39,
-        "linoleic": 30,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Meadowfoam Seed Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.119,
-      "density": null,
-      "purchases": [],
-      "kohSapValue": 0.167,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 0,
-        "stearic": 0,
-        "oleic": 4,
-        "linoleic": 1,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      "slug": "meadowfoam-seed-oil",
+      "purchases": []
     },
     {
-      "name": "Pumpkin Seed Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.133,
-      "density": null,
+      "slug": "pumpkin-seed-oil",
       "purchases": [
         {
           "provider": "Amazon",
@@ -839,25 +498,10 @@
           "openingDate": "2026-04-12",
           "remainingAmount": 221
         }
-      ],
-      "kohSapValue": 0.187,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 13,
-        "stearic": 7,
-        "oleic": 30,
-        "linoleic": 50,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Soybean Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.135,
-      "density": null,
+      "slug": "soybean-oil",
       "purchases": [
         {
           "provider": "New Directions",
@@ -871,25 +515,10 @@
           "openingDate": "2026-05-06",
           "remainingAmount": 0
         }
-      ],
-      "kohSapValue": 0.19,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 10,
-        "stearic": 4,
-        "oleic": 23,
-        "linoleic": 54,
-        "linolenic": 8,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Corn Oil",
-      "category": "Oils",
-      "unit": "g",
-      "sapValue": 0.136,
-      "density": null,
+      "slug": "corn-oil",
       "purchases": [
         {
           "provider": "Aroma Zone",
@@ -903,25 +532,10 @@
           "openingDate": null,
           "remainingAmount": 737
         }
-      ],
-      "kohSapValue": 0.19,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 11,
-        "stearic": 2,
-        "oleic": 28,
-        "linoleic": 58,
-        "linolenic": 1,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Beeswax",
-      "category": "Waxes",
-      "unit": "g",
-      "sapValue": 0.069,
-      "density": null,
+      "slug": "beeswax",
       "purchases": [
         {
           "provider": "New Directions",
@@ -959,25 +573,10 @@
           "openingDate": "2025-08-12",
           "remainingAmount": 184
         }
-      ],
-      "kohSapValue": 0.097,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 0,
-        "stearic": 0,
-        "oleic": 0,
-        "linoleic": 0,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Candelilla Wax",
-      "category": "Waxes",
-      "unit": "g",
-      "sapValue": 0.033,
-      "density": null,
+      "slug": "candelilla-wax",
       "purchases": [
         {
           "provider": "Amazon",
@@ -1015,25 +614,10 @@
           "openingDate": "2025-09-14",
           "remainingAmount": 101
         }
-      ],
-      "kohSapValue": 0.046,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 0,
-        "stearic": 0,
-        "oleic": 0,
-        "linoleic": 0,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Lard",
-      "category": "Fats",
-      "unit": "g",
-      "sapValue": 0.138,
-      "density": null,
+      "slug": "lard",
       "purchases": [
         {
           "provider": "Aroma Zone",
@@ -1059,25 +643,10 @@
           "openingDate": "2025-12-24",
           "remainingAmount": 350
         }
-      ],
-      "kohSapValue": 0.194,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 1,
-        "palmitic": 27,
-        "stearic": 14,
-        "oleic": 44,
-        "linoleic": 10,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Beef Tallow",
-      "category": "Fats",
-      "unit": "g",
-      "sapValue": 0.14,
-      "density": null,
+      "slug": "beef-tallow",
       "purchases": [
         {
           "provider": "Amazon",
@@ -1091,25 +660,10 @@
           "openingDate": "2026-04-14",
           "remainingAmount": 0
         }
-      ],
-      "kohSapValue": 0.196,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 3,
-        "palmitic": 25,
-        "stearic": 19,
-        "oleic": 36,
-        "linoleic": 3,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Shea Butter",
-      "category": "Fats",
-      "unit": "g",
-      "sapValue": 0.128,
-      "density": null,
+      "slug": "shea-butter",
       "purchases": [
         {
           "provider": "Aroma Zone",
@@ -1147,25 +701,10 @@
           "openingDate": "2025-08-04",
           "remainingAmount": 1
         }
-      ],
-      "kohSapValue": 0.179,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 5,
-        "stearic": 38,
-        "oleic": 50,
-        "linoleic": 5,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Cocoa Butter",
-      "category": "Fats",
-      "unit": "g",
-      "sapValue": 0.137,
-      "density": null,
+      "slug": "cocoa-butter",
       "purchases": [
         {
           "provider": "New Directions",
@@ -1203,25 +742,10 @@
           "openingDate": "2025-09-08",
           "remainingAmount": 296
         }
-      ],
-      "kohSapValue": 0.192,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 27,
-        "stearic": 33,
-        "oleic": 33,
-        "linoleic": 3,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Mango Butter",
-      "category": "Fats",
-      "unit": "g",
-      "sapValue": 0.128,
-      "density": null,
+      "slug": "mango-butter",
       "purchases": [
         {
           "provider": "Plena Natura",
@@ -1247,25 +771,10 @@
           "openingDate": "2025-12-17",
           "remainingAmount": 0
         }
-      ],
-      "kohSapValue": 0.18,
-      "fattyAcidProfile": {
-        "lauric": 0,
-        "myristic": 0,
-        "palmitic": 5,
-        "stearic": 42,
-        "oleic": 47,
-        "linoleic": 3,
-        "linolenic": 0,
-        "ricinoleic": 0
-      }
+      ]
     },
     {
-      "name": "Sodium Hydroxide (Lye)",
-      "category": "Lyes",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "sodium-hydroxide-lye",
       "purchases": [
         {
           "provider": "Amazon",
@@ -1318,11 +827,7 @@
       ]
     },
     {
-      "name": "Potassium Hydroxide (Lye)",
-      "category": "Lyes",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "potassium-hydroxide-lye",
       "purchases": [
         {
           "provider": "New Directions",
@@ -1351,11 +856,7 @@
       ]
     },
     {
-      "name": "Sodium Lactate",
-      "category": "Additives",
-      "unit": "ml",
-      "sapValue": null,
-      "density": 1.13,
+      "slug": "sodium-lactate",
       "purchases": [
         {
           "provider": "Plena Natura",
@@ -1384,11 +885,7 @@
       ]
     },
     {
-      "name": "Glycerin",
-      "category": "Additives",
-      "unit": "ml",
-      "sapValue": null,
-      "density": 1.26,
+      "slug": "glycerin",
       "purchases": [
         {
           "provider": "New Directions",
@@ -1417,11 +914,7 @@
       ]
     },
     {
-      "name": "Titanium Dioxide",
-      "category": "Additives",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "titanium-dioxide",
       "purchases": [
         {
           "provider": "Plena Natura",
@@ -1450,11 +943,7 @@
       ]
     },
     {
-      "name": "Lavender Essential Oil",
-      "category": "Fragrances",
-      "unit": "ml",
-      "sapValue": null,
-      "density": 0.88,
+      "slug": "lavender-essential-oil",
       "purchases": [
         {
           "provider": "Amazon",
@@ -1507,11 +996,7 @@
       ]
     },
     {
-      "name": "Peppermint Essential Oil",
-      "category": "Fragrances",
-      "unit": "ml",
-      "sapValue": null,
-      "density": 0.9,
+      "slug": "peppermint-essential-oil",
       "purchases": [
         {
           "provider": "Aroma Zone",
@@ -1540,11 +1025,7 @@
       ]
     },
     {
-      "name": "Eucalyptus Essential Oil",
-      "category": "Fragrances",
-      "unit": "ml",
-      "sapValue": null,
-      "density": 0.92,
+      "slug": "eucalyptus-essential-oil",
       "purchases": [
         {
           "provider": "New Directions",
@@ -1573,11 +1054,7 @@
       ]
     },
     {
-      "name": "Kaolin Clay",
-      "category": "Additives",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "kaolin-clay",
       "purchases": [
         {
           "provider": "Aroma Zone",
@@ -1594,11 +1071,7 @@
       ]
     },
     {
-      "name": "Bentonite Clay",
-      "category": "Additives",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "bentonite-clay",
       "purchases": [
         {
           "provider": "New Directions",
@@ -1615,11 +1088,7 @@
       ]
     },
     {
-      "name": "Activated Charcoal",
-      "category": "Additives",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "activated-charcoal",
       "purchases": [
         {
           "provider": "Amazon",
@@ -1636,11 +1105,7 @@
       ]
     },
     {
-      "name": "Colloidal Oatmeal",
-      "category": "Additives",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "colloidal-oatmeal",
       "purchases": [
         {
           "provider": "Plena Natura",
@@ -1657,11 +1122,7 @@
       ]
     },
     {
-      "name": "Honey",
-      "category": "Additives",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "honey",
       "purchases": [
         {
           "provider": "Amazon",
@@ -1678,11 +1139,7 @@
       ]
     },
     {
-      "name": "Sugar",
-      "category": "Additives",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "sugar",
       "purchases": [
         {
           "provider": "Amazon",
@@ -1699,11 +1156,7 @@
       ]
     },
     {
-      "name": "Sea Salt",
-      "category": "Additives",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "sea-salt",
       "purchases": [
         {
           "provider": "Amazon",
@@ -1720,11 +1173,7 @@
       ]
     },
     {
-      "name": "Citric Acid",
-      "category": "Additives",
-      "unit": "g",
-      "sapValue": null,
-      "density": null,
+      "slug": "citric-acid",
       "purchases": [
         {
           "provider": "Aroma Zone",
@@ -1741,11 +1190,7 @@
       ]
     },
     {
-      "name": "Rosemary Oleoresin (ROE)",
-      "category": "Additives",
-      "unit": "ml",
-      "sapValue": null,
-      "density": 0.92,
+      "slug": "rosemary-oleoresin-roe",
       "purchases": [
         {
           "provider": "Plena Natura",

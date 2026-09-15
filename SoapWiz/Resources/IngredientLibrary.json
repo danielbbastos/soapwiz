@@ -1,0 +1,753 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "slug": "olive-oil",
+      "name": "Olive Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "ml",
+      "sapValue": 0.134,
+      "kohSapValue": 0.188,
+      "density": 0.911,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 14,
+        "stearic": 3,
+        "oleic": 69,
+        "linoleic": 12,
+        "linolenic": 1,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "coconut-oil",
+      "name": "Coconut Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.19,
+      "kohSapValue": 0.266,
+      "fattyAcidProfile": {
+        "lauric": 48,
+        "myristic": 19,
+        "palmitic": 9,
+        "stearic": 3,
+        "oleic": 6,
+        "linoleic": 2,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "palm-oil",
+      "name": "Palm Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.141,
+      "kohSapValue": 0.197,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 1,
+        "palmitic": 44,
+        "stearic": 5,
+        "oleic": 39,
+        "linoleic": 10,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "castor-oil",
+      "name": "Castor Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.128,
+      "kohSapValue": 0.18,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 1,
+        "stearic": 1,
+        "oleic": 3,
+        "linoleic": 4,
+        "linolenic": 0,
+        "ricinoleic": 90
+      }
+    },
+    {
+      "slug": "sweet-almond-oil",
+      "name": "Sweet Almond Oil",
+      "aliases": [
+        "Almond Oil"
+      ],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.136,
+      "kohSapValue": 0.19,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 7,
+        "stearic": 2,
+        "oleic": 69,
+        "linoleic": 17,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "avocado-oil",
+      "name": "Avocado Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "ml",
+      "sapValue": 0.133,
+      "kohSapValue": 0.187,
+      "density": 0.914,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 18,
+        "stearic": 1,
+        "oleic": 64,
+        "linoleic": 12,
+        "linolenic": 1,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "sunflower-oil",
+      "name": "Sunflower Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.134,
+      "kohSapValue": 0.188,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 7,
+        "stearic": 5,
+        "oleic": 19,
+        "linoleic": 68,
+        "linolenic": 1,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "jojoba-oil",
+      "name": "Jojoba Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.069,
+      "kohSapValue": 0.097,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 1,
+        "stearic": 0,
+        "oleic": 11,
+        "linoleic": 1,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "grapeseed-oil",
+      "name": "Grapeseed Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.126,
+      "kohSapValue": 0.177,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 7,
+        "stearic": 4,
+        "oleic": 16,
+        "linoleic": 70,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "argan-oil",
+      "name": "Argan Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.136,
+      "kohSapValue": 0.19,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 12,
+        "stearic": 6,
+        "oleic": 45,
+        "linoleic": 35,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "apricot-kernel-oil",
+      "name": "Apricot Kernel Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.135,
+      "kohSapValue": 0.189,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 6,
+        "stearic": 1,
+        "oleic": 60,
+        "linoleic": 30,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "hemp-seed-oil",
+      "name": "Hemp Seed Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.135,
+      "kohSapValue": 0.189,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 6,
+        "stearic": 2,
+        "oleic": 12,
+        "linoleic": 57,
+        "linolenic": 18,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "rice-bran-oil",
+      "name": "Rice Bran Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.128,
+      "kohSapValue": 0.18,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 1,
+        "palmitic": 22,
+        "stearic": 3,
+        "oleic": 38,
+        "linoleic": 34,
+        "linolenic": 1,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "safflower-oil",
+      "name": "Safflower Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "ml",
+      "sapValue": 0.136,
+      "kohSapValue": 0.19,
+      "density": 0.924,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 7,
+        "stearic": 2,
+        "oleic": 13,
+        "linoleic": 78,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "sesame-oil",
+      "name": "Sesame Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "ml",
+      "sapValue": 0.133,
+      "kohSapValue": 0.187,
+      "density": 0.919,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 9,
+        "stearic": 6,
+        "oleic": 41,
+        "linoleic": 43,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "canola-oil",
+      "name": "Canola Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.124,
+      "kohSapValue": 0.174,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 4,
+        "stearic": 2,
+        "oleic": 62,
+        "linoleic": 22,
+        "linolenic": 10,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "macadamia-oil",
+      "name": "Macadamia Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.139,
+      "kohSapValue": 0.195,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 8,
+        "stearic": 4,
+        "oleic": 59,
+        "linoleic": 2,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "neem-oil",
+      "name": "Neem Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.132,
+      "kohSapValue": 0.185,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 18,
+        "stearic": 16,
+        "oleic": 50,
+        "linoleic": 14,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "babassu-oil",
+      "name": "Babassu Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.175,
+      "kohSapValue": 0.246,
+      "fattyAcidProfile": {
+        "lauric": 50,
+        "myristic": 20,
+        "palmitic": 11,
+        "stearic": 4,
+        "oleic": 10,
+        "linoleic": 2,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "palm-kernel-oil",
+      "name": "Palm Kernel Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.156,
+      "kohSapValue": 0.219,
+      "fattyAcidProfile": {
+        "lauric": 48,
+        "myristic": 16,
+        "palmitic": 8,
+        "stearic": 3,
+        "oleic": 15,
+        "linoleic": 2,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "tamanu-oil",
+      "name": "Tamanu Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.12,
+      "kohSapValue": 0.169,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 13,
+        "stearic": 14,
+        "oleic": 39,
+        "linoleic": 30,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "meadowfoam-seed-oil",
+      "name": "Meadowfoam Seed Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.119,
+      "kohSapValue": 0.167,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 0,
+        "stearic": 0,
+        "oleic": 4,
+        "linoleic": 1,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "pumpkin-seed-oil",
+      "name": "Pumpkin Seed Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.133,
+      "kohSapValue": 0.187,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 13,
+        "stearic": 7,
+        "oleic": 30,
+        "linoleic": 50,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "soybean-oil",
+      "name": "Soybean Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.135,
+      "kohSapValue": 0.19,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 10,
+        "stearic": 4,
+        "oleic": 23,
+        "linoleic": 54,
+        "linolenic": 8,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "corn-oil",
+      "name": "Corn Oil",
+      "aliases": [],
+      "category": "Oils",
+      "unit": "g",
+      "sapValue": 0.136,
+      "kohSapValue": 0.19,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 11,
+        "stearic": 2,
+        "oleic": 28,
+        "linoleic": 58,
+        "linolenic": 1,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "beeswax",
+      "name": "Beeswax",
+      "aliases": [],
+      "category": "Waxes",
+      "unit": "g",
+      "sapValue": 0.069,
+      "kohSapValue": 0.097,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 0,
+        "stearic": 0,
+        "oleic": 0,
+        "linoleic": 0,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "candelilla-wax",
+      "name": "Candelilla Wax",
+      "aliases": [],
+      "category": "Waxes",
+      "unit": "g",
+      "sapValue": 0.033,
+      "kohSapValue": 0.046,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 0,
+        "stearic": 0,
+        "oleic": 0,
+        "linoleic": 0,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "lard",
+      "name": "Lard",
+      "aliases": [],
+      "category": "Fats",
+      "unit": "g",
+      "sapValue": 0.138,
+      "kohSapValue": 0.194,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 1,
+        "palmitic": 27,
+        "stearic": 14,
+        "oleic": 44,
+        "linoleic": 10,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "beef-tallow",
+      "name": "Beef Tallow",
+      "aliases": [],
+      "category": "Fats",
+      "unit": "g",
+      "sapValue": 0.14,
+      "kohSapValue": 0.196,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 3,
+        "palmitic": 25,
+        "stearic": 19,
+        "oleic": 36,
+        "linoleic": 3,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "shea-butter",
+      "name": "Shea Butter",
+      "aliases": [],
+      "category": "Fats",
+      "unit": "g",
+      "sapValue": 0.128,
+      "kohSapValue": 0.179,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 5,
+        "stearic": 38,
+        "oleic": 50,
+        "linoleic": 5,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "cocoa-butter",
+      "name": "Cocoa Butter",
+      "aliases": [],
+      "category": "Fats",
+      "unit": "g",
+      "sapValue": 0.137,
+      "kohSapValue": 0.192,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 27,
+        "stearic": 33,
+        "oleic": 33,
+        "linoleic": 3,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "mango-butter",
+      "name": "Mango Butter",
+      "aliases": [],
+      "category": "Fats",
+      "unit": "g",
+      "sapValue": 0.128,
+      "kohSapValue": 0.18,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "myristic": 0,
+        "palmitic": 5,
+        "stearic": 42,
+        "oleic": 47,
+        "linoleic": 3,
+        "linolenic": 0,
+        "ricinoleic": 0
+      }
+    },
+    {
+      "slug": "sodium-hydroxide-lye",
+      "name": "Sodium Hydroxide (Lye)",
+      "aliases": [
+        "Sodium Hydroxide",
+        "NaOH"
+      ],
+      "category": "Lyes",
+      "unit": "g"
+    },
+    {
+      "slug": "potassium-hydroxide-lye",
+      "name": "Potassium Hydroxide (Lye)",
+      "aliases": [
+        "Potassium Hydroxide",
+        "KOH"
+      ],
+      "category": "Lyes",
+      "unit": "g"
+    },
+    {
+      "slug": "sodium-lactate",
+      "name": "Sodium Lactate",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "ml",
+      "density": 1.13
+    },
+    {
+      "slug": "glycerin",
+      "name": "Glycerin",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "ml",
+      "density": 1.26
+    },
+    {
+      "slug": "titanium-dioxide",
+      "name": "Titanium Dioxide",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "lavender-essential-oil",
+      "name": "Lavender Essential Oil",
+      "aliases": [],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.88
+    },
+    {
+      "slug": "peppermint-essential-oil",
+      "name": "Peppermint Essential Oil",
+      "aliases": [],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.9
+    },
+    {
+      "slug": "eucalyptus-essential-oil",
+      "name": "Eucalyptus Essential Oil",
+      "aliases": [],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.92
+    },
+    {
+      "slug": "kaolin-clay",
+      "name": "Kaolin Clay",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "bentonite-clay",
+      "name": "Bentonite Clay",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "activated-charcoal",
+      "name": "Activated Charcoal",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "colloidal-oatmeal",
+      "name": "Colloidal Oatmeal",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "honey",
+      "name": "Honey",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "sugar",
+      "name": "Sugar",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "sea-salt",
+      "name": "Sea Salt",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "citric-acid",
+      "name": "Citric Acid",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "rosemary-oleoresin-roe",
+      "name": "Rosemary Oleoresin (ROE)",
+      "aliases": [
+        "Rosemary Oleoresin",
+        "ROE"
+      ],
+      "category": "Additives",
+      "unit": "ml",
+      "density": 0.92
+    }
+  ]
+}

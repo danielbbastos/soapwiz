@@ -12,7 +12,11 @@ struct DataSeeder {
 
 #if DEBUG
 extension DataSeeder {
+    /// Stock for the library rows `IngredientLibraryInstaller` has already put in
+    /// the store. Chemistry is never part of it: the fixtures describe what was
+    /// bought, and the library says what it is.
     private struct TestDataSeed: Decodable {
+        /// Debug-only extras beyond the categories the library installs.
         let categories: [String]
         let providers: [String]
         let storageLocations: [String]
@@ -20,13 +24,8 @@ extension DataSeeder {
     }
 
     private struct IngredientSeed: Decodable {
-        let name: String
-        let category: String
-        let unit: String
-        let sapValue: Double?
-        let kohSapValue: Double?
-        let density: Double?
-        let fattyAcidProfile: FattyAcidProfile?
+        /// The library entry this stock belongs to.
+        let slug: String
         let purchases: [PurchaseSeed]
     }
 
@@ -131,8 +130,10 @@ extension DataSeeder {
         context.insert(product)
     }
 
+    /// Runs once per store. Keyed on purchases rather than ingredients, because
+    /// the library has already filled the inventory by the time this runs.
     static func seedTestIngredients(into context: ModelContext) {
-        guard let count = try? context.fetchCount(FetchDescriptor<Ingredient>()), count == 0 else { return }
+        guard let count = try? context.fetchCount(FetchDescriptor<IngredientPurchase>()), count == 0 else { return }
 
         guard
             let url = Bundle.main.url(forResource: "TestIngredients", withExtension: "json"),
@@ -144,11 +145,9 @@ extension DataSeeder {
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.locale = Locale(identifier: "en_US_POSIX")
 
-        var categoryMap: [String: IngredientCategory] = [:]
-        for name in seed.categories {
-            let cat = IngredientCategory(name: name)
-            context.insert(cat)
-            categoryMap[name] = cat
+        let existingCategories = Set(((try? context.fetch(FetchDescriptor<IngredientCategory>())) ?? []).map(\.name.lookupKey))
+        for name in seed.categories where !existingCategories.contains(name.lookupKey) {
+            context.insert(IngredientCategory(name: name))
         }
 
         var providerMap: [String: Provider] = [:]
@@ -165,45 +164,30 @@ extension DataSeeder {
             storageMap[name] = loc
         }
 
-        let lookups = SeedLookups(
-            categories: categoryMap,
-            providers: providerMap,
-            storage: storageMap,
-            formatter: formatter
-        )
+        let libraryRows = ((try? context.fetch(FetchDescriptor<Ingredient>())) ?? []).filter { !$0.librarySlug.isEmpty }
+        let librarySlugs = Dictionary(libraryRows.map { ($0.librarySlug, $0) }, uniquingKeysWith: { first, _ in first })
+
+        let lookups = SeedLookups(providers: providerMap, storage: storageMap, formatter: formatter)
         for ingredientSeed in seed.ingredients {
-            insertIngredient(ingredientSeed, into: context, lookups: lookups)
+            guard let ingredient = librarySlugs[ingredientSeed.slug] else { continue }
+            insertPurchases(ingredientSeed.purchases, for: ingredient, into: context, lookups: lookups)
         }
     }
 
-    /// Resolved lookup tables and date parser shared across ingredient inserts.
+    /// Resolved lookup tables and date parser shared across purchase inserts.
     private struct SeedLookups {
-        let categories: [String: IngredientCategory]
         let providers: [String: Provider]
         let storage: [String: StorageLocation]
         let formatter: DateFormatter
     }
 
-    private static func insertIngredient(
-        _ ingredientSeed: IngredientSeed,
+    private static func insertPurchases(
+        _ purchaseSeeds: [PurchaseSeed],
+        for ingredient: Ingredient,
         into context: ModelContext,
         lookups: SeedLookups
     ) {
-        let unitRaw = IngredientUnit.allCases
-            .first { $0.rawValue.lowercased() == ingredientSeed.unit.lowercased() }?.rawValue
-            ?? ingredientSeed.unit
-        let ingredient = Ingredient(
-            name: ingredientSeed.name,
-            category: lookups.categories[ingredientSeed.category],
-            unit: unitRaw
-        )
-        ingredient.sapValue = ingredientSeed.sapValue
-        ingredient.kohSapValue = ingredientSeed.kohSapValue
-        ingredient.density = ingredientSeed.density
-        ingredient.fattyAcidProfile = ingredientSeed.fattyAcidProfile
-        context.insert(ingredient)
-
-        for purchaseSeed in ingredientSeed.purchases {
+        for purchaseSeed in purchaseSeeds {
             let purchase = IngredientPurchase(
                 provider: lookups.providers[purchaseSeed.provider],
                 dateOfPurchase: lookups.formatter.date(from: purchaseSeed.dateOfPurchase) ?? .now,

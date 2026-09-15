@@ -83,6 +83,12 @@ extension BackupService {
         ingredient.kohSapValue = dto.kohSapValue
         ingredient.density = dto.density
         ingredient.fattyAcidProfile = dto.fattyAcidProfile
+        if let uuid = dto.uuid {
+            ingredient.uuid = uuid
+        }
+        ingredient.librarySlug = dto.librarySlug ?? ""
+        ingredient.hasCustomChemistry = dto.hasCustomChemistry ?? false
+        ingredient.isHidden = dto.isHidden ?? false
         context.insert(ingredient)
 
         for purchaseDTO in dto.purchases {

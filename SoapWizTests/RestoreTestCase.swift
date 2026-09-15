@@ -31,10 +31,13 @@ extension RestoreTestCase {
     }
 
     /// The settle delay exists to let UIKit finish deallocating the torn-down
-    /// interface; with no interface there is nothing to wait for.
+    /// interface; with no interface there is nothing to wait for. The library is
+    /// empty so a restored store holds exactly what the backup did —
+    /// `RestoreLibraryTests` covers completing it from a real one.
     func makeCoordinator() -> RestoreCoordinator {
         let coordinator = RestoreCoordinator()
         coordinator.settleDelay = .zero
+        coordinator.ingredientLibrary = IngredientLibrary(entries: [])
         return coordinator
     }
 
