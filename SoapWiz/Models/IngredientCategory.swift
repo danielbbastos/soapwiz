@@ -11,6 +11,9 @@ final class IngredientCategory {
         static let additives = "Additives"
         static let lyes = "Lyes"
         static let others = "Others"
+
+        /// Every category a fresh install starts with.
+        static let all = [oils, waxes, fats, fragrances, additives, lyes, others]
     }
 
     /// Stable identity across devices, so a name collision arriving from CloudKit

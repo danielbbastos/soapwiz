@@ -7,34 +7,72 @@ import SwiftData
 @MainActor
 struct DataSeederTests {
 
-    private func makeContainer() throws -> ModelContainer {
-        let schema = Schema([
-            Ingredient.self, IngredientPurchase.self, IngredientCategory.self,
-            StorageLocation.self, Provider.self,
-            Recipe.self, RecipeIngredient.self, RecipeProduct.self,
-            Batch.self, BatchLineItem.self
-        ])
-        return try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
+    private func makeContext() throws -> (ModelContainer, ModelContext) {
+        let schema = ModelContainerFactory.schema
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
+        return (container, container.mainContext)
     }
 
-    @Test func seedDoesNotInsertWhenIngredientsExist() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
-        ctx.insert(Ingredient(name: "Existing"))
+    /// The order a debug launch runs them in: the library first, then the
+    /// fixtures that stock it.
+    private func seedAll(_ ctx: ModelContext) throws {
+        try IngredientLibraryInstaller.installMissing(from: .bundled, in: ctx)
+        DataSeeder.seedTestIngredients(into: ctx)
+        DataSeeder.seedTestRecipes(into: ctx)
+    }
+
+    @Test func seedTestIngredients_PurchasesAlreadyExist_DoesNotSeedAgain() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        try IngredientLibraryInstaller.installMissing(from: .bundled, in: ctx)
+        let ingredient = try #require(try ctx.fetch(FetchDescriptor<Ingredient>()).first)
+        let purchase = IngredientPurchase(
+            dateOfPurchase: .now,
+            quantity: 100,
+            totalPrice: 1,
+            badge: "",
+            journalCode: "",
+            expiryDate: nil,
+            openingDate: nil
+        )
+        ingredient.purchases.append(purchase)
+        ctx.insert(purchase)
         try ctx.save()
 
         DataSeeder.seedTestIngredients(into: ctx)
 
-        let count = try ctx.fetchCount(FetchDescriptor<Ingredient>())
-        #expect(count == 1)
+        #expect(try ctx.fetchCount(FetchDescriptor<IngredientPurchase>()) == 1)
+    }
+
+    @Test func seedTestIngredients_StocksLibraryRows_WithoutAddingIngredients() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        try IngredientLibraryInstaller.installMissing(from: .bundled, in: ctx)
+        let before = try ctx.fetchCount(FetchDescriptor<Ingredient>())
+
+        DataSeeder.seedTestIngredients(into: ctx)
+
+        let purchases = try ctx.fetch(FetchDescriptor<IngredientPurchase>())
+        #expect(try ctx.fetchCount(FetchDescriptor<Ingredient>()) == before)
+        #expect(!purchases.isEmpty)
+        #expect(purchases.allSatisfy { !($0.ingredient?.librarySlug.isEmpty ?? true) })
+    }
+
+    @Test func seedAll_LeavesNoDuplicateIngredientNames() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+
+        try seedAll(ctx)
+
+        let names = try ctx.fetch(FetchDescriptor<Ingredient>()).map(\.name.lookupKey)
+        #expect(names.count == Set(names).count)
     }
 
     @Test func seededRecipes_AllPresent() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
 
-        DataSeeder.seedTestIngredients(into: ctx)
-        DataSeeder.seedTestRecipes(into: ctx)
+        try seedAll(ctx)
 
         let recipes = try ctx.fetch(FetchDescriptor<Recipe>())
         let names = Set(recipes.map(\.name))
@@ -44,11 +82,10 @@ struct DataSeederTests {
     /// Every seeded recipe must be batchable out of the box — that's the point of
     /// the seed data. Guards the JSON stock levels against the recipe definitions.
     @Test func seededRecipes_HaveEnoughStockToCreateOneBatch() throws {
-        let container = try makeContainer()
-        let ctx = container.mainContext
+        let (container, ctx) = try makeContext()
+        _ = container
 
-        DataSeeder.seedTestIngredients(into: ctx)
-        DataSeeder.seedTestRecipes(into: ctx)
+        try seedAll(ctx)
 
         let lyesName = IngredientCategory.Name.lyes
         let lyePredicate = #Predicate<Ingredient> { $0.category?.name == lyesName }

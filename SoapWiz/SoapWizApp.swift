@@ -19,6 +19,11 @@ struct SoapWizApp: App {
     init() {
         UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
         let container = ModelContainerFactory.makeProduction()
+        // Repairs the migration that gave `Ingredient` its identity, before
+        // anything installs or merges ingredients.
+        IngredientIdentityBackfill.repairSharedIdentitiesLoggingFailure(in: container.mainContext)
+        // Before the seeder, whose fixtures only stock the library's rows.
+        IngredientLibraryInstaller.installMissingLoggingFailure(in: container.mainContext)
         DataSeeder.seed(into: container.mainContext)
         // Before `resolve`, so it only ever has to handle the zero-record case —
         // any duplicate settings rows from a previous sync are already gone.

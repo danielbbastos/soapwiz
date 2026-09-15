@@ -9,6 +9,24 @@ final class Ingredient {
     var unit: String = ""
     var isFavorite: Bool = false
 
+    /// Stable identity across devices, so two copies of one library ingredient,
+    /// installed separately on two devices, can collapse to the same survivor
+    /// everywhere.
+    var uuid: UUID = UUID()
+
+    /// The `IngredientLibrary` entry this ingredient was installed from or
+    /// adopted by, or empty for one the user created. Kept when the user changes
+    /// the chemistry, so the installer never puts the entry back beside it.
+    var librarySlug: String = ""
+
+    /// Set once a library ingredient's chemistry no longer matches the bundled
+    /// values, which is what makes it custom.
+    var hasCustomChemistry: Bool = false
+
+    /// Left out of the inventory list. Library ingredients are hidden rather than
+    /// deleted, because the installer would only bring them back.
+    var isHidden: Bool = false
+
     /// A photo of the actual bottle or bag, already downscaled by
     /// `ImageDownscaler` before it is assigned. `.externalStorage` keeps it in a
     /// file beside the store rather than in the row, so fetching the inventory
@@ -107,6 +125,10 @@ final class Ingredient {
     }
 
     var isUsedInRecipes: Bool { !recipesUsingThis.isEmpty }
+
+    /// Trusted as bundled library data: installed from the library and never
+    /// given chemistry of its own.
+    var isLibrary: Bool { !librarySlug.isEmpty && !hasCustomChemistry }
 
     var avatarColor: AvatarColor {
         AvatarColor.resolve(avatarColorName, fallbackSeed: name)
