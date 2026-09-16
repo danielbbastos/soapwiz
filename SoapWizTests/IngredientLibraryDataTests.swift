@@ -114,6 +114,11 @@ struct IngredientLibraryDataTests {
         #expect(implausible.isEmpty, "KOH SAP outside 0.040–0.350: \(implausible.map(\.slug))")
     }
 
+    @Test func volumetricEntries_HaveADensity() {
+        let missing = entries.filter { IngredientUnitConverter.isVolume($0.unit) && $0.density == nil }
+        #expect(missing.isEmpty, "Entries sold by volume without a density: \(missing.map(\.slug))")
+    }
+
     @Test func densities_WithinPlausibleRange() {
         let implausible = entries.filter { entry in
             guard let density = entry.density else { return false }

@@ -3379,12 +3379,113 @@
       }
     },
     {
+      "slug": "basil-essential-oil",
+      "name": "Basil Essential Oil",
+      "aliases": [
+        "Basil Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "g"
+    },
+    {
+      "slug": "bergamot-essential-oil",
+      "name": "Bergamot Essential Oil",
+      "aliases": [
+        "Bergamot Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.868
+    },
+    {
+      "slug": "cedarwood-essential-oil",
+      "name": "Cedarwood Essential Oil",
+      "aliases": [
+        "Cedarwood Oil",
+        "Virginia Cedarwood",
+        "Atlas Cedarwood"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.955
+    },
+    {
+      "slug": "clove-bud-essential-oil",
+      "name": "Clove Bud Essential Oil",
+      "aliases": [
+        "Clove Essential Oil",
+        "Clove Bud Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 1.049
+    },
+    {
+      "slug": "coffee-fragrance-oil",
+      "name": "Coffee Fragrance Oil",
+      "aliases": [],
+      "category": "Fragrances",
+      "unit": "g"
+    },
+    {
       "slug": "eucalyptus-essential-oil",
       "name": "Eucalyptus Essential Oil",
       "aliases": [],
       "category": "Fragrances",
       "unit": "ml",
       "density": 0.92
+    },
+    {
+      "slug": "fragrance-oil",
+      "name": "Fragrance Oil",
+      "aliases": [
+        "FO"
+      ],
+      "category": "Fragrances",
+      "unit": "g"
+    },
+    {
+      "slug": "frankincense-essential-oil",
+      "name": "Frankincense Essential Oil",
+      "aliases": [
+        "Olibanum",
+        "Frankincense Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.873
+    },
+    {
+      "slug": "geranium-essential-oil",
+      "name": "Geranium Essential Oil",
+      "aliases": [
+        "Geranium Oil",
+        "Rose Geranium"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.887
+    },
+    {
+      "slug": "grapefruit-essential-oil",
+      "name": "Grapefruit Essential Oil",
+      "aliases": [
+        "Grapefruit Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.856
+    },
+    {
+      "slug": "juniper-berry-essential-oil",
+      "name": "Juniper Berry Essential Oil",
+      "aliases": [
+        "Juniper Berry Oil",
+        "Juniper Essential Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.867
     },
     {
       "slug": "lavender-essential-oil",
@@ -3395,6 +3496,66 @@
       "density": 0.88
     },
     {
+      "slug": "lemon-essential-oil",
+      "name": "Lemon Essential Oil",
+      "aliases": [
+        "Lemon Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.854
+    },
+    {
+      "slug": "lemongrass-essential-oil",
+      "name": "Lemongrass Essential Oil",
+      "aliases": [
+        "Lemongrass Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.885
+    },
+    {
+      "slug": "lime-essential-oil",
+      "name": "Lime Essential Oil",
+      "aliases": [
+        "Lime Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.859
+    },
+    {
+      "slug": "litsea-cubeba-essential-oil",
+      "name": "Litsea Cubeba Essential Oil",
+      "aliases": [
+        "May Chang",
+        "May Chang Essential Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.888
+    },
+    {
+      "slug": "oatmeal-milk-honey-fragrance-oil",
+      "name": "Oatmeal Milk & Honey Fragrance Oil",
+      "aliases": [
+        "OMH Fragrance Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "g"
+    },
+    {
+      "slug": "patchouli-essential-oil",
+      "name": "Patchouli Essential Oil",
+      "aliases": [
+        "Patchouli Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.969
+    },
+    {
       "slug": "peppermint-essential-oil",
       "name": "Peppermint Essential Oil",
       "aliases": [],
@@ -3403,9 +3564,156 @@
       "density": 0.9
     },
     {
+      "slug": "pine-needle-essential-oil",
+      "name": "Pine Needle Essential Oil",
+      "aliases": [
+        "Pine Essential Oil",
+        "Pine Needle Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.875
+    },
+    {
+      "slug": "rose-fragrance-oil",
+      "name": "Rose Fragrance Oil",
+      "aliases": [],
+      "category": "Fragrances",
+      "unit": "g"
+    },
+    {
+      "slug": "rosemary-essential-oil",
+      "name": "Rosemary Essential Oil",
+      "aliases": [
+        "Rosemary Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.903
+    },
+    {
+      "slug": "sandalwood-fragrance-oil",
+      "name": "Sandalwood Fragrance Oil",
+      "aliases": [],
+      "category": "Fragrances",
+      "unit": "g"
+    },
+    {
+      "slug": "spearmint-essential-oil",
+      "name": "Spearmint Essential Oil",
+      "aliases": [
+        "Spearmint Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.929
+    },
+    {
+      "slug": "star-anise-essential-oil",
+      "name": "Star Anise Essential Oil",
+      "aliases": [
+        "Star Anise Oil",
+        "Anise Essential Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.983
+    },
+    {
+      "slug": "sweet-orange-essential-oil",
+      "name": "Sweet Orange Essential Oil",
+      "aliases": [
+        "Orange Essential Oil",
+        "Sweet Orange Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.873
+    },
+    {
+      "slug": "tea-tree-essential-oil",
+      "name": "Tea Tree Essential Oil",
+      "aliases": [
+        "Tea Tree Oil",
+        "Melaleuca"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.895
+    },
+    {
+      "slug": "thyme-essential-oil",
+      "name": "Thyme Essential Oil",
+      "aliases": [
+        "Thyme Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.923
+    },
+    {
+      "slug": "vanilla-fragrance-oil",
+      "name": "Vanilla Fragrance Oil",
+      "aliases": [
+        "Vanilla FO"
+      ],
+      "category": "Fragrances",
+      "unit": "g"
+    },
+    {
+      "slug": "vetiver-essential-oil",
+      "name": "Vetiver Essential Oil",
+      "aliases": [
+        "Vetiver Oil",
+        "Vetivert"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.998
+    },
+    {
+      "slug": "ylang-ylang-essential-oil",
+      "name": "Ylang Ylang Essential Oil",
+      "aliases": [
+        "Ylang Ylang Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.919
+    },
+    {
       "slug": "activated-charcoal",
       "name": "Activated Charcoal",
       "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "alkanet-root-powder",
+      "name": "Alkanet Root Powder",
+      "aliases": [
+        "Alkanet Root"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "aloe-vera-juice",
+      "name": "Aloe Vera Juice",
+      "aliases": [
+        "Aloe Vera Gel",
+        "Aloe Juice"
+      ],
+      "category": "Additives",
+      "unit": "ml",
+      "density": 1.0
+    },
+    {
+      "slug": "annatto-seed-powder",
+      "name": "Annatto Seed Powder",
+      "aliases": [
+        "Annatto"
+      ],
       "category": "Additives",
       "unit": "g"
     },
@@ -3424,9 +3732,34 @@
       "unit": "g"
     },
     {
+      "slug": "cocoa-powder",
+      "name": "Cocoa Powder",
+      "aliases": [
+        "Cacao Powder"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "coconut-milk-powder",
+      "name": "Coconut Milk Powder",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
       "slug": "colloidal-oatmeal",
       "name": "Colloidal Oatmeal",
       "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "french-green-clay",
+      "name": "French Green Clay",
+      "aliases": [
+        "Illite Clay"
+      ],
       "category": "Additives",
       "unit": "g"
     },
@@ -3439,6 +3772,24 @@
       "density": 1.26
     },
     {
+      "slug": "goat-milk-powder",
+      "name": "Goat Milk Powder",
+      "aliases": [
+        "Goat's Milk Powder"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "ground-coffee",
+      "name": "Ground Coffee",
+      "aliases": [
+        "Coffee Grounds"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
       "slug": "honey",
       "name": "Honey",
       "aliases": [],
@@ -3446,9 +3797,90 @@
       "unit": "g"
     },
     {
+      "slug": "indigo-powder",
+      "name": "Indigo Powder",
+      "aliases": [
+        "Indigo"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "iron-oxide",
+      "name": "Iron Oxide",
+      "aliases": [
+        "Iron Oxides"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
       "slug": "kaolin-clay",
       "name": "Kaolin Clay",
       "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "madder-root-powder",
+      "name": "Madder Root Powder",
+      "aliases": [
+        "Madder Root"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "mica",
+      "name": "Mica",
+      "aliases": [
+        "Cosmetic Mica"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "paprika-powder",
+      "name": "Paprika Powder",
+      "aliases": [
+        "Paprika"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "poppy-seeds",
+      "name": "Poppy Seeds",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "pumice",
+      "name": "Pumice",
+      "aliases": [
+        "Pumice Powder"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "rhassoul-clay",
+      "name": "Rhassoul Clay",
+      "aliases": [
+        "Red Moroccan Clay",
+        "Ghassoul Clay"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "rose-clay",
+      "name": "Rose Clay",
+      "aliases": [
+        "Pink Kaolin Clay",
+        "Pink Clay"
+      ],
       "category": "Additives",
       "unit": "g"
     },
@@ -3471,12 +3903,44 @@
       "unit": "g"
     },
     {
+      "slug": "silk-amino-acids",
+      "name": "Silk Amino Acids",
+      "aliases": [
+        "Hydrolysed Silk"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "sodium-citrate",
+      "name": "Sodium Citrate",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "sodium-gluconate",
+      "name": "Sodium Gluconate",
+      "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
       "slug": "sodium-lactate",
       "name": "Sodium Lactate",
       "aliases": [],
       "category": "Additives",
       "unit": "ml",
       "density": 1.32
+    },
+    {
+      "slug": "spirulina-powder",
+      "name": "Spirulina Powder",
+      "aliases": [
+        "Spirulina"
+      ],
+      "category": "Additives",
+      "unit": "g"
     },
     {
       "slug": "sugar",
@@ -3486,9 +3950,65 @@
       "unit": "g"
     },
     {
+      "slug": "table-salt",
+      "name": "Table Salt",
+      "aliases": [
+        "Sodium Chloride"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "tetrasodium-edta",
+      "name": "Tetrasodium EDTA",
+      "aliases": [
+        "EDTA"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
       "slug": "titanium-dioxide",
       "name": "Titanium Dioxide",
       "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "turmeric-powder",
+      "name": "Turmeric Powder",
+      "aliases": [
+        "Turmeric"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "tussah-silk",
+      "name": "Tussah Silk",
+      "aliases": [
+        "Silk Fibre",
+        "Mulberry Silk"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "ultramarine",
+      "name": "Ultramarine",
+      "aliases": [
+        "Ultramarine Blue"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "vitamin-e",
+      "name": "Vitamin E",
+      "aliases": [
+        "Tocopherol",
+        "Vitamin E Oil"
+      ],
       "category": "Additives",
       "unit": "g"
     },
