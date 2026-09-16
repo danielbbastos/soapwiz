@@ -95,6 +95,82 @@ struct RecipeFormStaleIngredientTests {
         #expect(recipe.ingredients.first?.ingredient == nil)
     }
 
+    // MARK: - Lye rows
+
+    /// The lye rows are captured the same way the drafts are, and the merge
+    /// repoints the stored recipe onto the survivor before deleting the copy the
+    /// form holds. Writing the captured reference back on save would undo that
+    /// repoint and leave the recipe's lye pointing at a row that is gone.
+    @Test func save_AfterMergeDeletedTheLyeIngredient_RecipePointsAtTheSurvivor() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let keep = try installed(1, in: ctx)
+        let captured = try installed(2, in: ctx)
+        try ctx.save()
+        let survivingUUID = keep.uuid
+
+        let model = makeModel(addingOil: keep)
+        model.lyeIngredient = captured
+
+        try DuplicateMerger.mergeAll(in: ctx)
+        #expect(captured.modelContext == nil)
+
+        let recipe = model.save(context: ctx)
+        try ctx.save()
+
+        #expect(recipe.lyeIngredient?.uuid == survivingUUID)
+    }
+
+    /// No survivor to resolve to. `Recipe.lyeIngredient` nullifies, so the link
+    /// is cleared rather than written against a row the store no longer has.
+    @Test func save_LyeIngredientDeletedWithNoSurvivor_ClearsTheLink() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = try installed(1, in: ctx)
+        let userLye = Ingredient(name: "Sodium Hydroxide", unit: IngredientUnit.grams.rawValue)
+        userLye.uuid = try uuid(2)
+        ctx.insert(userLye)
+        try ctx.save()
+
+        let model = makeModel(addingOil: oil)
+        model.lyeIngredient = userLye
+
+        ctx.delete(userLye)
+        try ctx.save()
+
+        let recipe = model.save(context: ctx)
+        try ctx.save()
+
+        #expect(recipe.lyeIngredient == nil)
+    }
+
+    /// The ordinary path for both lye rows, so the guards above cannot pass by
+    /// clearing every lye link.
+    @Test func save_LyeIngredientsStillInTheStore_BothLinksPointAtThem() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = try installed(1, in: ctx)
+        let naoh = Ingredient(name: "Sodium Hydroxide", unit: IngredientUnit.grams.rawValue)
+        naoh.uuid = try uuid(2)
+        let koh = Ingredient(name: "Potassium Hydroxide", unit: IngredientUnit.grams.rawValue)
+        koh.uuid = try uuid(3)
+        ctx.insert(naoh)
+        ctx.insert(koh)
+        try ctx.save()
+
+        let model = makeModel(addingOil: oil)
+        model.lyeIngredient = naoh
+        model.kohLyeIngredient = koh
+
+        let recipe = model.save(context: ctx)
+        try ctx.save()
+
+        #expect(recipe.lyeIngredient?.uuid == naoh.uuid)
+        #expect(recipe.kohLyeIngredient?.uuid == koh.uuid)
+    }
+
+    // MARK: - Line items
+
     /// The ordinary path, so the guards above cannot pass by dropping every
     /// ingredient.
     @Test func save_DraftIngredientStillInTheStore_LineItemPointsAtIt() throws {

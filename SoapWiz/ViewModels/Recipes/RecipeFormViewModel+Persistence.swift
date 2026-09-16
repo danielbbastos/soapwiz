@@ -91,8 +91,18 @@ extension RecipeFormViewModel {
         recipe.isCreamSoap = isCreamSoap
         recipe.useCFM = useCFM
         recipe.cfmNeutralizer = cfmNeutralizer.rawValue
-        recipe.lyeIngredient = lyeIngredient
-        recipe.kohLyeIngredient = kohLyeIngredient
+        // Resolved for the same reason the line-item drafts are. The merge
+        // repoints `recipe.lyeIngredient` onto the survivor before deleting the
+        // copy this form captured, so writing the captured reference back would
+        // undo that repoint and leave the recipe's lye pointing at a detached
+        // row. `Recipe.lyeIngredient` nullifies, so a lye that resolves to
+        // nothing is cleared rather than dangling.
+        recipe.lyeIngredient = lyeIngredient.flatMap {
+            LiveIngredient.resolve($0, slug: lyeIngredientSlug, in: context)
+        }
+        recipe.kohLyeIngredient = kohLyeIngredient.flatMap {
+            LiveIngredient.resolve($0, slug: kohLyeIngredientSlug, in: context)
+        }
         recipe.collections = selectedCollections
 
         // Line items with no ingredient survive the rebuild: the ingredient may

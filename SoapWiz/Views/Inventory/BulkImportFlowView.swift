@@ -25,11 +25,11 @@ struct BulkImportFlowView: View {
             // Fresh identity per entry so advancing to the next ingredient resets the
             // scroll position to the top instead of staying where the last one was.
             .id(model.position)
-            .navigationTitle(model.currentIngredient.name)
+            .navigationTitle(model.currentIngredientName)
             .navigationBarTitleDisplayMode(.inline)
             .warmBackground()
             .safeAreaInset(edge: .top, spacing: 0) {
-                Text(model.currentIngredient.name)
+                Text(model.currentIngredientName)
                     .font(.title2.weight(.bold))
                     .fontDesign(.rounded)
                     .foregroundStyle(Color.warmInk)
@@ -78,7 +78,7 @@ struct BulkImportFlowView: View {
     }
 
     private func advance() {
-        model.skip()
+        model.skip(context: modelContext)
         finishIfComplete()
     }
 
