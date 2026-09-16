@@ -1,5 +1,4 @@
 import Testing
-import Foundation
 @testable import SoapWiz
 
 @Suite("Ingredient library data")
@@ -93,7 +92,7 @@ struct IngredientLibraryDataTests {
     @Test func fattyAcidProfiles_AcidsWithinZeroToHundred() {
         let invalid = lipids.filter { entry in
             guard let profile = entry.fattyAcidProfile else { return false }
-            return Self.molecularWeights.contains { !(0...100).contains(profile[keyPath: $0.acid]) }
+            return acids(of: profile).contains { !(0...100).contains($0) }
         }
         #expect(invalid.isEmpty, "Acids outside 0–100: \(invalid.map(\.slug))")
     }
@@ -148,9 +147,13 @@ struct IngredientLibraryDataTests {
         }
     }
 
+    private func acids(of profile: FattyAcidProfile) -> [Double] {
+        Self.molecularWeights.map { profile[keyPath: $0.acid] }
+    }
+
     private func total(of profile: FattyAcidProfile?) -> Double {
         guard let profile else { return 0 }
-        return Self.molecularWeights.reduce(0) { $0 + profile[keyPath: $1.acid] }
+        return acids(of: profile).reduce(0, +)
     }
 
     /// Grams of KOH per gram of fat, assuming the tracked acids are the whole fat:
