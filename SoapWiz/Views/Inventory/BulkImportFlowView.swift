@@ -8,6 +8,7 @@ struct BulkImportFlowView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var model: BulkImportFlowViewModel
+    @State private var saveError: String?
     /// Called when the queue is exhausted or the user cancels — dismisses the flow.
     let onFinish: () -> Void
 
@@ -49,11 +50,29 @@ struct BulkImportFlowView: View {
                 ToolbarItemGroup(placement: .confirmationAction) {
                     Button("Skip") { advance() }
                     Button(model.isLastStep ? "Done" : "Add") {
-                        model.commitAndAdvance(context: modelContext)
-                        finishIfComplete()
+                        do {
+                            try model.commitAndAdvance(context: modelContext)
+                            finishIfComplete()
+                        } catch {
+                            // The flow stays on this entry: the view model did
+                            // not advance, so what the user typed is still here
+                            // to retry or skip.
+                            saveError = error.localizedDescription
+                        }
                     }
                     .disabled(!model.canCommit)
                 }
+            }
+            .alert(
+                "Couldn’t Save Purchase",
+                isPresented: Binding(
+                    get: { saveError != nil },
+                    set: { if !$0 { saveError = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(saveError ?? "")
             }
         }
     }

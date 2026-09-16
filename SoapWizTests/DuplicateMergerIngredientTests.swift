@@ -5,8 +5,8 @@ import SwiftData
 
 /// Ingredients duplicate for a reason the other lookup rows don't share: every
 /// device installs the bundled library before sync can tell it the account
-/// already has one. These cover both passes — the slug pass that collapses those
-/// copies, and the name pass that folds in rows predating the library.
+/// already has one. Those copies collapse by `librarySlug`; a row the user
+/// created carries no slug and is deliberately left alone.
 @Suite("Duplicate merger — ingredients", .serialized)
 @MainActor
 struct DuplicateMergerIngredientTests {
@@ -24,8 +24,6 @@ struct DuplicateMergerIngredientTests {
         density: 0.921,
         fattyAcidProfile: FattyAcidProfile(lauric: 48, myristic: 19, palmitic: 9, stearic: 3, oleic: 8, linoleic: 2)
     )
-
-    private var library: IngredientLibrary { IngredientLibrary(entries: [olive, coconut]) }
 
     private func makeContext() throws -> (ModelContainer, ModelContext) {
         let schema = ModelContainerFactory.schema
@@ -88,7 +86,7 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(lineItem)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
         let remaining = try ingredients(ctx)
         #expect(remaining.count == 1)
@@ -121,7 +119,7 @@ struct DuplicateMergerIngredientTests {
             }
             try ctx.save()
 
-            try DuplicateMerger.mergeAll(from: library, in: ctx)
+            try DuplicateMerger.mergeAll(in: ctx)
 
             let remaining = try ingredients(ctx)
             #expect(remaining.count == 1)
@@ -143,7 +141,7 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(try installed(coconut, 2))
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
         #expect(try ingredients(ctx).count == 2)
         #expect(ctx.hasChanges == false)
@@ -165,7 +163,7 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(drop)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
         let survivor = try #require(try ingredients(ctx).first)
         #expect(survivor.uuid == keep.uuid)
@@ -188,7 +186,7 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(drop)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
         let survivor = try #require(try ingredients(ctx).first)
         #expect(survivor.sapValue == 0.1340)
@@ -208,7 +206,7 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(drop)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
         let survivor = try #require(try ingredients(ctx).first)
         #expect(survivor.isHidden)
@@ -228,7 +226,7 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(drop)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
         let survivor = try #require(try ingredients(ctx).first)
         #expect(survivor.imageData == Data([0x01, 0x02]))
@@ -256,7 +254,7 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(drop)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
         let survivor = try #require(try ingredients(ctx).first)
         #expect(survivor.imageData == Data([0xAA]))
@@ -265,12 +263,17 @@ struct DuplicateMergerIngredientTests {
         #expect(survivor.lowStockThreshold == 100)
     }
 
-    // MARK: - Name pass: rows predating the library
+    // MARK: - Rows the merge deliberately leaves alone
 
-    /// The case the installer structurally cannot reach: it only adopts rows
-    /// already on the device when it runs, so a pre-library row arriving after
-    /// the slug is installed is never claimed by it.
-    @Test func mergeAll_SlugLessRowMatchingAnEntryName_FoldsIntoTheLibraryRow() throws {
+    /// The merge used to fold a slug-less row into the library row whose entry
+    /// claimed its name, and deleting it took the user's purchases with it —
+    /// the SW-136 data loss. A row the user made deliberately is not a duplicate
+    /// of a catalog entry just because the names agree, so it stays.
+    ///
+    /// Linking such a row to an entry is `IngredientLibraryInstaller`'s job, and
+    /// it only does so while no row carries that slug yet, so it never deletes
+    /// anything. See SW-140.
+    @Test func mergeAll_SlugLessRowMatchingAnEntryName_IsKeptWithItsPurchases() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let libraryRow = try installed(olive, 2)
@@ -284,38 +287,38 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(purchase)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
-        let survivor = try #require(try ingredients(ctx).first)
-        #expect(try ingredients(ctx).count == 1)
-        // The library row wins even though the user's row has the lower uuid.
-        #expect(survivor.librarySlug == "olive-oil")
-        #expect(survivor.name == "Olive Oil")
-        #expect(purchase.ingredient?.librarySlug == "olive-oil")
-        #expect(survivor.purchases.count == 1)
+        #expect(try ingredients(ctx).count == 2)
+        #expect(userRow.librarySlug.isEmpty)
+        #expect(purchase.ingredient?.uuid == userRow.uuid)
+        #expect(userRow.purchases.count == 1)
+        #expect(ctx.hasChanges == false)
     }
 
-    @Test func mergeAll_SlugLessRowMatchingAnAlias_FoldsIntoTheLibraryRow() throws {
+    /// Aliases are a recognition hint for the installer, never a licence for the
+    /// merge to delete the row that matches one.
+    @Test func mergeAll_SlugLessRowMatchingAnAlias_IsKept() throws {
         let (container, ctx) = try makeContext()
         _ = container
         ctx.insert(try installed(olive, 1))
         let userRow = Ingredient.mock(matching: olive, name: "EVOO")
         userRow.uuid = try uuid(2)
+        userRow.code = "EVOO"
         ctx.insert(userRow)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
-        let survivor = try #require(try ingredients(ctx).first)
-        #expect(try ingredients(ctx).count == 1)
-        #expect(survivor.librarySlug == "olive-oil")
-        #expect(survivor.name == "Olive Oil")
+        #expect(try ingredients(ctx).count == 2)
+        #expect(userRow.name == "EVOO")
+        #expect(userRow.code == "EVOO")
+        #expect(ctx.hasChanges == false)
     }
 
-    /// The user's own SAP value is the reason they made the row. It has to
-    /// survive onto the winner, flagged, or the merge quietly rewrites their
-    /// chemistry.
-    @Test func mergeAll_SlugLessRowWithItsOwnChemistry_LeavesTheWinnerCustom() throws {
+    /// The user's own SAP value is the reason they made the row, and it stays on
+    /// the row they made rather than being folded onto a library one.
+    @Test func mergeAll_SlugLessRowWithItsOwnChemistry_KeepsItOnItsOwnRow() throws {
         let (container, ctx) = try makeContext()
         _ = container
         ctx.insert(try installed(olive, 1))
@@ -325,49 +328,11 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(userRow)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
-        let survivor = try #require(try ingredients(ctx).first)
-        #expect(survivor.hasCustomChemistry)
-        #expect(survivor.sapValue == 0.1405)
-        #expect(!survivor.isLibrary)
-    }
-
-    @Test func mergeAll_SlugLessRowMatchingTheCatalogChemistry_LeavesTheWinnerTrusted() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        ctx.insert(try installed(olive, 1))
-        let userRow = Ingredient.mock(matching: olive)
-        userRow.uuid = try uuid(2)
-        ctx.insert(userRow)
-        try ctx.save()
-
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
-
-        let survivor = try #require(try ingredients(ctx).first)
-        #expect(!survivor.hasCustomChemistry)
-        #expect(survivor.isLibrary)
-    }
-
-    @Test func mergeAll_TwoSlugLessRowsMatchingOneEntry_BothFoldIn() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        ctx.insert(try installed(olive, 1))
-        for (index, name) in ["Olive Oil", "EVOO"].enumerated() {
-            let userRow = Ingredient.mock(matching: olive, name: name)
-            userRow.uuid = try uuid(index + 2)
-            ctx.insert(userRow)
-            let purchase = IngredientPurchase.mock(quantity: 100)
-            purchase.ingredient = userRow
-            ctx.insert(purchase)
-        }
-        try ctx.save()
-
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
-
-        let survivor = try #require(try ingredients(ctx).first)
-        #expect(try ingredients(ctx).count == 1)
-        #expect(survivor.purchases.count == 2)
+        #expect(try ingredients(ctx).count == 2)
+        #expect(userRow.sapValue == 0.1405)
+        #expect(ctx.hasChanges == false)
     }
 
     /// Nothing to fold into: installing the slug is the installer's job, and the
@@ -380,7 +345,7 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(userRow)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
         #expect(try ingredients(ctx).count == 1)
         #expect(userRow.librarySlug.isEmpty)
@@ -400,7 +365,7 @@ struct DuplicateMergerIngredientTests {
         }
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
         #expect(try ingredients(ctx).count == 2)
         #expect(ctx.hasChanges == false)
@@ -418,14 +383,15 @@ struct DuplicateMergerIngredientTests {
         ctx.insert(userRow)
         try ctx.save()
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
         let afterFirst = try ingredients(ctx).map(\.uuid)
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
         let afterSecond = try ingredients(ctx).map(\.uuid)
 
         #expect(afterFirst == afterSecond)
-        #expect(afterFirst.count == 1)
+        // The two slug copies collapse to one; the slug-less row is untouched.
+        #expect(afterFirst.count == 2)
         #expect(ctx.hasChanges == false)
     }
 
@@ -433,7 +399,7 @@ struct DuplicateMergerIngredientTests {
         let (container, ctx) = try makeContext()
         _ = container
 
-        try DuplicateMerger.mergeAll(from: library, in: ctx)
+        try DuplicateMerger.mergeAll(in: ctx)
 
         #expect(try ingredients(ctx).isEmpty)
         #expect(ctx.hasChanges == false)

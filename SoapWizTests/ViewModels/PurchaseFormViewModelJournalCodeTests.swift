@@ -178,7 +178,7 @@ struct PurchaseFormViewModelJournalCodeTests {
 
         let model = PurchaseFormViewModel(ingredient: ingredient)
         model.quantityText = "500"
-        model.save(context: ctx)
+        try model.save(context: ctx)
 
         #expect(ingredient.purchases.first?.journalCode == "MKO-001")
         #expect(PurchaseFormViewModel.suggestedJournalCode(for: ingredient) == "MKO-002")

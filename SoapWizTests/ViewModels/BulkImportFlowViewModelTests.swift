@@ -84,7 +84,7 @@ struct BulkImportFlowViewModelTests {
         let sut = BulkImportFlowViewModel(ingredients: ingredients)
         sut.currentForm.quantityText = "500"
         sut.currentForm.totalPriceText = "10"
-        sut.commitAndAdvance(context: ctx)
+        try sut.commitAndAdvance(context: ctx)
 
         #expect(ingredients[0].purchases.count == 1)
         #expect(ingredients[0].purchases.first?.quantity == 500)
@@ -101,7 +101,7 @@ struct BulkImportFlowViewModelTests {
 
         let sut = BulkImportFlowViewModel(ingredients: ingredients)
         sut.currentForm.quantityText = "500"
-        sut.commitAndAdvance(context: ctx)
+        try sut.commitAndAdvance(context: ctx)
 
         #expect(ingredients[0].purchases.count == 1)
         #expect(sut.isComplete == true)
@@ -114,7 +114,7 @@ struct BulkImportFlowViewModelTests {
 
         let sut = BulkImportFlowViewModel(ingredients: ingredients)
         sut.currentForm.quantityText = "500"
-        sut.commitAndAdvance(context: ctx)
+        try sut.commitAndAdvance(context: ctx)
 
         // index now runs one past the end; display accessors must not go out of bounds.
         #expect(sut.isComplete == true)
@@ -163,7 +163,7 @@ struct BulkImportFlowViewModelTests {
         sut.currentForm.quantityText = "500"
         sut.currentForm.selectedProvider = provider
         sut.currentForm.dateOfPurchase = purchaseDate
-        sut.commitAndAdvance(context: ctx)
+        try sut.commitAndAdvance(context: ctx)
 
         #expect(sut.currentForm.selectedProvider === provider)
         #expect(sut.currentForm.dateOfPurchase == purchaseDate)
@@ -182,7 +182,7 @@ struct BulkImportFlowViewModelTests {
         #expect(sut.currentForm.journalCode == "OLI-001")
         sut.currentForm.quantityText = "500"
         sut.currentForm.journalCode = "PO-42"
-        sut.commitAndAdvance(context: ctx)
+        try sut.commitAndAdvance(context: ctx)
 
         #expect(sut.currentForm.journalCode == "COC-001")
     }
@@ -198,7 +198,7 @@ struct BulkImportFlowViewModelTests {
         let sut = BulkImportFlowViewModel(ingredients: ingredients)
         sut.currentForm.quantityText = "500"
         sut.currentForm.selectedProvider = provider
-        sut.commitAndAdvance(context: ctx)   // -> Coconut Oil, carries provider
+        try sut.commitAndAdvance(context: ctx)   // -> Coconut Oil, carries provider
         sut.skip()                           // -> Lye, should still carry
 
         #expect(sut.currentIngredient.name == "Lye")

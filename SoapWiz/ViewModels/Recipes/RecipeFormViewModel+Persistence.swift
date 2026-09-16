@@ -186,15 +186,26 @@ extension RecipeFormViewModel {
     }
 
     /// Recreates the recipe's ingredient line items from the current drafts.
+    ///
+    /// A draft's ingredient can have been merged away while the form was open, so
+    /// each is resolved back to the row actually in the store. When nothing
+    /// resolves, the line item is written with no ingredient rather than pointing
+    /// at a detached one: `Ingredient.recipeIngredients` cascades, so a dead
+    /// parent would take the line item with it on the next save. A row with no
+    /// ingredient is a shape the recipe already has to tolerate from sync, and
+    /// `load(from:)` counts it into `unresolvedLineItemCount` where the form
+    /// shows it.
     private func insertIngredients(into recipe: Recipe, context: ModelContext) {
         for draft in oilDrafts {
-            let recipeIngredient = RecipeIngredient(ingredient: draft.ingredient, percentage: draft.amount, role: .oil)
+            let ingredient = LiveIngredient.resolve(draft.ingredient, slug: draft.ingredientSlug, in: context)
+            let recipeIngredient = RecipeIngredient(ingredient: ingredient, percentage: draft.amount, role: .oil)
             recipeIngredient.recipe = recipe
             context.insert(recipeIngredient)
         }
         for (drafts, role) in [(additiveDrafts, RecipeIngredientRole.additive), (fragranceDrafts, .fragrance)] {
             for draft in drafts {
-                let recipeIngredient = RecipeIngredient(ingredient: draft.ingredient, percentage: 0, role: role)
+                let ingredient = LiveIngredient.resolve(draft.ingredient, slug: draft.ingredientSlug, in: context)
+                let recipeIngredient = RecipeIngredient(ingredient: ingredient, percentage: 0, role: role)
                 recipeIngredient.additiveAmount = draft.amount
                 recipeIngredient.additiveUnit = draft.unit
                 recipeIngredient.recipe = recipe

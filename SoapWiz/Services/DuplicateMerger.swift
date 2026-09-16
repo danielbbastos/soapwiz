@@ -61,12 +61,9 @@ enum DuplicateMerger {
     /// Runs the merge and swallows a failure, having logged it. A failed merge
     /// leaves duplicates in place, which is survivable — the next trigger tries
     /// again. Losing the launch to it would not be.
-    static func mergeAllLoggingFailure(
-        from library: IngredientLibrary = .bundled,
-        in context: ModelContext
-    ) {
+    static func mergeAllLoggingFailure(in context: ModelContext) {
         do {
-            try mergeAll(from: library, in: context)
+            try mergeAll(in: context)
         } catch {
             log.error("Duplicate merge failed: \(error, privacy: .public)")
         }
@@ -74,13 +71,13 @@ enum DuplicateMerger {
 
     /// Collapses every duplicate in the store. Safe to call repeatedly — a second
     /// pass finds only groups of one and saves nothing.
-    static func mergeAll(from library: IngredientLibrary = .bundled, in context: ModelContext) throws {
+    static func mergeAll(in context: ModelContext) throws {
         var losers: [any PersistentModel] = []
         losers += try collapse(IngredientCategory.self, in: context)
         losers += try collapse(Provider.self, in: context)
         losers += try collapse(StorageLocation.self, in: context)
         losers += try collapse(RecipeCollection.self, in: context)
-        losers += try collapseIngredients(from: library, in: context)
+        losers += try collapse(Ingredient.self, in: context)
         losers += try collapseSettings(in: context)
 
         guard !losers.isEmpty else { return }
@@ -127,72 +124,6 @@ enum DuplicateMerger {
             }
         }
         return (winners, losers)
-    }
-
-    /// Ingredients take two passes over one fetch. The slug pass collapses the
-    /// copies the library installer inevitably creates; the name pass then folds
-    /// in rows that predate the library, which carry no slug and would otherwise
-    /// sit beside their installed twin for good.
-    ///
-    /// Order matters: the name pass has to adopt into the slug pass's survivor,
-    /// not into a row that is about to be deleted.
-    private static func collapseIngredients(
-        from library: IngredientLibrary,
-        in context: ModelContext
-    ) throws -> [Ingredient] {
-        let all = try context.fetch(FetchDescriptor<Ingredient>())
-        let (installed, losers) = collapse(all)
-        return losers + adoptUnlinked(all.filter { $0.librarySlug.isEmpty }, from: library, into: installed)
-    }
-
-    /// Folds a slug-less ingredient into the installed library row whose entry
-    /// claims its name or one of its aliases. The library row always wins, and
-    /// the user's own chemistry survives on it as custom when it differs.
-    ///
-    /// This is the case the installer structurally cannot reach: it can only
-    /// adopt rows already on the device when it runs, so a pre-library "Olive
-    /// Oil" arriving from an older device after the slug is installed is never
-    /// claimed by it.
-    ///
-    /// Two devices on different app versions can carry different alias lists, so
-    /// a newer one may fold a pair an older one leaves alone. That still
-    /// converges — the repoint and the tombstone sync over, and the older device
-    /// simply never acts.
-    ///
-    /// Ingredients the user created that match no entry are never merged, even
-    /// when two of them share a name: unlike a category, an ingredient carries
-    /// purchases and batch history, and two things the user happened to name
-    /// alike are not safe to fuse behind their back. See SW-140.
-    private static func adoptUnlinked(
-        _ unlinked: [Ingredient],
-        from library: IngredientLibrary,
-        into installed: [String: Ingredient]
-    ) -> [Ingredient] {
-        guard !unlinked.isEmpty else { return [] }
-
-        var entries: [String: IngredientLibraryEntry] = [:]
-        for entry in library.entries {
-            for name in [entry.name] + entry.aliases {
-                let key = name.lookupKey
-                if !key.isEmpty, entries[key] == nil {
-                    entries[key] = entry
-                }
-            }
-        }
-
-        var losers: [Ingredient] = []
-        for ingredient in unlinked {
-            let key = ingredient.name.lookupKey
-            guard !key.isEmpty,
-                  let entry = entries[key],
-                  let winner = installed[entry.slug] else { continue }
-            // Read against the catalog, not against the winner: what makes this
-            // row's chemistry custom is that it differs from what SoapWiz ships.
-            ingredient.hasCustomChemistry = !entry.hasSameChemistry(as: ingredient)
-            Ingredient.adopt(ingredient, into: winner)
-            losers.append(ingredient)
-        }
-        return losers
     }
 
     /// `AppSettings` is a singleton rather than a keyed lookup, and its fields
@@ -255,8 +186,15 @@ extension RecipeCollection: MergeableLookup {
 extension Ingredient: MergeableLookup {
     /// Library rows pair by the slug they were installed from, never by name:
     /// the slug is the one identity the catalog guarantees is the same on every
-    /// device, and it survives the user renaming the row. A user-created
-    /// ingredient has no slug and opts out.
+    /// device, and it survives the user renaming the row.
+    ///
+    /// A user-created ingredient has no slug and opts out entirely. Matching one
+    /// against the catalog by name would delete a row the user made deliberately
+    /// — along with the purchases and history hanging off it — to save them a
+    /// duplicate in a list, which is a destructive answer to a cosmetic problem.
+    /// Linking such a row to an entry is the installer's job, and it only does
+    /// so while no row carries that slug yet, so it never deletes anything.
+    /// See SW-140.
     var mergeKey: String? { librarySlug.isEmpty ? nil : librarySlug }
 
     static func adopt(_ loser: Ingredient, into winner: Ingredient) {

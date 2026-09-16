@@ -39,8 +39,13 @@ final class BulkImportFlowViewModel {
     var canCommit: Bool { currentForm.isValid }
 
     /// Persists the current entry, captures its shared fields for carry-over, and advances.
-    func commitAndAdvance(context: ModelContext) {
-        currentForm.save(context: context)
+    ///
+    /// Throws without advancing when the ingredient has been merged away while the
+    /// flow was open: the queue stays where it is and what the user typed is still
+    /// on screen, so the entry can be retried or skipped rather than disappearing
+    /// along with the step.
+    func commitAndAdvance(context: ModelContext) throws {
+        try currentForm.save(context: context)
         carriedProvider = currentForm.selectedProvider
         carriedDate = currentForm.dateOfPurchase
         advance()

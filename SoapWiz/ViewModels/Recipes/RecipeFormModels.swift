@@ -8,6 +8,18 @@ struct OilIngredientDraft: Identifiable, Equatable {
     let ingredient: Ingredient
     var amount: Double = 0
     var isLocked: Bool = false
+
+    /// The ingredient's merge key, captured here while the row is still in the
+    /// store so a later save can find the survivor if the duplicate merge
+    /// deleted it. See `LiveIngredient`.
+    let ingredientSlug: String
+
+    init(ingredient: Ingredient, amount: Double = 0, isLocked: Bool = false) {
+        self.ingredient = ingredient
+        self.amount = amount
+        self.isLocked = isLocked
+        self.ingredientSlug = ingredient.librarySlug
+    }
 }
 
 struct IngredientAmountDraft: Identifiable, Equatable {
@@ -16,6 +28,17 @@ struct IngredientAmountDraft: Identifiable, Equatable {
     var amount: Double = 0
     var unit: String
     var isLocked: Bool = false
+
+    /// Captured for the same reason as `OilIngredientDraft.ingredientSlug`.
+    let ingredientSlug: String
+
+    init(ingredient: Ingredient, amount: Double = 0, unit: String, isLocked: Bool = false) {
+        self.ingredient = ingredient
+        self.amount = amount
+        self.unit = unit
+        self.isLocked = isLocked
+        self.ingredientSlug = ingredient.librarySlug
+    }
 }
 
 struct RecipeProductDraft: Identifiable, Equatable {
