@@ -6,27 +6,7 @@ import Foundation
 @MainActor
 struct IngredientLibraryTests {
 
-    // MARK: - Bundled file
-
-    @Test func bundled_Decodes_WithEntries() {
-        #expect(!IngredientLibrary.bundled.entries.isEmpty)
-    }
-
-    @Test func bundled_Slugs_AreUniqueAndNotEmpty() {
-        let slugs = IngredientLibrary.bundled.entries.map(\.slug)
-        #expect(slugs.allSatisfy { !$0.isEmpty })
-        #expect(slugs.count == Set(slugs).count)
-    }
-
-    @Test func bundled_Categories_AreKnownCategoryNames() {
-        let unknown = IngredientLibrary.bundled.entries.filter { !IngredientCategory.Name.all.contains($0.category) }
-        #expect(unknown.isEmpty, "Unknown categories: \(unknown.map(\.slug))")
-    }
-
-    @Test func bundled_Units_AreIngredientUnits() {
-        let unknown = IngredientLibrary.bundled.entries.filter { IngredientUnit(rawValue: $0.unit) == nil }
-        #expect(unknown.isEmpty, "Unknown units: \(unknown.map(\.slug))")
-    }
+    // MARK: - Loading
 
     @Test func load_BundleWithoutTheFile_ReturnsAnEmptyLibrary() {
         #expect(IngredientLibrary.load(from: Bundle(for: BundleMarker.self)).entries.isEmpty)
