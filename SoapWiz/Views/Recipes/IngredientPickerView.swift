@@ -51,12 +51,14 @@ struct IngredientPickerView: View {
                 if !categories.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
-                            chip("All", isSelected: selectedCategory == nil) {
+                            FilterChip("All", isSelected: selectedCategory == nil) {
                                 selectedCategory = nil
                             }
                             ForEach(categories) { category in
-                                chip(category.name,
-                                     isSelected: selectedCategory?.persistentModelID == category.persistentModelID) {
+                                FilterChip(
+                                    category.name,
+                                    isSelected: selectedCategory?.persistentModelID == category.persistentModelID
+                                ) {
                                     selectedCategory = category
                                 }
                             }
@@ -128,18 +130,5 @@ struct IngredientPickerView: View {
         }
         .disabled(isAdded)
         .listRowBackground(isPending ? Color.selectedRowBackground : Color.cardBackground)
-    }
-
-    private func chip(_ title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(isSelected ? Color.accentColor : Color(.secondarySystemFill))
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
-                .clipShape(Capsule())
-        }
-        .buttonStyle(.plain)
     }
 }

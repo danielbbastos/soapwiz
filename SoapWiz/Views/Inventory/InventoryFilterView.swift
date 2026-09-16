@@ -31,32 +31,18 @@ struct InventoryFilterView: View {
         NavigationStack {
             Form {
                 if !categories.isEmpty {
-                    LabeledContent("Category") {
-                        categoryMenu
-                    }
+                    categoryMenu
+                        .listRowBackground(Color.cardBackground)
+                }
+
+                stockStatusMenu
                     .listRowBackground(Color.cardBackground)
-                }
 
-                Picker("Stock Status", selection: $model.stockStatus) {
-                    ForEach(StockStatusFilter.allCases) { status in
-                        Text(status.rawValue).tag(status)
-                    }
-                }
-                .pickerStyle(.menu)
-                .listRowBackground(Color.cardBackground)
+                unitMenu
+                    .listRowBackground(Color.cardBackground)
 
-                LabeledContent("Unit Type") {
-                    unitMenu
-                }
-                .listRowBackground(Color.cardBackground)
-
-                Picker("Expiry Date", selection: $model.expiryFilter) {
-                    ForEach(ExpiryFilter.allCases) { filter in
-                        Text(filter.rawValue).tag(filter)
-                    }
-                }
-                .pickerStyle(.menu)
-                .listRowBackground(Color.cardBackground)
+                expiryMenu
+                    .listRowBackground(Color.cardBackground)
             }
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)
@@ -76,29 +62,29 @@ struct InventoryFilterView: View {
         }
     }
 
+    /// Multi-select, so the menu is pinned open: otherwise every tap dismissed
+    /// it and picking three categories meant opening it three times. Unlike
+    /// `.contextMenu`, whose content SwiftUI snapshots once, a `Menu`
+    /// re-evaluates — so the checkmarks still follow each tap. See the note in
+    /// `RecipeCollectionsPickerSheet`, which rejected this API for that reason.
     private var categoryMenu: some View {
-        Menu(categoryLabel) {
+        filterMenu(title: "Category", value: categoryLabel) {
             ForEach(categories) { category in
-                let id = category.persistentModelID
                 Button {
-                    if model.selectedCategories.contains(id) {
-                        model.selectedCategories.remove(id)
-                    } else {
-                        model.selectedCategories.insert(id)
-                    }
+                    model.toggleCategory(category)
                 } label: {
-                    if model.selectedCategories.contains(id) {
-                        Label(category.name, systemImage: "checkmark")
-                    } else {
-                        Text(category.name)
-                    }
+                    MenuSelectionLabel(
+                        category.name,
+                        isSelected: model.selectedCategories.contains(category.persistentModelID)
+                    )
                 }
             }
         }
+        .menuActionDismissBehavior(.disabled)
     }
 
     private var unitMenu: some View {
-        Menu(unitLabel) {
+        filterMenu(title: "Unit Type", value: unitLabel) {
             ForEach(IngredientUnit.allCases, id: \.self) { unit in
                 Button {
                     if model.selectedUnits.contains(unit) {
@@ -107,13 +93,57 @@ struct InventoryFilterView: View {
                         model.selectedUnits.insert(unit)
                     }
                 } label: {
-                    if model.selectedUnits.contains(unit) {
-                        Label("\(unit.label) (\(unit.rawValue))", systemImage: "checkmark")
-                    } else {
-                        Text("\(unit.label) (\(unit.rawValue))")
-                    }
+                    MenuSelectionLabel(
+                        "\(unit.label) (\(unit.rawValue))",
+                        isSelected: model.selectedUnits.contains(unit)
+                    )
                 }
             }
         }
+        .menuActionDismissBehavior(.disabled)
+    }
+
+    /// Single-select, so the default dismiss-on-tap is right: the menu has done
+    /// its job the moment one option is picked.
+    private var stockStatusMenu: some View {
+        filterMenu(title: "Stock Status", value: model.stockStatus.rawValue) {
+            ForEach(StockStatusFilter.allCases) { status in
+                Button {
+                    model.stockStatus = status
+                } label: {
+                    MenuSelectionLabel(status.rawValue, isSelected: model.stockStatus == status)
+                }
+            }
+        }
+    }
+
+    private var expiryMenu: some View {
+        filterMenu(title: "Expiry Date", value: model.expiryFilter.rawValue) {
+            ForEach(ExpiryFilter.allCases) { filter in
+                Button {
+                    model.expiryFilter = filter
+                } label: {
+                    MenuSelectionLabel(filter.rawValue, isSelected: model.expiryFilter == filter)
+                }
+            }
+        }
+    }
+
+    /// One filter row: a menu whose label fills the row, so a tap anywhere on it
+    /// opens the menu. `PickerMenuRowLabel` spans the row but its `Spacer` is not
+    /// hit-tested on its own — without `contentShape` only the value text on the
+    /// right responded.
+    private func filterMenu<Content: View>(
+        title: String,
+        value: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        Menu {
+            content()
+        } label: {
+            PickerMenuRowLabel(title: title, value: value)
+                .contentShape(.rect)
+        }
+        .tint(.primary)
     }
 }

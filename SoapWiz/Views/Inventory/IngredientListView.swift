@@ -20,6 +20,12 @@ struct IngredientListView: View {
         ingredients.filter { model.selection.contains($0.persistentModelID) }
     }
 
+    /// Chips are drawn from the unfiltered inventory, not `displayedIngredients`:
+    /// narrowing to one category must not make every other chip disappear.
+    private var visibleCategories: [IngredientCategory] {
+        model.visibleCategories(categories, in: ingredients)
+    }
+
     /// A `Button` rather than a `NavigationLink`, purely to drop the disclosure
     /// chevron: a link used as a row's root always draws one and there is no
     /// modifier to suppress it. The push is the same, just issued by hand. This
@@ -101,6 +107,10 @@ struct IngredientListView: View {
                             ForEach(displayedIngredients) { row($0) }
                         }
                         .environment(\.editMode, $model.editMode)
+                        // The chips already stand off the list on their own; the
+                        // scroll view's default top margin on top of that left
+                        // the two looking unrelated.
+                        .contentMargins(.top, visibleCategories.isEmpty ? nil : 0, for: .scrollContent)
                     }
                 }
                 .navigationTitle("Inventory")
@@ -115,6 +125,15 @@ struct IngredientListView: View {
                     .onAppear { model.pendingIngredient = nil }
                 }
                 .searchable(text: $model.searchText, prompt: "Search ingredients")
+                // No background of its own, so the list keeps scrolling under
+                // the navigation bar's material rather than under a flat band.
+                // Hidden while selecting: the chips would compete with the
+                // selection the toolbar is there to act on.
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if !visibleCategories.isEmpty && model.editMode == .inactive {
+                        InventoryCategoryFilterBar(categories: visibleCategories, model: model)
+                    }
+                }
                 .onChange(of: categories) { _, updated in
                     model.pruneSelectedCategories(against: updated)
                 }
