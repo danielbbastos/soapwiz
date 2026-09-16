@@ -15,7 +15,13 @@ struct RecipeCollectionFilterBar: View {
                     clearChip
                 }
                 ForEach(collections) { collection in
-                    chip(collection)
+                    FilterChip(
+                        collection.name,
+                        isSelected: model.selectedCollections.contains(collection.persistentModelID),
+                        tint: collection.color.tint
+                    ) {
+                        model.toggle(collection)
+                    }
                 }
             }
             .padding(.horizontal)
@@ -39,24 +45,5 @@ struct RecipeCollectionFilterBar: View {
         }
         .buttonStyle(.plain)
         .transition(.scale.combined(with: .opacity))
-    }
-
-    private func chip(_ collection: RecipeCollection) -> some View {
-        let isSelected = model.selectedCollections.contains(collection.persistentModelID)
-        return Button {
-            model.toggle(collection)
-        } label: {
-            let tint = collection.color.tint
-            Text(collection.name)
-                .font(.subheadline)
-                .lineLimit(1)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .foregroundStyle(isSelected ? Color.white : tint)
-                .background(isSelected ? tint : Color.cardBackground, in: .capsule)
-                .overlay(Capsule().strokeBorder(tint.opacity(isSelected ? 0 : 0.5)))
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

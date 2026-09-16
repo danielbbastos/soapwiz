@@ -62,6 +62,43 @@ final class IngredientListViewModel {
         expiryFilter = .all
     }
 
+    /// An empty selection already means every category, so this doubles as the
+    /// selected state of the chip row's leading "All" chip.
+    var isShowingAllCategories: Bool { selectedCategories.isEmpty }
+
+    func toggleCategory(_ category: IngredientCategory) {
+        let id = category.persistentModelID
+        if selectedCategories.contains(id) {
+            selectedCategories.remove(id)
+        } else {
+            selectedCategories.insert(id)
+        }
+    }
+
+    func selectAllCategories() {
+        selectedCategories.removeAll()
+    }
+
+    /// Categories worth a chip: those holding at least one of `ingredients`,
+    /// plus any already selected. A fresh install seeds all seven, and a chip
+    /// for an empty category only ever leads to "No Results" — but one that
+    /// empties *while* it is the active filter has to stay, or the row would
+    /// reshuffle under the tap that just set it.
+    ///
+    /// The in-use set comes from the ingredients actually being listed rather
+    /// than from `category.ingredients`, so the chips keep matching the list
+    /// once SW-137 starts holding library rows back from it.
+    func visibleCategories(
+        _ categories: [IngredientCategory],
+        in ingredients: [Ingredient]
+    ) -> [IngredientCategory] {
+        let inUse = Set(ingredients.compactMap { $0.category?.persistentModelID })
+        return categories.filter { category in
+            let id = category.persistentModelID
+            return inUse.contains(id) || selectedCategories.contains(id)
+        }
+    }
+
     func filtered(_ ingredients: [Ingredient]) -> [Ingredient] {
         ingredients.filter { ingredient in
             let matchesSearch = searchText.isEmpty ||
