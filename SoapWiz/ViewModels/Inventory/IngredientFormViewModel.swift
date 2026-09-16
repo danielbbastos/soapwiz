@@ -29,6 +29,12 @@ final class IngredientFormViewModel {
 
     let ingredient: Ingredient?
 
+    /// The edited ingredient's merge key, read in `init` while the row is
+    /// certainly still in the store — it cannot be recovered later, because
+    /// reading a stored attribute off a detached model is not safe. Empty when
+    /// creating, which has no row to go stale. See `LiveIngredient`.
+    private let ingredientSlug: String
+
     /// The colour the form's avatar shows, and the one a new ingredient is saved
     /// with. Drawn once here rather than left to `Ingredient.init` so the well
     /// the user looked at while filling the form is the colour the row ends up
@@ -53,6 +59,7 @@ final class IngredientFormViewModel {
 
     init(ingredient: Ingredient? = nil, defaultCategory: IngredientCategory? = nil, prefilledName: String? = nil) {
         self.ingredient = ingredient
+        self.ingredientSlug = ingredient?.librarySlug ?? ""
         avatarColor = ingredient?.avatarColor ?? .random()
         selectedCategory = defaultCategory
         if let prefilledName {
@@ -168,7 +175,14 @@ final class IngredientFormViewModel {
         let parsedSap = Double(sapValue.replacingOccurrences(of: ",", with: "."))
         let parsedDensity = Double(density.replacingOccurrences(of: ",", with: "."))
         let savedCode = trimmedCode
-        if let ingredient {
+        if let captured = ingredient {
+            // The merge can delete the row this sheet was opened on while it is
+            // still up, and writing to the detached reference would drop the edit
+            // with no trace at all. The write follows the merge onto the survivor
+            // instead. A row deleted outright has no survivor to find, and
+            // falling back to the captured reference leaves that case as it was.
+            let ingredient = LiveIngredient.resolve(captured, slug: ingredientSlug, in: context) ?? captured
+
             // An ingredient that predates avatars has no stored colour and takes
             // one derived from its name, so renaming it would move it to a
             // different colour. Written down here, while the old name is still

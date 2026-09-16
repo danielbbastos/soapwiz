@@ -2,6 +2,20 @@ import Foundation
 import OSLog
 import SwiftData
 
+extension Notification.Name {
+    /// Posted once a merge has committed deletions, so a screen still holding a
+    /// row that was merged away can resolve itself onto the survivor.
+    ///
+    /// Deliberately not `.NSPersistentStoreRemoteChange`, which is what the merge
+    /// is debounced *behind*: a screen resolving on that signal would usually run
+    /// before the deletion had happened and find nothing to do.
+    ///
+    /// Nothing is posted when a pass finds no duplicates, which is the common
+    /// case — only the first sync on a device that joined an existing account
+    /// deletes anything.
+    static let duplicatesMerged = Notification.Name("pt.daphnia.SoapWiz.duplicatesMerged")
+}
+
 /// A lookup entity that CloudKit can duplicate: two devices offline both create
 /// "Oils", they sync, and now there are two rows for one logical category.
 @MainActor
@@ -94,6 +108,11 @@ enum DuplicateMerger {
         try context.save()
 
         log.notice("Merged \(losers.count, privacy: .public) duplicate record(s).")
+
+        // After the deletions are committed, never before: a screen resolving
+        // itself against a store that still holds the losers would simply find
+        // the row it already has.
+        NotificationCenter.default.post(name: .duplicatesMerged, object: nil)
     }
 
     /// Groups by `mergeKey`, keeps the lowest `uuid` of each group, and hands
