@@ -91,8 +91,18 @@ extension RecipeFormViewModel {
         recipe.isCreamSoap = isCreamSoap
         recipe.useCFM = useCFM
         recipe.cfmNeutralizer = cfmNeutralizer.rawValue
-        recipe.lyeIngredient = lyeIngredient
-        recipe.kohLyeIngredient = kohLyeIngredient
+        // Resolved for the same reason the line-item drafts are. The merge
+        // repoints `recipe.lyeIngredient` onto the survivor before deleting the
+        // copy this form captured, so writing the captured reference back would
+        // undo that repoint and leave the recipe's lye pointing at a detached
+        // row. `Recipe.lyeIngredient` nullifies, so a lye that resolves to
+        // nothing is cleared rather than dangling.
+        recipe.lyeIngredient = lyeIngredient.flatMap {
+            LiveIngredient.resolve($0, slug: lyeIngredientSlug, in: context)
+        }
+        recipe.kohLyeIngredient = kohLyeIngredient.flatMap {
+            LiveIngredient.resolve($0, slug: kohLyeIngredientSlug, in: context)
+        }
         recipe.collections = selectedCollections
 
         // Line items with no ingredient survive the rebuild: the ingredient may
@@ -186,15 +196,26 @@ extension RecipeFormViewModel {
     }
 
     /// Recreates the recipe's ingredient line items from the current drafts.
+    ///
+    /// A draft's ingredient can have been merged away while the form was open, so
+    /// each is resolved back to the row actually in the store. When nothing
+    /// resolves, the line item is written with no ingredient rather than pointing
+    /// at a detached one: `Ingredient.recipeIngredients` cascades, so a dead
+    /// parent would take the line item with it on the next save. A row with no
+    /// ingredient is a shape the recipe already has to tolerate from sync, and
+    /// `load(from:)` counts it into `unresolvedLineItemCount` where the form
+    /// shows it.
     private func insertIngredients(into recipe: Recipe, context: ModelContext) {
         for draft in oilDrafts {
-            let recipeIngredient = RecipeIngredient(ingredient: draft.ingredient, percentage: draft.amount, role: .oil)
+            let ingredient = LiveIngredient.resolve(draft.ingredient, slug: draft.ingredientSlug, in: context)
+            let recipeIngredient = RecipeIngredient(ingredient: ingredient, percentage: draft.amount, role: .oil)
             recipeIngredient.recipe = recipe
             context.insert(recipeIngredient)
         }
         for (drafts, role) in [(additiveDrafts, RecipeIngredientRole.additive), (fragranceDrafts, .fragrance)] {
             for draft in drafts {
-                let recipeIngredient = RecipeIngredient(ingredient: draft.ingredient, percentage: 0, role: role)
+                let ingredient = LiveIngredient.resolve(draft.ingredient, slug: draft.ingredientSlug, in: context)
+                let recipeIngredient = RecipeIngredient(ingredient: ingredient, percentage: 0, role: role)
                 recipeIngredient.additiveAmount = draft.amount
                 recipeIngredient.additiveUnit = draft.unit
                 recipeIngredient.recipe = recipe

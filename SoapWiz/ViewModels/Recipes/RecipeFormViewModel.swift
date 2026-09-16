@@ -59,8 +59,37 @@ final class RecipeFormViewModel {
     var isCreamSoap: Bool = false
     var useCFM: Bool = false
     var cfmNeutralizer: CFMNeutralizer = .boricAcid
-    var lyeIngredient: Ingredient?
-    var kohLyeIngredient: Ingredient?
+    /// The NaOH row's ingredient. Assigned through an accessor rather than
+    /// stored directly so `lyeIngredientSlug` is taken while the row is
+    /// certainly still in the store: the duplicate merge can delete it while the
+    /// form is open, and by then reading a stored attribute off the captured
+    /// reference traps. See `LiveIngredient`.
+    var lyeIngredient: Ingredient? {
+        get { storedLyeIngredient }
+        set {
+            storedLyeIngredient = newValue
+            lyeIngredientSlug = newValue?.librarySlug ?? ""
+        }
+    }
+
+    /// The KOH row's ingredient, captured for the same reason.
+    var kohLyeIngredient: Ingredient? {
+        get { storedKOHLyeIngredient }
+        set {
+            storedKOHLyeIngredient = newValue
+            kohLyeIngredientSlug = newValue?.librarySlug ?? ""
+        }
+    }
+
+    private var storedLyeIngredient: Ingredient?
+    private var storedKOHLyeIngredient: Ingredient?
+
+    /// The merge keys of the two lye rows. Read by `save` to resolve them back
+    /// to the rows actually in the store.
+    @ObservationIgnored
+    private(set) var lyeIngredientSlug: String = ""
+    @ObservationIgnored
+    private(set) var kohLyeIngredientSlug: String = ""
 
     /// Themes this recipe is filed under. Kept in `sortedByName` order so the
     /// dirty check compares two stable lists rather than two arbitrary ones.
@@ -201,38 +230,6 @@ final class RecipeFormViewModel {
         )
     }
 
-    /// Standard single-lye purities: NaOH ships near-anhydrous (~99%), KOH is
-    /// hygroscopic and sold at ~90%.
-    static let defaultNaOHPurity = 99.0
-    static let defaultKOHPurity = 90.0
-
-    /// Switches the single lye type, moving `lyePurity` to the new lye's standard
-    /// default — but only when it still holds the other lye's default, so a value
-    /// the user set deliberately is preserved.
-    func setLyeType(_ type: String) {
-        if type == "KOH", lyePurity == Self.defaultNaOHPurity {
-            lyePurity = Self.defaultKOHPurity
-        } else if type == "NaOH", lyePurity == Self.defaultKOHPurity {
-            lyePurity = Self.defaultNaOHPurity
-        }
-        lyeType = type
-    }
-
-    /// Sets the KOH share (clamped 0–100) and keeps NaOH as the complement so the
-    /// split always sums to 100.
-    func setKOHPercentage(_ value: Double) {
-        let clamped = min(max(value, 0), 100)
-        kohPercentage = clamped
-        naohPercentage = 100 - clamped
-    }
-
-    /// Sets the NaOH share (clamped 0–100), keeping KOH as the complement.
-    func setNaOHPercentage(_ value: Double) {
-        let clamped = min(max(value, 0), 100)
-        naohPercentage = clamped
-        kohPercentage = 100 - clamped
-    }
-
     // MARK: - Cost / breakdown (delegated to RecipeCostCalculator)
 
     func breakdownAndCost(for product: RecipeProductDraft, batch: ProductCostBreakdown) -> ProductCostBreakdown {
@@ -365,28 +362,6 @@ final class RecipeFormViewModel {
 
     func addProduct(defaultUnitSymbol: String) {
         productDrafts.append(RecipeProductDraft(unitSymbol: defaultUnitSymbol))
-    }
-
-    func resolveDefaultLyeIngredient(from inventory: [Ingredient]) {
-        let candidates = inventory.filter { $0.category?.name == IngredientCategory.Name.lyes }
-        guard !candidates.isEmpty else { return }
-
-        func match(_ name: String) -> Ingredient? {
-            candidates.first { $0.name.lowercased().contains(name) }
-        }
-
-        // Resolving only ever fills a blank, so the baseline moves with it — a
-        // lye ingredient arriving late from CloudKit isn't a user edit.
-        if lyeIngredient == nil {
-            // Single lye is currently always NaOH; the hybrid path's NaOH portion
-            // shares this ingredient.
-            lyeIngredient = match("sodium hydroxide") ?? candidates.first
-            snapshot?.lyeIngredient = lyeIngredient
-        }
-        if kohLyeIngredient == nil {
-            kohLyeIngredient = match("potassium hydroxide") ?? candidates.first
-            snapshot?.kohLyeIngredient = kohLyeIngredient
-        }
     }
 
     func formatPercentage(_ value: Double) -> String {

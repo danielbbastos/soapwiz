@@ -120,5 +120,13 @@ struct IngredientDetailView: View {
         .sheet(isPresented: $model.showingEditIngredient) {
             IngredientFormView(ingredient: model.ingredient)
         }
+        // On appear for a merge that landed while this screen was pushed but not
+        // on top, and on the notification for one that lands while the user is
+        // looking at it — which is how a sheet opened from here ends up holding
+        // a row that no longer exists.
+        .onAppear { model.resolve(in: modelContext) }
+        .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
+            model.resolve(in: modelContext)
+        }
     }
 }

@@ -52,7 +52,7 @@ struct PurchaseFormViewModelTests {
         let model = PurchaseFormViewModel(ingredient: ingredient)
         model.quantityText = "100"
         model.totalPriceText = "25"
-        model.save(context: ctx)
+        try model.save(context: ctx)
         try ctx.save()
         #expect(ingredient.purchases.count == 1)
         #expect(ingredient.purchases.first?.quantity == 100)
@@ -110,7 +110,7 @@ struct PurchaseFormViewModelTests {
         ingredient.purchases.append(purchase)
         let model = PurchaseFormViewModel(ingredient: ingredient, purchase: purchase)
         model.quantityText = "75"
-        model.save(context: ctx)
+        try model.save(context: ctx)
         #expect(purchase.quantity == 75)
     }
 

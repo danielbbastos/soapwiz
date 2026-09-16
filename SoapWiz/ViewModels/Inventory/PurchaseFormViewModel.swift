@@ -20,6 +20,12 @@ final class PurchaseFormViewModel {
     let ingredient: Ingredient
     let purchase: IngredientPurchase?
 
+    /// The ingredient's merge key, read in `init` while the row is certainly
+    /// still in the store. The duplicate merge can delete it while this sheet is
+    /// open, and by then the captured reference is detached and reading anything
+    /// stored off it traps — so the key has to be taken now. See `LiveIngredient`.
+    private let ingredientSlug: String
+
     private struct Snapshot {
         let provider: Provider?
         let dateOfPurchase: Date
@@ -38,6 +44,7 @@ final class PurchaseFormViewModel {
 
     init(ingredient: Ingredient, purchase: IngredientPurchase? = nil) {
         self.ingredient = ingredient
+        self.ingredientSlug = ingredient.librarySlug
         self.purchase = purchase
         if let purchase {
             let posixFormat = FloatingPointFormatStyle<Double>(locale: Locale(identifier: "en_US_POSIX"))
@@ -141,7 +148,12 @@ final class PurchaseFormViewModel {
 
     var isValid: Bool { quantity > 0 && isDirty }
 
-    func save(context: ModelContext) {
+    /// Throws when the ingredient this sheet was opened for has been merged away
+    /// and no surviving row carries its slug. Appending to the detached reference
+    /// instead would lose the purchase without a trace — `Ingredient.purchases`
+    /// cascades, so the new row is deleted along with the dead parent — and the
+    /// caller is told rather than dismissing on a write that went nowhere.
+    func save(context: ModelContext) throws {
         if let purchase {
             purchase.provider = selectedProvider
             purchase.dateOfPurchase = dateOfPurchase
@@ -153,6 +165,9 @@ final class PurchaseFormViewModel {
             purchase.openingDate = hasOpeningDate ? openingDate : nil
             purchase.storageLocation = selectedLocation
         } else {
+            guard let live = LiveIngredient.resolve(ingredient, slug: ingredientSlug, in: context) else {
+                throw PurchaseSaveError.ingredientUnavailable
+            }
             let newPurchase = IngredientPurchase(
                 provider: selectedProvider,
                 dateOfPurchase: dateOfPurchase,
@@ -165,7 +180,19 @@ final class PurchaseFormViewModel {
                 storageLocation: selectedLocation
             )
             context.insert(newPurchase)
-            ingredient.purchases.append(newPurchase)
+            live.purchases.append(newPurchase)
         }
+    }
+}
+
+/// The one way saving a purchase can fail.
+enum PurchaseSaveError: LocalizedError {
+    /// The ingredient was merged away while the sheet was open, and no surviving
+    /// row carries its slug.
+    case ingredientUnavailable
+
+    var errorDescription: String? {
+        "This ingredient is no longer available, so the purchase wasn’t saved. "
+            + "Close this form and open the ingredient again."
     }
 }
