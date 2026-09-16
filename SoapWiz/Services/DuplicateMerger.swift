@@ -121,28 +121,19 @@ enum DuplicateMerger {
         _ type: T.Type,
         in context: ModelContext
     ) throws -> [T] {
-        try collapse(context.fetch(FetchDescriptor<T>())).losers
-    }
-
-    /// The grouping itself, over rows already fetched, so a caller that needs the
-    /// survivors as well as the losers doesn't have to fetch twice.
-    private static func collapse<T: MergeableLookup>(
-        _ all: [T]
-    ) -> (winners: [String: T], losers: [T]) {
-        var winners: [String: T] = [:]
         var losers: [T] = []
 
+        let all = try context.fetch(FetchDescriptor<T>())
         let keyed = all.compactMap { model in model.mergeKey.map { (key: $0, model: model) } }
-        for (key, group) in Dictionary(grouping: keyed, by: \.key) {
+        for group in Dictionary(grouping: keyed, by: \.key).values {
             let ordered = group.map(\.model).sorted { $0.uuid.uuidString < $1.uuid.uuidString }
             guard let winner = ordered.first else { continue }
-            winners[key] = winner
             for loser in ordered.dropFirst() {
                 T.adopt(loser, into: winner)
                 losers.append(loser)
             }
         }
-        return (winners, losers)
+        return losers
     }
 
     /// `AppSettings` is a singleton rather than a keyed lookup, and its fields
@@ -236,6 +227,24 @@ extension Ingredient: MergeableLookup {
         let kohLyeRecipes = loser.recipesUsingAsKOHLye
         for recipe in kohLyeRecipes {
             recipe.kohLyeIngredient = winner
+        }
+
+        // A rename is the user's, and it must not be handed back to the catalog's
+        // name just because the renamed copy happened to draw the higher `uuid`.
+        // The bundled name for the slug is what tells the two apart: a row still
+        // carrying it was never renamed, so it yields to one that was. Two rows
+        // renamed differently leave the lowest `uuid` to decide, as everywhere
+        // else, and an unknown slug changes nothing.
+        //
+        // This is the one place the merge reads something outside the two rows.
+        // The catalog is fixed for a given build rather than arriving mid-import,
+        // so devices on the same version still agree; ones on different versions
+        // can disagree about a name, which last-writer-wins settles. That is a
+        // cosmetic divergence, not the lost-row kind the `uuid` rule exists to
+        // prevent.
+        let bundledName = IngredientLibrary.bundledName(for: winner.librarySlug)
+        if let bundledName, winner.name == bundledName, loser.name != bundledName {
+            winner.name = loser.name
         }
 
         // Both flags are opt-in, so they join rather than being decided by the

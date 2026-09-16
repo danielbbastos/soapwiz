@@ -107,6 +107,69 @@ struct DuplicateMergerIngredientTests: DuplicateMergerIngredientHelpers {
         #expect(ctx.hasChanges == false)
     }
 
+    // MARK: - Slug pass: folding the name
+
+    /// A rename is the user's. Both devices installed the row under the entry's
+    /// name, so the copy still carrying it was never touched and yields to the
+    /// one that was — otherwise the rename is lost whenever the renamed copy
+    /// drew the higher `uuid`.
+    @Test func mergeAll_LoserWasRenamed_WinnerTakesTheRename() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let winner = try installed(olive, 1)
+        let renamed = try installed(olive, 2)
+        renamed.name = "EVOO"
+        ctx.insert(winner)
+        ctx.insert(renamed)
+        try ctx.save()
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        let rows = try ingredients(ctx)
+        #expect(rows.count == 1)
+        let survivor = try #require(rows.first)
+        #expect(survivor.uuid == winner.uuid)
+        #expect(survivor.name == "EVOO")
+    }
+
+    /// The rename is already on the winner, and the untouched copy's catalog
+    /// name must not be folded back over it.
+    @Test func mergeAll_WinnerWasRenamed_KeepsItsOwnName() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let winner = try installed(olive, 1)
+        winner.name = "EVOO"
+        ctx.insert(winner)
+        ctx.insert(try installed(olive, 2))
+        try ctx.save()
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        let rows = try ingredients(ctx)
+        #expect(rows.count == 1)
+        #expect(rows.first?.name == "EVOO")
+    }
+
+    /// Renamed on both devices: neither name is the catalog's, so the lowest
+    /// `uuid` decides, as it does everywhere else.
+    @Test func mergeAll_BothCopiesRenamed_WinnerKeepsItsOwnName() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let winner = try installed(olive, 1)
+        winner.name = "EVOO"
+        let other = try installed(olive, 2)
+        other.name = "Olive, extra virgin"
+        ctx.insert(winner)
+        ctx.insert(other)
+        try ctx.save()
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        let rows = try ingredients(ctx)
+        #expect(rows.count == 1)
+        #expect(rows.first?.name == "EVOO")
+    }
+
     // MARK: - Slug pass: folding fields
 
     /// The customised copy is the only one holding values the user chose, so it

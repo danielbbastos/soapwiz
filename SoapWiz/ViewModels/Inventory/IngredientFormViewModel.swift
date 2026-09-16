@@ -35,6 +35,13 @@ final class IngredientFormViewModel {
     /// creating, which has no row to go stale. See `LiveIngredient`.
     private let ingredientSlug: String
 
+    /// Whether the edited row's stored unit was blank, read in `init` for the
+    /// same reason as `ingredientSlug`. `isValid` drives the Save button, so it
+    /// runs on every render — including after the merge deleted the row this
+    /// sheet was opened on, where reading `unit` off the captured reference
+    /// would trap.
+    private let capturedUnitIsEmpty: Bool
+
     /// The colour the form's avatar shows, and the one a new ingredient is saved
     /// with. Drawn once here rather than left to `Ingredient.init` so the well
     /// the user looked at while filling the form is the colour the row ends up
@@ -60,6 +67,7 @@ final class IngredientFormViewModel {
     init(ingredient: Ingredient? = nil, defaultCategory: IngredientCategory? = nil, prefilledName: String? = nil) {
         self.ingredient = ingredient
         self.ingredientSlug = ingredient?.librarySlug ?? ""
+        self.capturedUnitIsEmpty = ingredient?.unit.isEmpty ?? false
         avatarColor = ingredient?.avatarColor ?? .random()
         selectedCategory = defaultCategory
         if let prefilledName {
@@ -120,16 +128,26 @@ final class IngredientFormViewModel {
 
     var isValid: Bool {
         guard !trimmedName.isEmpty else { return false }
-        guard selectedUnit != nil || (isEditing && ingredient?.unit.isEmpty ?? false) else { return false }
+        guard selectedUnit != nil || (isEditing && capturedUnitIsEmpty) else { return false }
         let code = trimmedCode
         if !code.isEmpty && code.count < 3 { return false }
         return true
     }
 
+    /// Excludes the row being edited by slug as well as by identity. The merge
+    /// replaces that row with a different object, and an identity check against
+    /// the copy it deleted would read the survivor's own code as somebody else's
+    /// — reporting a duplicate of itself and disabling Save with no way out.
     func codeHasDuplicate(among ingredients: [Ingredient]) -> Bool {
         let code = trimmedCode
         guard !code.isEmpty else { return false }
-        return ingredients.contains { $0 !== ingredient && $0.code.uppercased() == code }
+        return ingredients.contains { candidate in
+            guard candidate !== ingredient else { return false }
+            // Only library rows are ever merged away, so a blank slug has no
+            // twin to stand in for it and falls back to identity alone.
+            guard ingredientSlug.isEmpty || candidate.librarySlug != ingredientSlug else { return false }
+            return candidate.code.uppercased() == code
+        }
     }
 
     func applyNameChange(existingCodes: [String]) {

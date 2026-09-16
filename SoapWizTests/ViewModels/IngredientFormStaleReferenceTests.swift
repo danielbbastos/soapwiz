@@ -43,6 +43,17 @@ struct IngredientFormStaleReferenceTests {
         try ctx.fetch(FetchDescriptor<Ingredient>())
     }
 
+    /// A row with no stored unit, so the form opens with nothing selected in the
+    /// unit picker — the state `isValid` has to answer for without reading the
+    /// row back.
+    private func installedWithoutUnit(_ index: Int, in ctx: ModelContext) throws -> Ingredient {
+        let row = Ingredient(name: "Olive Butter", unit: "")
+        row.librarySlug = "olive-butter"
+        row.uuid = try uuid(index)
+        ctx.insert(row)
+        return row
+    }
+
     // MARK: - Editing across a merge
 
     /// The sheet was opened on the copy the merge then deleted. The edit has to
@@ -171,5 +182,65 @@ struct IngredientFormStaleReferenceTests {
         #expect(userRow.name == "My Olive Butter")
         #expect(libraryRow.name == "Olive Butter")
         #expect(try ingredients(ctx).count == 2)
+    }
+
+    // MARK: - Reading the form across a merge
+
+    /// `isValid` drives the Save button's disabled state, so it runs on every
+    /// render — including after the merge deleted the row the sheet was opened
+    /// on. It answers from what `init` captured rather than reading the unit
+    /// back off a reference that is no longer in the store.
+    @Test func isValid_AfterMergeDeletedTheEditedRow_AnswersWithoutReadingIt() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let keep = try installedWithoutUnit(1, in: ctx)
+        let captured = try installedWithoutUnit(2, in: ctx)
+        try ctx.save()
+
+        let model = IngredientFormViewModel(ingredient: captured)
+        #expect(model.selectedUnit == nil)
+
+        try DuplicateMerger.mergeAll(in: ctx)
+        #expect(captured.modelContext == nil)
+
+        // Editing a row that never had a unit stays valid without one.
+        #expect(model.isValid == true)
+        #expect(keep.modelContext != nil)
+    }
+
+    /// The survivor is a different object from the copy the sheet captured, so
+    /// an identity check alone would read its code as somebody else's and leave
+    /// Save disabled on a duplicate of itself.
+    @Test func codeHasDuplicate_AfterMergeDeletedTheEditedRow_DoesNotFlagTheSurvivor() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let keep = try installed(1, in: ctx)
+        keep.code = "OLB"
+        let captured = try installed(2, in: ctx)
+        captured.code = "OLB"
+        try ctx.save()
+
+        let model = IngredientFormViewModel(ingredient: captured)
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        #expect(model.codeHasDuplicate(among: try ingredients(ctx)) == false)
+    }
+
+    /// The exclusion is this row's slug, not a blanket pass: a different
+    /// ingredient carrying the same code is still a clash.
+    @Test func codeHasDuplicate_AnotherIngredientSharesTheCode_IsStillFlagged() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let edited = try installed(1, in: ctx)
+        edited.code = "OLB"
+        let other = Ingredient(name: "Kokum Butter", unit: IngredientUnit.grams.rawValue)
+        other.uuid = try uuid(2)
+        other.code = "OLB"
+        ctx.insert(other)
+        try ctx.save()
+
+        let model = IngredientFormViewModel(ingredient: edited)
+
+        #expect(model.codeHasDuplicate(among: try ingredients(ctx)) == true)
     }
 }
