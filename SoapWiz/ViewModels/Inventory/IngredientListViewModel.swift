@@ -30,6 +30,12 @@ final class IngredientListViewModel {
     var editMode: EditMode = .inactive
     var selection: Set<PersistentIdentifier> = []
     var confirmingDelete: [Ingredient] = []
+
+    /// Library rows staged for hiding by the same confirmation that deletes the
+    /// user-created ones beside them. A bulk selection can hold both kinds, and
+    /// one Remove has to do the right thing to each.
+    var confirmingHide: [Ingredient] = []
+
     var deleteBlockedIngredients: [Ingredient] = []
 
     var searchText: String = ""
@@ -92,15 +98,30 @@ final class IngredientListViewModel {
         _ categories: [IngredientCategory],
         in ingredients: [Ingredient]
     ) -> [IngredientCategory] {
-        let inUse = Set(ingredients.compactMap { $0.category?.persistentModelID })
+        // Hidden rows are discounted here rather than at the call site, which passes
+        // the unfiltered inventory: a category holding nothing but hidden rows would
+        // otherwise keep a chip that leads only to "No Results".
+        let inUse = Set(ingredients.filter { !$0.isHidden }.compactMap { $0.category?.persistentModelID })
         return categories.filter { category in
             let id = category.persistentModelID
             return inUse.contains(id) || selectedCategories.contains(id)
         }
     }
 
+    /// The hidden rows, for the unhide screen.
+    ///
+    /// Hiding filters here rather than in the view's `@Query` so the rows stay in the
+    /// store: a recipe already built on one keeps working, and its batches still
+    /// deduct from it. What hiding takes away is the row's place in Inventory and in
+    /// the pickers — not the row.
+    func hidden(_ ingredients: [Ingredient]) -> [Ingredient] {
+        ingredients.filter(\.isHidden)
+    }
+
     func filtered(_ ingredients: [Ingredient]) -> [Ingredient] {
         ingredients.filter { ingredient in
+            guard !ingredient.isHidden else { return false }
+
             let matchesSearch = searchText.isEmpty ||
                 ingredient.name.localizedCaseInsensitiveContains(searchText)
 
@@ -143,14 +164,38 @@ final class IngredientListViewModel {
     /// the exact count carries the information anyway.
     private static let maxNamesListed = 3
 
-    /// Being used by a recipe blocks deletion outright and takes precedence over the
-    /// remaining-stock confirmation: losing stock is recoverable, silently gutting a
-    /// recipe's oil percentages — and with them its lye calculation — is not.
+    /// Hiding is immediate and needs no confirmation: nothing is lost, the row keeps
+    /// its purchases, recipes already built on it are untouched, and Unhide is one tap
+    /// away in the filter sheet.
+    func hide(_ ingredient: Ingredient) {
+        withAnimation {
+            ingredient.isHidden = true
+        }
+    }
+
+    func unhide(_ ingredient: Ingredient) {
+        withAnimation {
+            ingredient.isHidden = false
+        }
+    }
+
+    /// A library row is hidden rather than deleted, and recipe usage doesn't stand in
+    /// the way: hiding leaves the ingredient in place for every recipe already
+    /// pointing at it.
+    ///
+    /// For a user-created row, being used by a recipe blocks deletion outright and
+    /// takes precedence over the remaining-stock confirmation: losing stock is
+    /// recoverable, silently gutting a recipe's oil percentages — and with them its
+    /// lye calculation — is not.
     ///
     /// Everything else routes through `confirmingDelete`. An ingredient carries sap
     /// values, density and a fatty-acid profile that are tedious to re-enter, and
     /// there is no undo, so no deletion happens on a single tap.
     func delete(_ ingredient: Ingredient) {
+        guard !ingredient.isLibraryInstalled else {
+            hide(ingredient)
+            return
+        }
         if ingredient.isUsedInRecipes {
             deleteBlockedIngredients = [ingredient]
         } else {
@@ -158,17 +203,58 @@ final class IngredientListViewModel {
         }
     }
 
-    /// If any selected ingredient is used by a recipe, nothing is deleted — a partial
-    /// delete would be harder to reason about than none at all.
+    /// If any selected user-created ingredient is used by a recipe, nothing happens at
+    /// all — a partial removal would be harder to reason about than none. Library rows
+    /// in the same selection are staged for hiding, which no recipe can block.
     func deleteSelected(in ingredients: [Ingredient]) {
         let targets = selection.compactMap { id in ingredients.first { $0.persistentModelID == id } }
         guard !targets.isEmpty else { return }
-        let blocked = targets.filter(\.isUsedInRecipes)
+        let deletable = targets.filter { !$0.isLibraryInstalled }
+        let blocked = deletable.filter(\.isUsedInRecipes)
         if !blocked.isEmpty {
             deleteBlockedIngredients = blocked
         } else {
-            confirmingDelete = targets
+            confirmingHide = targets.filter(\.isLibraryInstalled)
+            confirmingDelete = deletable
         }
+    }
+
+    var isConfirmingRemoval: Bool { !confirmingDelete.isEmpty || !confirmingHide.isEmpty }
+
+    func cancelRemoval() {
+        confirmingDelete = []
+        confirmingHide = []
+    }
+
+    /// Titles the confirmation for what it will actually do, which depends on the mix:
+    /// a selection can be all library rows, all user-created ones, or both.
+    var removalConfirmationTitle: String {
+        if confirmingHide.isEmpty {
+            return confirmingDelete.count == 1 ? "Delete Ingredient?" : "Delete Ingredients?"
+        }
+        if confirmingDelete.isEmpty {
+            return confirmingHide.count == 1 ? "Hide Ingredient?" : "Hide Ingredients?"
+        }
+        return "Remove Ingredients?"
+    }
+
+    /// Spells the hide out whenever library rows are involved. "Delete" is the word
+    /// the user reached for, and being told that some rows are only hidden — and where
+    /// to find them again — is the whole point of the confirmation.
+    var removalConfirmationMessage: String {
+        guard !confirmingHide.isEmpty else { return deleteConfirmationMessage }
+
+        let hidePart: String
+        if confirmingHide.count == 1, let name = confirmingHide.first?.name {
+            hidePart = "\"\(name)\" is a library ingredient, so it will be hidden rather than deleted. "
+                + "You can bring it back from Filters."
+        } else {
+            hidePart = "\(confirmingHide.count) library ingredients will be hidden rather than deleted. "
+                + "You can bring them back from Filters."
+        }
+
+        guard !confirmingDelete.isEmpty else { return hidePart }
+        return hidePart + "\n\n" + deleteConfirmationMessage
     }
 
     /// Explains which recipes are in the way, so the user knows where to go next.
@@ -215,8 +301,12 @@ final class IngredientListViewModel {
         return names.prefix(maxNamesListed).joined(separator: ", ") + " and \(remaining) \(otherWord)"
     }
 
+    /// Applies both halves of the staged removal: library rows are hidden, the rest
+    /// deleted.
     func confirmDelete(context: ModelContext) {
+        confirmingHide.forEach { $0.isHidden = true }
         confirmingDelete.forEach { context.delete($0) }
+        confirmingHide = []
         confirmingDelete = []
         selection.removeAll()
         editMode = .inactive

@@ -34,6 +34,11 @@ struct IngredientPickerView: View {
 
     private var filtered: [Ingredient] {
         allIngredients.filter { ingredient in
+            // Hiding an ingredient is the user saying they don't use it, so it
+            // leaves the choices here too, not just Inventory. Unhiding from
+            // Filters is the way back.
+            guard !ingredient.isHidden else { return false }
+
             let matchesAllowed = allowedRoles.map { roles in
                 ingredient.category?.ingredientRole.map(roles.contains) ?? false
             } ?? true

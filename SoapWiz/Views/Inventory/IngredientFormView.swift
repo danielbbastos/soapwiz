@@ -10,6 +10,7 @@ struct IngredientFormView: View {
 
     @State private var model: IngredientFormViewModel
     @State private var showingNewCategory = false
+    @State private var showingChemistryConfirmation = false
     let onSave: ((Ingredient) -> Void)?
 
     init(
@@ -134,6 +135,13 @@ struct IngredientFormView: View {
                 model.captureSnapshot()
             }
             .interactiveDismissDisabled(model.isDirty)
+            .alert("Make This a Custom Ingredient?", isPresented: $showingChemistryConfirmation) {
+                Button("Save as Custom") { commit() }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("\"\(model.trimmedName)\" comes from the built-in ingredient library. "
+                     + "Saving different chemistry makes it your own, marked Custom in its details.")
+            }
             .sheet(isPresented: $showingNewCategory) {
                 CategoryFormView { newCategory in
                     model.selectedCategory = newCategory
@@ -145,15 +153,25 @@ struct IngredientFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(model.isEditing ? "Save" : "Add") {
-                        if let newIngredient = model.save(context: modelContext) {
-                            onSave?(newIngredient)
+                        if model.changesLibraryChemistry {
+                            showingChemistryConfirmation = true
+                        } else {
+                            commit()
                         }
-                        dismiss()
                     }
                     .disabled(!model.isValid || model.codeHasDuplicate(among: allIngredients))
                 }
             }
         }
+    }
+
+    /// The save itself, split out because two paths reach it: a straight Save, and
+    /// the one that first asks about turning a library ingredient custom.
+    private func commit() {
+        if let newIngredient = model.save(context: modelContext) {
+            onSave?(newIngredient)
+        }
+        dismiss()
     }
 
     private var codeBinding: Binding<String> {

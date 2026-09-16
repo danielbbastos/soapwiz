@@ -193,7 +193,7 @@ struct DuplicateMergerIngredientTests: DuplicateMergerIngredientHelpers {
         #expect(survivor.hasCustomChemistry)
         #expect(survivor.sapValue == 0.1405)
         #expect(survivor.density == 0.918)
-        #expect(!survivor.isLibrary)
+        #expect(!survivor.isPristineLibraryRow)
     }
 
     @Test func mergeAll_BothCopiesCustomised_WinnerKeepsItsOwnChemistry() throws {

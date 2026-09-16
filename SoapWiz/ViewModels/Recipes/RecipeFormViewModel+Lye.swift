@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 /// Choosing the lye: the single/hybrid split, the purities that come with each
 /// lye type, and resolving the ingredient rows the lye is drawn from. Kept apart
@@ -36,6 +37,19 @@ extension RecipeFormViewModel {
         let clamped = min(max(value, 0), 100)
         naohPercentage = clamped
         kohPercentage = 100 - clamped
+    }
+
+    /// The lye rows a recipe may pick from: the visible ones, plus whichever lye the
+    /// recipe already uses, even when that one has since been hidden.
+    ///
+    /// Hiding a lye says "I don't use this" and rightly takes it out of the choices,
+    /// but it must never strip the lye out of a recipe already built on it — the
+    /// batch sheet still has to offer it, or that recipe silently stops producing.
+    static func lyeCandidates(visible: [Ingredient], keeping current: [Ingredient?]) -> [Ingredient] {
+        var seen: Set<PersistentIdentifier> = []
+        return (visible + current.compactMap { $0 })
+            .filter { seen.insert($0.persistentModelID).inserted }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     func resolveDefaultLyeIngredient(from inventory: [Ingredient]) {

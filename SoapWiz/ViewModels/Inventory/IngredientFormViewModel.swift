@@ -42,6 +42,13 @@ final class IngredientFormViewModel {
     /// would trap.
     private let capturedUnitIsEmpty: Bool
 
+    /// The edited row's stored chemistry and library standing, captured in `init`
+    /// for the same reason as `ingredientSlug`. `changesLibraryChemistry` is read
+    /// while the Save button is being drawn, so it cannot go to the model for them.
+    private let capturedIsLibraryInstalled: Bool
+    private let capturedSapValue: Double?
+    private let capturedDensity: Double?
+
     /// The colour the form's avatar shows, and the one a new ingredient is saved
     /// with. Drawn once here rather than left to `Ingredient.init` so the well
     /// the user looked at while filling the form is the colour the row ends up
@@ -68,6 +75,9 @@ final class IngredientFormViewModel {
         self.ingredient = ingredient
         self.ingredientSlug = ingredient?.librarySlug ?? ""
         self.capturedUnitIsEmpty = ingredient?.unit.isEmpty ?? false
+        self.capturedIsLibraryInstalled = ingredient?.isLibraryInstalled ?? false
+        self.capturedSapValue = ingredient?.sapValue
+        self.capturedDensity = ingredient?.density
         avatarColor = ingredient?.avatarColor ?? .random()
         selectedCategory = defaultCategory
         if let prefilledName {
@@ -187,11 +197,41 @@ final class IngredientFormViewModel {
         }
     }
 
+    /// The SAP value this save would write: the parsed field while it is on screen,
+    /// and the stored value left untouched while it isn't.
+    ///
+    /// Preserving rather than nulling is what stops a unit or category edit quietly
+    /// dropping chemistry. Density in particular belongs to the substance, not to the
+    /// unit it happens to be bought in, so moving an oil from ml to g must not erase
+    /// it.
+    private var sapValueToSave: Double? {
+        guard showsSapValue else { return capturedSapValue }
+        return Double(sapValue.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var densityToSave: Double? {
+        guard showsDensity else { return capturedDensity }
+        return Double(density.replacingOccurrences(of: ",", with: "."))
+    }
+
+    /// Whether saving would change a library ingredient's chemistry, which is what
+    /// makes it a custom one.
+    ///
+    /// Only the two fields this form can edit are weighed: `kohSapValue` and
+    /// `fattyAcidProfile` have no editing UI anywhere, and `save` never writes them.
+    /// Name, code, category and unit edits are excluded by construction — they reach
+    /// chemistry only through `sapValueToSave` and `densityToSave`, which preserve it.
+    var changesLibraryChemistry: Bool {
+        guard capturedIsLibraryInstalled else { return false }
+        return sapValueToSave != capturedSapValue || densityToSave != capturedDensity
+    }
+
     @discardableResult
     func save(context: ModelContext) -> Ingredient? {
         let parsedThreshold = Double(lowStockThreshold.replacingOccurrences(of: ",", with: "."))
-        let parsedSap = Double(sapValue.replacingOccurrences(of: ",", with: "."))
-        let parsedDensity = Double(density.replacingOccurrences(of: ",", with: "."))
+        let savedSap = sapValueToSave
+        let savedDensity = densityToSave
+        let becomesCustom = changesLibraryChemistry
         let savedCode = trimmedCode
         if let captured = ingredient {
             // The merge can delete the row this sheet was opened on while it is
@@ -213,8 +253,13 @@ final class IngredientFormViewModel {
             ingredient.category = selectedCategory
             ingredient.unit = selectedUnit?.rawValue ?? ""
             ingredient.lowStockThreshold = parsedThreshold
-            ingredient.sapValue = showsSapValue ? parsedSap : nil
-            ingredient.density = showsDensity ? parsedDensity : nil
+            ingredient.sapValue = savedSap
+            ingredient.density = savedDensity
+            // Never cleared here: a row the user has taken over stays theirs, even
+            // if a later edit happens to land back on the bundled values.
+            if becomesCustom {
+                ingredient.hasCustomChemistry = true
+            }
             applyImage(to: ingredient)
             return nil
         } else {
@@ -222,8 +267,8 @@ final class IngredientFormViewModel {
             newIngredient.avatarColorName = avatarColor.rawValue
             newIngredient.code = savedCode
             newIngredient.lowStockThreshold = parsedThreshold
-            newIngredient.sapValue = showsSapValue ? parsedSap : nil
-            newIngredient.density = showsDensity ? parsedDensity : nil
+            newIngredient.sapValue = savedSap
+            newIngredient.density = savedDensity
             applyImage(to: newIngredient)
             context.insert(newIngredient)
             return newIngredient

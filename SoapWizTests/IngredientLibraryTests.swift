@@ -37,20 +37,20 @@ struct IngredientLibraryTests {
     // MARK: - isLibrary
 
     @Test func isLibrary_UserCreated_IsFalse() {
-        #expect(!Ingredient(name: "House Blend").isLibrary)
+        #expect(!Ingredient(name: "House Blend").isPristineLibraryRow)
     }
 
     @Test func isLibrary_InstalledFromTheLibrary_IsTrue() {
         let ingredient = Ingredient(name: "Olive Oil")
         ingredient.librarySlug = "olive-oil"
-        #expect(ingredient.isLibrary)
+        #expect(ingredient.isPristineLibraryRow)
     }
 
     @Test func isLibrary_WithCustomChemistry_IsFalse() {
         let ingredient = Ingredient(name: "Olive Oil")
         ingredient.librarySlug = "olive-oil"
         ingredient.hasCustomChemistry = true
-        #expect(!ingredient.isLibrary)
+        #expect(!ingredient.isPristineLibraryRow)
     }
 }
 

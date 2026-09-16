@@ -126,9 +126,19 @@ final class Ingredient {
 
     var isUsedInRecipes: Bool { !recipesUsingThis.isEmpty }
 
-    /// Trusted as bundled library data: installed from the library and never
-    /// given chemistry of its own.
-    var isLibrary: Bool { !librarySlug.isEmpty && !hasCustomChemistry }
+    /// Installed from the library, whether or not its chemistry was changed
+    /// since. This is what decides hide against delete: the installer treats an
+    /// entry as present once any row carries its slug, so deleting one only
+    /// brings a pristine copy back on the next launch.
+    var isLibraryInstalled: Bool { !librarySlug.isEmpty }
+
+    /// Trusted as bundled library data: installed from the library and never given
+    /// chemistry of its own.
+    ///
+    /// Not the test for hide against delete — use `isLibraryInstalled` for that. A
+    /// row that has been customised is still the library's as far as the installer
+    /// is concerned, so deleting it would bring a pristine copy straight back.
+    var isPristineLibraryRow: Bool { isLibraryInstalled && !hasCustomChemistry }
 
     var avatarColor: AvatarColor {
         AvatarColor.resolve(avatarColorName, fallbackSeed: name)

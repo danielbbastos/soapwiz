@@ -13,19 +13,25 @@ struct BulkImportSelectionView: View {
     let onCancel: () -> Void
     let onStart: ([Ingredient]) -> Void
 
+    /// Hidden ingredients are left out: recording a purchase against something the
+    /// user has said they don't use would contradict the hiding.
+    private var visibleIngredients: [Ingredient] {
+        ingredients.filter { !$0.isHidden }
+    }
+
     private var selectedIngredients: [Ingredient] {
-        ingredients.filter { selection.contains($0.persistentModelID) }
+        visibleIngredients.filter { selection.contains($0.persistentModelID) }
     }
 
     private var filteredIngredients: [Ingredient] {
-        guard !searchText.isEmpty else { return ingredients }
-        return ingredients.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        guard !searchText.isEmpty else { return visibleIngredients }
+        return visibleIngredients.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
 
     var body: some View {
         NavigationStack {
             Group {
-                if ingredients.isEmpty {
+                if visibleIngredients.isEmpty {
                     ContentUnavailableView(
                         "No Ingredients",
                         systemImage: "flask",

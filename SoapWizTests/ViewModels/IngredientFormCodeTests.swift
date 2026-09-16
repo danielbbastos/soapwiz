@@ -178,7 +178,10 @@ struct IngredientFormCodeTests: IngredientFormTestHelpers {
         let model = IngredientFormViewModel(ingredient: existing)
         #expect(model.code == "OOI")
     }
-    @Test func save_CategoryChangedFromOilToAdditive_ClearsSapValue() throws {
+    /// Inverted in SW-137. The form used to null any chemistry it wasn't showing, so
+    /// moving a row to a category without a SAP field dropped a value the user never
+    /// touched. A hidden field is now left exactly as it was stored.
+    @Test func save_CategoryChangedFromOilToAdditive_PreservesSapValue() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let oilsCategory = IngredientCategory(name: "Oils")
@@ -194,9 +197,12 @@ struct IngredientFormCodeTests: IngredientFormTestHelpers {
         model.selectedCategory = additivesCategory
         model.save(context: ctx)
 
-        #expect(existing.sapValue == nil)
+        #expect(existing.sapValue == 0.134)
     }
-    @Test func save_UnitChangedFromMlToG_ClearsDensity() throws {
+    /// Inverted in SW-137, for the same reason, and on the clearer case: density is a
+    /// property of the substance, not of the unit it happens to be bought in, so
+    /// switching an oil to grams must not erase it.
+    @Test func save_UnitChangedFromMlToG_PreservesDensity() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let existing = Ingredient(name: "Avocado Oil", unit: "ml")
@@ -207,7 +213,7 @@ struct IngredientFormCodeTests: IngredientFormTestHelpers {
         model.selectedUnit = .grams
         model.save(context: ctx)
 
-        #expect(existing.density == nil)
+        #expect(existing.density == 0.914)
     }
     @Test func defaultCategory_NewIngredient_PreselectsCategory() {
         let oils = IngredientCategory(name: "Oils")

@@ -56,9 +56,19 @@ struct IngredientListView: View {
             // Keeps the row from taking on button tinting; the star inside stays
             // tappable because it is `.borderless`.
             .buttonStyle(.plain)
+            // A library row offers Hide instead: deleting it would only bring a
+            // pristine copy back on the next launch, so the destructive styling
+            // would be promising something the installer immediately undoes.
             .swipeActions(edge: .trailing) {
-                Button("Delete", role: .destructive) {
-                    model.delete(ingredient)
+                if ingredient.isLibraryInstalled {
+                    Button("Hide") {
+                        model.hide(ingredient)
+                    }
+                    .tint(.orange)
+                } else {
+                    Button("Delete", role: .destructive) {
+                        model.delete(ingredient)
+                    }
                 }
             }
             .listRowBackground(Color.cardBackground)
@@ -140,7 +150,9 @@ struct IngredientListView: View {
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         if model.editMode == .active {
-                            Button("Delete", role: .destructive) {
+                            // "Remove" rather than "Delete": a selection can hold
+                            // library rows, which are hidden rather than deleted.
+                            Button("Remove", role: .destructive) {
                                 model.deleteSelected(in: displayedIngredients)
                             }
                             .disabled(model.selection.isEmpty)
@@ -174,14 +186,21 @@ struct IngredientListView: View {
                 }
             }
         }
-        .alert(model.confirmingDelete.count == 1 ? "Delete Ingredient?" : "Delete Ingredients?", isPresented: Binding(
-            get: { !model.confirmingDelete.isEmpty },
-            set: { if !$0 { model.confirmingDelete = [] } }
+        .alert(model.removalConfirmationTitle, isPresented: Binding(
+            get: { model.isConfirmingRemoval },
+            set: { if !$0 { model.cancelRemoval() } }
         )) {
-            Button("Delete", role: .destructive) { model.confirmDelete(context: modelContext) }
-            Button("Cancel", role: .cancel) { model.confirmingDelete = [] }
+            // Only destructive when something is actually deleted: a confirmation
+            // that nothing but hides rows shouldn't wear red.
+            Button(
+                model.confirmingDelete.isEmpty ? "Hide" : "Delete",
+                role: model.confirmingDelete.isEmpty ? nil : .destructive
+            ) {
+                model.confirmDelete(context: modelContext)
+            }
+            Button("Cancel", role: .cancel) { model.cancelRemoval() }
         } message: {
-            Text(model.deleteConfirmationMessage)
+            Text(model.removalConfirmationMessage)
         }
         .alert(
             model.deleteBlockedIngredients.count == 1 ? "Cannot Delete Ingredient" : "Cannot Delete Ingredients",

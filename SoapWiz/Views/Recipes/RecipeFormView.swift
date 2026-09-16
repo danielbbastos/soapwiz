@@ -8,9 +8,12 @@ private enum RecipeTab: String, CaseIterable {
 }
 
 struct RecipeFormView: View {
+    /// Hidden lyes are excluded so the default never resolves to one the user has
+    /// said they don't use. Safe because resolving only ever fills a blank — it
+    /// cannot unset a lye a recipe already has.
     private static let lyesPredicate: Predicate<Ingredient> = {
         let name = IngredientCategory.Name.lyes
-        return #Predicate { $0.category?.name == name }
+        return #Predicate { $0.category?.name == name && !$0.isHidden }
     }()
 
     var recipe: Recipe?

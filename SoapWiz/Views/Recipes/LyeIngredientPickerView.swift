@@ -7,9 +7,14 @@ struct LyeIngredientPickerView: View {
     @Query private var ingredients: [Ingredient]
     @State private var searchText: String = ""
 
+    /// Hidden lyes drop out of the choices, with one exception: whichever lye this
+    /// recipe already uses stays listed even when hidden. Otherwise a recipe whose
+    /// lye was hidden would open this picker with its own selection missing, and
+    /// look unset when it isn't.
     private var lyeIngredients: [Ingredient] {
         ingredients
             .filter { $0.category?.name == IngredientCategory.Name.lyes }
+            .filter { !$0.isHidden || $0.persistentModelID == selected?.persistentModelID }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 

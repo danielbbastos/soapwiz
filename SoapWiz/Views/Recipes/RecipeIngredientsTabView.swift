@@ -37,7 +37,6 @@ private enum PickerSection: String, Identifiable {
 
 struct RecipeIngredientsTabView: View {
     @Bindable var model: RecipeFormViewModel
-    @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
     @State private var activePicker: PickerSection?
     @State private var oilsExpanded = true
     @State private var ingredientsExpanded = true
