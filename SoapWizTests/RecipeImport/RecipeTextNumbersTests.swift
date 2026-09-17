@@ -26,6 +26,24 @@ struct RecipeTextNumbersTests {
         #expect(!RecipeTextNumbers.contains(200, in: values))
     }
 
+    @Test(arguments: [
+        ("1/2 cup oatmeal", [1.0, 2.0]),
+        ("2/3 tsp clay", [2.0, 3.0]),
+        ("1 1/2 tbsp honey", [1.0, 2.0, 0.5]),
+        ("2¼ oz shea", [2.0, 0.25])
+    ])
+    func contains_PartsOfAFraction_AreNotFound(_ text: String, _ parts: [Double]) {
+        let values = RecipeTextNumbers.values(in: text)
+        for part in parts {
+            #expect(!RecipeTextNumbers.contains(part, in: values), "\(part) is only part of a fraction in \"\(text)\"")
+        }
+    }
+
+    @Test func contains_NumberBesideAFraction_IsStillFound() {
+        let values = RecipeTextNumbers.values(in: "Olive Oil 700 g, honey 1/2 tsp")
+        #expect(RecipeTextNumbers.contains(700, in: values))
+    }
+
     @Test func values_TextWithoutNumbers_IsEmpty() {
         #expect(RecipeTextNumbers.values(in: "Olive oil, coconut oil").isEmpty)
     }

@@ -31,9 +31,20 @@ enum RecipeIngredientReconciler {
                 return row
             }
             var resolved = row
-            resolved.resolution = .matched(ingredient)
+            resolved.resolution = resolution(for: ingredient)
             return resolved
         }
+    }
+
+    /// How a row resolves once it has an ingredient.
+    ///
+    /// A lye is skipped rather than matched. The recipe calculates its lye, and
+    /// one counted among the oils or additives would throw that weight off, so
+    /// it stays out of the recipe while its name still reaches the notes. This
+    /// covers the ingredient the user creates from the review screen, which
+    /// can land in the Lyes category, as well as one found by matching.
+    static func resolution(for ingredient: Ingredient) -> RecipeImportResolution {
+        ingredient.category?.name == IngredientCategory.Name.lyes ? .skipped : .matched(ingredient)
     }
 
     /// A matched row takes the section its ingredient's category belongs to,

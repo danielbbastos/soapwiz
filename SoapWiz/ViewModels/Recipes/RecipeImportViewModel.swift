@@ -274,7 +274,7 @@ final class RecipeImportViewModel {
     /// Other rows are re-resolved too: a recipe can name the same ingredient in
     /// two sections, and creating it once should settle both.
     func resolve(_ rowID: UUID, with ingredient: Ingredient, inventory: [Ingredient]) {
-        setResolution(.matched(ingredient), for: rowID)
+        setResolution(RecipeIngredientReconciler.resolution(for: ingredient), for: rowID)
         rows = RecipeIngredientReconciler.resolveUnmatched(in: rows, against: inventory + [ingredient])
     }
 

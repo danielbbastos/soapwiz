@@ -18,24 +18,25 @@ enum RecipeTextNumbers {
     /// keeps a number the text really does contain, so over-reading is safe.
     static func values(in text: String) -> [Double] {
         var values: [Double] = []
+        var fractionRanges: [Range<String.Index>] = []
 
-        for match in text.matches(of: #/\d+(?:[.,]\d+)*/#) {
-            values.append(contentsOf: readings(of: String(match.output)))
-        }
-        for match in text.matches(of: #/(\d+)\h*\/\h*(\d+)/#) {
-            guard let numerator = Double(match.output.1), let denominator = Double(match.output.2),
+        for match in text.matches(of: #/(?:(\d+)\h+)?(\d+)\h*\/\h*(\d+)/#) {
+            guard let numerator = Double(match.output.2), let denominator = Double(match.output.3),
                   denominator > 0 else { continue }
-            values.append(numerator / denominator)
-            if let whole = wholeNumber(before: match.range.lowerBound, in: text) {
-                values.append(whole + numerator / denominator)
-            }
+            fractionRanges.append(match.range)
+            values.append(mixed(whole: match.output.1, fraction: numerator / denominator))
         }
-        for match in text.matches(of: #/(\d+)?\h*([½¼¾⅓⅔⅛])/#) {
+        for match in text.matches(of: #/(?:(\d+)\h*)?([½¼¾⅓⅔⅛])/#) {
             guard let character = match.output.2.first, let fraction = vulgarFractions[character] else { continue }
-            values.append(fraction)
-            if let whole = match.output.1.flatMap({ Double($0) }) {
-                values.append(whole + fraction)
-            }
+            fractionRanges.append(match.range)
+            values.append(mixed(whole: match.output.1, fraction: fraction))
+        }
+        // The parts of a fraction are not numbers the text states: "1/2 cup"
+        // says nothing about 2 of anything, and reading it would let an
+        // invented amount of 2 pass.
+        for match in text.matches(of: #/\d+(?:[.,]\d+)*/#)
+        where !fractionRanges.contains(where: { $0.overlaps(match.range) }) {
+            values.append(contentsOf: readings(of: String(match.output)))
         }
         return values
     }
@@ -62,10 +63,7 @@ enum RecipeTextNumbers {
         return readings.compactMap { $0 }
     }
 
-    /// The whole number of a mixed fraction such as "1 1/2".
-    private static func wholeNumber(before index: String.Index, in text: String) -> Double? {
-        let prefix = text[..<index]
-        guard let match = prefix.firstMatch(of: #/(\d+)\h+$/#) else { return nil }
-        return Double(match.output.1)
+    private static func mixed(whole: Substring?, fraction: Double) -> Double {
+        whole.flatMap { Double($0) }.map { $0 + fraction } ?? fraction
     }
 }

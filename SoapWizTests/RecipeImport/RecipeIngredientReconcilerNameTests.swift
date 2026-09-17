@@ -83,6 +83,21 @@ struct RecipeIngredientReconcilerNameTests: RecipeImportTestHelpers {
         #expect(refreshed.first?.resolution == .unmatched)
     }
 
+    @Test func resolveUnmatched_LyeCreatedForAnotherRow_SkipsTheRow() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let lyes = IngredientCategory(name: IngredientCategory.Name.lyes)
+        context.insert(lyes)
+        let draft = RecipeImportDraft.mock(oils: [ImportedIngredient(name: "Caustic Flakes", amount: 131, unit: "g")])
+        let rows = RecipeIngredientReconciler.reconcile(draft, against: [])
+        let flakes = Ingredient(name: "Caustic Flakes", category: lyes, unit: "g")
+        context.insert(flakes)
+
+        let refreshed = RecipeIngredientReconciler.resolveUnmatched(in: rows, against: [flakes])
+
+        #expect(refreshed.first?.resolution == .skipped)
+    }
+
     /// Appending " Oil" only undoes a shortening; a name that already ends in
     /// "oil" stays exactly as written, so the near miss still doesn't match.
     @Test func reconcile_BareOil_StaysUnmatched() throws {
