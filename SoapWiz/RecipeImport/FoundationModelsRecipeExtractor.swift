@@ -16,8 +16,14 @@ struct FoundationModelsRecipeExtractor: RecipeDraftExtracting {
         let session = LanguageModelSession(instructions: Self.instructions)
 
         do {
-            let response = try await session.respond(to: text.text, generating: GeneratedRecipeDraft.self)
-            let draft = response.content.asImportDraft()
+            // Greedy, so the same text gives the same draft: sampled output put
+            // one ingredient under Additives on one run and Oils on the next.
+            let response = try await session.respond(
+                to: text.text,
+                generating: GeneratedRecipeDraft.self,
+                options: GenerationOptions(sampling: .greedy)
+            )
+            let draft = RecipeImportDraftChecker.checked(response.content.asImportDraft(), against: text.text)
             guard draft.hasAnyIngredient else { throw RecipeImportError.nothingRecognised }
             return draft
         } catch let error as LanguageModelSession.GenerationError {
