@@ -15,7 +15,7 @@ enum RecipeIngredientReconciler {
         let index = index(of: inventory)
         let slugIndex = slugIndex(of: inventory)
         return sections(of: draft).flatMap { imported, role in
-            imported.map { row(for: $0, role: role, index: index, slugIndex: slugIndex) }
+            imported.compactMap { row(for: $0, role: role, index: index, slugIndex: slugIndex) }
         }
     }
 
@@ -27,41 +27,73 @@ enum RecipeIngredientReconciler {
         let slugIndex = slugIndex(of: inventory)
         return rows.map { row in
             guard case .unmatched = row.resolution else { return row }
-            guard let ingredient = matched(row.imported.name, index: index, slugIndex: slugIndex) else { return row }
+            guard let ingredient = matched(row.imported.name, listedAsOil: false, index: index, slugIndex: slugIndex) else {
+                return row
+            }
             var resolved = row
-            resolved.resolution = .matched(ingredient)
+            resolved.resolution = resolution(for: ingredient)
             return resolved
         }
     }
 
+    /// How a row resolves once it has an ingredient.
+    ///
+    /// A lye is skipped rather than matched. The recipe calculates its lye, and
+    /// one counted among the oils or additives would throw that weight off, so
+    /// it stays out of the recipe while its name still reaches the notes. This
+    /// covers the ingredient the user creates from the review screen, which
+    /// can land in the Lyes category, as well as one found by matching.
+    static func resolution(for ingredient: Ingredient) -> RecipeImportResolution {
+        ingredient.category?.name == IngredientCategory.Name.lyes ? .skipped : .matched(ingredient)
+    }
+
+    /// A matched row takes the section its ingredient's category belongs to,
+    /// not the one the model chose: Honey is an additive however it was listed.
+    /// An unmatched row takes the section its name makes evident, when it does.
+    /// A match in the Lyes category yields no row at all, because a recipe
+    /// calculates its lye rather than listing it.
     private static func row(
         for imported: ImportedIngredient,
         role: RecipeIngredientRole,
         index: [String: Ingredient],
         slugIndex: [String: Ingredient]
-    ) -> RecipeImportRow {
-        let match = matched(imported.name, index: index, slugIndex: slugIndex)
+    ) -> RecipeImportRow? {
+        guard let match = matched(imported.name, listedAsOil: role == .oil, index: index, slugIndex: slugIndex) else {
+            return RecipeImportRow(
+                imported: imported,
+                role: ImportedIngredientName.evidentRole(of: imported.name) ?? role,
+                resolution: .unmatched
+            )
+        }
+        guard match.category?.name != IngredientCategory.Name.lyes else { return nil }
         return RecipeImportRow(
             imported: imported,
-            role: role,
-            resolution: match.map { .matched($0) } ?? .unmatched
+            role: match.category?.ingredientRole ?? role,
+            resolution: .matched(match)
         )
     }
 
-    /// An inventory row for `name`: an exact name match, or failing that the row
-    /// holding the catalog entry that ships under this name or one of its aliases.
+    /// An inventory row for `name`: for each of its lookup spellings in turn, an
+    /// exact name match, or failing that the row holding the catalog entry that
+    /// ships under that spelling or one of its aliases.
     ///
-    /// The alias step is still exact, not fuzzy. "Sweet Almond Oil" reaches the
-    /// almond-oil row because the catalog lists that alias, never because the two
-    /// strings look alike — the distinction this type exists to keep.
+    /// Every step is still exact, not fuzzy. "Sweet Almond Oil" reaches the
+    /// almond-oil row because the catalog lists that alias, and "Tea Tree EO"
+    /// reaches Tea Tree Essential Oil because EO is spelled out — never because
+    /// two strings look alike, the distinction this type exists to keep.
     private static func matched(
         _ name: String,
+        listedAsOil: Bool,
         index: [String: Ingredient],
         slugIndex: [String: Ingredient]
     ) -> Ingredient? {
-        if let exact = index[name.lookupKey] { return exact }
-        guard let entry = IngredientLibrary.entry(matching: name) else { return nil }
-        return slugIndex[entry.slug]
+        for candidate in ImportedIngredientName.lookupCandidates(for: name, listedAsOil: listedAsOil) {
+            if let exact = index[candidate.lookupKey] { return exact }
+            if let entry = IngredientLibrary.entry(matching: candidate), let installed = slugIndex[entry.slug] {
+                return installed
+            }
+        }
+        return nil
     }
 
     /// Inventory keyed by library slug, with the same tie-break as `index(of:)`.

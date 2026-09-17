@@ -171,6 +171,29 @@ struct RecipeImportViewModelTests: RecipeImportTestHelpers {
         #expect(model.rows.allSatisfy { $0.ingredient === created })
     }
 
+    /// The create sheet lets the user file the new ingredient under Lyes. A
+    /// lye bound into the oils would throw the lye weight off, so the row is
+    /// skipped instead, and still counts as resolved.
+    @Test func resolve_IngredientCreatedAsALye_SkipsTheRow() async throws {
+        let (container, context) = try makeContext()
+        _ = container
+
+        let draft = RecipeImportDraft.mock(oils: [ImportedIngredient(name: "Caustic Flakes", amount: 131, unit: "g")])
+        let model = RecipeImportViewModel(extractor: StubRecipeExtractor(draft: draft))
+        model.rawText = "recipe"
+        await model.extract(inventory: [])
+
+        let lyes = IngredientCategory(name: IngredientCategory.Name.lyes)
+        context.insert(lyes)
+        let created = Ingredient(name: "Caustic Flakes", category: lyes, unit: "g")
+        context.insert(created)
+        let row = try #require(model.rows.first)
+        model.resolve(row.id, with: created, inventory: [])
+
+        #expect(model.rows.first?.resolution == .skipped)
+        #expect(model.unresolvedCount == 0)
+    }
+
     @Test func resolve_LeavesASkippedRowSkipped() async throws {
         let (container, context) = try makeContext()
         _ = container
