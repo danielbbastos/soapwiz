@@ -38,6 +38,9 @@ A branch is safe to delete when **any** of these holds:
 3. **Its PR merged at this exact tip** — squash-merged and then left behind, so the local branch sits at an older commit than the one that actually merged. This is the case the first two miss.
 
 Check 3 compares the local tip against `headRefOid`, the commit GitHub actually merged.
+The `// empty` matters: it pins "no merged PR" to empty output, so a non-empty `merged_tip`
+always means a real merge. Without it the expression leans on `gh` choosing to suppress a
+bare `null` result, which is its behaviour but not a documented contract.
 A merged PR alone is **not** enough: if the branch picked up further commits afterwards,
 or local commits GitHub never saw, those exist nowhere else once the remote ref is pruned,
 and `-D` would destroy them. Tip equality is what makes the force-delete safe.
@@ -52,7 +55,7 @@ for b in $(git for-each-ref --format='%(refname:short)' refs/heads/ | grep -v '^
   elif [ -z "$(git diff main "$b")" ]; then
     echo "  $b -> tree identical to main (safe)"; safe="$safe $b"
   else
-    merged_tip="$("$gh_bin" pr list --state merged --head "$b" --json headRefOid --jq '.[0].headRefOid')"
+    merged_tip="$("$gh_bin" pr list --state merged --head "$b" --json headRefOid --jq '.[0].headRefOid // empty')"
     local_tip="$(git rev-parse "$b")"
     ahead="$(git log --oneline main.."$b" | wc -l | tr -d ' ')"
     if [ -n "$merged_tip" ] && [ "$merged_tip" = "$local_tip" ]; then
