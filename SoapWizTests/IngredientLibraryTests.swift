@@ -34,7 +34,53 @@ struct IngredientLibraryTests {
         #expect(!entry.hasSameChemistry(as: ingredient))
     }
 
-    // MARK: - isLibrary
+    // MARK: - Name and alias lookup
+
+    /// Against the shipped catalog, the way `IngredientLibraryDataTests` does: the
+    /// aliases are curated data, and a lookup that works on a hand-built fixture but
+    /// not on the real file would prove nothing.
+    @Test func entryMatching_ShippedName_FindsTheEntry() {
+        #expect(IngredientLibrary.entry(matching: "Apricot Kernel Oil")?.slug == "apricot-kernel-oil")
+    }
+
+    /// The misspelling the catalog carries as an alias precisely because people
+    /// write it — this is what alias matching is for.
+    @Test func entryMatching_Alias_FindsTheEntry() {
+        #expect(IngredientLibrary.entry(matching: "Apricot Kernal Oil")?.slug == "apricot-kernel-oil")
+    }
+
+    @Test(arguments: ["APRICOT KERNAL OIL", "  apricot kernal oil  ", "Apricot  Kernal  Oil"])
+    func entryMatching_AliasVariations_AllFindTheEntry(_ written: String) {
+        #expect(IngredientLibrary.entry(matching: written)?.slug == "apricot-kernel-oil")
+    }
+
+    @Test func entryMatching_UnknownName_IsNil() {
+        #expect(IngredientLibrary.entry(matching: "Unobtainium Oil") == nil)
+    }
+
+    @Test func entryMatching_EmptyName_IsNil() {
+        #expect(IngredientLibrary.entry(matching: "   ") == nil)
+    }
+
+    /// The same refusal `RecipeIngredientReconciler` makes: a near-miss is a
+    /// different oil with a different SAP value, and resolving it would put a wrong
+    /// number into a lye calculation.
+    @Test func entryMatching_NearMiss_IsNil() {
+        #expect(IngredientLibrary.entry(matching: "Apricot Oil Kernel") == nil)
+    }
+
+    // MARK: - lookupNames
+
+    @Test func lookupNames_NameAndAliases_AreAllFolded() {
+        let entry = IngredientLibraryEntry.mock(name: "Olive Oil", aliases: ["Óleo de Oliva", "OLIVE  OIL"])
+        #expect(entry.lookupNames == ["olive oil", "oleo de oliva", "olive oil"])
+    }
+
+    @Test func lookupNames_BlankAlias_IsDropped() {
+        #expect(IngredientLibraryEntry.mock(name: "Olive Oil", aliases: ["  "]).lookupNames == ["olive oil"])
+    }
+
+    // MARK: - isPristineLibraryRow
 
     @Test func isLibrary_UserCreated_IsFalse() {
         #expect(!Ingredient(name: "House Blend").isPristineLibraryRow)

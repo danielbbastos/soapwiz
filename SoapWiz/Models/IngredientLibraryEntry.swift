@@ -19,6 +19,14 @@ struct IngredientLibraryEntry: Decodable {
     let density: Double?
     let fattyAcidProfile: FattyAcidProfile?
 
+    /// Every name this entry answers to — the one it ships under and each alias —
+    /// folded for lookup. The single definition of "a name that means this entry",
+    /// shared by the installer's adoption pass and `IngredientLibrary.entry(matching:)`
+    /// so the two can never disagree about what counts as a match.
+    var lookupNames: [String] {
+        ([name] + aliases).map(\.lookupKey).filter { !$0.isEmpty }
+    }
+
     func hasSameChemistry(as ingredient: Ingredient) -> Bool {
         sapValue == ingredient.sapValue
             && kohSapValue == ingredient.kohSapValue

@@ -169,6 +169,54 @@ struct RecipeTransferEncoderTests {
 
     // MARK: - Collections
 
+    // MARK: - Library slug
+
+    @Test func payload_PristineLibraryRow_CarriesItsSlug() throws {
+        let recipe = fixture.recipe()
+        fixture.addOil(fixture.oil("Olive Oil", slug: "olive-oil"), percentage: 100, to: recipe)
+
+        let payload = fixture.payload([recipe])
+
+        #expect(payload.ingredients.first?.librarySlug == "olive-oil")
+    }
+
+    /// The slug says "this is the catalog's olive oil". A row whose chemistry the
+    /// user has changed is no longer that, so it travels by name and the recipient
+    /// is told the values differ.
+    @Test func payload_CustomisedLibraryRow_SendsNoSlug() throws {
+        let recipe = fixture.recipe()
+        fixture.addOil(
+            fixture.oil("Olive Oil", slug: "olive-oil", customChemistry: true),
+            percentage: 100,
+            to: recipe
+        )
+
+        let payload = fixture.payload([recipe])
+
+        #expect(payload.ingredients.first?.librarySlug == nil)
+        #expect(payload.ingredients.first?.sapValue != nil)
+    }
+
+    @Test func payload_UserCreatedRow_SendsNoSlug() throws {
+        let recipe = fixture.recipe()
+        fixture.addOil(fixture.oil("House Blend"), percentage: 100, to: recipe)
+
+        #expect(fixture.payload([recipe]).ingredients.first?.librarySlug == nil)
+    }
+
+    /// Chemistry keeps travelling beside the slug, which is what lets an older build
+    /// — one that ignores the key entirely — still calculate the recipe.
+    @Test func payload_LibraryRow_CarriesChemistryAlongsideTheSlug() throws {
+        let recipe = fixture.recipe()
+        fixture.addOil(fixture.oil("Olive Oil", sap: 0.1345, slug: "olive-oil"), percentage: 100, to: recipe)
+
+        let ingredient = try #require(fixture.payload([recipe]).ingredients.first)
+
+        #expect(ingredient.librarySlug == "olive-oil")
+        #expect(ingredient.sapValue == 0.1345)
+        #expect(ingredient.fattyAcidProfile != nil)
+    }
+
     @Test func payload_Collections_CarryNamesOnly() throws {
         let recipe = fixture.populatedRecipe()
 

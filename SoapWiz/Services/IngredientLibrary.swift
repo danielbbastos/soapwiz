@@ -26,6 +26,36 @@ struct IngredientLibrary {
         return bundledNamesBySlug[slug]
     }
 
+    /// Entries keyed by every name they answer to, aliases included. Built once for
+    /// the same reason as `bundledNamesBySlug`: the reconciler asks per imported row,
+    /// and the catalog runs to hundreds of entries.
+    ///
+    /// First entry wins a contested name, matching `bundledNamesBySlug`. Two entries
+    /// claiming one alias is a data error in `IngredientLibrary.json`, not a case to
+    /// resolve at runtime.
+    static let bundledEntriesByLookupName: [String: IngredientLibraryEntry] = {
+        var index: [String: IngredientLibraryEntry] = [:]
+        for entry in bundled.entries {
+            for key in entry.lookupNames where index[key] == nil {
+                index[key] = entry
+            }
+        }
+        return index
+    }()
+
+    /// The entry shipping under `name` or one of its aliases, or `nil` when the
+    /// catalog ships nothing by that name.
+    ///
+    /// Matching is exact on `lookupKey`, which folds case, diacritics and internal
+    /// whitespace — never fuzzy. A near-miss resolving to the wrong entry would
+    /// attach the wrong saponification value to a recipe, which is the hazard
+    /// `RecipeIngredientReconciler` already refuses to take.
+    static func entry(matching name: String) -> IngredientLibraryEntry? {
+        let key = name.lookupKey
+        guard !key.isEmpty else { return nil }
+        return bundledEntriesByLookupName[key]
+    }
+
     /// An unreadable file yields an empty library rather than a failed launch:
     /// the user loses the built-in ingredients, not the app.
     static func load(from bundle: Bundle) -> IngredientLibrary {

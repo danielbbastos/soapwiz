@@ -120,8 +120,8 @@ enum IngredientLibraryInstaller {
         for entry: IngredientLibraryEntry,
         from unlinked: inout [String: Ingredient]
     ) -> Ingredient? {
-        for name in [entry.name] + entry.aliases {
-            if let ingredient = unlinked.removeValue(forKey: name.lookupKey) {
+        for key in entry.lookupNames {
+            if let ingredient = unlinked.removeValue(forKey: key) {
                 return ingredient
             }
         }

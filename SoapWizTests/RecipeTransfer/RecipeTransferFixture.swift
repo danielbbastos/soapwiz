@@ -32,13 +32,17 @@ struct RecipeTransferFixture {
         kohSap: Double? = 0.1885,
         density: Double? = 0.91,
         profile: FattyAcidProfile? = .mock,
-        unit: String = "g"
+        unit: String = "g",
+        slug: String = "",
+        customChemistry: Bool = false
     ) -> Ingredient {
         let ingredient = Ingredient(name: name, unit: unit)
         ingredient.sapValue = sap
         ingredient.kohSapValue = kohSap
         ingredient.density = density
         ingredient.fattyAcidProfile = profile
+        ingredient.librarySlug = slug
+        ingredient.hasCustomChemistry = customChemistry
         context.insert(ingredient)
         return ingredient
     }

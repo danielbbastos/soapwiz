@@ -78,6 +78,20 @@ struct RecipeTransferIngredient: Codable, Equatable {
     var kohSapValue: Double?
     var density: Double?
     var fattyAcidProfile: FattyAcidProfile?
+
+    /// The bundled entry this ingredient is an untouched copy of, sent only when it
+    /// is one — a row carrying a slug whose chemistry the user has since changed
+    /// deliberately travels without it, under the name path, so the recipient is
+    /// told the values differ from their own.
+    ///
+    /// Lets the recipient resolve to their *own* copy of the same entry rather than
+    /// matching on a name either side may have renamed, and silences the chemistry
+    /// warning between two devices holding the same curated values.
+    ///
+    /// Optional so a payload written before the field existed still decodes, and so
+    /// an older build simply ignores the key. Chemistry keeps travelling alongside
+    /// it either way, which is what lets the two versions interoperate.
+    var librarySlug: String?
 }
 
 /// One recipe, carrying every field `RecipeFormViewModel` owns.
