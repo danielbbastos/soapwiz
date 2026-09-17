@@ -33,9 +33,10 @@ enum RecipeImportDraftChecker {
         checked.superFat = stated.superFat ?? valueNear(
             checked.superFat, keyword: RecipeTextSettingsParser.superFatKeyword, in: text, requiringPercent: false
         )
-        checked.waterParts = stated.waterParts ?? valueNear(
-            checked.waterParts, keyword: RecipeTextSettingsParser.waterKeyword, in: text, requiringPercent: false
-        )
+        // No fallback for the water ratio: a number beside "water" or "lye" is
+        // nearly always a weight, and "4.5 oz lye" read as 4.5 parts water is
+        // still inside the plausible range.
+        checked.waterParts = stated.waterParts
         checked.fragrancePercentage = stated.fragrancePercentage ?? valueNear(
             checked.fragrancePercentage, keyword: RecipeTextSettingsParser.fragranceKeyword, in: text, requiringPercent: true
         )

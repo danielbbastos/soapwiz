@@ -83,14 +83,19 @@ enum ImportedIngredientName {
     /// name — a note in brackets, "EO" for essential oil, "castor" for castor
     /// oil — without ever treating two different names as alike, and the review
     /// screen shows the name as written beside whatever it matched.
-    static func lookupCandidates(for name: String) -> [String] {
+    ///
+    /// "Oil" is appended only for a row listed among the oils. Elsewhere the
+    /// suffix would promote a fragrance written as "Coconut" to Coconut Oil,
+    /// and matching moves a row into its ingredient's section — into the lye
+    /// calculation.
+    static func lookupCandidates(for name: String, listedAsOil: Bool) -> [String] {
         let stripped = withoutParentheticals(name)
         let expanded = stripped
             .replacing(#/\beo\b/#.ignoresCase(), with: "Essential Oil")
             .replacing(#/\bfo\b/#.ignoresCase(), with: "Fragrance Oil")
         var candidates = [name, stripped, expanded]
         let expandedKey = expanded.lookupKey
-        if !expandedKey.hasSuffix("oil"), !ImportedIngredient.sectionWords.contains(expandedKey) {
+        if listedAsOil, !expandedKey.hasSuffix("oil"), !ImportedIngredient.sectionWords.contains(expandedKey) {
             candidates.append(expanded + " Oil")
         }
 

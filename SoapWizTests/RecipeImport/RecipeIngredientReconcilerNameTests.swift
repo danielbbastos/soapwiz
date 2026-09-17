@@ -50,6 +50,39 @@ struct RecipeIngredientReconcilerNameTests: RecipeImportTestHelpers {
         #expect(rows.first?.ingredient === teaTree)
     }
 
+    /// A fragrance written as "Coconut" must not become Coconut Oil: matching
+    /// would move it into the oils and the lye calculation.
+    @Test(arguments: [RecipeIngredientRole.fragrance, .additive])
+    func reconcile_ShortNameOutsideTheOils_IsNotExtendedWithOil(_ reportedRole: RecipeIngredientRole) throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let inventory = makeInventory(in: context)
+        let coconut = [ImportedIngredient(name: "Coconut", amount: 3, unit: "%")]
+        let draft = RecipeImportDraft.mock(
+            oils: [],
+            additives: reportedRole == .additive ? coconut : [],
+            fragrances: reportedRole == .fragrance ? coconut : []
+        )
+
+        let rows = RecipeIngredientReconciler.reconcile(draft, against: inventory)
+
+        let row = try #require(rows.first)
+        #expect(row.resolution == .unmatched)
+        #expect(row.role == reportedRole)
+    }
+
+    @Test func resolveUnmatched_ShortName_IsNotExtendedWithOil() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let inventory = makeInventory(in: context)
+        let draft = RecipeImportDraft.mock(oils: [ImportedIngredient(name: "Castor", amount: 5, unit: "%")])
+        let rows = RecipeIngredientReconciler.reconcile(draft, against: [])
+
+        let refreshed = RecipeIngredientReconciler.resolveUnmatched(in: rows, against: inventory)
+
+        #expect(refreshed.first?.resolution == .unmatched)
+    }
+
     /// Appending " Oil" only undoes a shortening; a name that already ends in
     /// "oil" stays exactly as written, so the near miss still doesn't match.
     @Test func reconcile_BareOil_StaysUnmatched() throws {

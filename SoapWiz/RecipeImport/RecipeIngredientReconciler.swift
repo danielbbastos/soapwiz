@@ -27,7 +27,9 @@ enum RecipeIngredientReconciler {
         let slugIndex = slugIndex(of: inventory)
         return rows.map { row in
             guard case .unmatched = row.resolution else { return row }
-            guard let ingredient = matched(row.imported.name, index: index, slugIndex: slugIndex) else { return row }
+            guard let ingredient = matched(row.imported.name, listedAsOil: false, index: index, slugIndex: slugIndex) else {
+                return row
+            }
             var resolved = row
             resolved.resolution = .matched(ingredient)
             return resolved
@@ -45,7 +47,7 @@ enum RecipeIngredientReconciler {
         index: [String: Ingredient],
         slugIndex: [String: Ingredient]
     ) -> RecipeImportRow? {
-        guard let match = matched(imported.name, index: index, slugIndex: slugIndex) else {
+        guard let match = matched(imported.name, listedAsOil: role == .oil, index: index, slugIndex: slugIndex) else {
             return RecipeImportRow(
                 imported: imported,
                 role: ImportedIngredientName.evidentRole(of: imported.name) ?? role,
@@ -70,10 +72,11 @@ enum RecipeIngredientReconciler {
     /// two strings look alike, the distinction this type exists to keep.
     private static func matched(
         _ name: String,
+        listedAsOil: Bool,
         index: [String: Ingredient],
         slugIndex: [String: Ingredient]
     ) -> Ingredient? {
-        for candidate in ImportedIngredientName.lookupCandidates(for: name) {
+        for candidate in ImportedIngredientName.lookupCandidates(for: name, listedAsOil: listedAsOil) {
             if let exact = index[candidate.lookupKey] { return exact }
             if let entry = IngredientLibrary.entry(matching: candidate), let installed = slugIndex[entry.slug] {
                 return installed

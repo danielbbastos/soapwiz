@@ -24,7 +24,6 @@ enum RecipeTextSettingsParser {
     static let fragrancePercentageRange = 0.0...15.0
 
     static let superFatKeyword = #/\b(?:super\h*-?\h*fat(?:ting)?|lye\h+discount|sf)\b/#.ignoresCase()
-    static let waterKeyword = #/\b(?:water|lye)\b/#.ignoresCase()
     static let fragranceKeyword = #/\b(?:fragrances?|scents?|essential\h+oils?|eos?|fos?)\b/#.ignoresCase()
 
     static func parse(_ text: String) -> RecipeTextSettings {

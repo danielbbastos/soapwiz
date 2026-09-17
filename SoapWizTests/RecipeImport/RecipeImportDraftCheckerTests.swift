@@ -147,6 +147,22 @@ struct RecipeImportDraftCheckerTests {
         #expect(checked.superFat == 6)
     }
 
+    @Test func checked_WaterRatioTakenFromTheLyeWeight_IsCleared() {
+        let draft = RecipeImportDraft.mock(waterParts: 4.5)
+
+        let checked = RecipeImportDraftChecker.checked(draft, against: RecipeImportPastes.beerParagraph)
+
+        #expect(checked.waterParts == nil)
+    }
+
+    @Test func checked_WaterRatioStatedInText_IsKept() {
+        let draft = RecipeImportDraft.mock(waterParts: 2)
+
+        let checked = RecipeImportDraftChecker.checked(draft, against: RecipeImportPastes.headers)
+
+        #expect(checked.waterParts == 2)
+    }
+
     @Test func checked_FragranceLoadTakenFromAnAmount_IsCleared() {
         let draft = RecipeImportDraft.mock(fragrancePercentage: 15)
 
