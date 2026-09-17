@@ -80,7 +80,8 @@ struct GeneratedRecipeDraft {
 @available(iOS 26, macOS 26, *)
 extension GeneratedRecipeDraft {
     /// Crosses out of `FoundationModels` into the plain draft the app works
-    /// with, discarding anything the recipe form couldn't represent.
+    /// with, discarding anything the recipe form couldn't represent and any
+    /// section header the model reported as an ingredient.
     func asImportDraft() -> RecipeImportDraft {
         RecipeImportDraft(
             name: name.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -96,6 +97,7 @@ extension GeneratedRecipeDraft {
             waterParts: waterParts,
             fragrancePercentage: fragrancePercentage
         )
+        .droppingSectionHeaders()
     }
 }
 

@@ -15,6 +15,24 @@ struct ImportedIngredient: Identifiable, Equatable {
     static func == (lhs: ImportedIngredient, rhs: ImportedIngredient) -> Bool {
         lhs.id == rhs.id
     }
+
+    /// Words a recipe groups its ingredients under, which the model sometimes
+    /// reports as ingredients in their own right.
+    static let sectionWords: Set<String> = [
+        "oil", "oils", "additive", "additives", "fragrance", "fragrances", "lye", "ingredients"
+    ]
+
+    /// Whether this row is a section header such as "Additives:" rather than
+    /// an ingredient.
+    ///
+    /// A quantity always means an ingredient, so an oil genuinely called "Oil"
+    /// with an amount beside it survives.
+    var isSectionHeader: Bool {
+        guard amount == 0 else { return false }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.hasSuffix(":") else { return true }
+        return Self.sectionWords.contains(trimmed.lookupKey)
+    }
 }
 
 /// A recipe extracted from free text, holding structure and proportions only.
@@ -75,6 +93,19 @@ struct RecipeImportDraft: Equatable {
     /// `RecipeFormView`. Anything else an import produces is discarded rather
     /// than silently reinterpreted.
     static let supportedWeightUnits = ["g", "kg", "oz", "lb"]
+
+    /// The draft without rows that are section headers rather than ingredients.
+    ///
+    /// Filtered on the way out of extraction rather than stripped from the text
+    /// on the way in: the headers are what tell the model which list the lines
+    /// beneath them belong to.
+    func droppingSectionHeaders() -> RecipeImportDraft {
+        var draft = self
+        draft.oils.removeAll(where: \.isSectionHeader)
+        draft.additives.removeAll(where: \.isSectionHeader)
+        draft.fragrances.removeAll(where: \.isSectionHeader)
+        return draft
+    }
 
     var hasAnyIngredient: Bool {
         !oils.isEmpty || !additives.isEmpty || !fragrances.isEmpty
