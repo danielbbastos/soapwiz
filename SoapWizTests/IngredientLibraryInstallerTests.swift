@@ -54,7 +54,7 @@ struct IngredientLibraryInstallerTests {
         #expect(installed.category?.name == IngredientCategory.Name.oils)
         #expect(installed.unit == IngredientUnit.grams.rawValue)
         #expect(olive.hasSameChemistry(as: installed))
-        #expect(installed.isLibrary)
+        #expect(installed.isPristineLibraryRow)
         #expect(installed.purchases.isEmpty)
     }
 
@@ -219,7 +219,7 @@ struct IngredientLibraryInstallerTests {
 
         #expect(try ingredients(ctx).count == 2)
         #expect(existing.librarySlug == "olive-oil")
-        #expect(existing.isLibrary)
+        #expect(existing.isPristineLibraryRow)
     }
 
     @Test func install_UserIngredientWithDifferentChemistry_IsAdoptedAsCustom() throws {

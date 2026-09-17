@@ -5,7 +5,10 @@ struct InventoryFilterView: View {
     @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
+    @Query(sort: \Ingredient.name) private var allIngredients: [Ingredient]
     @Bindable var model: IngredientListViewModel
+
+    private var hiddenIngredients: [Ingredient] { model.hidden(allIngredients) }
 
     private var categoryLabel: String {
         switch model.selectedCategories.count {
@@ -43,6 +46,22 @@ struct InventoryFilterView: View {
 
                 expiryMenu
                     .listRowBackground(Color.cardBackground)
+
+                // Deliberately not a filter, and so deliberately absent from
+                // `activeFilterCount`: hiding is a lasting decision about an
+                // ingredient, not a temporary narrowing of the list.
+                if !hiddenIngredients.isEmpty {
+                    Section {
+                        NavigationLink {
+                            HiddenIngredientsView(model: model)
+                        } label: {
+                            LabeledContent("Hidden Ingredients", value: "\(hiddenIngredients.count)")
+                        }
+                    } footer: {
+                        Text("Hidden ingredients stay out of Inventory and out of recipe ingredient pickers. Unhide one to use it again.")
+                    }
+                    .listRowBackground(Color.cardBackground)
+                }
             }
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)

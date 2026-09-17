@@ -38,7 +38,7 @@ struct IngredientDetailView: View {
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             List {
-                Section("Summary") {
+                Section {
                     if let categoryName = model.ingredient.category?.name {
                         LabeledContent("Category", value: categoryName)
                     }
@@ -65,6 +65,19 @@ struct IngredientDetailView: View {
                             Text("\(value.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))) g/ml (\(source))")
                                 .foregroundStyle(.secondary)
                         }
+                    }
+                } header: {
+                    Text("Summary")
+                } footer: {
+                    // A footer sentence rather than a labelled row: where an
+                    // ingredient came from is context, not one of its properties,
+                    // and a bare "Custom" reads like something the user is being
+                    // asked to act on — the more so beside the Density row, which
+                    // already says "(custom)" to mean an entirely different thing.
+                    if model.ingredient.isLibraryInstalled {
+                        Text(model.ingredient.hasCustomChemistry
+                             ? "From the built-in ingredient library, with chemistry you've changed."
+                             : "From the built-in ingredient library.")
                     }
                 }
                 .listRowBackground(Color.cardBackground)

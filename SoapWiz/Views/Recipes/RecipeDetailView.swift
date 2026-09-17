@@ -41,10 +41,21 @@ struct RecipeDetailView: View {
         "\(displayed(batchAmount).formatted(.number.precision(.fractionLength(0...2)))) \(displayUnit)"
     }
 
+    /// Hidden lyes are excluded, for the reason given on `RecipeFormView`'s copy.
+    /// `lyeCandidates` puts this recipe's own lye back for the batch sheet.
     private static let lyesPredicate: Predicate<Ingredient> = {
         let name = IngredientCategory.Name.lyes
-        return #Predicate { $0.category?.name == name }
+        return #Predicate { $0.category?.name == name && !$0.isHidden }
     }()
+
+    /// What the batch sheet offers: the visible lyes, plus this recipe's own, which
+    /// may have been hidden since it was chosen.
+    private var lyeCandidates: [Ingredient] {
+        RecipeFormViewModel.lyeCandidates(
+            visible: lyeIngredients,
+            keeping: [recipe.lyeIngredient, recipe.kohLyeIngredient]
+        )
+    }
 
     var body: some View {
         let batch = model.wholeBatchBreakdown
@@ -102,7 +113,7 @@ struct RecipeDetailView: View {
         }
         .modifier(sharingPresentation)
         .sheet(isPresented: $showCreateBatch) {
-            CreateBatchSheet(recipe: recipe, lyeCandidates: lyeIngredients) { batch in
+            CreateBatchSheet(recipe: recipe, lyeCandidates: lyeCandidates) { batch in
                 navigation.showBatch(batch)
             }
         }
