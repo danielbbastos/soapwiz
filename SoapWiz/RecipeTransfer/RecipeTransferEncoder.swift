@@ -111,7 +111,12 @@ private struct RecipeTransferIngredientPool {
                 sapValue: ingredient.sapValue,
                 kohSapValue: ingredient.kohSapValue,
                 density: ingredient.density,
-                fattyAcidProfile: ingredient.fattyAcidProfile
+                fattyAcidProfile: ingredient.fattyAcidProfile,
+                // Only a pristine row sends its slug. A customised one carries the
+                // same slug locally, but its chemistry is the user's rather than the
+                // catalog's, so sending it would let the recipient resolve to their
+                // own bundled copy and never hear that the values differ.
+                librarySlug: ingredient.isPristineLibraryRow ? ingredient.librarySlug : nil
             )
         )
         return index

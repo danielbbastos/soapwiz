@@ -57,6 +57,8 @@ enum RecipeTransferImporter {
             ingredient.kohSapValue = entry.incoming.kohSapValue
             ingredient.density = entry.incoming.density
             ingredient.fattyAcidProfile = entry.incoming.fattyAcidProfile
+            // Blank unless this build's catalog knows the slug — see `adoptableSlug`.
+            ingredient.librarySlug = entry.adoptableSlug ?? ""
             context.insert(ingredient)
             return ingredient
         }

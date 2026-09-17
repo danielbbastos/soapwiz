@@ -318,4 +318,35 @@ struct RecipeTextSanitizerTests {
         beautifully, though I did have to soap a little cooler than usual because my kitchen was \
         so warm. Looking forward to trying it with a bit of clay next time around.</p>
         """
+    // MARK: - Indentation (probe for the two paste paths)
+
+    /// The PasteButton path runs `tidiedForEditing`, which strips leading
+    /// indentation; the context-menu path writes through the binding and keeps it.
+    /// If both sanitize to the same text, the model sees the same input either way
+    /// and any difference in the result is the model's, not the path's.
+    @Test func sanitize_IndentedAndUnindented_ProduceTheSameText() {
+        let indented = """
+        Lavender Castile Bar
+
+        Oils:
+          Olive Oil - All Grades .......... 45%
+          Coconut Oil, All Grades ......... 25%
+
+        Additives:
+          Sodium Lactate .................. 15 g
+
+        Fragrance:
+          Lavender Essential Oil .......... 3% of oils
+        """
+        let flat = indented
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .joined(separator: "\n")
+
+        let fromIndented = RecipeTextSanitizer.sanitize(indented)
+        let fromFlat = RecipeTextSanitizer.sanitize(flat)
+
+        #expect(fromIndented.text == fromFlat.text)
+    }
+
 }

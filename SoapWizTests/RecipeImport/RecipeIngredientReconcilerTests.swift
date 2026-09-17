@@ -60,6 +60,72 @@ struct RecipeIngredientReconcilerTests: RecipeImportTestHelpers {
         #expect(rows.first?.ingredient == nil)
     }
 
+    // MARK: - Catalog alias matching
+
+    /// The name written on the page is one the catalog knows as an alias, so it
+    /// reaches the inventory row installed from that entry even though the two
+    /// strings share no exact match.
+    @Test func reconcile_CatalogAlias_MatchesTheInstalledRow() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let oils = IngredientCategory(name: IngredientCategory.Name.oils)
+        context.insert(oils)
+        let apricot = makeOil(name: "Apricot Kernel Oil", sap: 0.135, category: oils, context: context)
+        apricot.librarySlug = "apricot-kernel-oil"
+
+        let draft = RecipeImportDraft.mock(oils: [ImportedIngredient(name: "Apricot Kernal Oil", amount: 100, unit: nil)])
+        let rows = RecipeIngredientReconciler.reconcile(draft, against: [apricot])
+
+        #expect(rows.first?.ingredient === apricot)
+    }
+
+    /// An exact name match still wins: the alias step is only ever a fallback, so a
+    /// row the user named themselves is never displaced by a catalog alias.
+    @Test func reconcile_ExactNameWins_OverAnAlias() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let oils = IngredientCategory(name: IngredientCategory.Name.oils)
+        context.insert(oils)
+        let exact = makeOil(name: "Apricot Kernal Oil", sap: 0.2, category: oils, context: context)
+        let viaAlias = makeOil(name: "Apricot Kernel Oil", sap: 0.135, category: oils, context: context)
+        viaAlias.librarySlug = "apricot-kernel-oil"
+
+        let draft = RecipeImportDraft.mock(oils: [ImportedIngredient(name: "Apricot Kernal Oil", amount: 100, unit: nil)])
+        let rows = RecipeIngredientReconciler.reconcile(draft, against: [exact, viaAlias])
+
+        #expect(rows.first?.ingredient === exact)
+    }
+
+    /// An alias the catalog knows, but no row installed from that entry — there is
+    /// nothing to resolve to, and inventing one is the hazard this type refuses.
+    @Test func reconcile_CatalogAliasWithNoInstalledRow_StaysUnmatched() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let inventory = makeInventory(in: context)
+
+        let draft = RecipeImportDraft.mock(oils: [ImportedIngredient(name: "Apricot Kernal Oil", amount: 100, unit: nil)])
+        let rows = RecipeIngredientReconciler.reconcile(draft, against: inventory)
+
+        #expect(rows.first?.resolution == .unmatched)
+    }
+
+    @Test func resolveUnmatched_CatalogAlias_ResolvesAfterTheRowAppears() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let oils = IngredientCategory(name: IngredientCategory.Name.oils)
+        context.insert(oils)
+
+        let draft = RecipeImportDraft.mock(oils: [ImportedIngredient(name: "Apricot Kernal Oil", amount: 100, unit: nil)])
+        var rows = RecipeIngredientReconciler.reconcile(draft, against: [])
+        #expect(rows.first?.resolution == .unmatched)
+
+        let created = makeOil(name: "Apricot Kernel Oil", sap: 0.135, category: oils, context: context)
+        created.librarySlug = "apricot-kernel-oil"
+        rows = RecipeIngredientReconciler.resolveUnmatched(in: rows, against: [created])
+
+        #expect(rows.first?.ingredient === created)
+    }
+
     @Test func reconcile_EmptyInventory_LeavesEverythingUnmatched() {
         let draft = RecipeImportDraft.mock()
         let rows = RecipeIngredientReconciler.reconcile(draft, against: [])

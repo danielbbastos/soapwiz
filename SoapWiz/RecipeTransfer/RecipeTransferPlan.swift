@@ -76,13 +76,21 @@ struct RecipeTransferPlan {
         recipeSummaries = Self.summaries(for: payload, among: recipes)
 
         let index = Self.index(of: inventory)
+        let slugIndex = Self.slugIndex(of: inventory)
         let roles = Self.rolesByIngredientIndex(in: payload)
         ingredients = payload.ingredients.enumerated().map { offset, incoming in
-            RecipeTransferIngredientPlan(
+            // Slug first: it survives a rename on either device, and two rows
+            // carrying one slug are two copies of the same curated entry. The name
+            // remains the fallback, and the only path a payload without slugs has.
+            let bySlug = incoming.librarySlug.flatMap { slug in
+                slug.isEmpty ? nil : slugIndex[slug]
+            }
+            return RecipeTransferIngredientPlan(
                 id: offset,
                 incoming: incoming,
                 role: roles[offset] ?? .additive,
-                existing: index[incoming.name.lookupKey]
+                existing: bySlug ?? index[incoming.name.lookupKey],
+                matchedBySlug: bySlug != nil
             )
         }
 
@@ -212,6 +220,25 @@ struct RecipeTransferPlan {
         }
         return index
     }
+
+    /// Inventory keyed by library slug, with the same tie-break as `index(of:)` and
+    /// for the same reason: until the merge collapses them, two rows can carry one
+    /// slug, and the useful one is the one a recipe can be calculated from.
+    private static func slugIndex(of inventory: [Ingredient]) -> [String: Ingredient] {
+        var index: [String: Ingredient] = [:]
+        for ingredient in inventory {
+            let slug = ingredient.librarySlug
+            guard !slug.isEmpty else { continue }
+            guard let existing = index[slug] else {
+                index[slug] = ingredient
+                continue
+            }
+            if existing.sapValue == nil, ingredient.sapValue != nil {
+                index[slug] = ingredient
+            }
+        }
+        return index
+    }
 }
 
 /// One incoming recipe, as the review screen lists it.
@@ -291,6 +318,27 @@ struct RecipeTransferIngredientPlan: Identifiable {
     /// The inventory ingredient it matched, or `nil` when it will be created.
     let existing: Ingredient?
 
+    /// Whether `existing` was found by library slug rather than by name.
+    ///
+    /// Not on its own a reason to stay quiet about chemistry: the slug says both
+    /// rows came from one catalog entry, not that either still holds its values.
+    /// See `hasChemistryConflict`.
+    let matchedBySlug: Bool
+
+    /// The slug a newly created row should take: the incoming one, but only when
+    /// this build's catalog actually ships that entry.
+    ///
+    /// An unknown slug — a sender on a newer catalog — is deliberately dropped. Were
+    /// it adopted, the installer would count the entry as present once the update
+    /// shipped and skip it, leaving the sender's unverified chemistry wearing the
+    /// "from the built-in library" badge for good. Left blank, the row is instead
+    /// adopted by name or alias on the next launch, keeping the user's recipes
+    /// pointing at it while flagging any chemistry that differs as custom.
+    var adoptableSlug: String? {
+        guard let slug = incoming.librarySlug, !slug.isEmpty else { return nil }
+        return IngredientLibrary.bundledName(for: slug) == nil ? nil : slug
+    }
+
     var name: String { incoming.name }
 
     var willBeCreated: Bool { existing == nil }
@@ -314,6 +362,11 @@ struct RecipeTransferIngredientPlan: Identifiable {
     /// rather than notice it later.
     var hasChemistryConflict: Bool {
         guard let existing else { return false }
+        // Silence needs both sides holding the catalog's own values. A slug match
+        // against a row the user has customised is exactly when the warning is
+        // wanted: their values are the ones the recipe will be calculated from,
+        // and the sender never saw them.
+        if matchedBySlug, existing.isPristineLibraryRow { return false }
         return existing.sapValue != incoming.sapValue
             || existing.kohSapValue != incoming.kohSapValue
             || existing.density != incoming.density
