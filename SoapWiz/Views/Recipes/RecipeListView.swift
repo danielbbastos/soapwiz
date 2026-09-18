@@ -1,6 +1,28 @@
 import SwiftUI
 import SwiftData
 
+/// What opened the import sheet. The two ways in share one sheet so only ever
+/// one is up: the FAB, which starts on the input screen, and a file handed in
+/// from another app, which skips straight to the exact-import review.
+private enum RecipeImportRequest: Identifiable {
+    case manual
+    case file(RecipeFileImport)
+
+    var id: String {
+        switch self {
+        case .manual: "manual"
+        case .file(let request): request.id.uuidString
+        }
+    }
+
+    var fileURL: URL? {
+        switch self {
+        case .manual: nil
+        case .file(let request): request.url
+        }
+    }
+}
+
 struct RecipeListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
@@ -9,7 +31,7 @@ struct RecipeListView: View {
 
     @State private var model = RecipeListViewModel()
     @State private var navigationPath = NavigationPath()
-    @State private var showingImport = false
+    @State private var importRequest: RecipeImportRequest?
 
     // Favourites can't be part of the `@Query` sort: `SortDescriptor` has no `Bool`
     // overload, so the pinning is applied here over the alphabetical fetch.
@@ -206,8 +228,9 @@ struct RecipeListView: View {
                         navigationPath = NavigationPath()
                     })
                 }
-                .sheet(isPresented: $showingImport) {
+                .sheet(item: $importRequest) { request in
                     RecipeImportView(
+                        fileURL: request.fileURL,
                         onConfirm: { prepared in
                             navigationPath.append(prepared)
                         },
@@ -240,7 +263,7 @@ struct RecipeListView: View {
                         primaryAction: { navigationPath.append(true) },
                         secondaryActions: [
                             FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") {
-                                showingImport = true
+                                importRequest = .manual
                             }
                         ]
                     )
@@ -255,6 +278,19 @@ struct RecipeListView: View {
             guard let seed else { return }
             navigationPath.append(seed)
             nav.pendingRecipeSeed = nil
+        }
+        // A recipe file opened from another app. `initial: true` covers the
+        // cold launch, when this tab is created after the file is set. Transient
+        // sheets are cleared first so the import isn't blocked by one already
+        // up; a pushed recipe form is left untouched, so unsaved edits survive
+        // under the import sheet.
+        .onChange(of: nav.pendingRecipeFileImport, initial: true) { _, request in
+            guard let request else { return }
+            model.endSelecting()
+            model.filingRecipe = nil
+            model.exportFile = nil
+            importRequest = .file(request)
+            nav.pendingRecipeFileImport = nil
         }
         // A collection deleted here or merged away by `DuplicateMerger` would
         // otherwise leave a selection matching nothing, and an empty list with

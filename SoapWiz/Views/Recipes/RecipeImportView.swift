@@ -18,6 +18,12 @@ struct RecipeImportView: View {
     @State private var showingFilePicker = false
     @State private var textRevision = 0
     @State private var readingProblem: String?
+    @State private var hasOpenedFile = false
+
+    /// A file handed in from another app, opened as soon as the sheet appears so
+    /// it lands on the exact-import review. `nil` for the in-app path, which
+    /// starts on the input screen.
+    var fileURL: URL?
 
     var onConfirm: ((PreparedRecipeImport) -> Void)?
 
@@ -66,6 +72,14 @@ struct RecipeImportView: View {
         // content is a Form, which has no finite intrinsic height, so fitting
         // to it collapses the sheet to almost nothing.
         .presentationSizing(.page)
+        // A handed-in file opens itself, once, skipping the input screen. The
+        // guard survives the re-runs SwiftUI may make of this task; `openFile`
+        // always leaves `.input` behind, so it can't fire twice.
+        .task {
+            guard let fileURL, !hasOpenedFile else { return }
+            hasOpenedFile = true
+            model.openFile(at: fileURL, inventory: inventory, collections: collections, recipes: recipes)
+        }
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
             Task { await readText(from: item) }

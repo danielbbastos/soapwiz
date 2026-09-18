@@ -33,6 +33,14 @@ struct ContentView: View {
         }
         .environment(navigation)
         .environment(restore)
+        // A recipe file tapped in Mail, Messages or Files arrives here. Routed
+        // to the Recipes tab, which opens the import review for it. Only file
+        // URLs are ours to open; the guard drops anything else the scene is
+        // handed.
+        .onOpenURL { url in
+            guard url.isFileURL else { return }
+            navigation.openRecipeFile(url)
+        }
         .alert("Replace all data?", isPresented: presenting(\.pendingImport)) {
             Button("Replace", role: .destructive) {
                 // Without this the teardown animates, which keeps the outgoing
