@@ -33,6 +33,11 @@ private enum PickerSection: String, Identifiable {
         case .ingredients: return [.oil, .additive]
         }
     }
+
+    /// The merged Ingredients section also offers role-less "Others" ingredients,
+    /// so a general recipe isn't limited to oils and additives. Every soap-only
+    /// section keeps its exact role set.
+    var includesUnroled: Bool { self == .ingredients }
 }
 
 struct RecipeIngredientsTabView: View {
@@ -75,6 +80,7 @@ struct RecipeIngredientsTabView: View {
             IngredientPickerView(
                 addedIDs: addedIDs(for: section),
                 allowedRoles: section.roles,
+                includesUnroled: section.includesUnroled,
                 onSelect: selectAction(for: section)
             )
         }

@@ -12,6 +12,11 @@ struct IngredientPickerView: View {
     /// merged Ingredients section passes both `.oil` and `.additive`, so waxes,
     /// fats, butters and additives all appear in one list.
     var allowedRoles: Set<RecipeIngredientRole>?
+    /// Whether categories with no `ingredientRole` — the "Others" bucket — are
+    /// also offered. A non-soap recipe's Ingredients section sets this so a
+    /// general ingredient that is neither oil, additive nor fragrance can still
+    /// be chosen; soap pickers leave it off.
+    var includesUnroled = false
     let onSelect: ([Ingredient]) -> Void
 
     @State private var searchText = ""
@@ -19,10 +24,18 @@ struct IngredientPickerView: View {
     @State private var pendingSelections: Set<PersistentIdentifier> = []
     @State private var showingNewIngredient = false
 
+    /// Whether an ingredient or category with the given role is offered by a
+    /// picker configured with these options. A `nil` role is the "Others"
+    /// bucket; a `nil` `allowedRoles` offers every role.
+    static func accepts(role: RecipeIngredientRole?, allowedRoles: Set<RecipeIngredientRole>?, includesUnroled: Bool) -> Bool {
+        guard let allowedRoles else { return true }
+        guard let role else { return includesUnroled }
+        return allowedRoles.contains(role)
+    }
+
     private var categories: [IngredientCategory] {
-        guard let allowedRoles else { return allCategories }
-        return allCategories.filter { category in
-            category.ingredientRole.map(allowedRoles.contains) ?? false
+        allCategories.filter { category in
+            Self.accepts(role: category.ingredientRole, allowedRoles: allowedRoles, includesUnroled: includesUnroled)
         }
     }
 
@@ -39,9 +52,11 @@ struct IngredientPickerView: View {
             // Filters is the way back.
             guard !ingredient.isHidden else { return false }
 
-            let matchesAllowed = allowedRoles.map { roles in
-                ingredient.category?.ingredientRole.map(roles.contains) ?? false
-            } ?? true
+            let matchesAllowed = Self.accepts(
+                role: ingredient.category?.ingredientRole,
+                allowedRoles: allowedRoles,
+                includesUnroled: includesUnroled
+            )
             let matchesSearch = searchText.isEmpty ||
                 ingredient.name.localizedCaseInsensitiveContains(searchText)
             let matchesCategory = selectedCategory == nil ||
