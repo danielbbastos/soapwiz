@@ -217,8 +217,15 @@ struct SettingsView: View {
 
     private var aboutSection: some View {
         Section("About") {
+            LabeledContent("Version", value: Bundle.main.appVersionDisplay)
             NavigationLink(destination: LyeSafetyScreen()) {
                 Label("Lye Safety", systemImage: "exclamationmark.triangle")
+            }
+            Link(destination: AppLinks.privacyPolicy) {
+                Label("Privacy Policy", systemImage: "hand.raised")
+            }
+            Link(destination: AppLinks.support) {
+                Label("Support", systemImage: "questionmark.circle")
             }
         }
         .listRowBackground(Color.cardBackground)
