@@ -99,7 +99,8 @@ struct IngredientFormView: View {
                         CollapsibleSectionHeader(title: "Fatty-Acid Profile", expanded: $profileExpanded)
                     } footer: {
                         if profileExpanded {
-                            Text("Used to work out an oil's soap qualities — hardness, cleansing, conditioning and the rest. Leave blank if you don't have it.")
+                            Text("Used to work out an oil's soap qualities — hardness, cleansing, "
+                                 + "conditioning and the rest. Leave blank if you don't have it.")
                         }
                     }
                     .listRowBackground(Color.cardBackground)

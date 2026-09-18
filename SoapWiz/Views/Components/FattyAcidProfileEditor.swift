@@ -32,10 +32,7 @@ struct FattyAcidProfileEditor: View {
             HStack {
                 Text(acid.name)
                 Spacer()
-                TextField("0", value: binding(for: acid.keyPath), format: percent)
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 80)
+                NumericTextField(prompt: "0", value: binding(for: acid.keyPath), fractionLength: 0...2, width: 80)
                 Text("%")
                     .foregroundStyle(.secondary)
             }
