@@ -10,7 +10,12 @@ final class IngredientFormViewModel {
     var selectedCategory: IngredientCategory?
     var lowStockThreshold: String = ""
     var sapValue: String = ""
+    var kohSapValue: String = ""
     var density: String = ""
+
+    /// The oil's fatty-acid make-up. Held as a value, edited in place by the
+    /// profile editor; `.zero` means unspecified and is saved as `nil`.
+    var fattyAcidProfile: FattyAcidProfile = .zero
 
     /// The display-sized photo, already downscaled by `PhotoField` before it
     /// lands here. The thumbnail is derived from it on save rather than carried
@@ -47,7 +52,9 @@ final class IngredientFormViewModel {
     /// while the Save button is being drawn, so it cannot go to the model for them.
     private let capturedIsLibraryInstalled: Bool
     private let capturedSapValue: Double?
+    private let capturedKohSapValue: Double?
     private let capturedDensity: Double?
+    private let capturedFattyAcidProfile: FattyAcidProfile?
 
     /// The colour the form's avatar shows, and the one a new ingredient is saved
     /// with. Drawn once here rather than left to `Ingredient.init` so the well
@@ -65,7 +72,9 @@ final class IngredientFormViewModel {
         let category: IngredientCategory?
         let lowStockThreshold: String
         let sapValue: String
+        let kohSapValue: String
         let density: String
+        let fattyAcidProfile: FattyAcidProfile
         let imageData: Data?
     }
 
@@ -77,7 +86,9 @@ final class IngredientFormViewModel {
         self.capturedUnitIsEmpty = ingredient?.unit.isEmpty ?? false
         self.capturedIsLibraryInstalled = ingredient?.isLibraryInstalled ?? false
         self.capturedSapValue = ingredient?.sapValue
+        self.capturedKohSapValue = ingredient?.kohSapValue
         self.capturedDensity = ingredient?.density
+        self.capturedFattyAcidProfile = ingredient?.fattyAcidProfile
         avatarColor = ingredient?.avatarColor ?? .random()
         selectedCategory = defaultCategory
         if let prefilledName {
@@ -94,8 +105,14 @@ final class IngredientFormViewModel {
             if let sap = ingredient.sapValue {
                 sapValue = sap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
             }
+            if let kohSap = ingredient.kohSapValue {
+                kohSapValue = kohSap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
+            }
             if let dens = ingredient.density {
                 density = dens.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
+            }
+            if let profile = ingredient.fattyAcidProfile {
+                fattyAcidProfile = profile
             }
             imageData = ingredient.imageData
         }
@@ -114,7 +131,9 @@ final class IngredientFormViewModel {
             category: selectedCategory,
             lowStockThreshold: lowStockThreshold,
             sapValue: sapValue,
+            kohSapValue: kohSapValue,
             density: density,
+            fattyAcidProfile: fattyAcidProfile,
             imageData: imageData
         )
     }
@@ -128,7 +147,9 @@ final class IngredientFormViewModel {
             || selectedCategory !== snapshot.category
             || lowStockThreshold != snapshot.lowStockThreshold
             || sapValue != snapshot.sapValue
+            || kohSapValue != snapshot.kohSapValue
             || density != snapshot.density
+            || fattyAcidProfile != snapshot.fattyAcidProfile
             || imageData != snapshot.imageData
     }
 
@@ -209,28 +230,45 @@ final class IngredientFormViewModel {
         return Double(sapValue.replacingOccurrences(of: ",", with: "."))
     }
 
+    /// The KOH SAP value this save would write. Preserved when off-screen, for the
+    /// same reason as `sapValueToSave`: a non-oil edit must not drop it.
+    private var kohSapValueToSave: Double? {
+        guard showsSapValue else { return capturedKohSapValue }
+        return Double(kohSapValue.replacingOccurrences(of: ",", with: "."))
+    }
+
     private var densityToSave: Double? {
         guard showsDensity else { return capturedDensity }
         return Double(density.replacingOccurrences(of: ",", with: "."))
     }
 
+    /// The profile this save would write. Preserved when off-screen; an unspecified
+    /// (all-zero) profile is stored as `nil` so a recipe's completeness check can
+    /// tell "no data" from a real oil.
+    private var fattyAcidProfileToSave: FattyAcidProfile? {
+        guard showsSapValue else { return capturedFattyAcidProfile }
+        return fattyAcidProfile.isEmpty ? nil : fattyAcidProfile
+    }
+
     /// Whether saving would change a library ingredient's chemistry, which is what
-    /// makes it a custom one.
-    ///
-    /// Only the two fields this form can edit are weighed: `kohSapValue` and
-    /// `fattyAcidProfile` have no editing UI anywhere, and `save` never writes them.
-    /// Name, code, category and unit edits are excluded by construction — they reach
-    /// chemistry only through `sapValueToSave` and `densityToSave`, which preserve it.
+    /// makes it a custom one. Weighs every editable chemistry field; name, code,
+    /// category and unit edits are excluded by construction — they reach chemistry
+    /// only through the `…ToSave` values, which preserve it.
     var changesLibraryChemistry: Bool {
         guard capturedIsLibraryInstalled else { return false }
-        return sapValueToSave != capturedSapValue || densityToSave != capturedDensity
+        return sapValueToSave != capturedSapValue
+            || kohSapValueToSave != capturedKohSapValue
+            || densityToSave != capturedDensity
+            || fattyAcidProfileToSave != capturedFattyAcidProfile
     }
 
     @discardableResult
     func save(context: ModelContext) -> Ingredient? {
         let parsedThreshold = Double(lowStockThreshold.replacingOccurrences(of: ",", with: "."))
         let savedSap = sapValueToSave
+        let savedKohSap = kohSapValueToSave
         let savedDensity = densityToSave
+        let savedProfile = fattyAcidProfileToSave
         let becomesCustom = changesLibraryChemistry
         let savedCode = trimmedCode
         if let captured = ingredient {
@@ -254,7 +292,9 @@ final class IngredientFormViewModel {
             ingredient.unit = selectedUnit?.rawValue ?? ""
             ingredient.lowStockThreshold = parsedThreshold
             ingredient.sapValue = savedSap
+            ingredient.kohSapValue = savedKohSap
             ingredient.density = savedDensity
+            ingredient.fattyAcidProfile = savedProfile
             // Never cleared here: a row the user has taken over stays theirs, even
             // if a later edit happens to land back on the bundled values.
             if becomesCustom {
@@ -268,7 +308,9 @@ final class IngredientFormViewModel {
             newIngredient.code = savedCode
             newIngredient.lowStockThreshold = parsedThreshold
             newIngredient.sapValue = savedSap
+            newIngredient.kohSapValue = savedKohSap
             newIngredient.density = savedDensity
+            newIngredient.fattyAcidProfile = savedProfile
             applyImage(to: newIngredient)
             context.insert(newIngredient)
             return newIngredient
