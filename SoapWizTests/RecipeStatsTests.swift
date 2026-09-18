@@ -194,11 +194,11 @@ struct RecipeStatsTests {
         let shea = Ingredient(name: "Shea Butter", unit: "g")
         let olive = Ingredient.mockOil(name: "Olive", naohSap: 0.134, oleic: 69)
         let mango = Ingredient(name: "Mango Butter", unit: "g")
-        var d1 = OilIngredientDraft(ingredient: shea); d1.amount = 20
-        var d2 = OilIngredientDraft(ingredient: olive); d2.amount = 60
-        var d3 = OilIngredientDraft(ingredient: mango); d3.amount = 20
+        var draft1 = OilIngredientDraft(ingredient: shea); draft1.amount = 20
+        var draft2 = OilIngredientDraft(ingredient: olive); draft2.amount = 60
+        var draft3 = OilIngredientDraft(ingredient: mango); draft3.amount = 20
 
-        let stats = RecipeStats(oilDrafts: [d1, d2, d3])
+        let stats = RecipeStats(oilDrafts: [draft1, draft2, draft3])
 
         #expect(stats.oilsMissingFattyAcidData == ["Shea Butter", "Mango Butter"])
     }
@@ -227,10 +227,10 @@ struct RecipeStatsTests {
     @Test func oilsMissingFattyAcidData_DuplicateNames_AreDeduplicated() {
         let shea1 = Ingredient(name: "Shea Butter", unit: "g")
         let shea2 = Ingredient(name: "Shea Butter", unit: "g")
-        var d1 = OilIngredientDraft(ingredient: shea1); d1.amount = 50
-        var d2 = OilIngredientDraft(ingredient: shea2); d2.amount = 50
+        var draft1 = OilIngredientDraft(ingredient: shea1); draft1.amount = 50
+        var draft2 = OilIngredientDraft(ingredient: shea2); draft2.amount = 50
 
-        let stats = RecipeStats(oilDrafts: [d1, d2])
+        let stats = RecipeStats(oilDrafts: [draft1, draft2])
 
         #expect(stats.oilsMissingFattyAcidData == ["Shea Butter"])
     }

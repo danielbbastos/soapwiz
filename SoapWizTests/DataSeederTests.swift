@@ -76,7 +76,7 @@ struct DataSeederTests {
 
         let recipes = try ctx.fetch(FetchDescriptor<Recipe>())
         let names = Set(recipes.map(\.name))
-        #expect(names == ["Classic Bastille Bar", "Everyday Kitchen Bar", "Silky Butter Bar", "Pure Castile"])
+        #expect(names == ["Classic Bastille Bar", "Everyday Kitchen Bar", "Silky Butter Bar", "Pure Castile", "Woodland Meadow Bar"])
     }
 
     /// Every seeded recipe must be batchable out of the box — that's the point of
