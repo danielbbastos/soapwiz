@@ -1,6 +1,6 @@
 import SwiftUI
 
-// `Color.warmBackground`/`cardBackground`/`warmInk` are generated from Assets.xcassets colorsets.
+// `Color.warmBackground`/`cardBackground`/`warmInk`/`dangerAccent` are generated from Assets.xcassets colorsets.
 extension Color {
     /// Row fill marking a selected row in a picker list, tinted enough to read
     /// at a glance over `cardBackground` without competing with the checkmark.

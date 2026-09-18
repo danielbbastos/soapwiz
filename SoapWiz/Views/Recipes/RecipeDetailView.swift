@@ -126,6 +126,9 @@ struct RecipeDetailView: View {
         .task(id: recipe.persistentModelID) {
             reload()
         }
+        // The stored kind, not `model.makesSoap`: the model hasn't loaded on the
+        // first pass, and its default would ask on a recipe with no lye.
+        .lyeSafetyAcknowledgment(isRequired: RecipeKind.resolve(recipe.recipeKind) == .soap)
         .onChange(of: lyeIngredients) {
             model.resolveDefaultLyeIngredient(from: lyeIngredients)
         }
