@@ -6,6 +6,10 @@ struct SoapPropertiesChartView: View {
     let hasOils: Bool
     @Binding var selectedDisplayName: String?
 
+    /// When false the chart is a static read-out: the tap overlay is dropped, so
+    /// bars can't be selected. See `SoapPropertiesSection.interactive`.
+    var interactive: Bool = true
+
     var body: some View {
         Chart {
             ForEach(SoapQuality.allCases) { quality in
@@ -57,6 +61,7 @@ struct SoapPropertiesChartView: View {
                     .fill(.clear)
                     .contentShape(Rectangle())
                     .onTapGesture { location in
+                        guard interactive else { return }
                         guard let plotFrame = proxy.plotFrame else { return }
                         let origin = geo[plotFrame].origin
                         let xPosition = location.x - origin.x
