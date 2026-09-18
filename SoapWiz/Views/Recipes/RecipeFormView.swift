@@ -28,6 +28,10 @@ struct RecipeFormView: View {
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
     @State private var showDiscardConfirmation = false
+    /// Set once the recipe, seed or import has been applied. Before that the
+    /// model holds its defaults, which say soap, and would ask on a recipe
+    /// with no lye.
+    @State private var hasLoaded = false
 
     var onSave: ((Recipe) -> Void)?
 
@@ -53,7 +57,9 @@ struct RecipeFormView: View {
                 if let seed { model.applySeed(seed.ingredients) }
                 if let importDraft { model.applyImport(importDraft) }
                 model.resolveDefaultLyeIngredient(from: lyeIngredients)
+                hasLoaded = true
             }
+            .lyeSafetyAcknowledgment(isRequired: hasLoaded && model.makesSoap)
             .onChange(of: lyeIngredients) {
                 model.resolveDefaultLyeIngredient(from: lyeIngredients)
             }

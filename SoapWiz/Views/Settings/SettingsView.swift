@@ -37,6 +37,7 @@ struct SettingsView: View {
                 recipeImportSection
                 syncSection
                 backupSection
+                aboutSection
             }
             .sheet(item: $dataTransfer.exportFile) { file in
                 ShareSheet(items: [file.url])
@@ -212,6 +213,15 @@ struct SettingsView: View {
         case .actionable: .orange
         case .fault: .red
         }
+    }
+
+    private var aboutSection: some View {
+        Section("About") {
+            NavigationLink(destination: LyeSafetyScreen()) {
+                Label("Lye Safety", systemImage: "exclamationmark.triangle")
+            }
+        }
+        .listRowBackground(Color.cardBackground)
     }
 
     private var backupSection: some View {
