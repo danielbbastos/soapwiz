@@ -81,6 +81,14 @@ extension DataSeeder {
             totalOilWeight: 450,
             oils: [("Olive Oil", 100)],
             fragrance: nil
+        ),
+        RecipeSeed(
+            name: "Woodland Meadow Bar",
+            desc: "An olive-and-coconut base rounded out with meadowfoam and a touch of pine tar.",
+            totalOilWeight: 500,
+            oils: [("Olive Oil", 60), ("Coconut Oil", 20),
+                   ("Meadowfoam Seed Oil", 12), ("Pine Tar", 8)],
+            fragrance: nil
         )
     ]
 

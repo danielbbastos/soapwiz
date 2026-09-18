@@ -161,6 +161,79 @@ struct RecipeStatsTests {
         #expect(stats.hasOils)
         #expect(stats.fattyAcidProfile == .zero)
     }
+
+    // MARK: - Oils missing fatty acid data
+
+    @Test func oilsMissingFattyAcidData_AllOilsHaveProfiles_IsEmpty() {
+        let coconut = Ingredient.mockOil(name: "Coconut", naohSap: 0.190, lauric: 48, myristic: 19)
+        let olive = Ingredient.mockOil(name: "Olive", naohSap: 0.134, palmitic: 14, oleic: 69)
+        var draft1 = OilIngredientDraft(ingredient: coconut); draft1.amount = 30
+        var draft2 = OilIngredientDraft(ingredient: olive); draft2.amount = 70
+
+        let stats = RecipeStats(oilDrafts: [draft1, draft2])
+
+        #expect(stats.oilsMissingFattyAcidData.isEmpty)
+    }
+
+    @Test func oilsMissingFattyAcidData_NoOilsAtAll_IsEmpty() {
+        #expect(RecipeStats(oilDrafts: []).oilsMissingFattyAcidData.isEmpty)
+    }
+
+    @Test func oilsMissingFattyAcidData_OneOilMissing_NamesThatOil() {
+        let olive = Ingredient.mockOil(name: "Olive", naohSap: 0.134, oleic: 69)
+        let shea = Ingredient(name: "Shea Butter", unit: "g")
+        var oiled = OilIngredientDraft(ingredient: olive); oiled.amount = 70
+        var missing = OilIngredientDraft(ingredient: shea); missing.amount = 30
+
+        let stats = RecipeStats(oilDrafts: [oiled, missing])
+
+        #expect(stats.oilsMissingFattyAcidData == ["Shea Butter"])
+    }
+
+    @Test func oilsMissingFattyAcidData_SeveralMissing_NamesAllInOrder() {
+        let shea = Ingredient(name: "Shea Butter", unit: "g")
+        let olive = Ingredient.mockOil(name: "Olive", naohSap: 0.134, oleic: 69)
+        let mango = Ingredient(name: "Mango Butter", unit: "g")
+        var d1 = OilIngredientDraft(ingredient: shea); d1.amount = 20
+        var d2 = OilIngredientDraft(ingredient: olive); d2.amount = 60
+        var d3 = OilIngredientDraft(ingredient: mango); d3.amount = 20
+
+        let stats = RecipeStats(oilDrafts: [d1, d2, d3])
+
+        #expect(stats.oilsMissingFattyAcidData == ["Shea Butter", "Mango Butter"])
+    }
+
+    /// An all-zero profile is unspecified, not a real oil made of nothing, so it
+    /// counts as missing exactly like a `nil` profile does.
+    @Test func oilsMissingFattyAcidData_AllZeroProfile_CountsAsMissing() {
+        let beeswax = Ingredient(name: "Beeswax", unit: "g")
+        beeswax.fattyAcidProfile = .zero
+        var draft = OilIngredientDraft(ingredient: beeswax); draft.amount = 100
+
+        let stats = RecipeStats(oilDrafts: [draft])
+
+        #expect(stats.oilsMissingFattyAcidData == ["Beeswax"])
+    }
+
+    @Test func oilsMissingFattyAcidData_ZeroAmountDraft_IsIgnored() {
+        let shea = Ingredient(name: "Shea Butter", unit: "g")
+        var draft = OilIngredientDraft(ingredient: shea); draft.amount = 0
+
+        let stats = RecipeStats(oilDrafts: [draft])
+
+        #expect(stats.oilsMissingFattyAcidData.isEmpty)
+    }
+
+    @Test func oilsMissingFattyAcidData_DuplicateNames_AreDeduplicated() {
+        let shea1 = Ingredient(name: "Shea Butter", unit: "g")
+        let shea2 = Ingredient(name: "Shea Butter", unit: "g")
+        var d1 = OilIngredientDraft(ingredient: shea1); d1.amount = 50
+        var d2 = OilIngredientDraft(ingredient: shea2); d2.amount = 50
+
+        let stats = RecipeStats(oilDrafts: [d1, d2])
+
+        #expect(stats.oilsMissingFattyAcidData == ["Shea Butter"])
+    }
 }
 
 extension Ingredient {

@@ -20,6 +20,8 @@ struct SoapPropertiesSection: View {
     }
 
     var body: some View {
+        IncompleteFattyAcidWarningRow(oilNames: stats.oilsMissingFattyAcidData)
+
         VStack(alignment: .leading, spacing: 8) {
             Text("Grey bands show the recommended range for each property.")
                 .font(.footnote)

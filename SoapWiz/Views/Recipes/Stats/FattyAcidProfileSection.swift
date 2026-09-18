@@ -105,4 +105,13 @@ enum RecipeStatsCopy {
     static let ingredientNoFattyAcidData =
         "No fatty acid profile recorded for this ingredient. Edit it to add one and "
         + "see the full composition and soap qualities."
+
+    /// Warns that the soap-property breakdown under-reports because the named
+    /// oils have no fatty acid data and so contribute nothing to it.
+    static func incompleteSoapProperties(names: [String]) -> String {
+        let list = names.formatted(.list(type: .and))
+        let verb = names.count == 1 ? "has" : "have"
+        return "Soap properties may be incomplete — \(list) \(verb) no fatty-acid data, "
+            + "so this breakdown may be inaccurate."
+    }
 }

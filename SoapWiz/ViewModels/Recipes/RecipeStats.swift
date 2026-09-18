@@ -38,6 +38,14 @@ struct RecipeStats {
     /// here. They map fatty acids onto how the *soap* behaves, so the numbers
     /// are computable for any blend but only interpretable for soap.
     let makesSoap: Bool
+
+    /// Oils in the blend that carry no usable fatty acid data — their profile is
+    /// missing or all-zero. Such an oil contributes nothing to the weighted
+    /// composition, so it silently drags the soap-property numbers down without
+    /// ever showing up in the breakdown. Names only, in draft order and
+    /// de-duplicated; empty when every oil has a profile.
+    let oilsMissingFattyAcidData: [String]
+
     private let oilSharedProfiles: [(name: String, profile: FattyAcidProfile)]
 
     init(oilDrafts: [OilIngredientDraft], makesSoap: Bool = true) {
@@ -48,6 +56,14 @@ struct RecipeStats {
         }
 
         self.hasOils = !contributions.isEmpty
+
+        var missing: [String] = []
+        for contrib in contributions where (contrib.ingredient.fattyAcidProfile ?? .zero).isEmpty {
+            if !missing.contains(contrib.ingredient.name) {
+                missing.append(contrib.ingredient.name)
+            }
+        }
+        self.oilsMissingFattyAcidData = missing
 
         let profileContribs = contributions.map { contrib in
             (profile: contrib.ingredient.fattyAcidProfile ?? .zero, weight: contrib.amount)
