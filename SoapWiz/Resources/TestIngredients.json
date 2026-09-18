@@ -481,7 +481,37 @@
     },
     {
       "slug": "meadowfoam-seed-oil",
-      "purchases": []
+      "purchases": [
+        {
+          "provider": "New Directions",
+          "dateOfPurchase": "2026-04-07",
+          "quantity": 1000,
+          "totalPrice": 18.4,
+          "badge": "MDF-001",
+          "journalCode": "J-118",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-04-06",
+          "openingDate": null,
+          "remainingAmount": 1000
+        }
+      ]
+    },
+    {
+      "slug": "pine-tar",
+      "purchases": [
+        {
+          "provider": "Amazon",
+          "dateOfPurchase": "2026-04-07",
+          "quantity": 1000,
+          "totalPrice": 12.5,
+          "badge": "PNT-001",
+          "journalCode": "J-119",
+          "storageLocation": "Shelf A1",
+          "expiryDate": "2028-04-06",
+          "openingDate": null,
+          "remainingAmount": 1000
+        }
+      ]
     },
     {
       "slug": "pumpkin-seed-oil",
