@@ -99,4 +99,10 @@ enum RecipeStatsCopy {
         "None of these ingredients has a fatty acid profile recorded. "
         + "Waxes usually don't — they aren't triglycerides. Add an oil, fat or butter "
         + "to see the blend's composition."
+
+    /// Shown on a single ingredient's own detail page when it has no profile yet.
+    /// Singular and edit-oriented, where `noFattyAcidData` is worded for a blend.
+    static let ingredientNoFattyAcidData =
+        "No fatty acid profile recorded for this ingredient. Edit it to add one and "
+        + "see the full composition and soap qualities."
 }

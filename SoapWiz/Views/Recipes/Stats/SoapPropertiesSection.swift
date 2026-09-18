@@ -7,6 +7,11 @@ import SwiftUI
 struct SoapPropertiesSection: View {
     let stats: RecipeStats
 
+    /// Whether tapping a quality bar opens the per-oil contribution card. Off on
+    /// an ingredient's own detail page, where "which oil contributes this" is
+    /// answered by the page itself — it's the one oil.
+    var interactive: Bool = true
+
     @State private var selectedQualityName: String?
 
     private var selectedQuality: SoapQuality? {
@@ -22,12 +27,13 @@ struct SoapPropertiesSection: View {
             SoapPropertiesChartView(
                 profile: stats.fattyAcidProfile,
                 hasOils: stats.hasOils,
-                selectedDisplayName: $selectedQualityName
+                selectedDisplayName: $selectedQualityName,
+                interactive: interactive
             )
         }
         .padding(.vertical, 4)
 
-        if stats.hasOils, let quality = selectedQuality {
+        if interactive, stats.hasOils, let quality = selectedQuality {
             OilContributionCardView(
                 quality: quality,
                 totalValue: quality.value(from: stats.fattyAcidProfile),
