@@ -179,6 +179,57 @@ struct IngredientFormChemistryTests: IngredientFormTestHelpers {
         #expect(model.changesLibraryChemistry == false)
     }
 
+    // MARK: - KOH SAP and profile also make a row custom
+
+    @Test func changesLibraryChemistry_KohSapEdited_IsTrue() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let olive = try makeLibraryOil(in: ctx)
+
+        let model = IngredientFormViewModel(ingredient: olive)
+        model.kohSapValue = "0.19"
+
+        #expect(model.changesLibraryChemistry)
+    }
+
+    @Test func save_KohSapEdited_SetsHasCustomChemistry() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let olive = try makeLibraryOil(in: ctx)
+
+        let model = IngredientFormViewModel(ingredient: olive)
+        model.kohSapValue = "0.19"
+        model.save(context: ctx)
+
+        #expect(olive.hasCustomChemistry)
+        #expect(olive.kohSapValue == 0.19)
+    }
+
+    @Test func changesLibraryChemistry_ProfileEdited_IsTrue() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let olive = try makeLibraryOil(in: ctx)
+
+        let model = IngredientFormViewModel(ingredient: olive)
+        model.fattyAcidProfile = FattyAcidProfile(palmitic: 13, stearic: 3, oleic: 72, linoleic: 8)
+
+        #expect(model.changesLibraryChemistry)
+    }
+
+    @Test func save_ProfileEdited_SetsHasCustomChemistry() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let olive = try makeLibraryOil(in: ctx)
+        let profile = FattyAcidProfile(palmitic: 13, stearic: 3, oleic: 72, linoleic: 8)
+
+        let model = IngredientFormViewModel(ingredient: olive)
+        model.fattyAcidProfile = profile
+        model.save(context: ctx)
+
+        #expect(olive.hasCustomChemistry)
+        #expect(olive.fattyAcidProfile == profile)
+    }
+
     /// Once a row is the user's own it stays that way, even when a later edit touches
     /// nothing but the name.
     @Test func save_AlreadyCustomRow_StaysCustom() throws {

@@ -11,6 +11,7 @@ struct IngredientFormView: View {
     @State private var model: IngredientFormViewModel
     @State private var showingNewCategory = false
     @State private var showingChemistryConfirmation = false
+    @State private var profileExpanded = false
     let onSave: ((Ingredient) -> Void)?
 
     init(
@@ -79,28 +80,27 @@ struct IngredientFormView: View {
                 if model.showsSapValue || model.showsDensity {
                     Section("Properties") {
                         if model.showsSapValue {
-                            HStack {
-                                Text("SAP Value (NaOH)")
-                                Spacer()
-                                TextField("0.134", text: $model.sapValue.decimalOnly())
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(width: 80)
-                                Text("g/g")
-                                    .foregroundStyle(.secondary)
-                            }
+                            decimalRow(title: "SAP Value (NaOH)", placeholder: "0.134", text: $model.sapValue, unit: "g/g")
+                            decimalRow(title: "SAP Value (KOH)", placeholder: "0.188", text: $model.kohSapValue, unit: "g/g")
                         }
                         if model.showsDensity {
-                            HStack {
-                                Text("Density")
-                                Spacer()
-                                TextField("0.92", text: $model.density.decimalOnly())
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(width: 80)
-                                Text("g/ml")
-                                    .foregroundStyle(.secondary)
-                            }
+                            decimalRow(title: "Density", placeholder: "0.92", text: $model.density, unit: "g/ml")
+                        }
+                    }
+                    .listRowBackground(Color.cardBackground)
+                }
+
+                if model.showsSapValue {
+                    Section {
+                        if profileExpanded {
+                            FattyAcidProfileEditor(profile: $model.fattyAcidProfile)
+                        }
+                    } header: {
+                        CollapsibleSectionHeader(title: "Fatty-Acid Profile", expanded: $profileExpanded)
+                    } footer: {
+                        if profileExpanded {
+                            Text("Used to work out an oil's soap qualities — hardness, cleansing, "
+                                 + "conditioning and the rest. Leave blank if you don't have it.")
                         }
                     }
                     .listRowBackground(Color.cardBackground)
@@ -179,6 +179,21 @@ struct IngredientFormView: View {
             get: { model.code },
             set: { model.code = $0; model.markCodeEdited() }
         )
+    }
+
+    /// One trailing-aligned decimal field with a trailing unit label. The SAP and
+    /// density rows are the same shape, so they share this rather than repeating it.
+    private func decimalRow(title: String, placeholder: String, text: Binding<String>, unit: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            TextField(placeholder, text: text.decimalOnly())
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 80)
+            Text(unit)
+                .foregroundStyle(.secondary)
+        }
     }
 
     @ViewBuilder

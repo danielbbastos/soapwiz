@@ -14,6 +14,15 @@ struct FattyAcidProfile: Codable, Equatable {
     var monoUnsaturated: Double { oleic }
     var polyUnsaturated: Double { linoleic + linolenic }
 
+    /// The eight acids added up. Usually near 100 for a real oil, but the tracked
+    /// acids don't always cover every minor one, so it isn't forced to 100.
+    var total: Double {
+        lauric + myristic + palmitic + stearic + oleic + linoleic + linolenic + ricinoleic
+    }
+
+    /// No acid set — the profile is unspecified rather than a real all-zero oil.
+    var isEmpty: Bool { self == .zero }
+
     var hardness: Double { lauric + myristic + palmitic + stearic }
     var cleansing: Double { lauric + myristic }
     var conditioning: Double { oleic + linoleic + linolenic + ricinoleic }
