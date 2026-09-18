@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "entries": [
     {
       "slug": "abyssinian-oil",
@@ -3721,6 +3721,25 @@
       "slug": "bentonite-clay",
       "name": "Bentonite Clay",
       "aliases": [],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "borax",
+      "name": "Borax",
+      "aliases": [
+        "Sodium Borate",
+        "Sodium Tetraborate"
+      ],
+      "category": "Additives",
+      "unit": "g"
+    },
+    {
+      "slug": "boric-acid",
+      "name": "Boric Acid",
+      "aliases": [
+        "Hydrogen Borate"
+      ],
       "category": "Additives",
       "unit": "g"
     },

@@ -101,6 +101,7 @@ struct RecipeFormSnapshot: Equatable {
     var cfmNeutralizer: CFMNeutralizer
     var lyeIngredient: Ingredient?
     var kohLyeIngredient: Ingredient?
+    var neutralizerIngredient: Ingredient?
     var selectedCollections: [RecipeCollection]
 }
 
@@ -174,6 +175,15 @@ enum CFMNeutralizer: String, CaseIterable {
         switch self {
         case .boricAcid: 0.20
         case .borax: 0.33
+        }
+    }
+
+    /// The `IngredientLibrary` slug of the additive this neutraliser is dosed
+    /// from, used to resolve the recipe's default `neutralizerIngredient`.
+    var librarySlug: String {
+        switch self {
+        case .boricAcid: "boric-acid"
+        case .borax: "borax"
         }
     }
 

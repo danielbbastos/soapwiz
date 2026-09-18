@@ -178,16 +178,36 @@ struct LyeCalculator {
         return totalOilBatchWeight + fullLye + water
     }
 
-    /// The two Failor neutraliser rows (the solid and its dissolving water) for
-    /// the calculated-amounts table, or `nil` when CFM isn't active. Display-only:
-    /// the excess lye is neutralised during the cook, so these are recommendations
-    /// rather than part of the saponified soap weight.
-    var cfmNeutralizerRows: (solid: CalculatedAmountRow, water: CalculatedAmountRow)? {
+    /// The Failor neutraliser solid dose (borax or boric acid), in the batch
+    /// (oils) unit, or `nil` when CFM isn't active. Unlike the excess lye it mops
+    /// up, this is a real quantity the maker buys and adds: `RecipeCostCalculator`
+    /// costs it and a batch deducts it once a `neutralizerIngredient` is resolved.
+    var cfmNeutralizerSolidWeight: Double? {
+        cfmNeutralizerSolution.map { $0 * cfmNeutralizer.solidFraction }
+    }
+
+    /// The water that dissolves the neutraliser solid, in the batch (oils) unit,
+    /// or `nil` when CFM isn't active. Counted in the batch weight like the
+    /// recipe's own water, but not costed or consumed as an ingredient.
+    var cfmNeutralizerWaterWeight: Double? {
+        cfmNeutralizerSolution.map { $0 * (1 - cfmNeutralizer.solidFraction) }
+    }
+
+    /// Total neutraliser solution mass (solid + dissolving water) in the batch
+    /// (oils) unit, the source both split weights derive from. `nil` when CFM
+    /// isn't active or the soap weight isn't yet known.
+    private var cfmNeutralizerSolution: Double? {
         guard cfmActive, let soapWeight = soapWeightPreCook, soapWeight > 0 else { return nil }
-        let solution = soapWeight * Self.cfmNeutralizerSolutionFraction
+        return soapWeight * Self.cfmNeutralizerSolutionFraction
+    }
+
+    /// The two Failor neutraliser rows (the solid and its dissolving water) for
+    /// the calculated-amounts table, or `nil` when CFM isn't active. The dose is
+    /// costed and consumed (see `cfmNeutralizerSolidWeight`); these rows are its
+    /// presentation in the amounts table.
+    var cfmNeutralizerRows: (solid: CalculatedAmountRow, water: CalculatedAmountRow)? {
+        guard let solid = cfmNeutralizerSolidWeight, let water = cfmNeutralizerWaterWeight else { return nil }
         let solidFraction = cfmNeutralizer.solidFraction
-        let solid = solution * solidFraction
-        let water = solution * (1 - solidFraction)
         let solidPct = Int((solidFraction * 100).rounded())
         let waterPct = 100 - solidPct
         return (

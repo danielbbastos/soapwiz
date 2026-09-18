@@ -81,15 +81,28 @@ final class RecipeFormViewModel {
         }
     }
 
+    /// The Failor neutraliser ingredient (borax or boric acid), captured for the
+    /// same reason as the lye rows.
+    var neutralizerIngredient: Ingredient? {
+        get { storedNeutralizerIngredient }
+        set {
+            storedNeutralizerIngredient = newValue
+            neutralizerIngredientSlug = newValue?.librarySlug ?? ""
+        }
+    }
+
     private var storedLyeIngredient: Ingredient?
     private var storedKOHLyeIngredient: Ingredient?
+    private var storedNeutralizerIngredient: Ingredient?
 
-    /// The merge keys of the two lye rows. Read by `save` to resolve them back
-    /// to the rows actually in the store.
+    /// The merge keys of the two lye rows and the neutraliser row. Read by `save`
+    /// to resolve them back to the rows actually in the store.
     @ObservationIgnored
     private(set) var lyeIngredientSlug: String = ""
     @ObservationIgnored
     private(set) var kohLyeIngredientSlug: String = ""
+    @ObservationIgnored
+    private(set) var neutralizerIngredientSlug: String = ""
 
     /// Themes this recipe is filed under. Kept in `sortedByName` order so the
     /// dirty check compares two stable lists rather than two arbitrary ones.
@@ -178,7 +191,8 @@ final class RecipeFormViewModel {
             fragrancePercentage: fragrancePercentage,
             displayWeightUnit: displayWeightUnit,
             lyeIngredient: lyeIngredient,
-            kohLyeIngredient: kohLyeIngredient
+            kohLyeIngredient: kohLyeIngredient,
+            neutralizerIngredient: neutralizerIngredient
         )
     }
 

@@ -13,6 +13,7 @@ struct RecipeConfigTabView: View {
     @Bindable var model: RecipeFormViewModel
 
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
+    @Query private var ingredients: [Ingredient]
 
     @State private var showMoldCalculator = false
     @State private var showNewCollection = false
@@ -178,12 +179,16 @@ struct RecipeConfigTabView: View {
                         .labelsHidden()
                 }
                 if model.useCFM {
-                    Picker("Neutraliser", selection: $model.cfmNeutralizer) {
+                    Picker("Neutraliser", selection: Binding(
+                        get: { model.cfmNeutralizer },
+                        set: { model.setCFMNeutralizer($0, from: ingredients) }
+                    )) {
                         ForEach(CFMNeutralizer.allCases, id: \.self) { option in
                             Text(option.displayName).tag(option)
                         }
                     }
                     .pickerStyle(.segmented)
+                    neutralizerIngredientRow
                 }
             }
         } header: {
@@ -192,6 +197,9 @@ struct RecipeConfigTabView: View {
             if model.soapType == .solid {
                 Text("The Catherine Failor liquid-soap method appears when the recipe makes a liquid "
                      + "or cream soap — switch to KOH or dual lye.")
+            } else if model.useCFM && model.neutralizerIngredient == nil {
+                Text("The neutraliser dose is shown in the amounts table, but without an ingredient "
+                     + "it isn't costed or deducted from inventory when you make a batch.")
             }
         }
         .animation(.default, value: model.useCFM)
@@ -248,9 +256,46 @@ struct RecipeConfigTabView: View {
         }
     }
 
+    /// Built by the same helper as the lye rows so the three pickers stay
+    /// identical. The unresolved-neutraliser note lives in the section footer.
+    private var neutralizerIngredientRow: some View {
+        ingredientPickerRow(
+            "Neutraliser ingredient",
+            selected: $model.neutralizerIngredient,
+            category: IngredientCategory.Name.additives,
+            navigationTitle: "Neutraliser ingredient",
+            emptyTitle: "No additives",
+            emptyDescription: "Add an ingredient to the \"Additives\" category."
+        )
+    }
+
     private func lyeIngredientRow(_ label: String, selected: Binding<Ingredient?>) -> some View {
+        ingredientPickerRow(
+            label,
+            selected: selected,
+            category: IngredientCategory.Name.lyes,
+            navigationTitle: "Lye ingredient",
+            emptyTitle: "No lye ingredients",
+            emptyDescription: "Add an ingredient to the \"Lyes\" category."
+        )
+    }
+
+    private func ingredientPickerRow(
+        _ label: String,
+        selected: Binding<Ingredient?>,
+        category: String,
+        navigationTitle: String,
+        emptyTitle: String,
+        emptyDescription: String
+    ) -> some View {
         NavigationLink {
-            LyeIngredientPickerView(selected: selected)
+            CategoryIngredientPickerView(
+                selected: selected,
+                category: category,
+                navigationTitle: navigationTitle,
+                emptyTitle: emptyTitle,
+                emptyDescription: emptyDescription
+            )
         } label: {
             // Stacked so a long ingredient name (e.g. "Potassium Hydroxide
             // (Lye)") wraps under the label instead of overflowing on narrow

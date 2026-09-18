@@ -31,6 +31,7 @@ extension RecipeFormViewModel {
         cfmNeutralizer = CFMNeutralizer.resolve(recipe.cfmNeutralizer)
         lyeIngredient = recipe.lyeIngredient
         kohLyeIngredient = recipe.kohLyeIngredient
+        neutralizerIngredient = recipe.neutralizerIngredient
         selectedCollections = recipe.collections.sortedByName
 
         unresolvedLineItemCount = recipe.ingredients.count { $0.ingredient == nil }
@@ -102,6 +103,9 @@ extension RecipeFormViewModel {
         }
         recipe.kohLyeIngredient = kohLyeIngredient.flatMap {
             LiveIngredient.resolve($0, slug: kohLyeIngredientSlug, in: context)
+        }
+        recipe.neutralizerIngredient = neutralizerIngredient.flatMap {
+            LiveIngredient.resolve($0, slug: neutralizerIngredientSlug, in: context)
         }
         recipe.collections = selectedCollections
 

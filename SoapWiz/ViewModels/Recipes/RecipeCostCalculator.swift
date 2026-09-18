@@ -13,6 +13,7 @@ struct RecipeCostCalculator {
     let displayWeightUnit: String
     let lyeIngredient: Ingredient?
     let kohLyeIngredient: Ingredient?
+    let neutralizerIngredient: Ingredient?
 
     private var useHybrid: Bool { lye.useHybrid }
     private var lyeType: String { lye.lyeType }
@@ -43,7 +44,7 @@ struct RecipeCostCalculator {
 
     var wholeBatchBreakdown: ProductCostBreakdown {
         let oils = oilBatchBreakdown
-        let additives = additiveBatchBreakdown
+        let additives = additiveBatchBreakdown + cfmNeutralizerBreakdown
         let fragrances = fragranceBatchBreakdown
         let lyeRows = lyeBatchBreakdown
         let total = (oils + additives + fragrances + lyeRows).reduce(0) { $0 + $1.cost }
@@ -63,6 +64,23 @@ struct RecipeCostCalculator {
 
     private var additiveBatchBreakdown: [IngredientProductBreakdown] {
         breakdown(for: additiveDrafts)
+    }
+
+    /// The Failor neutraliser solid as a costed breakdown row, when the method is
+    /// active and an ingredient is resolved to draw it from. Grouped with the
+    /// additives so it costs, scales, and deducts like any other solid. Its
+    /// dissolving water is not an ingredient row (like the recipe's own water) —
+    /// it is only counted in `batchTotalWeight`. With no neutraliser ingredient
+    /// resolved the dose is still shown in the amounts table but nothing is
+    /// costed or consumed.
+    private var cfmNeutralizerBreakdown: [IngredientProductBreakdown] {
+        guard lye.cfmActive, let ingredient = neutralizerIngredient,
+              let solid = lye.cfmNeutralizerSolidWeight, solid > 0 else { return [] }
+        return [IngredientProductBreakdown(
+            ingredient: ingredient,
+            ingredientAmount: solid,
+            cost: cost(ofBatchAmount: solid, for: ingredient)
+        )]
     }
 
     /// For `% of fragrances` the rows are shares of the blend, so they can't be
@@ -142,17 +160,24 @@ struct RecipeCostCalculator {
     /// exist once a lye `Ingredient` has been resolved; the mass is in the pot
     /// either way.
     ///
-    /// Excludes the Failor neutraliser solution (`LyeCalculator.cfmNeutralizerRows`):
-    /// it is a dosing recommendation rather than a recipe line item, and it is
-    /// absent from `wholeBatchBreakdown` and batch requirements too. A CFM batch's
-    /// weight is therefore understated by the neutraliser dose.
+    /// Includes the full Failor neutraliser solution whenever the method is
+    /// active — it is real mass in the pot, so leaving it out understates a CFM
+    /// batch and over-allocates cost to every fixed-size product. Its water is
+    /// never an ingredient row, so it is always added here; its solid is added
+    /// only while no ingredient is resolved, because a resolved one already
+    /// arrives through `batch.additives` (`cfmNeutralizerBreakdown` groups it
+    /// there). The weight is the same either way, costed or not.
     func batchTotalWeight(from batch: ProductCostBreakdown) -> Double {
         // Counts carry no mass, so they are left out of every weight total.
         let additives = batch.additives.lazy.filter { !$0.isCountBased }.reduce(0) { $0 + $1.ingredientAmount }
         let fragrances = batch.fragrances.lazy.filter { !$0.isCountBased }.reduce(0) { $0 + $1.ingredientAmount }
         let lyeAmount = lye.calculatedLyeAmount ?? 0
         let water = lye.calculatedWaterAmount ?? 0
+        let neutralizerWater = lye.cfmNeutralizerWaterWeight ?? 0
+        let uncostedNeutralizerSolid = neutralizerIngredient == nil ? (lye.cfmNeutralizerSolidWeight ?? 0) : 0
+
         return lye.totalOilBatchWeight + additives + fragrances + lyeAmount + water
+            + neutralizerWater + uncostedNeutralizerSolid
     }
 
     private func scaleBreakdown(_ source: ProductCostBreakdown, by factor: Double) -> ProductCostBreakdown {

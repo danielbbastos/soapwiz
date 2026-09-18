@@ -1,37 +1,48 @@
 import SwiftUI
 import SwiftData
 
-struct LyeIngredientPickerView: View {
+/// Picks a single ingredient from one category — the lye a recipe saponifies
+/// with, or the additive its Failor neutraliser is dosed from. Hidden rows drop
+/// out of the choices, with one exception: whichever row this recipe already uses
+/// stays listed even when hidden, so a recipe whose ingredient was hidden doesn't
+/// open looking unset when it isn't.
+///
+/// Distinct from `IngredientPickerView`, which is the multi-select adder for a
+/// recipe's oil, additive and fragrance rows.
+struct CategoryIngredientPickerView: View {
     @Binding var selected: Ingredient?
+
+    /// The category to offer, e.g. `IngredientCategory.Name.lyes`.
+    let category: String
+    let navigationTitle: String
+    let emptyTitle: String
+    let emptyDescription: String
+
     @Environment(\.dismiss) private var dismiss
     @Query private var ingredients: [Ingredient]
     @State private var searchText: String = ""
 
-    /// Hidden lyes drop out of the choices, with one exception: whichever lye this
-    /// recipe already uses stays listed even when hidden. Otherwise a recipe whose
-    /// lye was hidden would open this picker with its own selection missing, and
-    /// look unset when it isn't.
-    private var lyeIngredients: [Ingredient] {
+    private var candidates: [Ingredient] {
         ingredients
-            .filter { $0.category?.name == IngredientCategory.Name.lyes }
+            .filter { $0.category?.name == category }
             .filter { !$0.isHidden || $0.persistentModelID == selected?.persistentModelID }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     private var filtered: [Ingredient] {
-        guard !searchText.isEmpty else { return lyeIngredients }
-        return lyeIngredients.filter {
+        guard !searchText.isEmpty else { return candidates }
+        return candidates.filter {
             $0.name.localizedCaseInsensitiveContains(searchText)
         }
     }
 
     var body: some View {
         List {
-            if lyeIngredients.isEmpty {
+            if candidates.isEmpty {
                 ContentUnavailableView(
-                    "No lye ingredients",
+                    emptyTitle,
                     systemImage: "tray",
-                    description: Text("Add an ingredient to the \"Lyes\" category.")
+                    description: Text(emptyDescription)
                 )
             } else {
                 ForEach(filtered) { ingredient in
@@ -53,9 +64,9 @@ struct LyeIngredientPickerView: View {
             }
         }
         .searchable(text: $searchText)
-        .navigationTitle("Lye ingredient")
+        .navigationTitle(navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        .warmNavigationTitle("Lye ingredient")
+        .warmNavigationTitle(navigationTitle)
         .warmBackground()
     }
 }

@@ -28,11 +28,12 @@ final class BatchProductionViewModel {
     private let recipe: Recipe
     private let engine: RecipeFormViewModel
 
-    init(recipe: Recipe, lyeCandidates: [Ingredient]) {
+    init(recipe: Recipe, lyeCandidates: [Ingredient], neutralizerCandidates: [Ingredient] = []) {
         self.recipe = recipe
         let engine = RecipeFormViewModel()
         engine.load(from: recipe)
         engine.resolveDefaultLyeIngredient(from: lyeCandidates)
+        engine.resolveDefaultNeutralizerIngredient(from: neutralizerCandidates)
         self.engine = engine
     }
 

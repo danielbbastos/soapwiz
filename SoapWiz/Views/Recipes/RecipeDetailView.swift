@@ -9,6 +9,8 @@ struct RecipeDetailView: View {
 
     @Query(filter: RecipeDetailView.lyesPredicate)
     private var lyeIngredients: [Ingredient]
+    @Query(filter: RecipeDetailView.additivesPredicate)
+    private var additiveIngredients: [Ingredient]
 
     @State private var model = RecipeFormViewModel()
     @State private var showInGrams = false
@@ -48,12 +50,28 @@ struct RecipeDetailView: View {
         return #Predicate { $0.category?.name == name && !$0.isHidden }
     }()
 
+    /// Additives the batch sheet resolves the neutraliser default against, hidden
+    /// rows excluded for the same reason the lyes are.
+    private static let additivesPredicate: Predicate<Ingredient> = {
+        let name = IngredientCategory.Name.additives
+        return #Predicate { $0.category?.name == name && !$0.isHidden }
+    }()
+
     /// What the batch sheet offers: the visible lyes, plus this recipe's own, which
     /// may have been hidden since it was chosen.
     private var lyeCandidates: [Ingredient] {
         RecipeFormViewModel.lyeCandidates(
             visible: lyeIngredients,
             keeping: [recipe.lyeIngredient, recipe.kohLyeIngredient]
+        )
+    }
+
+    /// The additives the batch sheet resolves the neutraliser from, plus this
+    /// recipe's own neutraliser even if it has since been hidden.
+    private var neutralizerCandidates: [Ingredient] {
+        RecipeFormViewModel.neutralizerCandidates(
+            visible: additiveIngredients,
+            keeping: [recipe.neutralizerIngredient]
         )
     }
 
@@ -113,7 +131,11 @@ struct RecipeDetailView: View {
         }
         .modifier(sharingPresentation)
         .sheet(isPresented: $showCreateBatch) {
-            CreateBatchSheet(recipe: recipe, lyeCandidates: lyeCandidates) { batch in
+            CreateBatchSheet(
+                recipe: recipe,
+                lyeCandidates: lyeCandidates,
+                neutralizerCandidates: neutralizerCandidates
+            ) { batch in
                 navigation.showBatch(batch)
             }
         }
@@ -132,6 +154,9 @@ struct RecipeDetailView: View {
         .onChange(of: lyeIngredients) {
             model.resolveDefaultLyeIngredient(from: lyeIngredients)
         }
+        .onChange(of: additiveIngredients) {
+            model.resolveDefaultNeutralizerIngredient(from: additiveIngredients)
+        }
     }
 
     /// Re-reads the recipe into the display model — on first appearance and
@@ -139,6 +164,7 @@ struct RecipeDetailView: View {
     private func reload() {
         model.load(from: recipe)
         model.resolveDefaultLyeIngredient(from: lyeIngredients)
+        model.resolveDefaultNeutralizerIngredient(from: additiveIngredients)
     }
 
     // MARK: - Collections
