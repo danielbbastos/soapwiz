@@ -162,6 +162,29 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         #expect(model.neutralizerIngredient?.persistentModelID == custom.persistentModelID)
     }
 
+    // MARK: - Unit system for rule-of-thumb copy
+
+    @Test func usesImperialUnits_FollowsDisplayUnit() {
+        let model = makeLiquidModel()
+        for unit in ["g", "kg"] {
+            model.weightUnit = unit
+            #expect(!model.usesImperialUnits, "\(unit) is metric")
+        }
+        for unit in ["oz", "lb"] {
+            model.weightUnit = unit
+            #expect(model.usesImperialUnits, "\(unit) is imperial")
+        }
+    }
+
+    @Test func usesImperialUnits_PercentageMode_FollowsOilWeightUnit() {
+        let model = makeLiquidModel()
+        model.weightUnit = "%"
+        model.oilWeightUnit = "oz"
+        #expect(model.usesImperialUnits)
+        model.oilWeightUnit = "g"
+        #expect(!model.usesImperialUnits)
+    }
+
     // MARK: - Batch consumption
 
     /// Stocked oil and both lyes for a liquid-soap batch: oil sap NaOH 0.132 /

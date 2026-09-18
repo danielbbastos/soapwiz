@@ -12,8 +12,16 @@ private let absoluteWeightUnits = ["g", "oz", "lb", "kg"]
 struct RecipeConfigTabView: View {
     @Bindable var model: RecipeFormViewModel
 
+    /// Additives the neutraliser switch may move its default to. Hidden rows are
+    /// excluded, as the form's and detail's default queries exclude them, so a
+    /// default never lands on an ingredient the user has said they don't use.
+    private static let additivesPredicate: Predicate<Ingredient> = {
+        let name = IngredientCategory.Name.additives
+        return #Predicate { $0.category?.name == name && !$0.isHidden }
+    }()
+
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
-    @Query private var ingredients: [Ingredient]
+    @Query(filter: RecipeConfigTabView.additivesPredicate) private var additiveIngredients: [Ingredient]
 
     @State private var showMoldCalculator = false
     @State private var showNewCollection = false
@@ -181,7 +189,7 @@ struct RecipeConfigTabView: View {
                 if model.useCFM {
                     Picker("Neutraliser", selection: Binding(
                         get: { model.cfmNeutralizer },
-                        set: { model.setCFMNeutralizer($0, from: ingredients) }
+                        set: { model.setCFMNeutralizer($0, from: additiveIngredients) }
                     )) {
                         ForEach(CFMNeutralizer.allCases, id: \.self) { option in
                             Text(option.displayName).tag(option)
@@ -334,14 +342,29 @@ struct RecipeConfigTabView: View {
     }
 
     /// Liquid-soap method described in Catherine Failor's *Making Natural Liquid
-    /// Soaps*, as implemented in `LyeCalculator`.
+    /// Soaps*, as implemented in `LyeCalculator`. The dose is quoted in the
+    /// recipe's own units: Failor's ¾ oz per lb when the recipe is measured in
+    /// oz or lb, the metric equivalent otherwise.
     private var cfmExplanation: String {
         "Takes the lye at 0% super fat plus a 10% excess so every oil saponifies, "
         + "then neutralises what's left over after the cook. Water is still sized "
         + "from the recipe's normal super-fat lye, so the excess doesn't dilute the batch.\n\n"
-        + "The neutraliser is ¾ oz of solution per lb of soap — boric acid at 20% solid "
-        + "to 80% water, or borax at 33% to 67%. It's a recommendation shown alongside "
-        + "the calculated amounts and isn't counted in the recipe cost."
+        + "The neutraliser is \(cfmDoseDescription) — boric acid at 20% solid "
+        + "to 80% water, or borax at 33% to 67%. The dose is shown with the calculated "
+        + "amounts and, once a neutraliser ingredient is chosen, costed and deducted "
+        + "from inventory like the lye."
+    }
+
+    /// Failor's ¾ oz of solution per lb of soap, or the same fraction expressed
+    /// as grams per kilogram for a metric recipe — derived from the calculator's
+    /// constant rather than typed out, so the two can't drift apart.
+    private var cfmDoseDescription: String {
+        if model.usesImperialUnits {
+            return "¾ oz of solution per lb of soap"
+        }
+        let gramsPerKilogram = (LyeCalculator.cfmNeutralizerSolutionFraction * 1000)
+            .formatted(.number.precision(.fractionLength(0)))
+        return "about \(gramsPerKilogram) g of solution per kg of soap"
     }
 
     private var fragranceSection: some View {
