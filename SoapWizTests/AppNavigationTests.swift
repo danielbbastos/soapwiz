@@ -58,4 +58,31 @@ struct AppNavigationTests {
 
         #expect(sut.historyPath.count == 1)
     }
+
+    @Test func openRecipeFile_SelectsRecipesTabAndStoresRequest() throws {
+        let sut = AppNavigation()
+        let url = URL(fileURLWithPath: "/tmp/shared.soapwizrecipe")
+
+        sut.openRecipeFile(url)
+
+        #expect(sut.selectedTab == .recipes)
+        let request = try #require(sut.pendingRecipeFileImport)
+        #expect(request.url == url)
+    }
+
+    @Test func openRecipeFile_SameFileTwice_ProducesDistinctRequests() {
+        let sut = AppNavigation()
+        let url = URL(fileURLWithPath: "/tmp/shared.soapwizrecipe")
+
+        sut.openRecipeFile(url)
+        let first = sut.pendingRecipeFileImport
+
+        sut.openRecipeFile(url)
+        let second = sut.pendingRecipeFileImport
+
+        // Distinct ids so an `onChange` observer fires again on the second open,
+        // even though the URL is unchanged.
+        #expect(first != second)
+        #expect(first?.url == second?.url)
+    }
 }

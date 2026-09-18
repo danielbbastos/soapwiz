@@ -21,6 +21,14 @@ struct RecipeEditRoute: Hashable {
     let recipe: Recipe
 }
 
+/// A `.soapwizrecipe` file another app handed to SoapWiz to open. The `id`
+/// keeps two opens of the same file distinct, so the Recipes tab reacts to the
+/// second the way it did to the first.
+struct RecipeFileImport: Hashable {
+    let id = UUID()
+    let url: URL
+}
+
 /// Cross-tab navigation state: which tab is selected and the History tab's
 /// stack path. Lets flows that end in another tab (creating a batch from a
 /// recipe) land the user there directly.
@@ -34,6 +42,10 @@ final class AppNavigation {
     /// Recipes tab observes it, opens the form, then clears it.
     var pendingRecipeSeed: RecipeSeed?
 
+    /// Set when another app opens a recipe file in SoapWiz; the Recipes tab
+    /// observes it, opens the import review for the file, then clears it.
+    var pendingRecipeFileImport: RecipeFileImport?
+
     /// Switches to the History tab showing `batch`'s detail screen, with the
     /// history list as the only screen underneath it.
     func showBatch(_ batch: Batch) {
@@ -45,6 +57,13 @@ final class AppNavigation {
     /// pre-filled with `ingredients`.
     func createRecipe(with ingredients: [Ingredient]) {
         pendingRecipeSeed = RecipeSeed(ingredients: ingredients)
+        selectedTab = .recipes
+    }
+
+    /// Switches to the Recipes tab and asks it to open `url`, a `.soapwizrecipe`
+    /// file another app handed in.
+    func openRecipeFile(_ url: URL) {
+        pendingRecipeFileImport = RecipeFileImport(url: url)
         selectedTab = .recipes
     }
 }
