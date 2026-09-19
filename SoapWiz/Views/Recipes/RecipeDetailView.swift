@@ -7,10 +7,11 @@ struct RecipeDetailView: View {
 
     @Environment(AppNavigation.self) private var navigation
 
+    // Non-private so `RecipeDetailView+BatchCandidates` can read them.
     @Query(filter: RecipeDetailView.lyesPredicate)
-    private var lyeIngredients: [Ingredient]
+    var lyeIngredients: [Ingredient]
     @Query(filter: RecipeDetailView.additivesPredicate)
-    private var additiveIngredients: [Ingredient]
+    var additiveIngredients: [Ingredient]
 
     @State private var model = RecipeFormViewModel()
     @State private var showInGrams = false
@@ -41,38 +42,6 @@ struct RecipeDetailView: View {
     /// Formats an oil-unit amount in the chosen display unit, with the unit label.
     private func weightText(_ batchAmount: Double) -> String {
         "\(displayed(batchAmount).formatted(.number.precision(.fractionLength(0...2)))) \(displayUnit)"
-    }
-
-    /// Hidden lyes are excluded, for the reason given on `RecipeFormView`'s copy.
-    /// `lyeCandidates` puts this recipe's own lye back for the batch sheet.
-    private static let lyesPredicate: Predicate<Ingredient> = {
-        let name = IngredientCategory.Name.lyes
-        return #Predicate { $0.category?.name == name && !$0.isHidden }
-    }()
-
-    /// Additives the batch sheet resolves the neutraliser default against, hidden
-    /// rows excluded for the same reason the lyes are.
-    private static let additivesPredicate: Predicate<Ingredient> = {
-        let name = IngredientCategory.Name.additives
-        return #Predicate { $0.category?.name == name && !$0.isHidden }
-    }()
-
-    /// What the batch sheet offers: the visible lyes, plus this recipe's own, which
-    /// may have been hidden since it was chosen.
-    private var lyeCandidates: [Ingredient] {
-        RecipeFormViewModel.lyeCandidates(
-            visible: lyeIngredients,
-            keeping: [recipe.lyeIngredient, recipe.kohLyeIngredient]
-        )
-    }
-
-    /// The additives the batch sheet resolves the neutraliser from, plus this
-    /// recipe's own neutraliser even if it has since been hidden.
-    private var neutralizerCandidates: [Ingredient] {
-        RecipeFormViewModel.neutralizerCandidates(
-            visible: additiveIngredients,
-            keeping: [recipe.neutralizerIngredient]
-        )
     }
 
     var body: some View {

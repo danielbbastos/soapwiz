@@ -267,43 +267,20 @@ struct RecipeConfigTabView: View {
     /// Built by the same helper as the lye rows so the three pickers stay
     /// identical. The unresolved-neutraliser note lives in the section footer.
     private var neutralizerIngredientRow: some View {
-        ingredientPickerRow(
-            "Neutraliser ingredient",
-            selected: $model.neutralizerIngredient,
-            category: IngredientCategory.Name.additives,
-            navigationTitle: "Neutraliser ingredient",
-            emptyTitle: "No additives",
-            emptyDescription: "Add an ingredient to the \"Additives\" category."
-        )
+        ingredientPickerRow("Neutraliser ingredient", selected: $model.neutralizerIngredient, config: .neutralizer)
     }
 
     private func lyeIngredientRow(_ label: String, selected: Binding<Ingredient?>) -> some View {
-        ingredientPickerRow(
-            label,
-            selected: selected,
-            category: IngredientCategory.Name.lyes,
-            navigationTitle: "Lye ingredient",
-            emptyTitle: "No lye ingredients",
-            emptyDescription: "Add an ingredient to the \"Lyes\" category."
-        )
+        ingredientPickerRow(label, selected: selected, config: .lye)
     }
 
     private func ingredientPickerRow(
         _ label: String,
         selected: Binding<Ingredient?>,
-        category: String,
-        navigationTitle: String,
-        emptyTitle: String,
-        emptyDescription: String
+        config: CategoryIngredientPickerConfig
     ) -> some View {
         NavigationLink {
-            CategoryIngredientPickerView(
-                selected: selected,
-                category: category,
-                navigationTitle: navigationTitle,
-                emptyTitle: emptyTitle,
-                emptyDescription: emptyDescription
-            )
+            CategoryIngredientPickerView(selected: selected, config: config)
         } label: {
             // Stacked so a long ingredient name (e.g. "Potassium Hydroxide
             // (Lye)") wraps under the label instead of overflowing on narrow

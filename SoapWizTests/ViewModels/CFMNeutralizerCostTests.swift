@@ -187,9 +187,16 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
 
     // MARK: - Batch consumption
 
+    /// The ingredients a liquid-soap batch draws from.
+    private struct LiquidSoapStock {
+        let oil: Ingredient
+        let naoh: Ingredient
+        let koh: Ingredient
+    }
+
     /// Stocked oil and both lyes for a liquid-soap batch: oil sap NaOH 0.132 /
     /// KOH 0.186, everything bought 10 days ago.
-    private func seedLiquidSoapStock(_ ctx: ModelContext) -> (oil: Ingredient, naoh: Ingredient, koh: Ingredient) {
+    private func seedLiquidSoapStock(_ ctx: ModelContext) -> LiquidSoapStock {
         let oil = Ingredient(name: "Avocado Oil", unit: "g")
         oil.sapValue = 0.132
         oil.kohSapValue = 0.186
@@ -203,7 +210,7 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         let koh = Ingredient(name: "Potassium Hydroxide", unit: "g")
         ctx.insert(koh)
         purchase(ctx, for: koh, quantity: 1000, totalPrice: 20, daysAgo: 10)
-        return (oil, naoh, koh)
+        return LiquidSoapStock(oil: oil, naoh: naoh, koh: koh)
     }
 
     private func makeCFMRecipe(
@@ -225,9 +232,9 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         recipe.kohLyeIngredient = koh
         recipe.neutralizerIngredient = neutralizer
         ctx.insert(recipe)
-        let ri = RecipeIngredient(ingredient: oil, percentage: oilWeight, role: .oil)
-        ri.recipe = recipe
-        ctx.insert(ri)
+        let oilLine = RecipeIngredient(ingredient: oil, percentage: oilWeight, role: .oil)
+        oilLine.recipe = recipe
+        ctx.insert(oilLine)
         return recipe
     }
 
@@ -235,17 +242,17 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         let (container, ctx) = try makeContext()
         _ = container
 
-        let (oil, naoh, koh) = seedLiquidSoapStock(ctx)
+        let stock = seedLiquidSoapStock(ctx)
 
         let boric = Ingredient(name: "Boric Acid", unit: "g")
         ctx.insert(boric)
         let boricPurchase = purchase(ctx, for: boric, quantity: 100, totalPrice: 5, daysAgo: 10) // 0.05/g
 
-        let recipe = makeCFMRecipe(ctx, oil: oil, naoh: naoh, koh: koh, neutralizer: boric)
+        let recipe = makeCFMRecipe(ctx, oil: stock.oil, naoh: stock.naoh, koh: stock.koh, neutralizer: boric)
         try ctx.save()
 
         let model = BatchProductionViewModel(
-            recipe: recipe, lyeCandidates: [naoh, koh], neutralizerCandidates: [boric]
+            recipe: recipe, lyeCandidates: [stock.naoh, stock.koh], neutralizerCandidates: [boric]
         )
 
         let req = try #require(model.requirements.first {
@@ -265,13 +272,13 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         let (container, ctx) = try makeContext()
         _ = container
 
-        let (oil, naoh, koh) = seedLiquidSoapStock(ctx)
+        let stock = seedLiquidSoapStock(ctx)
 
-        let recipe = makeCFMRecipe(ctx, oil: oil, naoh: naoh, koh: koh, neutralizer: nil)
+        let recipe = makeCFMRecipe(ctx, oil: stock.oil, naoh: stock.naoh, koh: stock.koh, neutralizer: nil)
         try ctx.save()
 
         let model = BatchProductionViewModel(
-            recipe: recipe, lyeCandidates: [naoh, koh], neutralizerCandidates: []
+            recipe: recipe, lyeCandidates: [stock.naoh, stock.koh], neutralizerCandidates: []
         )
 
         #expect(!model.requirements.contains { $0.ingredient.name == "Boric Acid" })
