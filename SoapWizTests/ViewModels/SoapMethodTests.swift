@@ -29,6 +29,22 @@ struct SoapMethodTests {
         return model
     }
 
+    /// Single-NaOH solid bar (sap NaOH 0.134 / KOH 0.188, 1000 g, 5% SF) with
+    /// CFM requested — inert, because the soap is solid.
+    private func makeSolidModel() -> RecipeFormViewModel {
+        let oil = Ingredient(name: "Test Oil", unit: "g")
+        oil.sapValue = 0.134
+        oil.kohSapValue = 0.188
+        let model = RecipeFormViewModel()
+        model.weightUnit = "g"
+        model.lyePurity = 100
+        model.superFat = 5
+        model.addOil(oil)
+        model.oilDrafts[0].amount = 1000
+        model.useCFM = true
+        return model
+    }
+
     private func isClose(_ actual: Double?, _ expected: Double, tol: Double = 0.01) -> Bool {
         guard let actual else { return false }
         return abs(actual - expected) < tol
@@ -58,16 +74,7 @@ struct SoapMethodTests {
     }
 
     @Test func cfm_SolidSoap_HasNoEffect() {
-        let oil = Ingredient(name: "Test Oil", unit: "g")
-        oil.sapValue = 0.134
-        oil.kohSapValue = 0.188
-        let model = RecipeFormViewModel()
-        model.weightUnit = "g"
-        model.lyePurity = 100
-        model.superFat = 5
-        model.addOil(oil)
-        model.oilDrafts[0].amount = 1000
-        model.useCFM = true // single NaOH → solid → CFM inert
+        let model = makeSolidModel()
 
         #expect(model.soapType == .solid)
         #expect(isClose(model.calculatedLyeAmount, 1000 * 0.134 * 0.95)) // super fat, no excess
@@ -114,6 +121,38 @@ struct SoapMethodTests {
         let model = makeLiquidModel()
         #expect(rowWeight(model, containing: "Boric Acid") == nil)
         #expect(rowWeight(model, containing: "Borax") == nil)
+    }
+
+    // MARK: - Neutraliser dose as a consumable weight (SW-161)
+
+    @Test func cfm_NeutralizerWeights_BoricAcid_MatchRows() {
+        let model = makeLiquidModel()
+        model.useCFM = true
+        model.cfmNeutralizer = .boricAcid
+        // Same split as the amounts-table rows, now exposed as consumable weights.
+        #expect(isClose(model.lyeCalculator.cfmNeutralizerSolidWeight, 14.29))
+        #expect(isClose(model.lyeCalculator.cfmNeutralizerWaterWeight, 57.14))
+    }
+
+    @Test func cfm_NeutralizerWeights_Borax_MatchRows() {
+        let model = makeLiquidModel()
+        model.useCFM = true
+        model.cfmNeutralizer = .borax
+        #expect(isClose(model.lyeCalculator.cfmNeutralizerSolidWeight, 23.57))
+        #expect(isClose(model.lyeCalculator.cfmNeutralizerWaterWeight, 47.85))
+    }
+
+    @Test func cfm_Off_NeutralizerWeightsAreNil() {
+        let model = makeLiquidModel()
+        #expect(model.lyeCalculator.cfmNeutralizerSolidWeight == nil)
+        #expect(model.lyeCalculator.cfmNeutralizerWaterWeight == nil)
+    }
+
+    @Test func cfm_SolidSoap_NeutralizerWeightsAreNil() {
+        let model = makeSolidModel()
+
+        #expect(model.lyeCalculator.cfmNeutralizerSolidWeight == nil)
+        #expect(model.lyeCalculator.cfmNeutralizerWaterWeight == nil)
     }
 
     // MARK: - Cream soap additions

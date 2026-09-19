@@ -52,6 +52,51 @@ extension RecipeFormViewModel {
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
+    /// Switches the Failor neutraliser, moving `neutralizerIngredient` to the new
+    /// neutraliser's default library entry — but only when it still holds the
+    /// previous default (or nothing), so a deliberately chosen additive stands.
+    /// A user edit, so the snapshot is left alone and the form registers dirty.
+    func setCFMNeutralizer(_ neutralizer: CFMNeutralizer, from inventory: [Ingredient]) {
+        let previous = cfmNeutralizer
+        cfmNeutralizer = neutralizer
+        guard neutralizer != previous else { return }
+
+        let holdsPreviousDefault = neutralizerIngredient == nil
+            || neutralizerIngredient?.librarySlug == previous.librarySlug
+        guard holdsPreviousDefault else { return }
+
+        if let match = Self.libraryAdditive(for: neutralizer, in: inventory) {
+            neutralizerIngredient = match
+        }
+    }
+
+    /// Fills a blank `neutralizerIngredient` with the Additives library entry
+    /// matching the chosen `cfmNeutralizer`. Like the lye defaults, this only ever
+    /// fills a blank, so the baseline moves with it and a late CloudKit arrival
+    /// isn't mistaken for a user edit.
+    func resolveDefaultNeutralizerIngredient(from inventory: [Ingredient]) {
+        guard neutralizerIngredient == nil,
+              let match = Self.libraryAdditive(for: cfmNeutralizer, in: inventory) else { return }
+        neutralizerIngredient = match
+        snapshot?.neutralizerIngredient = neutralizerIngredient
+    }
+
+    /// The Additives row installed from the library for `neutralizer`, matched
+    /// by its slug, or `nil` when the inventory holds none.
+    private static func libraryAdditive(for neutralizer: CFMNeutralizer, in inventory: [Ingredient]) -> Ingredient? {
+        inventory.first {
+            $0.category?.name == IngredientCategory.Name.additives && $0.librarySlug == neutralizer.librarySlug
+        }
+    }
+
+    /// The neutraliser rows a batch may draw from: the visible additives plus the
+    /// recipe's own neutraliser even when it has since been hidden — same as
+    /// `lyeCandidates`, so a recipe never opens the batch sheet with its own
+    /// neutraliser missing.
+    static func neutralizerCandidates(visible: [Ingredient], keeping current: [Ingredient?]) -> [Ingredient] {
+        lyeCandidates(visible: visible, keeping: current)
+    }
+
     func resolveDefaultLyeIngredient(from inventory: [Ingredient]) {
         let candidates = inventory.filter { $0.category?.name == IngredientCategory.Name.lyes }
         guard !candidates.isEmpty else { return }

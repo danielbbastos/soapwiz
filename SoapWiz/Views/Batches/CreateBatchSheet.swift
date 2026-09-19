@@ -7,6 +7,7 @@ import SwiftData
 struct CreateBatchSheet: View {
     let recipe: Recipe
     let lyeCandidates: [Ingredient]
+    let neutralizerCandidates: [Ingredient]
     /// Called with the created batch so the caller can navigate to it.
     let onCreated: (Batch) -> Void
 
@@ -14,11 +15,21 @@ struct CreateBatchSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: BatchProductionViewModel
 
-    init(recipe: Recipe, lyeCandidates: [Ingredient], onCreated: @escaping (Batch) -> Void) {
+    init(
+        recipe: Recipe,
+        lyeCandidates: [Ingredient],
+        neutralizerCandidates: [Ingredient],
+        onCreated: @escaping (Batch) -> Void
+    ) {
         self.recipe = recipe
         self.lyeCandidates = lyeCandidates
+        self.neutralizerCandidates = neutralizerCandidates
         self.onCreated = onCreated
-        _model = State(initialValue: BatchProductionViewModel(recipe: recipe, lyeCandidates: lyeCandidates))
+        _model = State(initialValue: BatchProductionViewModel(
+            recipe: recipe,
+            lyeCandidates: lyeCandidates,
+            neutralizerCandidates: neutralizerCandidates
+        ))
     }
 
     private static let currencyFormatter: NumberFormatter = {

@@ -111,15 +111,30 @@ final class Ingredient {
         set { recipesUsingAsKOHLyeStorage = newValue }
     }
 
-    /// Recipes referencing this ingredient — as a line item, as the NaOH lye, or
-    /// as the KOH lye. One recipe can reference it in more than one of those roles,
-    /// so results are deduplicated.
+    /// Recipes using this ingredient as their Catherine Failor neutraliser.
+    /// Deleting the ingredient nullifies the recipe's link rather than deleting
+    /// the recipe.
+    ///
+    /// Optional for CloudKit; read and write through `recipesUsingAsNeutralizer`.
+    /// Neither name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .nullify, originalName: "recipesUsingAsNeutralizer", inverse: \Recipe.neutralizerIngredient)
+    var recipesUsingAsNeutralizerStorage: [Recipe]? = []
+
+    var recipesUsingAsNeutralizer: [Recipe] {
+        get { recipesUsingAsNeutralizerStorage ?? [] }
+        set { recipesUsingAsNeutralizerStorage = newValue }
+    }
+
+    /// Recipes referencing this ingredient — as a line item, as the NaOH lye, as
+    /// the KOH lye, or as the neutraliser. One recipe can reference it in more than
+    /// one of those roles, so results are deduplicated.
     ///
     /// Batches are deliberately excluded: they snapshot the ingredient's name and
     /// cost, so history stays readable after the ingredient is gone. Recipes are
     /// live documents and would be silently miscalculated instead.
     var recipesUsingThis: [Recipe] {
-        let referencing = recipeIngredients.compactMap(\.recipe) + recipesUsingAsLye + recipesUsingAsKOHLye
+        let referencing = recipeIngredients.compactMap(\.recipe)
+            + recipesUsingAsLye + recipesUsingAsKOHLye + recipesUsingAsNeutralizer
         var seen: Set<PersistentIdentifier> = []
         return referencing.filter { seen.insert($0.persistentModelID).inserted }
     }

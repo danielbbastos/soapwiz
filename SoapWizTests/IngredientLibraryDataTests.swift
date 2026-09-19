@@ -141,6 +141,17 @@ struct IngredientLibraryDataTests {
 
     // MARK: - Helpers
 
+    /// `CFMNeutralizer.librarySlug` is a contract with the catalog: the Failor
+    /// neutraliser default resolves by these slugs, so renaming either entry
+    /// would silently stop it from ever resolving.
+    @Test func catalog_ShipsEveryNeutralizerSlug_AsAnAdditive() {
+        for neutralizer in CFMNeutralizer.allCases {
+            let entry = entries.first { $0.slug == neutralizer.librarySlug }
+            #expect(entry != nil, "\(neutralizer.librarySlug) is missing from the library")
+            #expect(entry?.category == IngredientCategory.Name.additives)
+        }
+    }
+
     private func isKebabCase(_ slug: String) -> Bool {
         slug.split(separator: "-", omittingEmptySubsequences: false).allSatisfy { part in
             !part.isEmpty && part.allSatisfy { ("a"..."z").contains($0) || ("0"..."9").contains($0) }

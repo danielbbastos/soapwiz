@@ -16,7 +16,8 @@ extension RecipeFormViewModel {
             useHybrid: useHybrid, kohPercentage: kohPercentage, naohPercentage: naohPercentage,
             kohPurity: kohPurity, naohPurity: naohPurity, isCreamSoap: isCreamSoap,
             useCFM: useCFM, cfmNeutralizer: cfmNeutralizer, lyeIngredient: lyeIngredient,
-            kohLyeIngredient: kohLyeIngredient, selectedCollections: selectedCollections
+            kohLyeIngredient: kohLyeIngredient, neutralizerIngredient: neutralizerIngredient,
+            selectedCollections: selectedCollections
         )
     }
 

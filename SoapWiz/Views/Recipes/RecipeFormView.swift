@@ -16,6 +16,13 @@ struct RecipeFormView: View {
         return #Predicate { $0.category?.name == name && !$0.isHidden }
     }()
 
+    /// Additives the Failor neutraliser default can resolve against. Hidden rows
+    /// are excluded for the same reason the lyes are.
+    private static let additivesPredicate: Predicate<Ingredient> = {
+        let name = IngredientCategory.Name.additives
+        return #Predicate { $0.category?.name == name && !$0.isHidden }
+    }()
+
     var recipe: Recipe?
     var seed: RecipeSeed?
     var importDraft: PreparedRecipeImport?
@@ -24,6 +31,8 @@ struct RecipeFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Query(filter: lyesPredicate)
     private var lyeIngredients: [Ingredient]
+    @Query(filter: additivesPredicate)
+    private var additiveIngredients: [Ingredient]
 
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
@@ -49,6 +58,11 @@ struct RecipeFormView: View {
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
             .task(id: recipe?.persistentModelID) {
+                // Runs again when the form reappears after a pushed picker (lye,
+                // neutraliser) is popped, not only on first appearance. Loading a
+                // second time would overwrite every unsaved edit with the stored
+                // recipe, so the whole setup is done exactly once.
+                guard !hasLoaded else { return }
                 if let recipe { model.load(from: recipe) }
                 // The baseline is taken before any seed or import so a pre-filled
                 // new recipe counts as unsaved work, but after loading an
@@ -57,11 +71,15 @@ struct RecipeFormView: View {
                 if let seed { model.applySeed(seed.ingredients) }
                 if let importDraft { model.applyImport(importDraft) }
                 model.resolveDefaultLyeIngredient(from: lyeIngredients)
+                model.resolveDefaultNeutralizerIngredient(from: additiveIngredients)
                 hasLoaded = true
             }
             .lyeSafetyAcknowledgment(isRequired: hasLoaded && model.makesSoap)
             .onChange(of: lyeIngredients) {
                 model.resolveDefaultLyeIngredient(from: lyeIngredients)
+            }
+            .onChange(of: additiveIngredients) {
+                model.resolveDefaultNeutralizerIngredient(from: additiveIngredients)
             }
             // Cancel is the only way out, so a swipe can't discard the form by
             // accident — the feedback behind SW-106.

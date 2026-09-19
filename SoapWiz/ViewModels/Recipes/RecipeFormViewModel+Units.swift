@@ -24,6 +24,14 @@ extension RecipeFormViewModel {
             .reduce(0) { $0 + $1.amount }
     }
 
+    /// Whether the recipe is measured in oz or lb. Copy that quotes a rule of
+    /// thumb (the Failor neutraliser dose) follows this, so a metric recipe
+    /// reads in grams and kilograms. Decided by the display unit — the oils
+    /// unit in percentage mode — which is the one unit the recipe is shown in.
+    var usesImperialUnits: Bool {
+        ["oz", "lb"].contains(displayWeightUnit)
+    }
+
     /// Default unit for a mass row.
     ///
     /// On a soap recipe additives are conventionally entered as a weight, so

@@ -81,6 +81,13 @@ final class Recipe {
     /// declared on `Ingredient.recipesUsingAsKOHLye`.
     var kohLyeIngredient: Ingredient?
 
+    /// The ingredient the Catherine Failor neutraliser dose is drawn from (borax
+    /// or boric acid), so the calculated dose can be costed and consumed like the
+    /// lye. Resolved the same way `lyeIngredient` is, defaulting to the library
+    /// entry matching `cfmNeutralizer`. Inverse and `.nullify` delete rule are
+    /// declared on `Ingredient.recipesUsingAsNeutralizer`.
+    var neutralizerIngredient: Ingredient?
+
     /// Optional for CloudKit; read and write through `ingredients`. Neither name
     /// is usable in `#Predicate` — see `ModelContainerFactory.schema`.
     @Relationship(deleteRule: .cascade, originalName: "ingredients", inverse: \RecipeIngredient.recipe)
