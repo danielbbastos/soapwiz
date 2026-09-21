@@ -308,6 +308,20 @@ struct SoapMethodTests {
         #expect(glycerineDraft(model) == nil)                  // stays gone
     }
 
+    @Test func setCreamSoap_Off_KeepsManuallyReAddedGlycerine() throws {
+        let model = makeLiquidModel()
+        let glycerine = Ingredient(name: "Glycerin", unit: "g")
+        model.setCreamSoap(true, from: [glycerine])       // auto-added at the suggested amount
+        let amount = try #require(glycerineDraft(model)).amount
+        model.toggleExtra(glycerine, amount: amount)      // user removes it via the extras row
+        model.toggleExtra(glycerine, amount: amount)      // then re-adds it, same amount
+
+        model.setCreamSoap(false, from: [glycerine])      // turning the method off
+
+        // It's the user's now, not our auto-add, so it must survive.
+        #expect(glycerineDraft(model) != nil)
+    }
+
     @Test func setCreamSoap_On_DoesNotDuplicateUserGlycerine() {
         let model = makeLiquidModel()
         let glycerine = Ingredient(name: "Glycerin", unit: "g")

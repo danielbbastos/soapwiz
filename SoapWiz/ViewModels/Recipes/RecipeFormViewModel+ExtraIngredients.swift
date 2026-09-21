@@ -43,6 +43,14 @@ extension RecipeFormViewModel {
         } else {
             additiveDrafts.append(IngredientAmountDraft(ingredient: ingredient, amount: amount, unit: displayWeightUnit))
         }
+
+        // Any manual toggle of the cream-soap glycerine hands ownership to the
+        // user, so switching the method off no longer treats it as an auto-add to
+        // silently remove — even when they re-added it at the suggested amount.
+        if ingredientNamesMatch(LyeCalculator.creamSoapGlycerineLabel, ingredient.name) {
+            autoAddedGlycerineAmount = nil
+            creamSoapGlycerinePending = false
+        }
     }
 
     /// Toggles the cream-soap method. Beyond the flag, turning it on drops the
