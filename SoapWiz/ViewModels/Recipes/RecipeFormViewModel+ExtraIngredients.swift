@@ -53,11 +53,11 @@ extension RecipeFormViewModel {
     /// the calculated amounts either way. Turning the method off takes that same
     /// glycerine row back out, but only while the user hasn't changed its amount
     /// — an edit makes it theirs to keep.
-    func setCreamSoap(_ on: Bool, from inventory: [Ingredient]) {
-        guard on != isCreamSoap else { return }
-        isCreamSoap = on
+    func setCreamSoap(_ isOn: Bool, from inventory: [Ingredient]) {
+        guard isOn != isCreamSoap else { return }
+        isCreamSoap = isOn
 
-        if on {
+        if isOn {
             creamSoapGlycerinePending = true
             reconcileCreamSoapGlycerine(from: inventory)
         } else {

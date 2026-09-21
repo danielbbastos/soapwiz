@@ -175,11 +175,11 @@ struct SoapMethodTests {
 
     /// Dilution water is advisory: shown, but never folded into the batch total.
     @Test func creamSoap_AdvisoryWater_DoesNotChangeBatchTotal() throws {
-        let off = makeLiquidModel()
-        let on = makeLiquidModel()
-        on.isCreamSoap = true
-        let offTotal = try #require(rowWeight(off, containing: "Batch total"))
-        let onTotal = try #require(rowWeight(on, containing: "Batch total"))
+        let offModel = makeLiquidModel()
+        let onModel = makeLiquidModel()
+        onModel.isCreamSoap = true
+        let offTotal = try #require(rowWeight(offModel, containing: "Batch total"))
+        let onTotal = try #require(rowWeight(onModel, containing: "Batch total"))
         #expect(isClose(onTotal, offTotal))
     }
 
