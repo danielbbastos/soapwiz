@@ -97,6 +97,34 @@ struct RecipeTextSettingsParserTests {
         #expect(RecipeTextSettingsParser.lyeType(in: "Sodium Lactate 15 g") == nil)
     }
 
+    // MARK: - Failor neutraliser
+
+    @Test(arguments: [
+        ("Borax — 25 g", CFMNeutralizer.borax),
+        ("dissolve the sodium borate in water", CFMNeutralizer.borax),
+        ("Boric Acid 20 g", CFMNeutralizer.boricAcid),
+        ("boric acid for the neutraliser", CFMNeutralizer.boricAcid),
+        ("neutralise the excess lye once cooked", CFMNeutralizer.boricAcid),
+        ("neutralizing the excess lye at the end", CFMNeutralizer.boricAcid),
+        ("made with the Catherine Failor method", CFMNeutralizer.boricAcid),
+        ("Failor's liquid soap", CFMNeutralizer.boricAcid)
+    ])
+    func cfmNeutralizer_NamedOrMethodMentioned_IsRead(_ text: String, _ expected: CFMNeutralizer) {
+        #expect(RecipeTextSettingsParser.cfmNeutralizer(in: text) == expected)
+    }
+
+    @Test func cfmNeutralizer_BoricAcidTakesPrecedenceOverBarePercentBorax() {
+        #expect(RecipeTextSettingsParser.cfmNeutralizer(in: "boric acid and a pinch of borax") == .boricAcid)
+    }
+
+    @Test func cfmNeutralizer_NoneMentioned_IsNil() {
+        #expect(RecipeTextSettingsParser.cfmNeutralizer(in: "Olive Oil 600 g, Coconut Oil 300 g") == nil)
+    }
+
+    @Test func cfmNeutralizer_BorageOil_IsNotBorax() {
+        #expect(RecipeTextSettingsParser.cfmNeutralizer(in: "Borage Oil 20 g") == nil)
+    }
+
     // MARK: - Proximity
 
     @Test func appears_NumberBesideKeyword_IsTrue() {

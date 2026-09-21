@@ -79,6 +79,14 @@ struct RecipeImportDraft: Equatable {
     var waterParts: Double?
     var fragrancePercentage: Double?
 
+    /// The Catherine Failor neutraliser this import uses, when it names borax or
+    /// boric acid in a liquid or cream soap. `nil` for the common case of a
+    /// recipe that doesn't use the method. Set only by `RecipeImportDraftChecker`,
+    /// which gates it on a KOH lye and pulls the neutraliser out of the rows so
+    /// it isn't costed twice; the recipe form reads it into `useCFM` and
+    /// `cfmNeutralizer`.
+    var cfmNeutralizer: CFMNeutralizer?
+
     /// Whether the source said anything about saponifying at all.
     ///
     /// The extraction schema has no notion of a recipe kind, so this is the

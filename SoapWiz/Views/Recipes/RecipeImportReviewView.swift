@@ -56,6 +56,12 @@ struct RecipeImportReviewView: View {
             if let fragrance = draftSummary.fragrancePercentage {
                 LabeledContent("Fragrance", value: "\(PercentageFormatter.string(fragrance))%")
             }
+            if let neutralizer = draftSummary.cfmNeutralizer {
+                Text("\(neutralizer.displayName) becomes the Catherine Failor neutraliser. The app "
+                     + "doses it from the soap weight, so it isn't added as an ingredient here.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
             if !draftSummary.statesLyeSettings {
                 Text("No lye settings found. The recipe opens with the form's defaults, "
                      + "which you can change — or turn off soap making entirely in Config.")

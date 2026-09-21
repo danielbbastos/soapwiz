@@ -140,6 +140,10 @@ extension RecipeFormViewModel {
         if let fragrancePercentage = draft.fragrancePercentage {
             self.fragrancePercentage = fragrancePercentage
         }
+        if let cfmNeutralizer = draft.cfmNeutralizer {
+            useCFM = true
+            self.cfmNeutralizer = cfmNeutralizer
+        }
     }
 
     private func importedDescription(

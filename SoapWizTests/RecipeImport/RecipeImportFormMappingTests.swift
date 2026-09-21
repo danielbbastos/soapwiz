@@ -87,6 +87,20 @@ struct RecipeImportFormMappingTests: RecipeImportTestHelpers {
         #expect(model.fragrancePercentage == defaults.fragrancePercentage)
     }
 
+    @Test func applyImport_FailorNeutralizer_TurnsOnCFM() {
+        let model = apply(.mock(lyeType: "KOH", cfmNeutralizer: .borax))
+
+        #expect(model.useCFM)
+        #expect(model.cfmNeutralizer == .borax)
+    }
+
+    @Test func applyImport_NoFailorNeutralizer_LeavesCFMAtTheDefault() {
+        let defaults = RecipeFormViewModel()
+        let model = apply(.mock(lyeType: "KOH", cfmNeutralizer: nil))
+
+        #expect(model.useCFM == defaults.useCFM)
+    }
+
     @Test func applyImport_CopiesTheName() {
         let model = apply(.mock(name: "Grandmother's Castile"))
         #expect(model.name == "Grandmother's Castile")

@@ -220,10 +220,18 @@ struct RecipeCostSection: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
+                        // Always render the price cell, with a dash when the
+                        // ingredient has no price, so the amount stays in its
+                        // own column instead of sliding into the price slot.
                         if row.cost > 0 {
                             Text(formatCurrency(row.cost))
                                 .font(.footnote)
                                 .monospacedDigit()
+                                .frame(width: 64, alignment: .trailing)
+                        } else {
+                            Text("—")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
                                 .frame(width: 64, alignment: .trailing)
                         }
                     }

@@ -79,7 +79,8 @@ struct RecipeCostCalculator {
         return [IngredientProductBreakdown(
             ingredient: ingredient,
             ingredientAmount: solid,
-            cost: cost(ofBatchAmount: solid, for: ingredient)
+            cost: cost(ofBatchAmount: solid, for: ingredient),
+            isNeutralizer: true
         )]
     }
 
@@ -189,7 +190,10 @@ struct RecipeCostCalculator {
                     cost: $0.cost * factor,
                     // Carried through, or a scaled count would render as a
                     // weight in the per-product breakdown.
-                    isCountBased: $0.isCountBased
+                    isCountBased: $0.isCountBased,
+                    // Carried through so a per-product breakdown still groups
+                    // the neutraliser under its own header.
+                    isNeutralizer: $0.isNeutralizer
                 )
             }
         }

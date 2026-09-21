@@ -17,6 +17,9 @@ enum ImportedIngredientName {
     static let potassiumLye = #/\b(?:koh|potassium\h+hydroxide|caustic\h+potash)\b/#.ignoresCase()
     private static let lyeWord = #/\blye\b/#.ignoresCase()
 
+    static let boricAcid = #/\bboric\h+acid\b/#.ignoresCase()
+    static let borax = #/\b(?:borax|sodium\h+borate)\b/#.ignoresCase()
+
     private static let fragranceWording = #/\b(?:(?:essential|fragrance)\h+oils?|eos?|fos?|absolutes?)\b/#.ignoresCase()
     private static let oilWording = #/\b(?:oils?|butters?|wax(?:es)?|tallow|lard)\b/#.ignoresCase()
     private static let additiveWords: Set<String> = [
@@ -47,6 +50,21 @@ enum ImportedIngredientName {
     /// and other waters that are really additives don't count.
     static func isWater(_ name: String) -> Bool {
         waterNames.contains(withoutParentheticals(name).lookupKey)
+    }
+
+    /// The Catherine Failor neutraliser a name is, or `nil` when it is neither
+    /// borax nor boric acid.
+    ///
+    /// In a liquid or cream soap these mop up the method's excess lye and belong
+    /// on the recipe as a setting rather than a row; in a solid bar they are
+    /// ordinary additives. The caller decides which by the recipe's lye and uses
+    /// this only to pull the row out once it has. Boric acid is tested first so
+    /// "boric acid" is never taken for a bare "borax".
+    static func failorNeutralizer(named name: String) -> CFMNeutralizer? {
+        let stripped = withoutParentheticals(name)
+        if stripped.contains(boricAcid) { return .boricAcid }
+        if stripped.contains(borax) { return .borax }
+        return nil
     }
 
     /// A lye setting reported as though it were an ingredient, such as

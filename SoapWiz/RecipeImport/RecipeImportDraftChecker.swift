@@ -41,7 +41,42 @@ enum RecipeImportDraftChecker {
             checked.fragrancePercentage, keyword: RecipeTextSettingsParser.fragranceKeyword, in: text, requiringPercent: true
         )
         checked.lyeType = stated.lyeType ?? checked.lyeType ?? lyeTypeFromRows
+
+        let neutralizer = failorNeutralizer(for: checked, statedInText: stated.cfmNeutralizer)
+        checked.cfmNeutralizer = neutralizer
+        if let neutralizer {
+            // Only the chosen neutraliser's own rows are pulled out. A recipe
+            // that named a second, different one — borax alongside boric acid —
+            // keeps it as an ordinary additive rather than losing it silently.
+            func isChosenNeutralizer(_ row: ImportedIngredient) -> Bool {
+                ImportedIngredientName.failorNeutralizer(named: row.name) == neutralizer
+            }
+            checked.oils.removeAll(where: isChosenNeutralizer)
+            checked.additives.removeAll(where: isChosenNeutralizer)
+            checked.fragrances.removeAll(where: isChosenNeutralizer)
+        }
         return checked
+    }
+
+    /// The Catherine Failor neutraliser this import uses, or `nil`.
+    ///
+    /// The method neutralises the deliberate excess lye of a non-solid soap, so
+    /// it is read only into a KOH recipe — the only non-solid an import can
+    /// express, since a draft has no dual-lye (cream) form. In a solid bar — a
+    /// NaOH recipe, or one that names no lye and so defaults to one — borax and
+    /// boric acid are ordinary additives and their rows stay. A neutraliser
+    /// named in a row is trusted over one merely inferred from a method mention
+    /// in the text.
+    private static func failorNeutralizer(
+        for draft: RecipeImportDraft,
+        statedInText: CFMNeutralizer?
+    ) -> CFMNeutralizer? {
+        guard draft.lyeType == "KOH" else { return nil }
+        let fromRows = (draft.oils + draft.additives + draft.fragrances)
+            .lazy
+            .compactMap { ImportedIngredientName.failorNeutralizer(named: $0.name) }
+            .first
+        return fromRows ?? statedInText
     }
 
     /// The model's value for a setting the parser didn't find, kept only when
