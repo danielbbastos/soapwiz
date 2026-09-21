@@ -187,11 +187,19 @@ struct RecipeProductCardView: View {
                     .font(.caption)
                     .foregroundStyle(Color.secondary)
             }
-            if cost > 0, let costStr = Self.currencyFormatter.string(from: NSNumber(value: cost)) {
-                Text(costStr)
+            if cost > 0 {
+                Text(Self.currencyFormatter.string(from: NSNumber(value: cost)) ?? "")
                     .font(.caption)
                     .foregroundStyle(style)
                     .fontWeight(weight)
+                    .frame(width: 64, alignment: .trailing)
+            } else if !emphasized {
+                // A price-less ingredient row keeps its amount in the amount
+                // column and shows a dash where its price would be. Collapsed
+                // group summaries (emphasized) keep their current look.
+                Text("—")
+                    .font(.caption)
+                    .foregroundStyle(Color.secondary)
                     .frame(width: 64, alignment: .trailing)
             }
         }

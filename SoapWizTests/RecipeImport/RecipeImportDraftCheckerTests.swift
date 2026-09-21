@@ -226,6 +226,78 @@ struct RecipeImportDraftCheckerTests {
 
         #expect(!checked.hasAnyIngredient)
     }
+
+    // MARK: - Failor neutraliser
+
+    @Test func checked_LiquidSoapWithBorax_MapsToFailorAndDropsTheRow() {
+        let draft = RecipeImportDraft.mock(
+            oils: [ImportedIngredient(name: "Coconut Oil", amount: 40, unit: "%"),
+                   ImportedIngredient(name: "Olive Oil", amount: 60, unit: "%")],
+            additives: [ImportedIngredient(name: "Borax", amount: 25, unit: "g")],
+            lyeType: "KOH", superFat: nil, waterParts: nil, fragrancePercentage: nil
+        )
+        let text = "KOH liquid soap. Coconut Oil 40%, Olive Oil 60%. Borax 25 g to neutralise."
+
+        let checked = RecipeImportDraftChecker.checked(draft, against: text)
+
+        #expect(checked.cfmNeutralizer == .borax)
+        #expect(checked.additives.isEmpty)
+    }
+
+    @Test func checked_LiquidSoapWithBoricAcid_MapsToBoricAcid() {
+        let draft = RecipeImportDraft.mock(
+            additives: [ImportedIngredient(name: "Boric Acid", amount: 20, unit: "g")],
+            lyeType: "KOH", superFat: nil, waterParts: nil, fragrancePercentage: nil
+        )
+        let text = "KOH liquid soap. Olive Oil 70, Coconut Oil 30. Boric Acid 20 g."
+
+        let checked = RecipeImportDraftChecker.checked(draft, against: text)
+
+        #expect(checked.cfmNeutralizer == .boricAcid)
+        #expect(checked.additives.isEmpty)
+    }
+
+    @Test func checked_SolidSoapWithBorax_KeepsBoraxAsAnAdditive() {
+        let draft = RecipeImportDraft.mock(
+            additives: [ImportedIngredient(name: "Borax", amount: 25, unit: "g")],
+            lyeType: "NaOH", superFat: nil, waterParts: nil, fragrancePercentage: nil
+        )
+        let text = "NaOH bar soap. Olive Oil 70, Coconut Oil 30. Borax 25 g as a water softener."
+
+        let checked = RecipeImportDraftChecker.checked(draft, against: text)
+
+        #expect(checked.cfmNeutralizer == nil)
+        #expect(checked.additives.map(\.name) == ["Borax"])
+    }
+
+    @Test func checked_LiquidSoapWithTwoNeutralizers_MapsOneAndKeepsTheOther() {
+        let draft = RecipeImportDraft.mock(
+            additives: [ImportedIngredient(name: "Borax", amount: 25, unit: "g"),
+                        ImportedIngredient(name: "Boric Acid", amount: 20, unit: "g")],
+            lyeType: "KOH", superFat: nil, waterParts: nil, fragrancePercentage: nil
+        )
+        let text = "KOH liquid soap. Olive Oil 70, Coconut Oil 30. Borax 25 g and Boric Acid 20 g."
+
+        let checked = RecipeImportDraftChecker.checked(draft, against: text)
+
+        // The first-found neutraliser becomes the method; the other is not
+        // silently dropped — it stays as an ordinary additive.
+        #expect(checked.cfmNeutralizer == .borax)
+        #expect(checked.additives.map(\.name) == ["Boric Acid"])
+    }
+
+    @Test func checked_NoLyeStatedWithBorax_KeepsBoraxAsAnAdditive() {
+        let draft = RecipeImportDraft.mock(
+            additives: [ImportedIngredient(name: "Borax", amount: 25, unit: "g")],
+            lyeType: nil, superFat: nil, waterParts: nil, fragrancePercentage: nil
+        )
+        let text = "Olive Oil 70, Coconut Oil 30, Borax 25 g."
+
+        let checked = RecipeImportDraftChecker.checked(draft, against: text)
+
+        #expect(checked.cfmNeutralizer == nil)
+        #expect(checked.additives.map(\.name) == ["Borax"])
+    }
 }
 
 /// The recipes pasted on device while testing SW-147.

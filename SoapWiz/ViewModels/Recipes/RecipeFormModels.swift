@@ -216,6 +216,12 @@ struct IngredientProductBreakdown {
     /// are priced and deducted like any other, but are left out of every weight
     /// total: adding "1" to a gram figure would be meaningless.
     var isCountBased: Bool = false
+
+    /// Whether this row is the Catherine Failor neutraliser. It rides in the
+    /// additives array so it costs, scales, and deducts like any other solid,
+    /// but the breakdown groups it under its own "Neutralizer" header rather
+    /// than among the additives — it is a method's neutraliser, not one.
+    var isNeutralizer: Bool = false
 }
 
 struct BreakdownAmountDisplay {

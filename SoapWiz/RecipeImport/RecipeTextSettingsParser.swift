@@ -6,6 +6,7 @@ struct RecipeTextSettings: Equatable {
     var waterParts: Double?
     var fragrancePercentage: Double?
     var lyeType: String?
+    var cfmNeutralizer: CFMNeutralizer?
 }
 
 /// Reads superfat, water ratio, fragrance load and lye type from the phrases
@@ -31,7 +32,8 @@ enum RecipeTextSettingsParser {
             superFat: superFat(in: text),
             waterParts: waterParts(in: text),
             fragrancePercentage: fragrancePercentage(in: text),
-            lyeType: lyeType(in: text)
+            lyeType: lyeType(in: text),
+            cfmNeutralizer: cfmNeutralizer(in: text)
         )
     }
 
@@ -112,6 +114,26 @@ enum RecipeTextSettingsParser {
         case (false, true): return "KOH"
         case (true, true), (false, false): return nil
         }
+    }
+
+    // MARK: - Failor neutraliser
+
+    /// A number stands beside the neutraliser only in the ingredient list; the
+    /// method is a setting the app doses itself, so a naming anywhere in the
+    /// text is enough. "Failor" (in "Catherine Failor", "Failor method" or the
+    /// possessive "Failor's") and "neutralise the excess lye" both name the
+    /// method without naming its neutraliser, and fall back to boric acid, the
+    /// app's default. No trailing boundary after "failor": Unicode word
+    /// segmentation keeps a possessive apostrophe inside the word, so `failor\b`
+    /// would miss "Failor's". Boric acid is tested before borax through
+    /// `ImportedIngredientName.failorNeutralizer`.
+    static let failorMethodKeyword =
+        #/\bfailor|\bneutrali[sz](?:e[sd]?|ing)\h+(?:the\h+)?excess\h+lye\b/#.ignoresCase()
+
+    static func cfmNeutralizer(in text: String) -> CFMNeutralizer? {
+        if text.contains(ImportedIngredientName.boricAcid) { return .boricAcid }
+        if text.contains(ImportedIngredientName.borax) { return .borax }
+        return text.contains(failorMethodKeyword) ? .boricAcid : nil
     }
 
     // MARK: - Proximity

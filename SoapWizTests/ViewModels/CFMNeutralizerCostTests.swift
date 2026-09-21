@@ -68,6 +68,29 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         #expect(isClose(row?.cost, 14.29 * 0.05, tol: 0.01))
     }
 
+    @Test func costBreakdown_ResolvedNeutralizer_GroupsUnderNeutralizerNotAdditives() {
+        let model = makeLiquidModel()
+        let boric = boricAcid(pricePerUnit: 0.05)
+        model.neutralizerIngredient = boric
+
+        let groups = BreakdownGroupKey.groups(of: model.wholeBatchBreakdown)
+        let neutralizerGroup = groups.first { $0.key == .neutralizer }
+        #expect(neutralizerGroup?.rows.count == 1)
+        #expect(neutralizerGroup?.rows.first?.ingredient.persistentModelID == boric.persistentModelID)
+        // The neutraliser is not also listed among the ordinary additives.
+        #expect(groups.first { $0.key == .additives } == nil)
+    }
+
+    @Test func costBreakdown_NeutralizerFlag_SurvivesPerProductScaling() {
+        let model = makeLiquidModel()
+        model.neutralizerIngredient = boricAcid(pricePerUnit: 0.05)
+
+        let product = RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue)
+        let scaled = model.breakdownAndCost(for: product)
+        #expect(scaled.additives.contains { $0.isNeutralizer })
+        #expect(BreakdownGroupKey.groups(of: scaled).contains { $0.key == .neutralizer })
+    }
+
     @Test func costBreakdown_NoNeutralizer_NoSolidRow() {
         let model = makeLiquidModel()
         // Dose is still shown in the amounts table, but nothing is costed.

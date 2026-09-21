@@ -105,7 +105,8 @@ extension RecipeImportDraft {
         lyeType: String? = "NaOH",
         superFat: Double? = 5,
         waterParts: Double? = 2,
-        fragrancePercentage: Double? = 3
+        fragrancePercentage: Double? = 3,
+        cfmNeutralizer: CFMNeutralizer? = nil
     ) -> RecipeImportDraft {
         RecipeImportDraft(
             name: name,
@@ -118,7 +119,8 @@ extension RecipeImportDraft {
             lyeType: lyeType,
             superFat: superFat,
             waterParts: waterParts,
-            fragrancePercentage: fragrancePercentage
+            fragrancePercentage: fragrancePercentage,
+            cfmNeutralizer: cfmNeutralizer
         )
     }
 }
