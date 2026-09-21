@@ -9,20 +9,10 @@ struct RecipeExtraIngredientsSection: View {
     @Bindable var model: RecipeFormViewModel
     @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
     @State private var expanded = false
-    @State private var creamExpanded = true
     @State private var selectedSectionAPct = 1
 
     @ViewBuilder
     var body: some View {
-        if let creamRows = model.creamSoapAdditions {
-            Section(header: CollapsibleSectionHeader(title: "Cream Soap Additions", expanded: $creamExpanded)
-                .expandingSectionHeader(RecipeFormSection.creamSoapAdditions, expanded: creamExpanded)) {
-                if creamExpanded {
-                    extraSectionB(rows: creamRows)
-                        .expandingSectionEnd(RecipeFormSection.creamSoapAdditions)
-                }
-            }
-        }
         if let data = model.extraIngredientData {
             Section(header: CollapsibleSectionHeader(title: "Extra Ingredients", expanded: $expanded)
                 .expandingSectionHeader(RecipeFormSection.extraIngredients, expanded: expanded)) {
@@ -117,8 +107,10 @@ struct RecipeExtraIngredientsSection: View {
 
     private func extraSectionB(rows: [ExtraSectionBRow]) -> some View {
         VStack(spacing: 0) {
-            ForEach(rows) { row in
-                Divider().padding(.leading, 16)
+            // The Form already draws a separator above this block, so the first
+            // row skips its own divider to avoid a doubled line.
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                if index > 0 { Divider().padding(.leading, 16) }
                 extraSectionBRow(row)
                 if let naoh = row.naohLye {
                     extraSectionBSubRow("↳ Extra NaOH", value: naoh)
@@ -136,9 +128,16 @@ struct RecipeExtraIngredientsSection: View {
         return extraRow(ingredient: match, amount: row.minValue) {
             HStack(spacing: 8) {
                 extraToggleIcon(label: row.label, ingredient: match)
-                Text(row.label)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(row.label)
+                        .lineLimit(1)
+                    if let note = row.note {
+                        Text(note)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 if let max = row.maxValue {
                     Text("\(formatWeight(row.minValue)) – \(formatWeight(max))")
                         .monospacedDigit()

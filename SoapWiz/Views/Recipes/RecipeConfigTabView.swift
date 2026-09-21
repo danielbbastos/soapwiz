@@ -22,6 +22,10 @@ struct RecipeConfigTabView: View {
 
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
     @Query(filter: RecipeConfigTabView.additivesPredicate) private var additiveIngredients: [Ingredient]
+    /// All ingredients, unfiltered — the cream-soap toggle resolves its glycerine
+    /// against the same set the extras table matches, so an ingredient the user
+    /// can see there is the one it auto-adds, whatever category it sits in.
+    @Query(sort: \Ingredient.name) private var allIngredients: [Ingredient]
 
     @State private var showMoldCalculator = false
     @State private var showNewCollection = false
@@ -173,7 +177,18 @@ struct RecipeConfigTabView: View {
 
     private var soapMethodSection: some View {
         Section {
-            Toggle("Cream soap additions", isOn: $model.isCreamSoap)
+            // The info icon is a sibling of the toggle rather than part of its
+            // label, which would swallow the tap.
+            HStack {
+                Text("Cream soap method")
+                InfoPopoverIcon(title: "Cream soap method", text: creamSoapExplanation)
+                Spacer()
+                Toggle("Cream soap method", isOn: Binding(
+                    get: { model.isCreamSoap },
+                    set: { model.setCreamSoap($0, from: allIngredients) }
+                ))
+                .labelsHidden()
+            }
             // The Catherine Failor method only makes sense for non-solid soaps
             // (single KOH or dual lye), so it's hidden for a solid NaOH bar.
             if model.soapType != .solid {
@@ -316,6 +331,23 @@ struct RecipeConfigTabView: View {
             Text("%")
                 .foregroundStyle(.secondary)
         }
+    }
+
+    /// Explains what the toggle surfaces. The two fractions are the same constants
+    /// `LyeCalculator` scales the amounts by, so the quoted percentages can't drift
+    /// from the numbers shown in the tables.
+    private var creamSoapExplanation: String {
+        let water = LyeCalculator.creamSoapWaterFraction
+            .formatted(.percent.precision(.fractionLength(0...2)))
+        let glycerine = LyeCalculator.creamSoapGlycerineFraction
+            .formatted(.percent.precision(.fractionLength(0...2)))
+        return "Cream soap is a soft, whippable soap. Turning this on adds the extra "
+            + "water and glycerine it needs, scaled to the oil weight and whipped in after "
+            + "the cook to dilute.\n\n"
+            + "The additional water (\(water) of the oil weight) appears in the calculated "
+            + "amounts — it's free, so it's never costed. Glycerine (\(glycerine)) drops into "
+            + "your ingredients as a costed extra when you have it in stock; otherwise it's "
+            + "suggested under Extra Ingredients."
     }
 
     /// Liquid-soap method described in Catherine Failor's *Making Natural Liquid

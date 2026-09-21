@@ -258,8 +258,21 @@ struct CalculatedAmountRow: Identifiable {
     let id = UUID()
     let label: String
     let weight: Double
-    let pct: Double
+    /// Share of the batch total, or `nil` for an advisory row that sits outside
+    /// the total (the cream-soap extra water) and so shows no percentage.
+    let pct: Double?
     let isSummary: Bool
+    /// Optional secondary caption, e.g. the cream-soap "add after saponification"
+    /// note on the advisory extra-water row.
+    let note: String?
+
+    init(label: String, weight: Double, pct: Double?, isSummary: Bool, note: String? = nil) {
+        self.label = label
+        self.weight = weight
+        self.pct = pct
+        self.isSummary = isSummary
+        self.note = note
+    }
 }
 
 /// The three suggested-amount columns (1% / 2% / 3% of oils) for an extras row,
@@ -297,14 +310,19 @@ struct ExtraSectionBRow: Identifiable {
     let maxValue: Double?
     let naohLye: Double?
     let kohLye: Double?
+    /// Optional secondary caption shown under the label, e.g. the cream-soap
+    /// glycerine "add after saponification" note. Kept out of `label` so
+    /// inventory matching still works against the plain ingredient name.
+    let note: String?
 
     init(label: String, minValue: Double, maxValue: Double? = nil,
-         naohLye: Double? = nil, kohLye: Double? = nil) {
+         naohLye: Double? = nil, kohLye: Double? = nil, note: String? = nil) {
         self.label = label
         self.minValue = minValue
         self.maxValue = maxValue
         self.naohLye = naohLye
         self.kohLye = kohLye
+        self.note = note
     }
 }
 

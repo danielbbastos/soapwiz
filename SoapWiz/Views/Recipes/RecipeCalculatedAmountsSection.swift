@@ -20,7 +20,7 @@ struct RecipeCalculatedAmountsSection: View {
                         header
                         ForEach(rows) { row in
                             Divider().padding(.leading, row.isSummary ? 0 : 16)
-                            amountRow(row.label, weight: row.weight, pct: row.pct, summary: row.isSummary)
+                            amountRow(row.label, weight: row.weight, pct: row.pct, summary: row.isSummary, note: row.note)
                         }
                     }
                     .listRowInsets(EdgeInsets())
@@ -47,15 +47,22 @@ struct RecipeCalculatedAmountsSection: View {
         .background(Color.cardBackground)
     }
 
-    private func amountRow(_ label: String, weight: Double, pct: Double, summary: Bool) -> some View {
+    private func amountRow(_ label: String, weight: Double, pct: Double?, summary: Bool, note: String? = nil) -> some View {
         HStack(spacing: 8) {
-            Text(label)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .lineLimit(1)
+                if let note {
+                    Text(note)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             Text(formatWeight(weight))
                 .frame(width: 90, alignment: .trailing)
                 .monospacedDigit()
-            Text(formatPct(pct))
+            Text(pct.map(formatPct) ?? "")
                 .frame(width: 64, alignment: .trailing)
                 .monospacedDigit()
         }

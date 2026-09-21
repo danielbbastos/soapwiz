@@ -27,10 +27,25 @@ struct LyeCalculator {
     let displayWeightUnit: String
     let useCFM: Bool
     let cfmNeutralizer: CFMNeutralizer
+    let isCreamSoap: Bool
 
     /// Whether the recipe saponifies. False for a general recipe, which zeroes
     /// every lye-derived figure below.
     let producesLye: Bool
+
+    /// Cream-soap recommended additions, scaled to total oil weight: dilution
+    /// water and glycerine whipped in after the cook. Advisory only — water is
+    /// free and never costed; glycerine is offered as a normal additive.
+    static let creamSoapWaterFraction = 0.792
+    static let creamSoapGlycerineFraction = 0.0625
+
+    /// The extras-table label for the cream-soap glycerine suggestion. Shared so
+    /// the row the toggle auto-adds is matched by the exact same string it shows.
+    static let creamSoapGlycerineLabel = "Glycerine for Cream Soap"
+
+    /// Shared caption on both cream-soap additions, so the water row and the
+    /// glycerine suggestion carry the same timing warning.
+    static let creamSoapAdditionNote = "Add after saponification, for dilution"
 
     /// Fraction of the soap weight dosed as the Failor neutraliser solution
     /// (¾ oz per lb of soap = 0.75/16).
@@ -344,6 +359,19 @@ struct LyeCalculator {
             weight: totalWater, pct: batchPct(totalWater), isSummary: false
         ))
         rows.append(CalculatedAmountRow(label: "Batch total", weight: batchTotal, pct: 100, isSummary: true))
+
+        // Cream-soap dilution water, whipped in after the cook. It sits *below*
+        // the batch total, uncosted and with no percentage, because it isn't part
+        // of the saponification batch — so the rows above still sum to the total.
+        if isCreamSoap {
+            let extraWater = totalOil * Self.creamSoapWaterFraction
+            rows.append(CalculatedAmountRow(
+                label: "Additional Water for Cream Soap",
+                weight: extraWater, pct: nil, isSummary: false,
+                note: Self.creamSoapAdditionNote
+            ))
+        }
+
         return rows
     }
 }

@@ -327,8 +327,15 @@ struct RecipeDetailView: View {
                 unitTogglePicker
                 ForEach(rows) { row in
                     HStack {
-                        Text(row.label)
-                            .fontWeight(row.isSummary ? .semibold : .regular)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(row.label)
+                                .fontWeight(row.isSummary ? .semibold : .regular)
+                            if let note = row.note {
+                                Text(note)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                         Spacer()
                         Text(weightText(row.weight))
                             .foregroundStyle(row.isSummary ? .primary : .secondary)

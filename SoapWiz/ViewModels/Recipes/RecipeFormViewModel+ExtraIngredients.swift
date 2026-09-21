@@ -1,8 +1,8 @@
 import Foundation
 import SwiftData
 
-/// The extras table — suggested additions (citric acid, sodium lactate, cream-soap
-/// water and glycerine) and the inventory matching that lets a suggestion be
+/// The extras table — suggested additions (citric acid, sodium lactate, and
+/// cream-soap glycerine) and the inventory matching that lets a suggestion be
 /// toggled straight into the recipe's additives.
 extension RecipeFormViewModel {
     private var extrasBuilder: RecipeExtrasBuilder {
@@ -17,12 +17,6 @@ extension RecipeFormViewModel {
 
     var extraIngredientData: (sectionA: [ExtraSectionARow], sectionB: [ExtraSectionBRow])? {
         extrasBuilder.extraIngredientData
-    }
-
-    /// Cream-soap recommended additions (extra water, glycerine), or `nil` when
-    /// cream soap is off. Shown above the standard extras table.
-    var creamSoapAdditions: [ExtraSectionBRow]? {
-        extrasBuilder.creamSoapAdditions
     }
 
     /// Inventory ingredient matching an extras-table label, by case-insensitive
@@ -49,5 +43,63 @@ extension RecipeFormViewModel {
         } else {
             additiveDrafts.append(IngredientAmountDraft(ingredient: ingredient, amount: amount, unit: displayWeightUnit))
         }
+    }
+
+    /// Toggles the cream-soap method. Beyond the flag, turning it on drops the
+    /// recommended glycerine straight into the additives so it is costed and
+    /// deducted — when the inventory has a glycerine to attach it to and the
+    /// recipe already has oils to size the dose; otherwise the add waits (see
+    /// `reconcileCreamSoapGlycerine`). The extra dilution water rides along in
+    /// the calculated amounts either way. Turning the method off takes that same
+    /// glycerine row back out, but only while the user hasn't changed its amount
+    /// — an edit makes it theirs to keep.
+    func setCreamSoap(_ on: Bool, from inventory: [Ingredient]) {
+        guard on != isCreamSoap else { return }
+        isCreamSoap = on
+
+        if on {
+            creamSoapGlycerinePending = true
+            reconcileCreamSoapGlycerine(from: inventory)
+        } else {
+            creamSoapGlycerinePending = false
+            if let auto = autoAddedGlycerineAmount,
+               let glycerine = matchedExtraIngredient(label: LyeCalculator.creamSoapGlycerineLabel, in: inventory),
+               let idx = additiveDrafts.firstIndex(where: {
+                   $0.ingredient.persistentModelID == glycerine.persistentModelID && $0.amount == auto
+               }) {
+                additiveDrafts.remove(at: idx)
+            }
+            autoAddedGlycerineAmount = nil
+        }
+    }
+
+    /// Completes a pending cream-soap glycerine add once it's actually possible —
+    /// the inventory has a glycerine to cost it against and the recipe has oils to
+    /// size the dose. Called both from `setCreamSoap` and whenever oils change, so
+    /// toggling the method on before adding oils still lands the glycerine. Runs
+    /// only while `creamSoapGlycerinePending`, so a glycerine the user has since
+    /// removed is never silently re-added.
+    func reconcileCreamSoapGlycerine(from inventory: [Ingredient]) {
+        guard isCreamSoap, creamSoapGlycerinePending,
+              let glycerine = matchedExtraIngredient(
+                  label: LyeCalculator.creamSoapGlycerineLabel, in: inventory
+              )
+        else { return }
+
+        // Already in the additives (the user's own, or a hand-added one): the
+        // intent is satisfied, and it isn't ours to auto-remove later.
+        guard !isExtraAdded(glycerine) else {
+            creamSoapGlycerinePending = false
+            autoAddedGlycerineAmount = nil
+            return
+        }
+
+        let oils = lyeCalculator.totalOilBatchWeight
+        guard oils > 0 else { return } // no oils yet — stay pending and retry
+
+        let amount = oils * LyeCalculator.creamSoapGlycerineFraction
+        additiveDrafts.append(IngredientAmountDraft(ingredient: glycerine, amount: amount, unit: displayWeightUnit))
+        autoAddedGlycerineAmount = amount
+        creamSoapGlycerinePending = false
     }
 }

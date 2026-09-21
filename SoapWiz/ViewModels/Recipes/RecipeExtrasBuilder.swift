@@ -8,19 +8,6 @@ struct RecipeExtrasBuilder {
     let fragranceTargetPercentage: Double
     let isCreamSoap: Bool
 
-    /// Cream-soap recommended additions, scaled to total oil weight: extra water
-    /// (0.792×) and glycerine (0.0625×). `nil` unless cream soap is on and the
-    /// recipe has oils. Surfaced above the standard extras table.
-    var creamSoapAdditions: [ExtraSectionBRow]? {
-        guard isCreamSoap else { return nil }
-        let oils = lye.totalOilBatchWeight
-        guard oils > 0 else { return nil }
-        return [
-            ExtraSectionBRow(label: "Additional Water for Cream Soap", minValue: oils * 0.792),
-            ExtraSectionBRow(label: "Glycerine for Cream Soap", minValue: oils * 0.0625)
-        ]
-    }
-
     var extraIngredientData: (sectionA: [ExtraSectionARow], sectionB: [ExtraSectionBRow])? {
         guard lye.oilAmountCalculations != nil,
               let totalLye = lye.calculatedLyeAmount,
@@ -61,7 +48,7 @@ struct RecipeExtrasBuilder {
 
         let ascorbic = oils * 0.01
         let lactic = oils * 0.0075
-        let sectionB: [ExtraSectionBRow] = [
+        var sectionB: [ExtraSectionBRow] = [
             ExtraSectionBRow(label: "EO / Fragrance Oil", minValue: oils * fragranceTargetPercentage / 100),
             ExtraSectionBRow(label: "Ascorbic Acid", minValue: ascorbic,
                 naohLye: single(ascorbic, factor: 0.2020, multiplier: naohAcidMultiplier),
@@ -74,6 +61,21 @@ struct RecipeExtrasBuilder {
             ExtraSectionBRow(label: "Potassium Citrate", minValue: oils * 0.016, maxValue: oils * 0.048),
             ExtraSectionBRow(label: "Rosemary Oleoresin (ROE)", minValue: oils * 0.0004, maxValue: oils * 0.0005)
         ]
+
+        // Cream-soap glycerine is a real, costable ingredient, so it joins the
+        // standard suggestions: matchable to inventory, toggled into the recipe,
+        // and costed like any additive — unlike the free dilution water, which
+        // lives in the calculated-amounts table.
+        if isCreamSoap {
+            sectionB.insert(
+                ExtraSectionBRow(
+                    label: LyeCalculator.creamSoapGlycerineLabel,
+                    minValue: oils * LyeCalculator.creamSoapGlycerineFraction,
+                    note: LyeCalculator.creamSoapAdditionNote
+                ),
+                at: 0
+            )
+        }
 
         return (sectionA, sectionB)
     }
