@@ -31,16 +31,25 @@ struct FoundationModelsRecipeExtractor: RecipeDraftExtracting {
                 options: GenerationOptions(sampling: .greedy)
             )
 
-            // Each snapshot is cumulative and the last is the complete result,
-            // so the final one doubles as the draft to check — no second pass
-            // over the stream, which is consumed once.
-            var latest = RecipeImportDraft()
+            // Each snapshot is cumulative and the last is the complete result.
+            // Its raw content is decoded as a whole rather than reused from the
+            // display mapping, which drops still-nameless rows: a finished row
+            // with a blank name belongs on the review screen, not in the bin.
+            var finalContent: GeneratedContent?
             for try await partial in stream {
-                latest = partial.content.asImportDraft()
-                onPartial(latest)
+                finalContent = partial.rawContent
+                onPartial(partial.content.asImportDraft())
+            }
+            guard let finalContent else { throw RecipeImportError.nothingRecognised }
+
+            let generated: GeneratedRecipeDraft
+            do {
+                generated = try GeneratedRecipeDraft(finalContent)
+            } catch {
+                throw RecipeImportError.failed("Couldn't make sense of that recipe.")
             }
 
-            let draft = RecipeImportDraftChecker.checked(latest, against: text.text)
+            let draft = RecipeImportDraftChecker.checked(generated.asImportDraft(), against: text.text)
             guard draft.hasAnyIngredient else { throw RecipeImportError.nothingRecognised }
             return draft
         } catch let error as LanguageModelSession.GenerationError {

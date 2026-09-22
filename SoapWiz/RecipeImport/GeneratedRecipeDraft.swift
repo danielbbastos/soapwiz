@@ -117,9 +117,9 @@ extension GeneratedRecipeDraft.PartiallyGenerated {
     ///
     /// Every field is optional until the model fills it, so each falls back to
     /// the same empty default `RecipeImportDraft` uses. Ingredient rows that
-    /// have no name yet are dropped rather than shown as blank lines. The
-    /// completed final snapshot maps identically to `asImportDraft()` on the
-    /// whole value, so the extractor checks this rather than the stream again.
+    /// have no name yet are dropped rather than shown as blank lines. For
+    /// display only: the extractor decodes the final snapshot as a whole
+    /// `GeneratedRecipeDraft`, so a finished row is never lost to this filter.
     func asImportDraft() -> RecipeImportDraft {
         RecipeImportDraft(
             name: (name ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
