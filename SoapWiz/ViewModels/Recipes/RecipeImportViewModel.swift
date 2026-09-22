@@ -31,6 +31,11 @@ final class RecipeImportViewModel {
     private(set) var rows: [RecipeImportRow] = []
     private(set) var extractedDraft: RecipeImportDraft?
 
+    /// The recipe as it fills in during extraction, so the progress screen can
+    /// show it growing rather than a bare spinner. `nil` except while a model
+    /// read is in flight.
+    private(set) var streamingDraft: RecipeImportDraft?
+
     /// What an exact payload would do, once one has been read.
     private(set) var transferPlan: RecipeTransferPlan?
 
@@ -91,6 +96,14 @@ final class RecipeImportViewModel {
     }
 
     var isExtracting: Bool { phase == .extracting }
+
+    /// A short line naming the current step, so an empty early snapshot still
+    /// says something. Driven by how far `streamingDraft` has filled in, so it
+    /// can't drift from what the progress screen actually shows.
+    var extractionStatus: String {
+        guard let streamingDraft, streamingDraft.hasAnyIngredient else { return "Reading the text\u{2026}" }
+        return streamingDraft.statesLyeSettings ? "Checking amounts\u{2026}" : "Finding ingredients\u{2026}"
+    }
 
     var unresolvedCount: Int { rows.count { !$0.isResolved } }
 
@@ -207,6 +220,7 @@ final class RecipeImportViewModel {
             phase = .failed(.modelUnavailable(RecipeImportAvailability.current.explanation))
             return
         }
+        streamingDraft = nil
         phase = .extracting
 
         let names = inventory.map(\.name)
@@ -228,12 +242,15 @@ final class RecipeImportViewModel {
             budget /= 2
             text = RecipeTextSanitizer.sanitize(rawText, knownIngredientNames: names, characterBudget: budget)
             sanitized = text
+            streamingDraft = nil
             do {
                 try await runExtraction(extractor, on: text, inventory: inventory)
             } catch {
+                streamingDraft = nil
                 phase = .failed(importError(from: error))
             }
         } catch {
+            streamingDraft = nil
             phase = .failed(importError(from: error))
         }
     }
@@ -243,9 +260,12 @@ final class RecipeImportViewModel {
         on text: SanitizedRecipeText,
         inventory: [Ingredient]
     ) async throws {
-        let extracted = try await extractor.extract(from: text)
+        let extracted = try await extractor.extract(from: text) { [weak self] partial in
+            self?.streamingDraft = partial
+        }
         extractedDraft = extracted
         rows = RecipeIngredientReconciler.reconcile(extracted, against: inventory)
+        streamingDraft = nil
         phase = .review
     }
 

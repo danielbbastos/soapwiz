@@ -8,6 +8,13 @@ import FoundationModels
 @available(iOS 26, macOS 26, *)
 struct FoundationModelsRecipeExtractor: RecipeDraftExtracting {
     func extract(from text: SanitizedRecipeText) async throws -> RecipeImportDraft {
+        try await extract(from: text, onPartial: { _ in })
+    }
+
+    func extract(
+        from text: SanitizedRecipeText,
+        onPartial: (RecipeImportDraft) -> Void
+    ) async throws -> RecipeImportDraft {
         guard !text.isEmpty else { throw RecipeImportError.nothingRecognised }
 
         // A fresh session per attempt. The transcript counts against the same
@@ -18,12 +25,31 @@ struct FoundationModelsRecipeExtractor: RecipeDraftExtracting {
         do {
             // Greedy, so the same text gives the same draft: sampled output put
             // one ingredient under Additives on one run and Oils on the next.
-            let response = try await session.respond(
+            let stream = session.streamResponse(
                 to: text.text,
                 generating: GeneratedRecipeDraft.self,
                 options: GenerationOptions(sampling: .greedy)
             )
-            let draft = RecipeImportDraftChecker.checked(response.content.asImportDraft(), against: text.text)
+
+            // Each snapshot is cumulative and the last is the complete result.
+            // Its raw content is decoded as a whole rather than reused from the
+            // display mapping, which drops still-nameless rows: a finished row
+            // with a blank name belongs on the review screen, not in the bin.
+            var finalContent: GeneratedContent?
+            for try await partial in stream {
+                finalContent = partial.rawContent
+                onPartial(partial.content.asImportDraft())
+            }
+            guard let finalContent else { throw RecipeImportError.nothingRecognised }
+
+            let generated: GeneratedRecipeDraft
+            do {
+                generated = try GeneratedRecipeDraft(finalContent)
+            } catch {
+                throw RecipeImportError.failed("Couldn't make sense of that recipe.")
+            }
+
+            let draft = RecipeImportDraftChecker.checked(generated.asImportDraft(), against: text.text)
             guard draft.hasAnyIngredient else { throw RecipeImportError.nothingRecognised }
             return draft
         } catch let error as LanguageModelSession.GenerationError {
