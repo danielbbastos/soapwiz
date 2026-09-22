@@ -3,8 +3,8 @@ import Foundation
 import SwiftData
 @testable import SoapWiz
 
-/// "Copy Recipe" serving both audiences at once: the payload is readable by the
-/// importer, and the text above it is still readable by a person.
+/// The two copy actions: "Copy for SoapWiz" (`soapwizText`) puts only the exact
+/// payload on the clipboard, and "Copy Recipe" (`text`) puts only readable text.
 @MainActor
 @Suite
 struct RecipeClipboardExportTests {
@@ -15,38 +15,36 @@ struct RecipeClipboardExportTests {
         fixture = try RecipeTransferFixture()
     }
 
-    @Test func clipboardText_Always_EndsWithTheMarkerOnItsOwnLine() throws {
+    /// "Copy for SoapWiz" is the marker and nothing else — no readable body for
+    /// the importer to wade through.
+    @Test func soapwizText_Always_IsTheMarkerLineAlone() throws {
         let recipe = fixture.populatedRecipe()
 
-        let lines = RecipeTextExporter.clipboardText(for: recipe).components(separatedBy: "\n")
+        let lines = RecipeTextExporter.soapwizText(for: recipe).components(separatedBy: "\n")
 
-        let last = try #require(lines.last)
-        #expect(RecipeTransferMarker.isMarkerLine(last))
-        #expect(lines.filter(RecipeTransferMarker.isMarkerLine).count == 1)
+        #expect(lines.count == 1)
+        let only = try #require(lines.first)
+        #expect(RecipeTransferMarker.isMarkerLine(only))
     }
 
-    /// The readable half is what someone pastes into a forum post, and it must
-    /// not have changed just because the payload now rides along behind it.
-    @Test func clipboardText_WithoutItsFinalLine_IsExactlyTheReadableText() throws {
+    /// None of the readable recipe leaks into the SoapWiz copy — that is what
+    /// "Copy Recipe" is for.
+    @Test func soapwizText_CarriesNoneOfTheReadableText() throws {
         let recipe = fixture.populatedRecipe()
 
-        let clipboard = RecipeTextExporter.clipboardText(for: recipe)
-        let withoutMarker = clipboard
-            .components(separatedBy: "\n")
-            .filter { !RecipeTransferMarker.isMarkerLine($0) }
-            .joined(separator: "\n")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let soapwiz = RecipeTextExporter.soapwizText(for: recipe)
 
-        #expect(withoutMarker == RecipeTextExporter.text(for: recipe))
+        #expect(!soapwiz.contains("Olive Oil"))
+        #expect(!soapwiz.contains(recipe.name))
     }
 
-    @Test func clipboardText_Always_ReadsBackAsTheSameRecipe() throws {
+    @Test func soapwizText_Always_ReadsBackAsTheSameRecipe() throws {
         let recipe = fixture.populatedRecipe()
 
-        let outcome = RecipeTransferMarker.scan(RecipeTextExporter.clipboardText(for: recipe))
+        let outcome = RecipeTransferMarker.scan(RecipeTextExporter.soapwizText(for: recipe))
 
         guard case .payload(let payload) = outcome else {
-            Issue.record("Expected the clipboard text to carry a payload, got \(outcome)")
+            Issue.record("Expected the SoapWiz copy to carry a payload, got \(outcome)")
             return
         }
         let encoded = try #require(payload.recipes.first)
@@ -58,13 +56,24 @@ struct RecipeClipboardExportTests {
         #expect(payload.ingredients.count == 5)
     }
 
-    @Test func clipboardText_NonSoapRecipe_CarriesItsKind() throws {
+    /// "Copy Recipe" is the person-facing copy: readable text with none of the
+    /// base64 marker the importer rides along on.
+    @Test func text_Always_CarriesNoImportMarker() throws {
+        let recipe = fixture.populatedRecipe()
+
+        let readable = RecipeTextExporter.text(for: recipe)
+
+        #expect(!readable.contains(RecipeTransferMarker.prefix))
+        #expect(RecipeTransferMarker.scan(readable) == RecipeTransferScan.none)
+    }
+
+    @Test func soapwizText_NonSoapRecipe_CarriesItsKind() throws {
         let recipe = fixture.recipe(named: "Beeswax Candle")
         recipe.recipeKind = RecipeKind.general.rawValue
         fixture.addOil(fixture.oil("Beeswax"), percentage: 100, to: recipe)
         fixture.context.processPendingChanges()
 
-        let outcome = RecipeTransferMarker.scan(RecipeTextExporter.clipboardText(for: recipe))
+        let outcome = RecipeTransferMarker.scan(RecipeTextExporter.soapwizText(for: recipe))
 
         guard case .payload(let payload) = outcome else {
             Issue.record("Expected the clipboard text to carry a payload, got \(outcome)")
@@ -77,9 +86,9 @@ struct RecipeClipboardExportTests {
     /// in, it would spend a sixth of the character budget on nothing.
     @Test func sanitize_TextEndingInAMarker_DropsTheMarkerLine() throws {
         let recipe = fixture.populatedRecipe()
-        let clipboard = RecipeTextExporter.clipboardText(for: recipe)
+        let combined = try fixture.combinedText(for: recipe)
 
-        let sanitized = RecipeTextSanitizer.sanitize(clipboard)
+        let sanitized = RecipeTextSanitizer.sanitize(combined)
 
         #expect(!sanitized.text.contains(RecipeTransferMarker.prefix))
         #expect(sanitized.text.contains("Olive Oil"))
@@ -88,7 +97,7 @@ struct RecipeClipboardExportTests {
     @Test func sanitize_TextEndingInAMarker_LeavesTheRecipeIntact() throws {
         let recipe = fixture.populatedRecipe()
 
-        let withMarker = RecipeTextSanitizer.sanitize(RecipeTextExporter.clipboardText(for: recipe))
+        let withMarker = RecipeTextSanitizer.sanitize(try fixture.combinedText(for: recipe))
         let withoutMarker = RecipeTextSanitizer.sanitize(RecipeTextExporter.text(for: recipe))
 
         #expect(withMarker.text == withoutMarker.text)
@@ -97,9 +106,9 @@ struct RecipeClipboardExportTests {
     /// The box the user sees keeps the marker: it is what the importer scans.
     @Test func tidiedForEditing_TextWithMarker_KeepsIt() throws {
         let recipe = fixture.populatedRecipe()
-        let clipboard = RecipeTextExporter.clipboardText(for: recipe)
+        let soapwiz = RecipeTextExporter.soapwizText(for: recipe)
 
-        let tidied = RecipeTextSanitizer.tidiedForEditing(clipboard)
+        let tidied = RecipeTextSanitizer.tidiedForEditing(soapwiz)
 
         #expect(RecipeTransferMarker.scan(tidied) != RecipeTransferScan.none)
     }

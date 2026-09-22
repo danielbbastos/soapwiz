@@ -199,38 +199,88 @@ struct RecipeTextExporterTests {
         #expect(!text.contains("Calculated amounts"))
     }
 
-    // MARK: - Calculated amounts
+    // MARK: - Settings line
 
-    /// The whole point of routing through `RecipeFormViewModel`: the clipboard
-    /// and the detail screen must not be able to print different numbers.
-    @Test func text_CalculatedAmounts_MatchTheModelsOwnRows() throws {
+    /// The trimmed text drops the whole calculated-amounts table in favour of a
+    /// single settings line, so a copied recipe is short enough to send.
+    @Test func text_SoapRecipe_OmitsTheCalculatedAmountsTable() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let recipe = seedRecipe(ctx)
 
-        let model = RecipeFormViewModel()
-        model.load(from: recipe)
-        let rows = try #require(model.calculatedAmountRows)
         let text = RecipeTextExporter.text(for: recipe)
 
-        #expect(text.contains("Calculated amounts"))
-        for row in rows {
-            #expect(text.contains("\(row.label) — \(number(row.weight)) \(model.displayWeightUnit)"))
-        }
+        #expect(!text.contains("Calculated amounts"))
+        #expect(!text.contains("Batch total"))
     }
 
-    @Test func text_CalculatedAmounts_IncludeTheBatchTotal() throws {
+    @Test func text_SingleLyeRecipe_CarriesLyeSuperfatAndWater() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+        recipe.lyeType = "KOH"
+        recipe.superFat = 8
+        recipe.waterParts = 2
+        try ctx.save()
+
+        let text = RecipeTextExporter.text(for: recipe)
+
+        #expect(text.contains("KOH · \(number(8))% superfat · water \(number(2)):1"))
+    }
+
+    @Test func text_HybridRecipe_SpellsOutTheKOHNaOHSplit() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+        recipe.useHybrid = true
+        recipe.kohPercentage = 70
+        recipe.naohPercentage = 30
+        try ctx.save()
+
+        let text = RecipeTextExporter.text(for: recipe)
+
+        #expect(text.contains("KOH/NaOH \(number(70))/\(number(30))"))
+    }
+
+    @Test func text_FailorRecipe_AppendsTheMethod() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+        recipe.useCFM = true
+        try ctx.save()
+
+        #expect(RecipeTextExporter.text(for: recipe).contains("· Failor method"))
+    }
+
+    @Test func text_CreamSoapRecipe_AppendsTheMethod() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+        recipe.isCreamSoap = true
+        try ctx.save()
+
+        #expect(RecipeTextExporter.text(for: recipe).contains("· cream soap method"))
+    }
+
+    @Test func text_PlainRecipe_HasNeitherMethodOnTheSettingsLine() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let recipe = seedRecipe(ctx)
 
-        let model = RecipeFormViewModel()
-        model.load(from: recipe)
-        let total = try #require(model.calculatedAmountRows?.last)
         let text = RecipeTextExporter.text(for: recipe)
 
-        #expect(total.label == "Batch total")
-        #expect(text.contains("Batch total — \(number(total.weight)) g"))
+        #expect(!text.contains("Failor method"))
+        #expect(!text.contains("cream soap method"))
+    }
+
+    @Test func text_SoapRecipeWithNoOils_OmitsTheSettingsLine() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Just a name")
+        ctx.insert(recipe)
+        try ctx.save()
+
+        #expect(RecipeTextExporter.text(for: recipe) == "Just a name")
     }
 
     // MARK: - Shape
@@ -243,7 +293,7 @@ struct RecipeTextExporterTests {
         let text = RecipeTextExporter.text(for: recipe)
 
         #expect(text.contains("\n\nOils"))
-        #expect(text.contains("\n\nCalculated amounts"))
+        #expect(text.contains("\n\nNaOH · "))
         #expect(!text.hasSuffix("\n"))
     }
 }

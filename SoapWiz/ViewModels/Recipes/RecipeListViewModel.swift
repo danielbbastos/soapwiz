@@ -217,8 +217,15 @@ final class RecipeListViewModel {
         }
     }
 
-    func copyToPasteboard(_ recipe: Recipe) {
-        UIPasteboard.general.string = RecipeTextExporter.clipboardText(for: recipe)
+    /// Readable text with no import marker — the copy to send to a person.
+    func copyReadableText(_ recipe: Recipe) {
+        UIPasteboard.general.string = RecipeTextExporter.text(for: recipe)
+    }
+
+    /// The exact import payload, for another SoapWiz user to paste straight into
+    /// the importer. No readable text — the importer reads only the marker.
+    func copyForSoapWiz(_ recipe: Recipe) {
+        UIPasteboard.general.string = RecipeTextExporter.soapwizText(for: recipe)
     }
 
     /// Animated so the row's move to or from the pinned group reads as a move

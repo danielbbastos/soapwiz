@@ -1,7 +1,8 @@
 import Foundation
 import SwiftData
 
-/// Renders a recipe as the plain text "Copy Recipe" puts on the clipboard.
+/// Renders a recipe for the clipboard: readable text for a person ("Copy
+/// Recipe") or the exact payload for another SoapWiz user ("Copy for SoapWiz").
 ///
 /// The numbers are reached the same way the recipe detail screen reaches them —
 /// through `RecipeFormViewModel` — so a pasted recipe and the screen it was
@@ -11,23 +12,15 @@ import SwiftData
 @MainActor
 enum RecipeTextExporter {
 
-    /// What "Copy Recipe" actually puts on the clipboard: the readable text,
-    /// then the exact payload on one final line.
+    /// What "Copy for SoapWiz" puts on the clipboard: the exact payload on its
+    /// own, since the only thing that reads it is the importer, which decodes
+    /// the marker and never looks at any surrounding text. The human-readable
+    /// copy is "Copy Recipe" (`text(for:)`), a separate menu action.
     ///
-    /// One action serving two audiences. A person pastes this into a message and
-    /// reads the recipe, ignoring the last line; SoapWiz pastes it into the
-    /// importer and reads the last line, ignoring the rest. Keeping them in one
-    /// clipboard entry is what stops the user having to pick the right copy
-    /// command, which they would sometimes get wrong.
-    ///
-    /// The payload is appended, never substituted: if it can't be built the
-    /// readable text still goes to the clipboard on its own.
-    static func clipboardText(for recipe: Recipe) -> String {
-        let readable = text(for: recipe)
-        guard let marker = RecipeTransferMarker.line(for: RecipeTransferEncoder.payload(for: [recipe])) else {
-            return readable
-        }
-        return "\(readable)\n\n\(marker)"
+    /// Falls back to the readable text if the payload can't be encoded, so the
+    /// clipboard is never left empty.
+    static func soapwizText(for recipe: Recipe) -> String {
+        RecipeTransferMarker.line(for: RecipeTransferEncoder.payload(for: [recipe])) ?? text(for: recipe)
     }
 
     static func text(for recipe: Recipe) -> String {
@@ -41,7 +34,7 @@ enum RecipeTextExporter {
             oilsBlock(model),
             amountsBlock("Additives", drafts: model.additiveDrafts, rows: batch.additives, model: model),
             amountsBlock("Fragrances", drafts: model.fragranceDrafts, rows: batch.fragrances, model: model),
-            calculatedBlock(model)
+            settingsLine(model)
         ]
         return blocks.compactMap { $0 }.joined(separator: "\n\n")
     }
@@ -92,10 +85,22 @@ enum RecipeTextExporter {
         return block(title, rows: rows)
     }
 
-    private static func calculatedBlock(_ model: RecipeFormViewModel) -> String? {
-        guard let rows = model.calculatedAmountRows else { return nil }
-        let unit = model.displayWeightUnit
-        return block("Calculated amounts", rows: rows.map { row($0.label, weightText($0.weight, unit: unit)) })
+    /// One line standing in for the whole "Calculated amounts" table: enough of
+    /// the lye configuration to reproduce the recipe from the readable text, and
+    /// nothing a reader has to scroll past. Only soap recipes have a lye setup,
+    /// so a general recipe gets no line at all.
+    private static func settingsLine(_ model: RecipeFormViewModel) -> String? {
+        guard model.makesSoap, !model.oilDrafts.isEmpty else { return nil }
+
+        var segments = [lyeSegment(model), "\(number(model.superFat))% superfat", "water \(number(model.waterParts)):1"]
+        if model.useCFM { segments.append("Failor method") }
+        if model.isCreamSoap { segments.append("cream soap method") }
+        return segments.joined(separator: " · ")
+    }
+
+    private static func lyeSegment(_ model: RecipeFormViewModel) -> String {
+        guard model.useHybrid else { return model.lyeType }
+        return "KOH/NaOH \(number(model.kohPercentage))/\(number(model.naohPercentage))"
     }
 
     // MARK: - Rows
