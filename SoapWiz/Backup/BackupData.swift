@@ -127,6 +127,12 @@ extension BackupData {
         /// Optional so a file written before favourites existed still decodes; it
         /// restores to the schema default of `false`.
         var isFavorite: Bool?
+        /// When the recipe first arrived. Optional so a file written before the
+        /// field existed still decodes; those recipes restore with `nil`, so they
+        /// never appear in "Recently Added". A backup keeps the real date — a
+        /// restore is not new arrival — unlike a shared recipe, which is stamped
+        /// on import.
+        var createdAt: Date?
         /// The recipe's photo at display size, base64-encoded by `Codable`.
         /// Optional so a file written before photos existed still decodes, and
         /// so a recipe without one costs nothing. The thumbnail is deliberately

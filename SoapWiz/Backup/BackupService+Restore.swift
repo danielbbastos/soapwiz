@@ -121,6 +121,10 @@ extension BackupService {
         // A file written before identities existed leaves every recipe with the
         // fresh one `Recipe.init` already minted, rather than one shared value.
         if let uuid = dto.uuid { recipe.uuid = uuid }
+        // Assigned directly, not defaulted: a backup keeps the stored date, and a
+        // file predating the field restores `nil` so the recipe isn't treated as
+        // newly added. `Recipe.init` stamped `Date()`, which this overwrites.
+        recipe.createdAt = dto.createdAt
         recipe.isFavorite = dto.isFavorite ?? false
         recipe.imageData = dto.imageData
         // Rebuilt rather than restored: the file carries only the display image,

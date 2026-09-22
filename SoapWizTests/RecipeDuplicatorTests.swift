@@ -259,6 +259,25 @@ struct RecipeDuplicatorTests {
         #expect(recipe.isFavorite)
     }
 
+    /// The copy is created now, so it opens at the top of "Recently Added"
+    /// rather than inheriting the original's age.
+    @Test func duplicate_CopyGetsAFreshCreationDate() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+        recipe.createdAt = Date(timeIntervalSince1970: 0)
+        try ctx.save()
+
+        let before = Date()
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let after = Date()
+        try ctx.save()
+
+        let created = try #require(copy.createdAt)
+        #expect(created >= before && created <= after)
+        #expect(recipe.createdAt == Date(timeIntervalSince1970: 0))
+    }
+
     @Test func duplicate_UnresolvedLineItem_IsCarriedOver() throws {
         let (container, ctx) = try makeContext()
         _ = container

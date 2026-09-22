@@ -269,6 +269,20 @@ struct RecipeTransferResolutionTests {
         #expect(!imported.isFavorite)
     }
 
+    /// A shared recipe is new *to you*: its arrival date is when it lands here,
+    /// not the sender's creation date (which the payload never carried anyway).
+    @Test func roundTrip_StampsTheDateOfArrivalNotThePayloadDate() throws {
+        let original = source.populatedRecipe()
+        original.createdAt = Date(timeIntervalSince1970: 0)
+
+        let before = Date()
+        let imported = try #require(try harness.roundTrip([original]).first)
+        let after = Date()
+
+        let arrival = try #require(imported.createdAt)
+        #expect(arrival >= before && arrival <= after)
+    }
+
     @Test func roundTrip_IngredientWithPurchases_ArrivesWithNoStockOrCost() throws {
         let original = source.recipe()
         let oil = source.oil("Rare Exotic Oil")

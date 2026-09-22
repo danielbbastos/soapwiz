@@ -3,6 +3,27 @@ import Foundation
 import SwiftUI
 import UIKit
 
+/// The recipe list split into its three display groups, in order: pinned
+/// favourites, recently added, then everything else. Built by
+/// `RecipeListViewModel.sections(_:now:calendar:)` from an already-filtered,
+/// alphabetically sorted array, so each group keeps that A→Z order except the
+/// recent one, which is newest-first.
+struct RecipeSections {
+    var favorites: [Recipe]
+    var recent: [Recipe]
+    var others: [Recipe]
+
+    var isEmpty: Bool {
+        favorites.isEmpty && recent.isEmpty && others.isEmpty
+    }
+
+    /// Whether the list should draw section headers. Only the presence of a
+    /// recent group separates the list into named sections; with nothing recent
+    /// the favourites-then-rest ordering reads exactly as it did before this
+    /// group existed, so it stays a flat, headerless list.
+    var isSectioned: Bool { !recent.isEmpty }
+}
+
 @MainActor
 @Observable
 final class RecipeListViewModel {
@@ -68,6 +89,38 @@ final class RecipeListViewModel {
         return recipes.filter { recipe in
             recipe.collections.contains { selectedCollections.contains($0.persistentModelID) }
         }
+    }
+
+    /// How many days a recipe stays in the "Recently Added" group, and how many
+    /// rows that group shows at most.
+    private static let recentWindowDays = 3
+    private static let recentLimit = 3
+
+    /// Partitions the displayed recipes into favourites, recently added, and the
+    /// rest. `recipes` is expected already filtered and sorted A→Z, so the
+    /// favourites and others groups keep that order; the recent group is sorted
+    /// newest-first instead.
+    ///
+    /// Favourites win over recency: a favourite is never also listed as recent,
+    /// so favouriting a recent recipe moves it up and out of the recent group. A
+    /// recipe with no `createdAt` (written before the field existed) never
+    /// qualifies as recent. `now` and `calendar` are injectable for tests.
+    func sections(_ recipes: [Recipe], now: Date = .now, calendar: Calendar = .current) -> RecipeSections {
+        let favorites = recipes.filter(\.isFavorite)
+
+        let cutoff = calendar.date(byAdding: .day, value: -Self.recentWindowDays, to: now)
+        let recent = recipes
+            .filter { recipe in
+                guard !recipe.isFavorite, let createdAt = recipe.createdAt, let cutoff else { return false }
+                return createdAt >= cutoff
+            }
+            .sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) }
+            .prefix(Self.recentLimit)
+        let recentIDs = Set(recent.map(ObjectIdentifier.init))
+
+        let others = recipes.filter { !$0.isFavorite && !recentIDs.contains(ObjectIdentifier($0)) }
+
+        return RecipeSections(favorites: favorites, recent: Array(recent), others: others)
     }
 
     /// Drops selections whose collection no longer exists. `DuplicateMerger`

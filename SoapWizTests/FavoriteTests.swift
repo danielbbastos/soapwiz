@@ -174,9 +174,10 @@ struct FavoriteTests {
 }
 
 extension Recipe {
-    static func mock(name: String, isFavorite: Bool = false) -> Recipe {
+    static func mock(name: String, isFavorite: Bool = false, createdAt: Date? = nil) -> Recipe {
         let recipe = Recipe(name: name)
         recipe.isFavorite = isFavorite
+        recipe.createdAt = createdAt
         return recipe
     }
 }
