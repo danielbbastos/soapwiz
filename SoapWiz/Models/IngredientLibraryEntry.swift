@@ -7,6 +7,10 @@ struct IngredientLibraryEntry: Decodable {
     /// refer to the entry by it.
     let slug: String
     let name: String
+    /// The short journal code the installer stamps onto the row. Permanent once
+    /// shipped, like `slug`: a purchase's `<CODE>-001` journal number is built
+    /// from it, so changing it would renumber a user's journal.
+    let code: String
     /// Other names the same ingredient goes by, used only to recognise an
     /// ingredient the user created before the library existed.
     let aliases: [String]

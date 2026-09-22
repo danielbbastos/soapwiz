@@ -305,4 +305,63 @@ struct IngredientLibraryInstallerTests {
         #expect(olives.count == 2)
         #expect(olives.filter { $0.librarySlug == "olive-oil" }.count == 1)
     }
+
+    // MARK: - Journal codes
+
+    @Test func install_EmptyStore_StampsEachEntryCode() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let coconut = IngredientLibraryEntry.mock(slug: "coconut-oil", name: "Coconut Oil", code: "COO")
+        let castor = IngredientLibraryEntry.mock(slug: "castor-oil", name: "Castor Oil", code: "CAO")
+
+        try IngredientLibraryInstaller.installMissing(from: IngredientLibrary(entries: [coconut, castor]), in: ctx)
+
+        #expect(try ingredient(slug: "coconut-oil", in: ctx).code == "COO")
+        #expect(try ingredient(slug: "castor-oil", in: ctx).code == "CAO")
+    }
+
+    @Test func install_UserCodeCollidesWithEntryCode_InstallsANonCollidingCode() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let entry = IngredientLibraryEntry.mock(slug: "olive-oil", name: "Olive Oil", code: "OLO")
+        let mine = Ingredient(name: "My Own Thing", unit: "g")
+        mine.code = "OLO"
+        ctx.insert(mine)
+        try ctx.save()
+
+        try IngredientLibraryInstaller.installMissing(from: IngredientLibrary(entries: [entry]), in: ctx)
+
+        let installed = try ingredient(slug: "olive-oil", in: ctx)
+        #expect(!installed.code.isEmpty)
+        #expect(installed.code.uppercased() != "OLO")
+    }
+
+    @Test func install_AdoptedRowWithoutCode_TakesEntryCode() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let entry = IngredientLibraryEntry.mock(slug: "olive-oil", name: "Olive Oil", code: "OLO")
+        let existing = Ingredient.mock(matching: entry)
+        ctx.insert(existing)
+        try ctx.save()
+
+        try IngredientLibraryInstaller.installMissing(from: IngredientLibrary(entries: [entry]), in: ctx)
+
+        #expect(existing.librarySlug == "olive-oil")
+        #expect(existing.code == "OLO")
+    }
+
+    @Test func install_AdoptedRowWithACode_KeepsIt() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let entry = IngredientLibraryEntry.mock(slug: "olive-oil", name: "Olive Oil", code: "OLO")
+        let existing = Ingredient.mock(matching: entry)
+        existing.code = "MYX"
+        ctx.insert(existing)
+        try ctx.save()
+
+        try IngredientLibraryInstaller.installMissing(from: IngredientLibrary(entries: [entry]), in: ctx)
+
+        #expect(existing.librarySlug == "olive-oil")
+        #expect(existing.code == "MYX")
+    }
 }

@@ -53,6 +53,23 @@ struct IngredientLibraryDataTests {
         #expect(slugs.count == Set(slugs).count)
     }
 
+    /// Every entry ships a journal code, and no two share one — the installer
+    /// stamps it onto the row, and a purchase's `<CODE>-001` journal number is
+    /// built from it. Codes are generated offline with the same initials /
+    /// first-three-characters rule as `IngredientCodeSuggester`, growing the
+    /// first word to break a collision, so they stay short, uppercase and unique.
+    @Test func codes_AreNonEmptyUniqueAndWellFormed() {
+        let allowed = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+        let malformed = entries.filter { entry in
+            let code = entry.code
+            return code.count < 2 || code.count > 6 || !code.allSatisfy { allowed.contains($0) }
+        }
+        #expect(malformed.isEmpty, "Malformed codes: \(malformed.map { "\($0.slug)=\($0.code)" })")
+        let codes = entries.map(\.code)
+        let duplicates = Dictionary(grouping: codes, by: { $0 }).filter { $0.value.count > 1 }.keys.sorted()
+        #expect(duplicates.isEmpty, "Codes shared by more than one entry: \(duplicates)")
+    }
+
     @Test func namesAndAliases_AreUniqueByLookupKey() {
         let keys = entries.flatMap { [$0.name] + $0.aliases }.map(\.lookupKey)
         let duplicates = Dictionary(grouping: keys, by: { $0 }).filter { $0.value.count > 1 }.keys.sorted()

@@ -107,6 +107,7 @@ extension IngredientLibraryEntry {
     static func mock(
         slug: String = "olive-oil",
         name: String = "Olive Oil",
+        code: String = "OLO",
         aliases: [String] = [],
         category: String = IngredientCategory.Name.oils,
         unit: String = IngredientUnit.grams.rawValue,
@@ -118,6 +119,7 @@ extension IngredientLibraryEntry {
         IngredientLibraryEntry(
             slug: slug,
             name: name,
+            code: code,
             aliases: aliases,
             category: category,
             unit: unit,
