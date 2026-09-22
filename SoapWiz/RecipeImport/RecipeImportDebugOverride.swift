@@ -28,50 +28,28 @@ enum RecipeImportDebugOverride {
 /// unmatched branch stops being reachable.
 struct CannedRecipeExtractor: RecipeDraftExtracting {
     func extract(from text: SanitizedRecipeText) async throws -> RecipeImportDraft {
-        try await extract(from: text, onPartial: { _ in })
-    }
-
-    func extract(
-        from text: SanitizedRecipeText,
-        onPartial: (RecipeImportDraft) -> Void
-    ) async throws -> RecipeImportDraft {
         guard !text.isEmpty else { throw RecipeImportError.nothingRecognised }
-
-        // Walk the same shape a real stream does — name, then oils, then the
-        // rest — with a beat between each so the progress screen visibly fills
-        // in rather than flickering to a finished draft.
-        let final = Self.draft
-        var snapshot = RecipeImportDraft(name: final.name)
-        onPartial(snapshot)
-        try? await Task.sleep(for: .milliseconds(400))
-
-        snapshot.oils = final.oils
-        onPartial(snapshot)
-        try? await Task.sleep(for: .milliseconds(400))
-
-        onPartial(final)
-        try? await Task.sleep(for: .milliseconds(400))
-        return final
+        // Long enough that the progress state is visible rather than a flicker.
+        try? await Task.sleep(for: .milliseconds(800))
+        return RecipeImportDraft(
+            name: "Stubbed Import",
+            desc: "",
+            oils: [
+                ImportedIngredient(name: "Olive Oil", amount: 55, unit: nil),
+                ImportedIngredient(name: "Coconut Oil", amount: 25, unit: nil),
+                ImportedIngredient(name: "Castor Oil", amount: 5, unit: nil),
+                ImportedIngredient(name: "Kokum Butter", amount: 15, unit: nil)
+            ],
+            additives: [ImportedIngredient(name: "Sodium Citrate", amount: 15, unit: "g")],
+            fragrances: [ImportedIngredient(name: "Lavender Essential Oil", amount: 3, unit: "% of oils")],
+            amountsArePercentages: true,
+            batchSize: 1_000,
+            batchUnit: "g",
+            lyeType: "NaOH",
+            superFat: 5,
+            waterParts: 2,
+            fragrancePercentage: 3
+        )
     }
-
-    private static let draft = RecipeImportDraft(
-        name: "Stubbed Import",
-        desc: "",
-        oils: [
-            ImportedIngredient(name: "Olive Oil", amount: 55, unit: nil),
-            ImportedIngredient(name: "Coconut Oil", amount: 25, unit: nil),
-            ImportedIngredient(name: "Castor Oil", amount: 5, unit: nil),
-            ImportedIngredient(name: "Kokum Butter", amount: 15, unit: nil)
-        ],
-        additives: [ImportedIngredient(name: "Sodium Citrate", amount: 15, unit: "g")],
-        fragrances: [ImportedIngredient(name: "Lavender Essential Oil", amount: 3, unit: "% of oils")],
-        amountsArePercentages: true,
-        batchSize: 1_000,
-        batchUnit: "g",
-        lyeType: "NaOH",
-        superFat: 5,
-        waterParts: 2,
-        fragrancePercentage: 3
-    )
 }
 #endif

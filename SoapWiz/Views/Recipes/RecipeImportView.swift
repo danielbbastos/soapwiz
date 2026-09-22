@@ -35,10 +35,8 @@ struct RecipeImportView: View {
         NavigationStack {
             Group {
                 switch model.phase {
-                case .input:
+                case .input, .extracting:
                     inputForm
-                case .extracting:
-                    RecipeImportProgressView(draft: model.streamingDraft, status: model.extractionStatus)
                 case .review:
                     RecipeImportReviewView(model: model, inventory: inventory, onConfirm: confirm)
                 case .exactReview:
@@ -152,7 +150,14 @@ struct RecipeImportView: View {
                 Button {
                     Task { await model.extract(inventory: inventory, collections: collections, recipes: recipes) }
                 } label: {
-                    Text(model.textCarriesExactPayload ? "Read Copied Recipe" : "Read Recipe")
+                    if model.isExtracting {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text("Reading the recipe\u{2026}")
+                        }
+                    } else {
+                        Text(model.textCarriesExactPayload ? "Read Copied Recipe" : "Read Recipe")
+                    }
                 }
                 .disabled(!model.canExtract || isReadingPhoto)
             } footer: {
