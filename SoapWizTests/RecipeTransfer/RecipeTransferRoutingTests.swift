@@ -25,7 +25,7 @@ struct RecipeTransferRoutingTests {
     @Test func extract_TextCarryingAPayload_NeverCallsTheExtractor() async throws {
         let extractor = StubRecipeExtractor(error: .modelUnavailable("should not be reached"))
         let model = RecipeImportViewModel(extractor: extractor)
-        model.rawText = RecipeTextExporter.clipboardText(for: fixture.populatedRecipe())
+        model.rawText = RecipeTextExporter.soapwizText(for: fixture.populatedRecipe())
 
         await model.extract(inventory: [], collections: [])
 
@@ -56,7 +56,7 @@ struct RecipeTransferRoutingTests {
         draft.oils = [ImportedIngredient(name: "Olive Oil", amount: 100, unit: nil)]
         let extractor = StubRecipeExtractor(draft: draft)
         let model = RecipeImportViewModel(extractor: extractor)
-        let clipboard = RecipeTextExporter.clipboardText(for: fixture.populatedRecipe())
+        let clipboard = try fixture.combinedText(for: fixture.populatedRecipe())
         model.rawText = String(clipboard.prefix(clipboard.count - 200))
 
         await model.extract(inventory: fixture.inventoryForImport(), collections: [])
@@ -100,13 +100,13 @@ struct RecipeTransferRoutingTests {
         model.rawText = "Olive Oil 100%"
         #expect(!model.textCarriesExactPayload)
 
-        model.rawText = RecipeTextExporter.clipboardText(for: fixture.populatedRecipe())
+        model.rawText = RecipeTextExporter.soapwizText(for: fixture.populatedRecipe())
         #expect(model.textCarriesExactPayload)
     }
 
     @Test func returnToInput_AfterReadingAPayload_ForgetsIt() async throws {
         let model = RecipeImportViewModel(extractor: StubRecipeExtractor(draft: RecipeImportDraft()))
-        model.rawText = RecipeTextExporter.clipboardText(for: fixture.populatedRecipe())
+        model.rawText = RecipeTextExporter.soapwizText(for: fixture.populatedRecipe())
         await model.extract(inventory: [], collections: [])
 
         model.returnToInput()
@@ -159,7 +159,7 @@ struct RecipeTransferRoutingTests {
         let recipe = fixture.populatedRecipe()
         fixture.context.processPendingChanges()
 
-        let outcome = RecipeTransferDecoder.scan(text: RecipeTextExporter.clipboardText(for: recipe))
+        let outcome = RecipeTransferDecoder.scan(text: try fixture.combinedText(for: recipe))
 
         guard case .payload(let decoded) = outcome else {
             Issue.record("Expected the marker to be read, got \(outcome)")

@@ -192,7 +192,7 @@ struct RecipeTransferRoundTripTests {
         let original = source.populatedRecipe()
         source.context.processPendingChanges()
 
-        let clipboard = RecipeTextExporter.clipboardText(for: original)
+        let clipboard = RecipeTextExporter.soapwizText(for: original)
         guard case .payload(let payload) = RecipeTransferMarker.scan(clipboard) else {
             Issue.record("Expected the clipboard text to carry a payload")
             return
