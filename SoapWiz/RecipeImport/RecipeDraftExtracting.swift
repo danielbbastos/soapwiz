@@ -9,24 +9,6 @@ import Foundation
 /// into without touching the rest of the pipeline.
 protocol RecipeDraftExtracting {
     func extract(from text: SanitizedRecipeText) async throws -> RecipeImportDraft
-
-    /// Extracts while reporting progress: `onPartial` is called with drafts that
-    /// grow fuller as the model works, and the final, checked draft is returned.
-    /// The default forwards to `extract(from:)` and reports no progress, so an
-    /// extractor that can't stream needs only the one method.
-    func extract(
-        from text: SanitizedRecipeText,
-        onPartial: (RecipeImportDraft) -> Void
-    ) async throws -> RecipeImportDraft
-}
-
-extension RecipeDraftExtracting {
-    func extract(
-        from text: SanitizedRecipeText,
-        onPartial: (RecipeImportDraft) -> Void
-    ) async throws -> RecipeImportDraft {
-        try await extract(from: text)
-    }
 }
 
 enum RecipeImportError: LocalizedError, Equatable {

@@ -69,57 +69,6 @@ struct StubRecipeExtractor: RecipeDraftExtracting {
     }
 }
 
-/// Emits a run of partial snapshots before returning the final draft, standing
-/// in for the on-device model's stream. `afterPartial` runs synchronously right
-/// after each snapshot is delivered — the whole extract call is one main-actor
-/// hop — so a test can inspect the view model mid-stream without coordinating
-/// tasks.
-@MainActor
-final class StreamingStubExtractor: RecipeDraftExtracting {
-    private let partials: [RecipeImportDraft]
-    private let finalDraft: RecipeImportDraft
-    var afterPartial: (() -> Void)?
-
-    init(partials: [RecipeImportDraft], final finalDraft: RecipeImportDraft) {
-        self.partials = partials
-        self.finalDraft = finalDraft
-    }
-
-    func extract(from text: SanitizedRecipeText) async throws -> RecipeImportDraft {
-        try await extract(from: text, onPartial: { _ in })
-    }
-
-    func extract(
-        from text: SanitizedRecipeText,
-        onPartial: (RecipeImportDraft) -> Void
-    ) async throws -> RecipeImportDraft {
-        for partial in partials {
-            onPartial(partial)
-            afterPartial?()
-        }
-        return finalDraft
-    }
-}
-
-/// Fails partway through the stream, after emitting some partials. Covers the
-/// view model surfacing a mid-stream error rather than landing on review.
-struct StreamingFailingExtractor: RecipeDraftExtracting {
-    let partials: [RecipeImportDraft]
-    let error: RecipeImportError
-
-    func extract(from text: SanitizedRecipeText) async throws -> RecipeImportDraft {
-        try await extract(from: text, onPartial: { _ in })
-    }
-
-    func extract(
-        from text: SanitizedRecipeText,
-        onPartial: (RecipeImportDraft) -> Void
-    ) async throws -> RecipeImportDraft {
-        for partial in partials { onPartial(partial) }
-        throw error
-    }
-}
-
 /// Fails the first call with `firstError`, then succeeds. Covers the retry the
 /// view model performs when the model says the input didn't fit.
 final class RetryingStubExtractor: RecipeDraftExtracting, @unchecked Sendable {
