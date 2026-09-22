@@ -296,6 +296,27 @@ struct SoapMethodTests {
         #expect(!model.creamSoapGlycerinePending)
     }
 
+    @Test func reconcile_KindSwitchedToNonSoap_DoesNotAddGlycerine() {
+        // Turn cream soap on while it's a soap recipe with no oils yet → pending.
+        let model = RecipeFormViewModel()
+        model.weightUnit = "g"
+        let glycerine = Ingredient(name: "Glycerin", unit: "g")
+        model.setCreamSoap(true, from: [glycerine])
+        #expect(model.creamSoapGlycerinePending)
+
+        // Switch to a non-soap recipe; the stored flag stays, but the kind vetoes it.
+        model.isNonSoapProduct = true
+
+        // Oils arrive (addIngredient still routes through addOil) and reconcile fires.
+        let oil = Ingredient(name: "Olive Oil", unit: "g")
+        oil.sapValue = 0.134
+        model.addOil(oil)
+        model.oilDrafts[0].amount = 1000
+        model.reconcileCreamSoapGlycerine(from: [glycerine])
+
+        #expect(glycerineDraft(model) == nil)
+    }
+
     @Test func reconcile_AfterUserRemovesGlycerine_DoesNotReAdd() throws {
         let model = makeLiquidModel()
         let glycerine = Ingredient(name: "Glycerin", unit: "g")
