@@ -15,6 +15,20 @@ final class Recipe {
     var desc: String = ""
     var isFavorite: Bool = false
 
+    /// When the recipe first arrived in this library — created, imported, or
+    /// duplicated. Drives the "Recently Added" group in the recipe list.
+    ///
+    /// Stamped in `init`, and left without a model-level default on purpose: a
+    /// defaulted attribute is one value recorded in the schema, so the migration
+    /// that adds this column would backfill every existing recipe with a single
+    /// shared timestamp (the same trap `RecipeIdentityBackfill` repairs for
+    /// `uuid`) and file the whole library under "Recently Added". A bare optional
+    /// migrates those rows to `nil`, which simply never qualifies as recent. A
+    /// shared recipe is new *to you*, so import and `.soapwizrecipe` restore let
+    /// `init` stamp the arrival date rather than carrying one in the payload;
+    /// only a backup restore reinstates the stored value.
+    var createdAt: Date?
+
     /// The recipe's photo, already downscaled by `ImageDownscaler` before it is
     /// assigned. `.externalStorage` keeps it in a file beside the store rather
     /// than in the row, so fetching a list of recipes doesn't drag every photo
@@ -140,5 +154,6 @@ final class Recipe {
     init(name: String, desc: String = "") {
         self.name = name
         self.desc = desc
+        self.createdAt = Date()
     }
 }

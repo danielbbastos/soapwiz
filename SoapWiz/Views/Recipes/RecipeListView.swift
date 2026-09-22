@@ -33,10 +33,11 @@ struct RecipeListView: View {
     @State private var navigationPath = NavigationPath()
     @State private var importRequest: RecipeImportRequest?
 
-    // Favourites can't be part of the `@Query` sort: `SortDescriptor` has no `Bool`
-    // overload, so the pinning is applied here over the alphabetical fetch.
-    private var displayedRecipes: [Recipe] {
-        model.filtered(recipes.favoritesFirst)
+    // Favourites and recency can't be part of the `@Query` sort: `SortDescriptor`
+    // has no `Bool` overload, and the recent cutoff is relative to now. Both are
+    // applied here over the collection-filtered, alphabetical fetch.
+    private var displayedRecipes: RecipeSections {
+        model.sections(model.filtered(recipes))
     }
 
     /// A `Button` rather than a `NavigationLink` purely to drop the disclosure
@@ -84,6 +85,17 @@ struct RecipeListView: View {
             }
         }
         .listRowBackground(Color.cardBackground)
+    }
+
+    /// One titled group of the list. Renders nothing when its group is empty, so
+    /// a list with no favourites doesn't show an empty "Favourites" header.
+    @ViewBuilder
+    private func recipeSection(_ title: LocalizedStringKey, _ recipes: [Recipe]) -> some View {
+        if !recipes.isEmpty {
+            Section(title) {
+                ForEach(recipes) { row($0) }
+            }
+        }
     }
 
     /// Long-press actions on a row. Filing lives here as well as in the form
@@ -176,7 +188,16 @@ struct RecipeListView: View {
                         }
                     } else {
                         List {
-                            ForEach(displayed) { row($0) }
+                            if displayed.isSectioned {
+                                recipeSection("Favourites", displayed.favorites)
+                                recipeSection("Recently Added", displayed.recent)
+                                recipeSection("All Recipes", displayed.others)
+                            } else {
+                                // Nothing recent: a flat favourites-then-rest list
+                                // with no headers, exactly as before this group
+                                // existed.
+                                ForEach(displayed.favorites + displayed.others) { row($0) }
+                            }
                         }
                         // The chips already stand off the list on their own;
                         // the scroll view's default top margin on top of that
