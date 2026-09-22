@@ -125,18 +125,36 @@ struct StreamingFailingExtractor: RecipeDraftExtracting {
 final class RetryingStubExtractor: RecipeDraftExtracting, @unchecked Sendable {
     private let firstError: RecipeImportError
     private let draft: RecipeImportDraft
+    private let partialsBeforeFailing: [RecipeImportDraft]
     private(set) var callCount = 0
     private(set) var budgets: [Int] = []
+    var onRetry: (() -> Void)?
 
-    init(firstError: RecipeImportError, then draft: RecipeImportDraft) {
+    init(
+        firstError: RecipeImportError,
+        partialsBeforeFailing: [RecipeImportDraft] = [],
+        then draft: RecipeImportDraft
+    ) {
         self.firstError = firstError
+        self.partialsBeforeFailing = partialsBeforeFailing
         self.draft = draft
     }
 
     func extract(from text: SanitizedRecipeText) async throws -> RecipeImportDraft {
+        try await extract(from: text, onPartial: { _ in })
+    }
+
+    func extract(
+        from text: SanitizedRecipeText,
+        onPartial: (RecipeImportDraft) -> Void
+    ) async throws -> RecipeImportDraft {
         callCount += 1
         budgets.append(text.text.count)
-        if callCount == 1 { throw firstError }
+        if callCount == 1 {
+            partialsBeforeFailing.forEach(onPartial)
+            throw firstError
+        }
+        onRetry?()
         return draft
     }
 }

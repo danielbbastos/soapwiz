@@ -49,7 +49,7 @@ struct RecipeImportProgressView: View {
     ) -> some View {
         if !ingredients.isEmpty {
             Section(title) {
-                ForEach(ingredients) { ingredient in
+                ForEach(Array(ingredients.enumerated()), id: \.offset) { _, ingredient in
                     LabeledContent(ingredient.name, value: amountText(for: ingredient, in: draft))
                 }
             }

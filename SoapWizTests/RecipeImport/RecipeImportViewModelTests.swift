@@ -287,6 +287,28 @@ struct RecipeImportViewModelTests: RecipeImportTestHelpers {
         #expect(model.phase == .review)
     }
 
+    @Test func extract_TooLongAfterPartials_ClearsTheStaleDraftBeforeRetrying() async throws {
+        let stale = RecipeImportDraft(
+            name: "Castile Bar",
+            oils: [ImportedIngredient(name: "Olive Oil", amount: 70, unit: nil)]
+        )
+        let extractor = RetryingStubExtractor(
+            firstError: .inputTooLong,
+            partialsBeforeFailing: [stale],
+            then: .mock()
+        )
+        let model = RecipeImportViewModel(extractor: extractor)
+        var draftAtRetry: RecipeImportDraft?? = .none
+        extractor.onRetry = { draftAtRetry = .some(model.streamingDraft) }
+
+        model.rawText = Self.longRecipe
+        await model.extract(inventory: [])
+
+        let seen = try #require(draftAtRetry)
+        #expect(seen == nil)
+        #expect(model.phase == .review)
+    }
+
     @Test func extract_TooLongTwice_SurfacesTheError() async throws {
         let model = RecipeImportViewModel(extractor: StubRecipeExtractor(error: .inputTooLong))
         model.rawText = Self.longRecipe

@@ -242,6 +242,7 @@ final class RecipeImportViewModel {
             budget /= 2
             text = RecipeTextSanitizer.sanitize(rawText, knownIngredientNames: names, characterBudget: budget)
             sanitized = text
+            streamingDraft = nil
             do {
                 try await runExtraction(extractor, on: text, inventory: inventory)
             } catch {
