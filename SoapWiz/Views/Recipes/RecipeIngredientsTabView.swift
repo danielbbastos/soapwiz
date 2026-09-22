@@ -42,6 +42,9 @@ private enum PickerSection: String, Identifiable {
 
 struct RecipeIngredientsTabView: View {
     @Bindable var model: RecipeFormViewModel
+    /// Matches the extras table's query, so a cream-soap glycerine add that had to
+    /// wait for oils can complete against the same set here.
+    @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
     @State private var activePicker: PickerSection?
     @State private var oilsExpanded = true
     @State private var ingredientsExpanded = true
@@ -62,6 +65,9 @@ struct RecipeIngredientsTabView: View {
             fragrancesSection
             RecipeCalculatedAmountsSection(model: model)
             RecipeExtraIngredientsSection(model: model)
+        }
+        .onChange(of: model.totalOilBatchWeight) {
+            model.reconcileCreamSoapGlycerine(from: inventory)
         }
         .scrollClipDisabled()
         .ignoresSafeArea(.keyboard, edges: .bottom)

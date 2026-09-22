@@ -226,7 +226,7 @@ struct RecipeLyeCalculationTests: RecipeFormTestHelpers {
         let batchRow = try #require(rows.last)
         #expect(batchRow.isSummary == true)
         #expect(abs(batchRow.weight - 1500) < 0.1)
-        #expect(abs(batchRow.pct - 100) < 0.001)
+        #expect(abs(try #require(batchRow.pct) - 100) < 0.001)
     }
     @Test func load_PopulatesFragranceDrafts() throws {
         let (container, ctx) = try makeContext()

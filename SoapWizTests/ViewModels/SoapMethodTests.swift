@@ -157,34 +157,199 @@ struct SoapMethodTests {
 
     // MARK: - Cream soap additions
 
-    @Test func creamSoap_AddsWaterAndGlycerineScaledToOils() throws {
+    /// The suggested glycerine amount, or nil when it isn't offered.
+    private func glycerineSuggestion(_ model: RecipeFormViewModel) -> Double? {
+        model.extraIngredientData?.sectionB
+            .first { $0.label.contains("Glycerine") }?.minValue
+    }
+
+    @Test func creamSoap_AddsAdvisoryWaterToCalculatedAmounts() throws {
         let model = makeLiquidModel()
         model.isCreamSoap = true
-        let rows = try #require(model.creamSoapAdditions)
-        let water = try #require(rows.first { $0.label.contains("Additional Water") })
-        let glycerine = try #require(rows.first { $0.label.contains("Glycerine") })
-        #expect(isClose(water.minValue, 1000 * 0.792))      // 792
-        #expect(isClose(glycerine.minValue, 1000 * 0.0625)) // 62.50
+        let rows = try #require(model.calculatedAmountRows)
+        let water = try #require(rows.first { $0.label.contains("Additional Water for Cream Soap") })
+        #expect(isClose(water.weight, 1000 * 0.792)) // 792
+        // The timing warning rides along as the row's caption.
+        #expect(water.note?.isEmpty == false)
+    }
+
+    /// Dilution water is advisory: shown, but never folded into the batch total.
+    @Test func creamSoap_AdvisoryWater_DoesNotChangeBatchTotal() throws {
+        let offModel = makeLiquidModel()
+        let onModel = makeLiquidModel()
+        onModel.isCreamSoap = true
+        let offTotal = try #require(rowWeight(offModel, containing: "Batch total"))
+        let onTotal = try #require(rowWeight(onModel, containing: "Batch total"))
+        #expect(isClose(onTotal, offTotal))
+    }
+
+    /// The advisory water sits *below* the batch total and shows no percentage,
+    /// so the rows above still visibly sum to the total.
+    @Test func creamSoap_AdvisoryWater_SitsBelowBatchTotalWithNoPct() throws {
+        let model = makeLiquidModel()
+        model.isCreamSoap = true
+        let rows = try #require(model.calculatedAmountRows)
+        let totalIdx = try #require(rows.firstIndex { $0.label.contains("Batch total") })
+        let waterIdx = try #require(rows.firstIndex { $0.label.contains("Additional Water for Cream Soap") })
+        #expect(waterIdx > totalIdx)
+        #expect(rows[waterIdx].pct == nil)
+    }
+
+    @Test func creamSoap_OffersGlycerineAsCostableExtra() throws {
+        let model = makeLiquidModel()
+        model.isCreamSoap = true
+        let glycerine = try #require(glycerineSuggestion(model))
+        #expect(isClose(glycerine, 1000 * 0.0625)) // 62.50
     }
 
     @Test func creamSoap_Off_HasNoAdditions() {
         let model = makeLiquidModel()
-        #expect(model.creamSoapAdditions == nil)
+        #expect(rowWeight(model, containing: "Additional Water for Cream Soap") == nil)
+        #expect(glycerineSuggestion(model) == nil)
     }
 
     @Test func creamSoap_NoOils_HasNoAdditions() {
         let model = RecipeFormViewModel()
         model.weightUnit = "g"
         model.isCreamSoap = true
-        #expect(model.creamSoapAdditions == nil)
+        #expect(rowWeight(model, containing: "Additional Water for Cream Soap") == nil)
+        #expect(glycerineSuggestion(model) == nil)
     }
 
     @Test func creamSoap_IndependentOfCFM_BothStack() throws {
         let model = makeLiquidModel()
         model.isCreamSoap = true
         model.useCFM = true
-        // Cream additions present *and* CFM excess lye applied.
-        #expect(model.creamSoapAdditions?.count == 2)
+        // Both additions present *and* CFM excess lye applied.
+        #expect(rowWeight(model, containing: "Additional Water for Cream Soap") != nil)
+        #expect(glycerineSuggestion(model) != nil)
         #expect(isClose(model.calculatedKOHLyeAmount, 184.14))
+    }
+
+    // MARK: - Cream soap method toggle (auto-adding glycerine)
+
+    private func glycerineDraft(_ model: RecipeFormViewModel) -> IngredientAmountDraft? {
+        model.additiveDrafts.first { $0.ingredient.name.localizedCaseInsensitiveContains("glycerin") }
+    }
+
+    @Test func setCreamSoap_On_WithGlycerineInInventory_AddsCostedDraft() throws {
+        let model = makeLiquidModel()
+        let glycerine = Ingredient(name: "Glycerin", unit: "g")
+
+        model.setCreamSoap(true, from: [glycerine])
+
+        let draft = try #require(glycerineDraft(model))
+        #expect(isClose(draft.amount, 1000 * 0.0625)) // 62.50
+    }
+
+    @Test func setCreamSoap_On_WithNoGlycerineInInventory_AddsNothing() {
+        let model = makeLiquidModel()
+
+        model.setCreamSoap(true, from: [])
+
+        #expect(model.isCreamSoap)               // flag still flips
+        #expect(glycerineDraft(model) == nil)    // but nothing to cost against
+    }
+
+    @Test func setCreamSoap_Off_RemovesUneditedGlycerine() throws {
+        let model = makeLiquidModel()
+        let glycerine = Ingredient(name: "Glycerin", unit: "g")
+        model.setCreamSoap(true, from: [glycerine])
+        try #require(glycerineDraft(model))
+
+        model.setCreamSoap(false, from: [glycerine])
+
+        #expect(glycerineDraft(model) == nil)
+    }
+
+    @Test func setCreamSoap_Off_KeepsEditedGlycerine() throws {
+        let model = makeLiquidModel()
+        let glycerine = Ingredient(name: "Glycerin", unit: "g")
+        model.setCreamSoap(true, from: [glycerine])
+        let idx = try #require(model.additiveDrafts.firstIndex { $0.ingredient === glycerine })
+        model.additiveDrafts[idx].amount = 90 // user changes it — now theirs
+
+        model.setCreamSoap(false, from: [glycerine])
+
+        #expect(glycerineDraft(model) != nil)
+    }
+
+    @Test func setCreamSoap_On_BeforeOils_DefersUntilOilsAdded() throws {
+        // Toggle the method on an empty recipe: nothing to size the dose yet.
+        let model = RecipeFormViewModel()
+        model.weightUnit = "g"
+        let glycerine = Ingredient(name: "Glycerin", unit: "g")
+        model.setCreamSoap(true, from: [glycerine])
+        #expect(glycerineDraft(model) == nil)
+        #expect(model.creamSoapGlycerinePending)
+
+        // Oils arrive; the ingredients tab reconciles and the add lands.
+        let oil = Ingredient(name: "Olive Oil", unit: "g")
+        oil.sapValue = 0.134
+        oil.kohSapValue = 0.19
+        model.addOil(oil)
+        model.oilDrafts[0].amount = 1000
+        model.reconcileCreamSoapGlycerine(from: [glycerine])
+
+        let draft = try #require(glycerineDraft(model))
+        #expect(isClose(draft.amount, 1000 * 0.0625))
+        #expect(!model.creamSoapGlycerinePending)
+    }
+
+    @Test func reconcile_KindSwitchedToNonSoap_DoesNotAddGlycerine() {
+        // Turn cream soap on while it's a soap recipe with no oils yet → pending.
+        let model = RecipeFormViewModel()
+        model.weightUnit = "g"
+        let glycerine = Ingredient(name: "Glycerin", unit: "g")
+        model.setCreamSoap(true, from: [glycerine])
+        #expect(model.creamSoapGlycerinePending)
+
+        // Switch to a non-soap recipe; the stored flag stays, but the kind vetoes it.
+        model.isNonSoapProduct = true
+
+        // Oils arrive (addIngredient still routes through addOil) and reconcile fires.
+        let oil = Ingredient(name: "Olive Oil", unit: "g")
+        oil.sapValue = 0.134
+        model.addOil(oil)
+        model.oilDrafts[0].amount = 1000
+        model.reconcileCreamSoapGlycerine(from: [glycerine])
+
+        #expect(glycerineDraft(model) == nil)
+    }
+
+    @Test func reconcile_AfterUserRemovesGlycerine_DoesNotReAdd() throws {
+        let model = makeLiquidModel()
+        let glycerine = Ingredient(name: "Glycerin", unit: "g")
+        model.setCreamSoap(true, from: [glycerine])            // added
+        let idx = try #require(model.additiveDrafts.firstIndex { $0.ingredient === glycerine })
+        model.additiveDrafts.remove(at: idx)                   // user unchecks it
+
+        model.reconcileCreamSoapGlycerine(from: [glycerine])   // oils change later
+
+        #expect(glycerineDraft(model) == nil)                  // stays gone
+    }
+
+    @Test func setCreamSoap_Off_KeepsManuallyReAddedGlycerine() throws {
+        let model = makeLiquidModel()
+        let glycerine = Ingredient(name: "Glycerin", unit: "g")
+        model.setCreamSoap(true, from: [glycerine])       // auto-added at the suggested amount
+        let amount = try #require(glycerineDraft(model)).amount
+        model.toggleExtra(glycerine, amount: amount)      // user removes it via the extras row
+        model.toggleExtra(glycerine, amount: amount)      // then re-adds it, same amount
+
+        model.setCreamSoap(false, from: [glycerine])      // turning the method off
+
+        // It's the user's now, not our auto-add, so it must survive.
+        #expect(glycerineDraft(model) != nil)
+    }
+
+    @Test func setCreamSoap_On_DoesNotDuplicateUserGlycerine() {
+        let model = makeLiquidModel()
+        let glycerine = Ingredient(name: "Glycerin", unit: "g")
+        model.additiveDrafts.append(IngredientAmountDraft(ingredient: glycerine, amount: 10, unit: "g"))
+
+        model.setCreamSoap(true, from: [glycerine])
+
+        #expect(model.additiveDrafts.filter { $0.ingredient === glycerine }.count == 1)
     }
 }

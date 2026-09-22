@@ -258,18 +258,28 @@ struct RecipeKindCalculationTests: RecipeFormTestHelpers {
         #expect(makeGeneralModel().extraIngredientData == nil)
     }
 
-    @Test func creamSoapAdditions_GeneralRecipeWithStoredFlag_IsNil() {
+    @Test func creamSoapAdditions_GeneralRecipeWithStoredFlag_NotBuilt() {
         let model = makeGeneralModel()
-        // Kept from before the switch, so the kind has to veto it.
+        // A recipe switched to non-soap keeps its stored cream flag, so the
+        // builders must veto it via `makesSoap && isCreamSoap`.
         model.isCreamSoap = true
 
-        #expect(model.creamSoapAdditions == nil)
+        // The veto zeroes the flag the calculator actually receives...
+        #expect(model.lyeCalculator.isCreamSoap == false)
+        // ...so a non-soap recipe surfaces neither cream addition.
+        let water = model.calculatedAmountRows?.first { $0.label.contains("Additional Water for Cream Soap") }
+        let glycerine = model.extraIngredientData?.sectionB.first { $0.label.contains("Glycerine") }
+        #expect(water == nil)
+        #expect(glycerine == nil)
     }
 
     @Test func creamSoapAdditions_SoapRecipe_StillBuilt() {
         let model = makeModelWithOils()
         model.isCreamSoap = true
 
-        #expect(model.creamSoapAdditions != nil)
+        let water = model.calculatedAmountRows?.first { $0.label.contains("Additional Water for Cream Soap") }
+        let glycerine = model.extraIngredientData?.sectionB.first { $0.label.contains("Glycerine") }
+        #expect(water != nil)
+        #expect(glycerine != nil)
     }
 }

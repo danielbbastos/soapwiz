@@ -57,6 +57,17 @@ final class RecipeFormViewModel {
     var kohPurity: Double = 90
     var naohPurity: Double = 99
     var isCreamSoap: Bool = false
+    /// The amount the cream-soap toggle last auto-added glycerine at, so toggling
+    /// the method off can take that same row back out — but only while the user
+    /// hasn't changed its amount. `nil` once the row is the user's (edited, added
+    /// by hand, or removed). Managed only by the cream-soap accessors; transient,
+    /// so a reopened recipe starts `nil` and never auto-removes its glycerine.
+    var autoAddedGlycerineAmount: Double?
+    /// True after the method is switched on but before its glycerine could be
+    /// added — e.g. the recipe has no oils yet to size the dose.
+    /// `reconcileCreamSoapGlycerine` completes the add once oils arrive, then
+    /// clears this; a manual removal never re-triggers because the flag is down.
+    var creamSoapGlycerinePending: Bool = false
     var useCFM: Bool = false
     var cfmNeutralizer: CFMNeutralizer = .boricAcid
     /// The NaOH row's ingredient. Assigned through an accessor rather than
@@ -178,6 +189,9 @@ final class RecipeFormViewModel {
             displayWeightUnit: displayWeightUnit,
             useCFM: useCFM,
             cfmNeutralizer: cfmNeutralizer,
+            // A recipe switched to non-soap keeps its stored cream-soap flag so
+            // switching back is lossless, so the kind has to veto it here.
+            isCreamSoap: makesSoap && isCreamSoap,
             producesLye: makesSoap
         )
     }
@@ -199,6 +213,7 @@ final class RecipeFormViewModel {
     // MARK: - Lye / amounts (delegated to LyeCalculator)
 
     var oilAmountCalculations: [OilAmountCalculation]? { lyeCalculator.oilAmountCalculations }
+    var totalOilBatchWeight: Double { lyeCalculator.totalOilBatchWeight }
     var calculatedNaOHLyeAmount: Double? { lyeCalculator.calculatedNaOHLyeAmount }
     var calculatedKOHLyeAmount: Double? { lyeCalculator.calculatedKOHLyeAmount }
     var calculatedLyeAmount: Double? { lyeCalculator.calculatedLyeAmount }
