@@ -24,6 +24,9 @@ struct SoapWizApp: App {
         IngredientIdentityBackfill.repairSharedIdentitiesLoggingFailure(in: container.mainContext)
         // Before the seeder, whose fixtures only stock the library's rows.
         IngredientLibraryInstaller.installMissingLoggingFailure(in: container.mainContext)
+        // After the installer, which codes only the rows it adds: this fills the
+        // journal code on library rows an earlier build installed without one.
+        IngredientCodeBackfill.fillMissingCodesLoggingFailure(in: container.mainContext)
         DataSeeder.seed(into: container.mainContext)
         // Before `resolve`, so it only ever has to handle the zero-record case —
         // any duplicate settings rows from a previous sync are already gone.

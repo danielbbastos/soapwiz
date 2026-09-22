@@ -44,6 +44,7 @@ enum IngredientLibraryInstaller {
 
         let ingredients = try context.fetch(FetchDescriptor<Ingredient>())
         var installed = Set(ingredients.map(\.librarySlug).filter { !$0.isEmpty })
+        var usedCodes = Set(ingredients.compactMap { $0.code.isEmpty ? nil : $0.code.uppercased() })
         var unlinked: [String: Ingredient] = [:]
         for ingredient in ingredients where ingredient.librarySlug.isEmpty {
             let key = ingredient.name.lookupKey
@@ -57,10 +58,10 @@ enum IngredientLibraryInstaller {
                 if existing.category == nil {
                     existing.category = category(named: entry.category, in: &categories, context: context, changes: &changes)
                 }
-                adopt(existing, into: entry)
+                adopt(existing, into: entry, usedCodes: &usedCodes)
             } else {
                 let entryCategory = category(named: entry.category, in: &categories, context: context, changes: &changes)
-                context.insert(makeIngredient(from: entry, category: entryCategory))
+                context.insert(makeIngredient(from: entry, category: entryCategory, usedCodes: &usedCodes))
             }
             changes += 1
         }
@@ -128,22 +129,43 @@ enum IngredientLibraryInstaller {
         return nil
     }
 
-    /// The user's own name, unit, purchases and category stay.
-    private static func adopt(_ ingredient: Ingredient, into entry: IngredientLibraryEntry) {
+    /// The user's own name, unit, purchases and category stay. A row that never
+    /// had a code takes the entry's; one the user already coded keeps it, so the
+    /// journal numbers already in use never shift.
+    private static func adopt(
+        _ ingredient: Ingredient,
+        into entry: IngredientLibraryEntry,
+        usedCodes: inout Set<String>
+    ) {
         ingredient.librarySlug = entry.slug
         ingredient.hasCustomChemistry = !entry.hasSameChemistry(as: ingredient)
+        guard ingredient.code.isEmpty else { return }
+        ingredient.code = takeCode(for: entry, usedCodes: &usedCodes)
     }
 
     private static func makeIngredient(
         from entry: IngredientLibraryEntry,
-        category: IngredientCategory?
+        category: IngredientCategory?,
+        usedCodes: inout Set<String>
     ) -> Ingredient {
         let ingredient = Ingredient(name: entry.name, category: category, unit: entry.unit)
         ingredient.librarySlug = entry.slug
+        ingredient.code = takeCode(for: entry, usedCodes: &usedCodes)
         ingredient.sapValue = entry.sapValue
         ingredient.kohSapValue = entry.kohSapValue
         ingredient.density = entry.density
         ingredient.fattyAcidProfile = entry.fattyAcidProfile
         return ingredient
+    }
+
+    /// Resolves the entry's code against the codes already claimed and records
+    /// the result so no two rows in one pass share one.
+    private static func takeCode(
+        for entry: IngredientLibraryEntry,
+        usedCodes: inout Set<String>
+    ) -> String {
+        let code = IngredientCodeSuggester.installCode(for: entry, usedCodes: usedCodes)
+        if !code.isEmpty { usedCodes.insert(code.uppercased()) }
+        return code
     }
 }

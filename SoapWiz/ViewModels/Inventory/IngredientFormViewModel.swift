@@ -191,31 +191,7 @@ final class IngredientFormViewModel {
     }
 
     func suggestCode(for name: String, existingCodes: [String]) -> String {
-        let normalised = existingCodes.map { $0.uppercased() }
-        let stripped = name.applyingTransform(.stripDiacritics, reverse: false) ?? name
-        let words = stripped.split(separator: " ").map(String.init).filter { !$0.isEmpty }
-        guard !words.isEmpty else { return "" }
-
-        if words.count > 1 {
-            let initials = words.map { String($0.prefix(1)).uppercased() }.joined()
-            var candidate = initials
-            for character in (words.last?.uppercased() ?? "").dropFirst() {
-                if candidate.count >= 3 && !normalised.contains(candidate) { return candidate }
-                guard candidate.count < 6 else { break }
-                candidate.append(character)
-            }
-            return candidate
-        } else {
-            // Single word — take first 3 chars, extend if not unique
-            let upper = words[0].uppercased()
-            for length in 3...6 {
-                guard length <= upper.count else { break }
-                let candidate = String(upper.prefix(length))
-                if !normalised.contains(candidate) { return candidate }
-            }
-            // Return best-effort (may still conflict if word is very short)
-            return String(upper.prefix(min(6, upper.count)))
-        }
+        IngredientCodeSuggester.suggest(for: name, existingCodes: existingCodes)
     }
 
     /// The SAP value this save would write: the parsed field while it is on screen,

@@ -144,6 +144,7 @@ final class RestoreCoordinator {
             // this build may know entries the file doesn't. Either way the
             // inventory should look the way a launch would leave it.
             IngredientLibraryInstaller.installMissingLoggingFailure(from: ingredientLibrary, in: context)
+            IngredientCodeBackfill.fillMissingCodesLoggingFailure(from: ingredientLibrary, in: context)
             rollbackFile = rollback.map(ExportFile.init(url:))
             // Only once the new snapshot is safely written and the restore has
             // actually happened. Pruning any earlier would trade a rollback the

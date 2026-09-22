@@ -4,6 +4,7 @@
     {
       "slug": "abyssinian-oil",
       "name": "Abyssinian Oil",
+      "code": "ABO",
       "aliases": [
         "Crambe Oil",
         "Abyssinian Seed Oil"
@@ -26,6 +27,7 @@
     {
       "slug": "algae-oil",
       "name": "Algae Oil",
+      "code": "ALO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -45,6 +47,7 @@
     {
       "slug": "aloe-vera-oil",
       "name": "Aloe Vera Oil",
+      "code": "AVO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -64,6 +67,7 @@
     {
       "slug": "andiroba-oil",
       "name": "Andiroba Oil",
+      "code": "ANO",
       "aliases": [
         "Crabwood Oil",
         "Karaba Oil",
@@ -88,6 +92,7 @@
     {
       "slug": "apricot-kernel-oil",
       "name": "Apricot Kernel Oil",
+      "code": "AKO",
       "aliases": [
         "Apricot Kernal Oil"
       ],
@@ -109,6 +114,7 @@
     {
       "slug": "argan-oil",
       "name": "Argan Oil",
+      "code": "ARO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -128,6 +134,7 @@
     {
       "slug": "avocado-oil",
       "name": "Avocado Oil",
+      "code": "AVOO",
       "aliases": [],
       "category": "Oils",
       "unit": "ml",
@@ -148,6 +155,7 @@
     {
       "slug": "babassu-oil",
       "name": "Babassu Oil",
+      "code": "BAO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -167,6 +175,7 @@
     {
       "slug": "baobab-oil",
       "name": "Baobab Oil",
+      "code": "BAOO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -186,6 +195,7 @@
     {
       "slug": "black-cumin-seed-oil",
       "name": "Black Cumin Seed Oil",
+      "code": "BCSO",
       "aliases": [
         "Black Seed Oil",
         "Nigella Sativa Oil",
@@ -209,6 +219,7 @@
     {
       "slug": "black-currant-seed-oil",
       "name": "Black Currant Seed Oil",
+      "code": "BLCSO",
       "aliases": [
         "Black Current Seed Oil",
         "Black Currant Fruit Oil"
@@ -231,6 +242,7 @@
     {
       "slug": "borage-oil",
       "name": "Borage Oil",
+      "code": "BOO",
       "aliases": [
         "Borage Seed Oil"
       ],
@@ -252,6 +264,7 @@
     {
       "slug": "brazil-nut-oil",
       "name": "Brazil Nut Oil",
+      "code": "BNO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -271,6 +284,7 @@
     {
       "slug": "broccoli-seed-oil",
       "name": "Broccoli Seed Oil",
+      "code": "BSO",
       "aliases": [
         "Broccoli Seed Oil, Brassica Oleracea"
       ],
@@ -292,6 +306,7 @@
     {
       "slug": "buriti-oil",
       "name": "Buriti Oil",
+      "code": "BUO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -311,6 +326,7 @@
     {
       "slug": "camelina-seed-oil",
       "name": "Camelina Seed Oil",
+      "code": "CSO",
       "aliases": [
         "Camelina Oil"
       ],
@@ -332,6 +348,7 @@
     {
       "slug": "camellia-seed-oil",
       "name": "Camellia Seed Oil",
+      "code": "CASO",
       "aliases": [
         "Camellia Oil",
         "Tea Seed Oil",
@@ -355,6 +372,7 @@
     {
       "slug": "canola-oil",
       "name": "Canola Oil",
+      "code": "CAO",
       "aliases": [
         "Rapeseed Oil (Canola Oil)"
       ],
@@ -376,6 +394,7 @@
     {
       "slug": "carrot-seed-oil",
       "name": "Carrot Seed Oil",
+      "code": "CARSO",
       "aliases": [
         "Carrot Seed Oil, cold pressed"
       ],
@@ -397,6 +416,7 @@
     {
       "slug": "cashew-nut-oil",
       "name": "Cashew Nut Oil",
+      "code": "CNO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -416,6 +436,7 @@
     {
       "slug": "castor-oil",
       "name": "Castor Oil",
+      "code": "CASTO",
       "aliases": [
         "Castor Seed Oil",
         "Ricinus Oil"
@@ -438,6 +459,7 @@
     {
       "slug": "coconut-oil",
       "name": "Coconut Oil",
+      "code": "COO",
       "aliases": [
         "Coconut Oil - All Grades except Virgin",
         "Coconut Oil, All Grades"
@@ -460,6 +482,7 @@
     {
       "slug": "coconut-oil-76-deg",
       "name": "Coconut Oil, 76 deg",
+      "code": "CO7D",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -479,6 +502,7 @@
     {
       "slug": "cod-liver-oil",
       "name": "Cod Liver Oil",
+      "code": "CLO",
       "aliases": [
         "Cod Liver",
         "Banks Oil"
@@ -501,6 +525,7 @@
     {
       "slug": "cohune-oil",
       "name": "Cohune Oil",
+      "code": "COHO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -520,6 +545,7 @@
     {
       "slug": "corn-oil",
       "name": "Corn Oil",
+      "code": "CORO",
       "aliases": [
         "Maize Oil",
         "Maize (Corn) Oil"
@@ -542,6 +568,7 @@
     {
       "slug": "cottonseed-oil",
       "name": "Cottonseed Oil",
+      "code": "COTO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -561,6 +588,7 @@
     {
       "slug": "cranberry-seed-oil",
       "name": "Cranberry Seed Oil",
+      "code": "CRSO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -580,6 +608,7 @@
     {
       "slug": "date-seed-oil",
       "name": "Date Seed Oil",
+      "code": "DSO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -599,6 +628,7 @@
     {
       "slug": "emu-oil",
       "name": "Emu Oil",
+      "code": "EMO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -618,6 +648,7 @@
     {
       "slug": "evening-primrose-oil",
       "name": "Evening Primrose Oil",
+      "code": "EPO",
       "aliases": [
         "Evening Primrose"
       ],
@@ -639,6 +670,7 @@
     {
       "slug": "extra-virgin-olive-oil",
       "name": "Extra Virgin Olive Oil",
+      "code": "EVOO",
       "aliases": [
         "Olive Oil, Extra Virgin",
         "EVOO"
@@ -661,6 +693,7 @@
     {
       "slug": "flaxseed-oil",
       "name": "Flaxseed Oil",
+      "code": "FLO",
       "aliases": [
         "Linseed Oil, flax",
         "Linseed Oil",
@@ -685,6 +718,7 @@
     {
       "slug": "fractionated-coconut-oil",
       "name": "Fractionated Coconut Oil",
+      "code": "FCO",
       "aliases": [
         "MCT Oil",
         "Coconut Oil, fractionated"
@@ -707,6 +741,7 @@
     {
       "slug": "fractionated-shea-oil",
       "name": "Fractionated Shea Oil",
+      "code": "FSO",
       "aliases": [
         "Shea Oil",
         "Shea Oil, fractionated",
@@ -730,6 +765,7 @@
     {
       "slug": "grapeseed-oil",
       "name": "Grapeseed Oil",
+      "code": "GRO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -749,6 +785,7 @@
     {
       "slug": "green-coffee-bean-oil",
       "name": "Green Coffee Bean Oil",
+      "code": "GCBO",
       "aliases": [
         "Coffee Bean Oil, green",
         "Coffee Seed Oil (Green)"
@@ -771,6 +808,7 @@
     {
       "slug": "hazelnut-oil",
       "name": "Hazelnut Oil",
+      "code": "HAO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -790,6 +828,7 @@
     {
       "slug": "hemp-seed-oil",
       "name": "Hemp Seed Oil",
+      "code": "HSO",
       "aliases": [
         "Hemp Oil",
         "Hemp Seed Butter & Oil"
@@ -812,6 +851,7 @@
     {
       "slug": "herring-oil",
       "name": "Herring Oil",
+      "code": "HEO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -831,6 +871,7 @@
     {
       "slug": "high-oleic-canola-oil",
       "name": "High Oleic Canola Oil",
+      "code": "HOCO",
       "aliases": [
         "Canola Oil, high oleic"
       ],
@@ -852,6 +893,7 @@
     {
       "slug": "high-oleic-safflower-oil",
       "name": "High Oleic Safflower Oil",
+      "code": "HOSO",
       "aliases": [
         "Safflower Oil, high oleic"
       ],
@@ -873,6 +915,7 @@
     {
       "slug": "high-oleic-sunflower-oil",
       "name": "High Oleic Sunflower Oil",
+      "code": "HIOSO",
       "aliases": [
         "Sunflower Oil, high oleic",
         "Sunflower Seed Oil (High Oleic)"
@@ -895,6 +938,7 @@
     {
       "slug": "jatropha-oil",
       "name": "Jatropha Oil",
+      "code": "JAO",
       "aliases": [
         "Jatropha Oil, soapnut seed oil",
         "Jatropha Oil (Soapnut)"
@@ -917,6 +961,7 @@
     {
       "slug": "jojoba-oil",
       "name": "Jojoba Oil",
+      "code": "JOO",
       "aliases": [
         "Jojoba Oil (a Liquid Wax Ester)",
         "Jojoba Seed Oil, Clear",
@@ -940,6 +985,7 @@
     {
       "slug": "kapok-oil",
       "name": "Kapok Oil",
+      "code": "KAO",
       "aliases": [
         "Java Cotton Oil",
         "Kapok (Java Cotton) Oil"
@@ -962,6 +1008,7 @@
     {
       "slug": "karanja-oil",
       "name": "Karanja Oil",
+      "code": "KARO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -981,6 +1028,7 @@
     {
       "slug": "kukui-nut-oil",
       "name": "Kukui Nut Oil",
+      "code": "KNO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1000,6 +1048,7 @@
     {
       "slug": "laurel-fruit-oil",
       "name": "Laurel Fruit Oil",
+      "code": "LFO",
       "aliases": [
         "Laurel Berry Oil",
         "Laurel Berry (Fruit) Oil"
@@ -1022,6 +1071,7 @@
     {
       "slug": "loofah-seed-oil",
       "name": "Loofah Seed Oil",
+      "code": "LSO",
       "aliases": [
         "Loofa Seed Oil, Luffa cylinderica",
         "Loofa Seed Oil"
@@ -1044,6 +1094,7 @@
     {
       "slug": "macadamia-oil",
       "name": "Macadamia Oil",
+      "code": "MAO",
       "aliases": [
         "Macadamia Nut Oil"
       ],
@@ -1065,6 +1116,7 @@
     {
       "slug": "mango-seed-oil",
       "name": "Mango Seed Oil",
+      "code": "MSO",
       "aliases": [
         "Mango Oil (Olein)"
       ],
@@ -1086,6 +1138,7 @@
     {
       "slug": "manketti-oil",
       "name": "Manketti Oil",
+      "code": "MANO",
       "aliases": [
         "Mongongo Oil"
       ],
@@ -1107,6 +1160,7 @@
     {
       "slug": "marula-oil",
       "name": "Marula Oil",
+      "code": "MARO",
       "aliases": [
         "Marula Kernel Oil"
       ],
@@ -1128,6 +1182,7 @@
     {
       "slug": "meadowfoam-seed-oil",
       "name": "Meadowfoam Seed Oil",
+      "code": "MESO",
       "aliases": [
         "Meadowfoam Oil"
       ],
@@ -1149,6 +1204,7 @@
     {
       "slug": "milk-thistle-oil",
       "name": "Milk Thistle Oil",
+      "code": "MTO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1168,6 +1224,7 @@
     {
       "slug": "mink-oil",
       "name": "Mink Oil",
+      "code": "MIO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1187,6 +1244,7 @@
     {
       "slug": "monoi-de-tahiti-oil",
       "name": "Monoi de Tahiti Oil",
+      "code": "MDTO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1206,6 +1264,7 @@
     {
       "slug": "moringa-oil",
       "name": "Moringa Oil",
+      "code": "MOO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1225,6 +1284,7 @@
     {
       "slug": "mustard-oil",
       "name": "Mustard Oil",
+      "code": "MUO",
       "aliases": [
         "Mustard Oil, kachi ghani",
         "Mustard Seed Oil"
@@ -1247,6 +1307,7 @@
     {
       "slug": "neatsfoot-oil",
       "name": "Neatsfoot Oil",
+      "code": "NEO",
       "aliases": [
         "Neatsfoot Oil (Neats)",
         "Beef Hoof"
@@ -1269,6 +1330,7 @@
     {
       "slug": "neem-oil",
       "name": "Neem Oil",
+      "code": "NEEO",
       "aliases": [
         "Neem Seed Oil"
       ],
@@ -1290,6 +1352,7 @@
     {
       "slug": "oat-oil",
       "name": "Oat Oil",
+      "code": "OAO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1309,6 +1372,7 @@
     {
       "slug": "oleic-acid",
       "name": "Oleic Acid",
+      "code": "OLA",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1328,6 +1392,7 @@
     {
       "slug": "olive-oil",
       "name": "Olive Oil",
+      "code": "OLO",
       "aliases": [
         "Olive Oil - All Grades",
         "Oleum Olivae",
@@ -1354,6 +1419,7 @@
     {
       "slug": "olive-pomace-oil",
       "name": "Olive Pomace Oil",
+      "code": "OPO",
       "aliases": [
         "Pomace Olive Oil",
         "Olive Oil  pomace"
@@ -1376,6 +1442,7 @@
     {
       "slug": "ostrich-oil",
       "name": "Ostrich Oil",
+      "code": "OSO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1395,6 +1462,7 @@
     {
       "slug": "palm-kernel-oil",
       "name": "Palm Kernel Oil",
+      "code": "PKO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1414,6 +1482,7 @@
     {
       "slug": "palm-oil",
       "name": "Palm Oil",
+      "code": "PAO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1433,6 +1502,7 @@
     {
       "slug": "palm-olein",
       "name": "Palm Olein",
+      "code": "PALO",
       "aliases": [
         "Palmolein"
       ],
@@ -1454,6 +1524,7 @@
     {
       "slug": "papaya-seed-oil",
       "name": "Papaya Seed Oil",
+      "code": "PSO",
       "aliases": [
         "Papaya seed oil, Carica papaya",
         "Papaya Oil"
@@ -1476,6 +1547,7 @@
     {
       "slug": "passion-fruit-seed-oil",
       "name": "Passion Fruit Seed Oil",
+      "code": "PFSO",
       "aliases": [
         "Maracuja Oil",
         "Passionfruit Oil"
@@ -1498,6 +1570,7 @@
     {
       "slug": "pataua-oil",
       "name": "Patauá Oil",
+      "code": "PATO",
       "aliases": [
         "Ungurahui Oil",
         "Pataua (Patawa) Oil"
@@ -1520,6 +1593,7 @@
     {
       "slug": "peach-kernel-oil",
       "name": "Peach Kernel Oil",
+      "code": "PEKO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1539,6 +1613,7 @@
     {
       "slug": "peanut-oil",
       "name": "Peanut Oil",
+      "code": "PEO",
       "aliases": [
         "Groundnut Oil",
         "Arachis Oil",
@@ -1563,6 +1638,7 @@
     {
       "slug": "pecan-oil",
       "name": "Pecan Oil",
+      "code": "PECO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1582,6 +1658,7 @@
     {
       "slug": "perilla-seed-oil",
       "name": "Perilla Seed Oil",
+      "code": "PESO",
       "aliases": [
         "Perilla Oil"
       ],
@@ -1603,6 +1680,7 @@
     {
       "slug": "pine-tar",
       "name": "Pine Tar",
+      "code": "PIT",
       "aliases": [
         "Pine Tar, lye calc only no FA"
       ],
@@ -1624,6 +1702,7 @@
     {
       "slug": "pistachio-oil",
       "name": "Pistachio Oil",
+      "code": "PIO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1643,6 +1722,7 @@
     {
       "slug": "plum-kernel-oil",
       "name": "Plum Kernel Oil",
+      "code": "PLKO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1662,6 +1742,7 @@
     {
       "slug": "pomegranate-seed-oil",
       "name": "Pomegranate Seed Oil",
+      "code": "POSO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1681,6 +1762,7 @@
     {
       "slug": "poppy-seed-oil",
       "name": "Poppy Seed Oil",
+      "code": "POPSO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1700,6 +1782,7 @@
     {
       "slug": "pracaxi-oil",
       "name": "Pracaxi Oil",
+      "code": "PRO",
       "aliases": [
         "Pracaxi Seed Oil",
         "Pracaxi (Pracachy) Seed Oil - hair conditioner"
@@ -1722,6 +1805,7 @@
     {
       "slug": "pumpkin-seed-oil",
       "name": "Pumpkin Seed Oil",
+      "code": "PUSO",
       "aliases": [
         "Pumpkin Seed Oil virgin"
       ],
@@ -1743,6 +1827,7 @@
     {
       "slug": "rapeseed-oil",
       "name": "Rapeseed Oil",
+      "code": "RAO",
       "aliases": [
         "Rapeseed Oil, unrefined canola",
         "Colza Oil",
@@ -1767,6 +1852,7 @@
     {
       "slug": "raspberry-seed-oil",
       "name": "Raspberry Seed Oil",
+      "code": "RSO",
       "aliases": [
         "Red Raspberry Seed Oil"
       ],
@@ -1788,6 +1874,7 @@
     {
       "slug": "rice-bran-oil",
       "name": "Rice Bran Oil",
+      "code": "RBO",
       "aliases": [
         "Rice Bran Oil, refined"
       ],
@@ -1809,6 +1896,7 @@
     {
       "slug": "roasted-coffee-bean-oil",
       "name": "Roasted Coffee Bean Oil",
+      "code": "RCBO",
       "aliases": [
         "Coffee Bean Oil, roasted",
         "Coffee Seed Oil (Roasted)"
@@ -1831,6 +1919,7 @@
     {
       "slug": "rosehip-oil",
       "name": "Rosehip Oil",
+      "code": "ROO",
       "aliases": [
         "Rosehip Seed Oil",
         "Rose Hip Oil"
@@ -1853,6 +1942,7 @@
     {
       "slug": "sacha-inchi-oil",
       "name": "Sacha Inchi Oil",
+      "code": "SIO",
       "aliases": [
         "Sacha Inchi, Plukenetia volubilis"
       ],
@@ -1874,6 +1964,7 @@
     {
       "slug": "safflower-oil",
       "name": "Safflower Oil",
+      "code": "SAO",
       "aliases": [
         "Safflower Oil, High Linoleic"
       ],
@@ -1896,6 +1987,7 @@
     {
       "slug": "salmon-oil",
       "name": "Salmon Oil",
+      "code": "SALO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1915,6 +2007,7 @@
     {
       "slug": "sardine-oil",
       "name": "Sardine Oil",
+      "code": "SARO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1934,6 +2027,7 @@
     {
       "slug": "saw-palmetto-extract",
       "name": "Saw Palmetto Extract",
+      "code": "SPE",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1953,6 +2047,7 @@
     {
       "slug": "saw-palmetto-oil",
       "name": "Saw Palmetto Oil",
+      "code": "SPO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -1972,6 +2067,7 @@
     {
       "slug": "sea-buckthorn-berry-oil",
       "name": "Sea Buckthorn Seed and Berry Oil",
+      "code": "SBSABO",
       "aliases": [
         "Sea Buckthorn Oil, seed and berry",
         "Seabuckthorn Oil (Seed and Berries)"
@@ -1994,6 +2090,7 @@
     {
       "slug": "sea-buckthorn-seed-oil",
       "name": "Sea Buckthorn Seed Oil",
+      "code": "SBSO",
       "aliases": [
         "Sea Buckthorn Oil, seed",
         "Seabuckthorn Oil (Seed)"
@@ -2016,6 +2113,7 @@
     {
       "slug": "sesame-oil",
       "name": "Sesame Oil",
+      "code": "SEO",
       "aliases": [
         "Sesame Seed Oil",
         "Teal (Teel/Til)"
@@ -2039,6 +2137,7 @@
     {
       "slug": "sour-cherry-kernel-oil",
       "name": "Sour Cherry Kernel Oil",
+      "code": "SCKO",
       "aliases": [
         "Cherry Kern2 Oil, p. cerasus",
         "Cherry Kernel Oil (P. Cerasus)"
@@ -2061,6 +2160,7 @@
     {
       "slug": "soybean-oil",
       "name": "Soybean Oil",
+      "code": "SOO",
       "aliases": [
         "Soya Oil",
         "Soybean Oil (All Grades)",
@@ -2084,6 +2184,7 @@
     {
       "slug": "sunflower-oil",
       "name": "Sunflower Oil",
+      "code": "SUO",
       "aliases": [
         "Sunflower Seed Oil"
       ],
@@ -2105,6 +2206,7 @@
     {
       "slug": "sweet-almond-oil",
       "name": "Sweet Almond Oil",
+      "code": "SWAO",
       "aliases": [
         "Almond Oil",
         "Almond Oil, sweet"
@@ -2127,6 +2229,7 @@
     {
       "slug": "sweet-cherry-kernel-oil",
       "name": "Sweet Cherry Kernel Oil",
+      "code": "SWCKO",
       "aliases": [
         "Cherry Kern1 Oil, p. avium",
         "Cherry Kernel Oil (P. Avium)"
@@ -2149,6 +2252,7 @@
     {
       "slug": "tamanu-oil",
       "name": "Tamanu Oil",
+      "code": "TAO",
       "aliases": [
         "Kamani Oil",
         "Tamanu Oil, kamani",
@@ -2172,6 +2276,7 @@
     {
       "slug": "tung-oil",
       "name": "Tung Oil",
+      "code": "TUO",
       "aliases": [
         "China Wood Oil"
       ],
@@ -2193,6 +2298,7 @@
     {
       "slug": "turkey-red-castor-oil",
       "name": "Turkey Red Castor Oil",
+      "code": "TRCO",
       "aliases": [
         "Sulfated Castor Oil"
       ],
@@ -2214,6 +2320,7 @@
     {
       "slug": "virgin-coconut-cream-oil",
       "name": "Virgin Coconut Cream Oil",
+      "code": "VCCO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -2233,6 +2340,7 @@
     {
       "slug": "virgin-coconut-oil",
       "name": "Virgin Coconut Oil",
+      "code": "VCO",
       "aliases": [
         "Coconut Oil, Virgin"
       ],
@@ -2254,6 +2362,7 @@
     {
       "slug": "walnut-oil",
       "name": "Walnut Oil",
+      "code": "WAO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -2273,6 +2382,7 @@
     {
       "slug": "watermelon-seed-oil",
       "name": "Watermelon Seed Oil",
+      "code": "WSO",
       "aliases": [],
       "category": "Oils",
       "unit": "g",
@@ -2292,6 +2402,7 @@
     {
       "slug": "wheat-germ-oil",
       "name": "Wheat Germ Oil",
+      "code": "WGO",
       "aliases": [
         "Wheatgerm Oil"
       ],
@@ -2313,6 +2424,7 @@
     {
       "slug": "yangu-oil",
       "name": "Yangu Oil",
+      "code": "YAO",
       "aliases": [
         "Cape Chestnut Oil",
         "Yangu, cape chestnut",
@@ -2336,6 +2448,7 @@
     {
       "slug": "zapote-seed-oil",
       "name": "Zapote Seed Oil",
+      "code": "ZSO",
       "aliases": [
         "Mamey Seed Oil",
         "Zapote seed oil, (Aceite de Sapuyul or Mamey)",
@@ -2359,6 +2472,7 @@
     {
       "slug": "beeswax",
       "name": "Beeswax",
+      "code": "BEE",
       "aliases": [
         "Beeswax, White & Yellow"
       ],
@@ -2380,6 +2494,7 @@
     {
       "slug": "candelilla-wax",
       "name": "Candelilla Wax",
+      "code": "CAW",
       "aliases": [],
       "category": "Waxes",
       "unit": "g",
@@ -2399,6 +2514,7 @@
     {
       "slug": "japan-wax",
       "name": "Japan Wax",
+      "code": "JAW",
       "aliases": [],
       "category": "Waxes",
       "unit": "g",
@@ -2418,6 +2534,7 @@
     {
       "slug": "lanolin",
       "name": "Lanolin",
+      "code": "LAN",
       "aliases": [
         "Liquid Lanolin",
         "Lanolin liquid Wax"
@@ -2440,6 +2557,7 @@
     {
       "slug": "soy-wax",
       "name": "Soy Wax",
+      "code": "SOW",
       "aliases": [
         "Fully Hydrogenated Soybean Oil",
         "Soybean, fully hydrogenated (soy wax)",
@@ -2463,6 +2581,7 @@
     {
       "slug": "almond-butter",
       "name": "Almond Butter",
+      "code": "ALB",
       "aliases": [
         "Almond Butter, Sweet"
       ],
@@ -2484,6 +2603,7 @@
     {
       "slug": "aloe-butter",
       "name": "Aloe Butter",
+      "code": "ALOB",
       "aliases": [
         "Aloe Vera Butter"
       ],
@@ -2505,6 +2625,7 @@
     {
       "slug": "apricot-kernel-butter",
       "name": "Apricot Kernel Butter",
+      "code": "AKB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -2524,6 +2645,7 @@
     {
       "slug": "avocado-butter",
       "name": "Avocado Butter",
+      "code": "AVB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -2543,6 +2665,7 @@
     {
       "slug": "bear-tallow",
       "name": "Bear Tallow",
+      "code": "BET",
       "aliases": [
         "Tallow Bear"
       ],
@@ -2564,6 +2687,7 @@
     {
       "slug": "beef-tallow",
       "name": "Beef Tallow",
+      "code": "BEET",
       "aliases": [
         "Tallow Beef"
       ],
@@ -2585,6 +2709,7 @@
     {
       "slug": "chicken-fat",
       "name": "Chicken Fat",
+      "code": "CHF",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -2604,6 +2729,7 @@
     {
       "slug": "chinese-vegetable-tallow",
       "name": "Chinese Vegetable Tallow",
+      "code": "CVT",
       "aliases": [
         "Tallow, Chinese Vegetable"
       ],
@@ -2625,6 +2751,7 @@
     {
       "slug": "cocoa-butter",
       "name": "Cocoa Butter",
+      "code": "COB",
       "aliases": [
         "Theobroma Butter",
         "Cocoa Oil"
@@ -2647,6 +2774,7 @@
     {
       "slug": "hydrogenated-coconut-oil",
       "name": "Coconut Oil, 92 deg",
+      "code": "CO9D",
       "aliases": [
         "Hydrogenated Coconut Oil"
       ],
@@ -2668,6 +2796,7 @@
     {
       "slug": "commercial-stearic-acid",
       "name": "Commercial Stearic Acid",
+      "code": "CSA",
       "aliases": [
         "Triple-Pressed Stearic Acid"
       ],
@@ -2689,6 +2818,7 @@
     {
       "slug": "cupuacu-butter",
       "name": "Cupuaçu Butter",
+      "code": "CUB",
       "aliases": [
         "Capuaca Butter"
       ],
@@ -2710,6 +2840,7 @@
     {
       "slug": "deer-tallow",
       "name": "Deer Tallow",
+      "code": "DET",
       "aliases": [
         "Tallow Deer"
       ],
@@ -2731,6 +2862,7 @@
     {
       "slug": "duck-fat",
       "name": "Duck Fat",
+      "code": "DUF",
       "aliases": [
         "Duck Fat, flesh and skin"
       ],
@@ -2752,6 +2884,7 @@
     {
       "slug": "ghee",
       "name": "Ghee",
+      "code": "GHE",
       "aliases": [
         "Milk Fat, any bovine",
         "Butter Oil",
@@ -2778,6 +2911,7 @@
     {
       "slug": "goat-butterfat",
       "name": "Goat Butterfat",
+      "code": "GOB",
       "aliases": [
         "Butterfat, Goat"
       ],
@@ -2799,6 +2933,7 @@
     {
       "slug": "goat-tallow",
       "name": "Goat Tallow",
+      "code": "GOT",
       "aliases": [
         "Tallow Goat"
       ],
@@ -2820,6 +2955,7 @@
     {
       "slug": "goose-fat",
       "name": "Goose Fat",
+      "code": "GOF",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -2839,6 +2975,7 @@
     {
       "slug": "horse-fat",
       "name": "Horse Fat",
+      "code": "HOF",
       "aliases": [
         "Horse Oil"
       ],
@@ -2860,6 +2997,7 @@
     {
       "slug": "hydrogenated-palm-kernel-oil",
       "name": "Hydrogenated Palm Kernel Oil",
+      "code": "HPKO",
       "aliases": [
         "Palm Kernel Flakes",
         "Palm Kernel Oil Flakes, hydrogenated"
@@ -2882,6 +3020,7 @@
     {
       "slug": "illipe-butter",
       "name": "Illipe Butter",
+      "code": "ILB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -2901,6 +3040,7 @@
     {
       "slug": "kokum-butter",
       "name": "Kokum Butter",
+      "code": "KOB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -2920,6 +3060,7 @@
     {
       "slug": "kpangnan-butter",
       "name": "Kpangnan Butter",
+      "code": "KPB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -2939,6 +3080,7 @@
     {
       "slug": "lard",
       "name": "Lard",
+      "code": "LAR",
       "aliases": [
         "Manteca",
         "Lard, Pig Tallow (Manteca)"
@@ -2961,6 +3103,7 @@
     {
       "slug": "lauric-acid",
       "name": "Lauric Acid",
+      "code": "LAA",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -2980,6 +3123,7 @@
     {
       "slug": "macadamia-nut-butter",
       "name": "Macadamia Nut Butter",
+      "code": "MNB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -2999,6 +3143,7 @@
     {
       "slug": "mafura-butter",
       "name": "Mafura Butter",
+      "code": "MAB",
       "aliases": [
         "Mafura Butter, Trichilia emetica"
       ],
@@ -3020,6 +3165,7 @@
     {
       "slug": "mango-butter",
       "name": "Mango Butter",
+      "code": "MANB",
       "aliases": [
         "Mango Seed Butter"
       ],
@@ -3041,6 +3187,7 @@
     {
       "slug": "mowrah-butter",
       "name": "Mowrah Butter",
+      "code": "MOB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3060,6 +3207,7 @@
     {
       "slug": "murumuru-butter",
       "name": "Murumuru Butter",
+      "code": "MUB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3079,6 +3227,7 @@
     {
       "slug": "myristic-acid",
       "name": "Myristic Acid",
+      "code": "MYA",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3098,6 +3247,7 @@
     {
       "slug": "nutmeg-butter",
       "name": "Nutmeg Butter",
+      "code": "NUB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3117,6 +3267,7 @@
     {
       "slug": "olive-butter",
       "name": "Olive Butter",
+      "code": "OLB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3136,6 +3287,7 @@
     {
       "slug": "palm-stearin",
       "name": "Palm Stearin",
+      "code": "PAS",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3155,6 +3307,7 @@
     {
       "slug": "palmitic-acid",
       "name": "Palmitic Acid",
+      "code": "PAA",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3174,6 +3327,7 @@
     {
       "slug": "partially-hydrogenated-soybean-oil",
       "name": "Partially Hydrogenated Soybean Oil",
+      "code": "PHSO",
       "aliases": [
         "Soybean, 27.5% hydrogenated",
         "Soybean Oil (27.5% Hydrogenated)"
@@ -3196,6 +3350,7 @@
     {
       "slug": "rabbit-fat",
       "name": "Rabbit Fat",
+      "code": "RAF",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3215,6 +3370,7 @@
     {
       "slug": "red-palm-butter",
       "name": "Red Palm Butter",
+      "code": "RPB",
       "aliases": [
         "Red Palm Oil",
         "Palm Butter (Red)"
@@ -3237,6 +3393,7 @@
     {
       "slug": "sal-butter",
       "name": "Sal Butter",
+      "code": "SAB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3256,6 +3413,7 @@
     {
       "slug": "shea-butter",
       "name": "Shea Butter",
+      "code": "SHB",
       "aliases": [
         "Karite Butter",
         "Shea Fruit Butter"
@@ -3278,6 +3436,7 @@
     {
       "slug": "sheep-tallow",
       "name": "Sheep Tallow",
+      "code": "SHT",
       "aliases": [
         "Mutton Tallow",
         "Tallow Sheep",
@@ -3301,6 +3460,7 @@
     {
       "slug": "stearic-acid",
       "name": "Stearic Acid",
+      "code": "STA",
       "aliases": [
         "Stearic Acid (100% Pure)"
       ],
@@ -3322,6 +3482,7 @@
     {
       "slug": "tucuma-seed-butter",
       "name": "Tucuma Seed Butter",
+      "code": "TSB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3341,6 +3502,7 @@
     {
       "slug": "ucuuba-butter",
       "name": "Ucuuba Butter",
+      "code": "UCB",
       "aliases": [],
       "category": "Fats",
       "unit": "g",
@@ -3360,6 +3522,7 @@
     {
       "slug": "vegetable-shortening",
       "name": "Vegetable Shortening",
+      "code": "VES",
       "aliases": [
         "Shortening (Vegetable)"
       ],
@@ -3381,6 +3544,7 @@
     {
       "slug": "basil-essential-oil",
       "name": "Basil Essential Oil",
+      "code": "BEO",
       "aliases": [
         "Basil Oil"
       ],
@@ -3390,6 +3554,7 @@
     {
       "slug": "bergamot-essential-oil",
       "name": "Bergamot Essential Oil",
+      "code": "BEEO",
       "aliases": [
         "Bergamot Oil"
       ],
@@ -3400,6 +3565,7 @@
     {
       "slug": "cedarwood-essential-oil",
       "name": "Cedarwood Essential Oil",
+      "code": "CEO",
       "aliases": [
         "Cedarwood Oil",
         "Virginia Cedarwood",
@@ -3412,6 +3578,7 @@
     {
       "slug": "clove-bud-essential-oil",
       "name": "Clove Bud Essential Oil",
+      "code": "CBEO",
       "aliases": [
         "Clove Essential Oil",
         "Clove Bud Oil"
@@ -3423,6 +3590,7 @@
     {
       "slug": "coffee-fragrance-oil",
       "name": "Coffee Fragrance Oil",
+      "code": "CFO",
       "aliases": [],
       "category": "Fragrances",
       "unit": "g"
@@ -3430,6 +3598,7 @@
     {
       "slug": "eucalyptus-essential-oil",
       "name": "Eucalyptus Essential Oil",
+      "code": "EEO",
       "aliases": [],
       "category": "Fragrances",
       "unit": "ml",
@@ -3438,6 +3607,7 @@
     {
       "slug": "fragrance-oil",
       "name": "Fragrance Oil",
+      "code": "FRO",
       "aliases": [
         "FO"
       ],
@@ -3447,6 +3617,7 @@
     {
       "slug": "frankincense-essential-oil",
       "name": "Frankincense Essential Oil",
+      "code": "FEO",
       "aliases": [
         "Olibanum",
         "Frankincense Oil"
@@ -3458,6 +3629,7 @@
     {
       "slug": "geranium-essential-oil",
       "name": "Geranium Essential Oil",
+      "code": "GEO",
       "aliases": [
         "Geranium Oil",
         "Rose Geranium"
@@ -3469,6 +3641,7 @@
     {
       "slug": "grapefruit-essential-oil",
       "name": "Grapefruit Essential Oil",
+      "code": "GREO",
       "aliases": [
         "Grapefruit Oil"
       ],
@@ -3479,6 +3652,7 @@
     {
       "slug": "juniper-berry-essential-oil",
       "name": "Juniper Berry Essential Oil",
+      "code": "JBEO",
       "aliases": [
         "Juniper Berry Oil",
         "Juniper Essential Oil"
@@ -3490,6 +3664,7 @@
     {
       "slug": "lavender-essential-oil",
       "name": "Lavender Essential Oil",
+      "code": "LEO",
       "aliases": [],
       "category": "Fragrances",
       "unit": "ml",
@@ -3498,6 +3673,7 @@
     {
       "slug": "lemon-essential-oil",
       "name": "Lemon Essential Oil",
+      "code": "LEEO",
       "aliases": [
         "Lemon Oil"
       ],
@@ -3508,6 +3684,7 @@
     {
       "slug": "lemongrass-essential-oil",
       "name": "Lemongrass Essential Oil",
+      "code": "LEMEO",
       "aliases": [
         "Lemongrass Oil"
       ],
@@ -3518,6 +3695,7 @@
     {
       "slug": "lime-essential-oil",
       "name": "Lime Essential Oil",
+      "code": "LIEO",
       "aliases": [
         "Lime Oil"
       ],
@@ -3528,6 +3706,7 @@
     {
       "slug": "litsea-cubeba-essential-oil",
       "name": "Litsea Cubeba Essential Oil",
+      "code": "LCEO",
       "aliases": [
         "May Chang",
         "May Chang Essential Oil"
@@ -3539,6 +3718,7 @@
     {
       "slug": "oatmeal-milk-honey-fragrance-oil",
       "name": "Oatmeal Milk & Honey Fragrance Oil",
+      "code": "OMHFO",
       "aliases": [
         "OMH Fragrance Oil"
       ],
@@ -3548,6 +3728,7 @@
     {
       "slug": "patchouli-essential-oil",
       "name": "Patchouli Essential Oil",
+      "code": "PAEO",
       "aliases": [
         "Patchouli Oil"
       ],
@@ -3558,6 +3739,7 @@
     {
       "slug": "peppermint-essential-oil",
       "name": "Peppermint Essential Oil",
+      "code": "PEEO",
       "aliases": [],
       "category": "Fragrances",
       "unit": "ml",
@@ -3566,6 +3748,7 @@
     {
       "slug": "pine-needle-essential-oil",
       "name": "Pine Needle Essential Oil",
+      "code": "PNEO",
       "aliases": [
         "Pine Essential Oil",
         "Pine Needle Oil"
@@ -3577,6 +3760,7 @@
     {
       "slug": "rose-fragrance-oil",
       "name": "Rose Fragrance Oil",
+      "code": "RFO",
       "aliases": [],
       "category": "Fragrances",
       "unit": "g"
@@ -3584,6 +3768,7 @@
     {
       "slug": "rosemary-essential-oil",
       "name": "Rosemary Essential Oil",
+      "code": "REO",
       "aliases": [
         "Rosemary Oil"
       ],
@@ -3594,6 +3779,7 @@
     {
       "slug": "sandalwood-fragrance-oil",
       "name": "Sandalwood Fragrance Oil",
+      "code": "SFO",
       "aliases": [],
       "category": "Fragrances",
       "unit": "g"
@@ -3601,6 +3787,7 @@
     {
       "slug": "spearmint-essential-oil",
       "name": "Spearmint Essential Oil",
+      "code": "SPEO",
       "aliases": [
         "Spearmint Oil"
       ],
@@ -3611,6 +3798,7 @@
     {
       "slug": "star-anise-essential-oil",
       "name": "Star Anise Essential Oil",
+      "code": "SAEO",
       "aliases": [
         "Star Anise Oil",
         "Anise Essential Oil"
@@ -3622,6 +3810,7 @@
     {
       "slug": "sweet-orange-essential-oil",
       "name": "Sweet Orange Essential Oil",
+      "code": "SOEO",
       "aliases": [
         "Orange Essential Oil",
         "Sweet Orange Oil"
@@ -3633,6 +3822,7 @@
     {
       "slug": "tea-tree-essential-oil",
       "name": "Tea Tree Essential Oil",
+      "code": "TTEO",
       "aliases": [
         "Tea Tree Oil",
         "Melaleuca"
@@ -3644,6 +3834,7 @@
     {
       "slug": "thyme-essential-oil",
       "name": "Thyme Essential Oil",
+      "code": "TEO",
       "aliases": [
         "Thyme Oil"
       ],
@@ -3654,6 +3845,7 @@
     {
       "slug": "vanilla-fragrance-oil",
       "name": "Vanilla Fragrance Oil",
+      "code": "VFO",
       "aliases": [
         "Vanilla FO"
       ],
@@ -3663,6 +3855,7 @@
     {
       "slug": "vetiver-essential-oil",
       "name": "Vetiver Essential Oil",
+      "code": "VEO",
       "aliases": [
         "Vetiver Oil",
         "Vetivert"
@@ -3674,6 +3867,7 @@
     {
       "slug": "ylang-ylang-essential-oil",
       "name": "Ylang Ylang Essential Oil",
+      "code": "YYEO",
       "aliases": [
         "Ylang Ylang Oil"
       ],
@@ -3684,6 +3878,7 @@
     {
       "slug": "activated-charcoal",
       "name": "Activated Charcoal",
+      "code": "ACC",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3691,6 +3886,7 @@
     {
       "slug": "alkanet-root-powder",
       "name": "Alkanet Root Powder",
+      "code": "ARP",
       "aliases": [
         "Alkanet Root"
       ],
@@ -3700,6 +3896,7 @@
     {
       "slug": "aloe-vera-juice",
       "name": "Aloe Vera Juice",
+      "code": "AVJ",
       "aliases": [
         "Aloe Vera Gel",
         "Aloe Juice"
@@ -3711,6 +3908,7 @@
     {
       "slug": "annatto-seed-powder",
       "name": "Annatto Seed Powder",
+      "code": "ASP",
       "aliases": [
         "Annatto"
       ],
@@ -3720,6 +3918,7 @@
     {
       "slug": "bentonite-clay",
       "name": "Bentonite Clay",
+      "code": "BEC",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3727,6 +3926,7 @@
     {
       "slug": "borax",
       "name": "Borax",
+      "code": "BOR",
       "aliases": [
         "Sodium Borate",
         "Sodium Tetraborate"
@@ -3737,6 +3937,7 @@
     {
       "slug": "boric-acid",
       "name": "Boric Acid",
+      "code": "BOA",
       "aliases": [
         "Hydrogen Borate"
       ],
@@ -3746,6 +3947,7 @@
     {
       "slug": "citric-acid",
       "name": "Citric Acid",
+      "code": "CIA",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3753,6 +3955,7 @@
     {
       "slug": "cocoa-powder",
       "name": "Cocoa Powder",
+      "code": "COP",
       "aliases": [
         "Cacao Powder"
       ],
@@ -3762,6 +3965,7 @@
     {
       "slug": "coconut-milk-powder",
       "name": "Coconut Milk Powder",
+      "code": "CMP",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3769,6 +3973,7 @@
     {
       "slug": "colloidal-oatmeal",
       "name": "Colloidal Oatmeal",
+      "code": "COLO",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3776,6 +3981,7 @@
     {
       "slug": "french-green-clay",
       "name": "French Green Clay",
+      "code": "FGC",
       "aliases": [
         "Illite Clay"
       ],
@@ -3785,6 +3991,7 @@
     {
       "slug": "glycerin",
       "name": "Glycerin",
+      "code": "GLY",
       "aliases": [],
       "category": "Additives",
       "unit": "ml",
@@ -3793,6 +4000,7 @@
     {
       "slug": "goat-milk-powder",
       "name": "Goat Milk Powder",
+      "code": "GMP",
       "aliases": [
         "Goat's Milk Powder"
       ],
@@ -3802,6 +4010,7 @@
     {
       "slug": "ground-coffee",
       "name": "Ground Coffee",
+      "code": "GRC",
       "aliases": [
         "Coffee Grounds"
       ],
@@ -3811,6 +4020,7 @@
     {
       "slug": "honey",
       "name": "Honey",
+      "code": "HON",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3818,6 +4028,7 @@
     {
       "slug": "indigo-powder",
       "name": "Indigo Powder",
+      "code": "INP",
       "aliases": [
         "Indigo"
       ],
@@ -3827,6 +4038,7 @@
     {
       "slug": "iron-oxide",
       "name": "Iron Oxide",
+      "code": "IRO",
       "aliases": [
         "Iron Oxides"
       ],
@@ -3836,6 +4048,7 @@
     {
       "slug": "kaolin-clay",
       "name": "Kaolin Clay",
+      "code": "KAC",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3843,6 +4056,7 @@
     {
       "slug": "madder-root-powder",
       "name": "Madder Root Powder",
+      "code": "MRP",
       "aliases": [
         "Madder Root"
       ],
@@ -3852,6 +4066,7 @@
     {
       "slug": "mica",
       "name": "Mica",
+      "code": "MIC",
       "aliases": [
         "Cosmetic Mica"
       ],
@@ -3861,6 +4076,7 @@
     {
       "slug": "paprika-powder",
       "name": "Paprika Powder",
+      "code": "PAP",
       "aliases": [
         "Paprika"
       ],
@@ -3870,6 +4086,7 @@
     {
       "slug": "poppy-seeds",
       "name": "Poppy Seeds",
+      "code": "POS",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3877,6 +4094,7 @@
     {
       "slug": "pumice",
       "name": "Pumice",
+      "code": "PUM",
       "aliases": [
         "Pumice Powder"
       ],
@@ -3886,6 +4104,7 @@
     {
       "slug": "rhassoul-clay",
       "name": "Rhassoul Clay",
+      "code": "RHC",
       "aliases": [
         "Red Moroccan Clay",
         "Ghassoul Clay"
@@ -3896,6 +4115,7 @@
     {
       "slug": "rose-clay",
       "name": "Rose Clay",
+      "code": "ROC",
       "aliases": [
         "Pink Kaolin Clay",
         "Pink Clay"
@@ -3906,6 +4126,7 @@
     {
       "slug": "rosemary-oleoresin-roe",
       "name": "Rosemary Oleoresin (ROE)",
+      "code": "ROR",
       "aliases": [
         "Rosemary Oleoresin",
         "ROE"
@@ -3917,6 +4138,7 @@
     {
       "slug": "sea-salt",
       "name": "Sea Salt",
+      "code": "SES",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3924,6 +4146,7 @@
     {
       "slug": "silk-amino-acids",
       "name": "Silk Amino Acids",
+      "code": "SAA",
       "aliases": [
         "Hydrolysed Silk"
       ],
@@ -3933,6 +4156,7 @@
     {
       "slug": "sodium-citrate",
       "name": "Sodium Citrate",
+      "code": "SOC",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3940,6 +4164,7 @@
     {
       "slug": "sodium-gluconate",
       "name": "Sodium Gluconate",
+      "code": "SOG",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3947,6 +4172,7 @@
     {
       "slug": "sodium-lactate",
       "name": "Sodium Lactate",
+      "code": "SOL",
       "aliases": [],
       "category": "Additives",
       "unit": "ml",
@@ -3955,6 +4181,7 @@
     {
       "slug": "spirulina-powder",
       "name": "Spirulina Powder",
+      "code": "SPP",
       "aliases": [
         "Spirulina"
       ],
@@ -3964,6 +4191,7 @@
     {
       "slug": "sugar",
       "name": "Sugar",
+      "code": "SUG",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3971,6 +4199,7 @@
     {
       "slug": "table-salt",
       "name": "Table Salt",
+      "code": "TAS",
       "aliases": [
         "Sodium Chloride"
       ],
@@ -3980,6 +4209,7 @@
     {
       "slug": "tetrasodium-edta",
       "name": "Tetrasodium EDTA",
+      "code": "TEE",
       "aliases": [
         "EDTA"
       ],
@@ -3989,6 +4219,7 @@
     {
       "slug": "titanium-dioxide",
       "name": "Titanium Dioxide",
+      "code": "TID",
       "aliases": [],
       "category": "Additives",
       "unit": "g"
@@ -3996,6 +4227,7 @@
     {
       "slug": "turmeric-powder",
       "name": "Turmeric Powder",
+      "code": "TUP",
       "aliases": [
         "Turmeric"
       ],
@@ -4005,6 +4237,7 @@
     {
       "slug": "tussah-silk",
       "name": "Tussah Silk",
+      "code": "TUS",
       "aliases": [
         "Silk Fibre",
         "Mulberry Silk"
@@ -4015,6 +4248,7 @@
     {
       "slug": "ultramarine",
       "name": "Ultramarine",
+      "code": "ULT",
       "aliases": [
         "Ultramarine Blue"
       ],
@@ -4024,6 +4258,7 @@
     {
       "slug": "vitamin-e",
       "name": "Vitamin E",
+      "code": "VIE",
       "aliases": [
         "Tocopherol",
         "Vitamin E Oil"
@@ -4034,6 +4269,7 @@
     {
       "slug": "potassium-hydroxide-lye",
       "name": "Potassium Hydroxide (Lye)",
+      "code": "PHL",
       "aliases": [
         "Potassium Hydroxide",
         "KOH"
@@ -4044,6 +4280,7 @@
     {
       "slug": "sodium-hydroxide-lye",
       "name": "Sodium Hydroxide (Lye)",
+      "code": "SHL",
       "aliases": [
         "Sodium Hydroxide",
         "NaOH"
