@@ -298,6 +298,41 @@ struct DuplicateMergerTests {
         #expect(remaining.first?.expiryNotificationsEnabled == true)
     }
 
+    @Test func mergeAll_TrackingOffOnAnyDevice_StaysOff() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let untouched = AppSettings()
+        untouched.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
+        let untracked = AppSettings()
+        untracked.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002"))
+        untracked.tracksInventory = false
+        ctx.insert(untouched)
+        ctx.insert(untracked)
+        try ctx.save()
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        let remaining = try ctx.fetch(FetchDescriptor<AppSettings>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.tracksInventory == false)
+    }
+
+    @Test func mergeAll_TrackingOnEverywhere_StaysOn() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let first = AppSettings()
+        first.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
+        let second = AppSettings()
+        second.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002"))
+        ctx.insert(first)
+        ctx.insert(second)
+        try ctx.save()
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        #expect(try ctx.fetch(FetchDescriptor<AppSettings>()).first?.tracksInventory == true)
+    }
+
     @Test func canonical_EmptyRecords_ReturnsNil() {
         #expect(AppSettings.canonical(from: []) == nil)
     }

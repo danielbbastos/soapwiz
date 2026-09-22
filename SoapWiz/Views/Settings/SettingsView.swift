@@ -28,10 +28,16 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                if let settings {
+                    stockTrackingSection(settings)
+                }
                 inventorySection
                 recipesSection
                 if let settings {
-                    notificationsSection(settings)
+                    // Expiry reminders are about recorded stock, so they go with it.
+                    if settings.tracksInventory {
+                        notificationsSection(settings)
+                    }
                     pricingSection(settings)
                 }
                 recipeImportSection
@@ -95,6 +101,30 @@ struct SettingsView: View {
             Text("SoapWiz needs notification permission to send expiry reminders. "
                  + "You can enable it in Settings.")
         }
+    }
+
+    /// A section of its own so the footer explaining the toggle sits directly
+    /// under it, rather than under the Inventory lookups.
+    private func stockTrackingSection(_ settings: AppSettings) -> some View {
+        Section {
+            Toggle("Track ingredient stock", isOn: Bindable(settings).tracksInventory)
+                .onChange(of: settings.tracksInventory) { _, tracks in
+                    Task {
+                        if tracks {
+                            await NotificationService.syncIfEnabled(modelContext: modelContext)
+                        } else {
+                            await NotificationService.cancelAllExpiryNotifications()
+                        }
+                    }
+                }
+        } header: {
+            Text("Stock Tracking")
+        } footer: {
+            Text("Turn off to use SoapWiz without recording purchases: batches don't check "
+                 + "or deduct stock, stock and expiry warnings are hidden, and costs aren't shown. "
+                 + "Your purchases are kept for when you turn it back on.")
+        }
+        .listRowBackground(Color.cardBackground)
     }
 
     private var inventorySection: some View {

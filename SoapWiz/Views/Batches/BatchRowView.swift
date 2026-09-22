@@ -19,7 +19,7 @@ struct BatchRowView: View {
                 Spacer()
                 Text("^[\(batch.batchCount) batch](inflect: true)")
                     .monospacedDigit()
-                if batch.totalCost > 0 {
+                if batch.tracksInventory && batch.totalCost > 0 {
                     Text("\(Self.currencyFormatter.string(from: NSNumber(value: batch.totalCost)) ?? "—") total")
                         .monospacedDigit()
                 }

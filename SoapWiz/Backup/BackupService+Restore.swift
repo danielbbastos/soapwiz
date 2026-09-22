@@ -47,7 +47,9 @@ extension BackupService {
                 restoreBatch(dto, recipes: recipes, ingredients: ingredients, into: context)
             }
 
-            AppSettings.resolve(in: context).pvpFactor = backup.settings.pvpFactor
+            let settings = AppSettings.resolve(in: context)
+            settings.pvpFactor = backup.settings.pvpFactor
+            settings.tracksInventory = backup.settings.tracksInventory ?? true
 
             try context.save()
         } catch {
@@ -184,7 +186,8 @@ extension BackupService {
             recipeName: dto.recipeName,
             dateCreated: dto.dateCreated,
             batchCount: dto.batchCount,
-            totalCost: dto.totalCost
+            totalCost: dto.totalCost,
+            tracksInventory: dto.tracksInventory ?? true
         )
         context.insert(batch)
 

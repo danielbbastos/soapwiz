@@ -6,6 +6,7 @@ struct IngredientListView: View {
     @Environment(AppNavigation.self) private var nav
     @Query(sort: \Ingredient.name) private var ingredients: [Ingredient]
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
+    @Query private var settingsRecords: [AppSettings]
 
     @State private var model = IngredientListViewModel()
     @State private var navigationPath = NavigationPath()
@@ -36,7 +37,7 @@ struct IngredientListView: View {
     /// would take them.
     @ViewBuilder
     private func row(_ ingredient: Ingredient) -> some View {
-        let content = IngredientRowView(ingredient: ingredient) {
+        let content = IngredientRowView(ingredient: ingredient, tracksInventory: model.tracksInventory) {
             model.toggleFavorite(ingredient)
         }
         if model.editMode == .active {
@@ -130,7 +131,8 @@ struct IngredientListView: View {
                 .navigationDestination(for: Ingredient.self) { ingredient in
                     IngredientDetailView(
                         ingredient: ingredient,
-                        autoAddPurchase: model.pendingIngredient?.persistentModelID == ingredient.persistentModelID
+                        autoAddPurchase: model.tracksInventory
+                            && model.pendingIngredient?.persistentModelID == ingredient.persistentModelID
                     )
                     .onAppear { model.pendingIngredient = nil }
                 }
@@ -146,6 +148,9 @@ struct IngredientListView: View {
                 }
                 .onChange(of: categories) { _, updated in
                     model.pruneSelectedCategories(against: updated)
+                }
+                .onChange(of: AppSettings.tracksInventory(from: settingsRecords), initial: true) { _, tracks in
+                    model.tracksInventory = tracks
                 }
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {

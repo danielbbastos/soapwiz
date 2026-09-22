@@ -38,14 +38,18 @@ struct InventoryFilterView: View {
                         .listRowBackground(Color.cardBackground)
                 }
 
-                stockStatusMenu
-                    .listRowBackground(Color.cardBackground)
+                if model.tracksInventory {
+                    stockStatusMenu
+                        .listRowBackground(Color.cardBackground)
+                }
 
                 unitMenu
                     .listRowBackground(Color.cardBackground)
 
-                expiryMenu
-                    .listRowBackground(Color.cardBackground)
+                if model.tracksInventory {
+                    expiryMenu
+                        .listRowBackground(Color.cardBackground)
+                }
 
                 // Deliberately not a filter, and so deliberately absent from
                 // `activeFilterCount`: hiding is a lasting decision about an

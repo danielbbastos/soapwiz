@@ -14,6 +14,13 @@ enum NotificationService {
     static func syncIfEnabled(modelContext: ModelContext) async {
         let settings = AppSettings.resolve(in: modelContext)
         guard settings.expiryNotificationsEnabled else { return }
+        // Tracking can be switched off without the Settings toggle — synced from
+        // another device, or by a restore — so reminders already scheduled here
+        // are cleared rather than left to fire.
+        guard settings.tracksInventory else {
+            await cancelAllExpiryNotifications()
+            return
+        }
 
         let center = UNUserNotificationCenter.current()
         let status = await center.notificationSettings().authorizationStatus

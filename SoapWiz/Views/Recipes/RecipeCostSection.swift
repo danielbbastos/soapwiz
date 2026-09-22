@@ -5,6 +5,8 @@ import SwiftData
 /// total with RRP, plus an expandable per-product cost breakdown. Reads its
 /// figures from the view model and the app's RRP factor from settings, and
 /// writes back only the recipe's products, which can be added and deleted here.
+/// With inventory tracking off it becomes a plain "Products" list: the products
+/// still live here, but every price and RRP is left out rather than zeroed.
 struct RecipeCostSection: View {
     let model: RecipeFormViewModel
     let batch: ProductCostBreakdown
@@ -32,11 +34,12 @@ struct RecipeCostSection: View {
     }()
 
     private var pvpFactor: Double { AppSettings.canonical(from: settingsRecords)?.pvpFactor ?? 4.0 }
+    private var tracksInventory: Bool { AppSettings.tracksInventory(from: settingsRecords) }
 
     var body: some View {
-        Section("Cost breakdown") {
+        Section(tracksInventory ? "Cost breakdown" : "Products") {
             let batchTotal = batch.total
-            if batchTotal > 0 {
+            if tracksInventory && batchTotal > 0 {
                 DisclosureGroup(isExpanded: $batchTotalExpanded) {
                     productBreakdownRows(batch)
                 } label: {
@@ -60,7 +63,7 @@ struct RecipeCostSection: View {
                     expanded: batchTotalExpanded,
                     spansWholeSection: true
                 )
-            } else {
+            } else if tracksInventory {
                 Text("No cost data — add purchase prices in Inventory")
                     .foregroundStyle(.secondary)
             }
@@ -72,7 +75,9 @@ struct RecipeCostSection: View {
                 // Without costs there is nothing to disclose, but the product is
                 // still listed — it was just added, and hiding it would read as
                 // the add having failed.
-                if breakdown.total > 0 {
+                if !tracksInventory {
+                    Text(productLabel(draft))
+                } else if breakdown.total > 0 {
                     DisclosureGroup(isExpanded: isExpanded(draft)) {
                         productBreakdownRows(breakdown)
                     } label: {

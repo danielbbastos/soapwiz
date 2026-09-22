@@ -155,6 +155,8 @@ enum DuplicateMerger {
             // An opt-in flag joins monotonically: if reminders were switched on
             // anywhere, they stay on.
             winner.expiryNotificationsEnabled = winner.expiryNotificationsEnabled || loser.expiryNotificationsEnabled
+            // On is the default, so switching tracking off is the choice to keep.
+            winner.tracksInventory = winner.tracksInventory && loser.tracksInventory
         }
         return Array(ordered.dropFirst())
     }
