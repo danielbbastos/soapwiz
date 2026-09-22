@@ -32,7 +32,7 @@ enum BackupService {
         return BackupData(
             version: BackupData.currentVersion,
             exportedAt: .now,
-            settings: BackupData.SettingsDTO(pvpFactor: AppSettings.resolve(in: context).pvpFactor),
+            settings: settingsDTO(AppSettings.resolve(in: context)),
             categories: categories.map { BackupData.CategoryDTO(name: $0.name) },
             providers: providers.map {
                 BackupData.ProviderDTO(name: $0.name, website: $0.website, notes: $0.notes)
@@ -151,6 +151,10 @@ enum BackupService {
         )
     }
 
+    private static func settingsDTO(_ settings: AppSettings) -> BackupData.SettingsDTO {
+        BackupData.SettingsDTO(pvpFactor: settings.pvpFactor, tracksInventory: settings.tracksInventory)
+    }
+
     private static func batchDTO(
         _ batch: Batch,
         recipeIndex: [PersistentIdentifier: Int],
@@ -162,6 +166,7 @@ enum BackupService {
             dateCreated: batch.dateCreated,
             batchCount: batch.batchCount,
             totalCost: batch.totalCost,
+            tracksInventory: batch.tracksInventory,
             lineItems: batch.lineItems.map { item in
                 BackupData.BatchLineItemDTO(
                     ingredientIndex: item.ingredient.flatMap { ingredientIndex[$0.persistentModelID] },

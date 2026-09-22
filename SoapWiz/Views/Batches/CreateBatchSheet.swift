@@ -4,6 +4,7 @@ import SwiftData
 /// Prompts for how many batches to make and creates one. Insufficient stock is
 /// surfaced inline — the affected ingredients and shortfalls are listed and
 /// creation is blocked until the count is reduced or stock is replenished.
+/// With inventory tracking off there is no stock check and no cost estimate.
 struct CreateBatchSheet: View {
     let recipe: Recipe
     let lyeCandidates: [Ingredient]
@@ -19,6 +20,7 @@ struct CreateBatchSheet: View {
         recipe: Recipe,
         lyeCandidates: [Ingredient],
         neutralizerCandidates: [Ingredient],
+        tracksInventory: Bool,
         onCreated: @escaping (Batch) -> Void
     ) {
         self.recipe = recipe
@@ -28,7 +30,8 @@ struct CreateBatchSheet: View {
         _model = State(initialValue: BatchProductionViewModel(
             recipe: recipe,
             lyeCandidates: lyeCandidates,
-            neutralizerCandidates: neutralizerCandidates
+            neutralizerCandidates: neutralizerCandidates,
+            tracksInventory: tracksInventory
         ))
     }
 
@@ -47,7 +50,7 @@ struct CreateBatchSheet: View {
         NavigationStack {
             Form {
                 let requirements = model.requirements
-                let shortages = requirements.filter(\.isShort)
+                let shortages = model.shortages(in: requirements)
                 let estimatedCost = model.estimatedCost
                 let totalBatchWeight = model.totalBatchWeight
 

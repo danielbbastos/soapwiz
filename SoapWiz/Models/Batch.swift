@@ -17,6 +17,10 @@ final class Batch {
     var dateCreated: Date = Date.now
     var batchCount: Int = 0
     var totalCost: Double = 0
+    /// Whether the batch was made with inventory tracking on. Snapshotted rather
+    /// than read from `AppSettings`, so an untracked batch keeps reading as
+    /// uncosted after tracking is switched back on.
+    var tracksInventory: Bool = true
 
     /// Optional for CloudKit; read and write through `lineItems`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
@@ -28,11 +32,19 @@ final class Batch {
         set { lineItemsStorage = newValue }
     }
 
-    init(recipe: Recipe?, recipeName: String, dateCreated: Date = .now, batchCount: Int, totalCost: Double = 0) {
+    init(
+        recipe: Recipe?,
+        recipeName: String,
+        dateCreated: Date = .now,
+        batchCount: Int,
+        totalCost: Double = 0,
+        tracksInventory: Bool = true
+    ) {
         self.recipe = recipe
         self.recipeName = recipeName
         self.dateCreated = dateCreated
         self.batchCount = batchCount
         self.totalCost = totalCost
+        self.tracksInventory = tracksInventory
     }
 }

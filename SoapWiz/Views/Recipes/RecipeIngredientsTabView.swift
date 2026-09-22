@@ -45,6 +45,7 @@ struct RecipeIngredientsTabView: View {
     /// Matches the extras table's query, so a cream-soap glycerine add that had to
     /// wait for oils can complete against the same set here.
     @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
+    @Query private var settingsRecords: [AppSettings]
     @State private var activePicker: PickerSection?
     @State private var oilsExpanded = true
     @State private var ingredientsExpanded = true
@@ -52,6 +53,8 @@ struct RecipeIngredientsTabView: View {
     @State private var fragrancesExpanded = true
     @State private var costBreakdownExpanded = false
     @State private var availableHeight: CGFloat = 0
+
+    private var tracksInventory: Bool { AppSettings.tracksInventory(from: settingsRecords) }
 
     var body: some View {
         Form {
@@ -78,8 +81,10 @@ struct RecipeIngredientsTabView: View {
         )
         .onPreferenceChange(AvailableHeightKey.self) { if !costBreakdownExpanded { availableHeight = $0 } }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            CostBreakdownBarView(model: model, isExpanded: $costBreakdownExpanded, availableHeight: availableHeight)
-                .expandingSectionScrollOverlay()
+            if tracksInventory {
+                CostBreakdownBarView(model: model, isExpanded: $costBreakdownExpanded, availableHeight: availableHeight)
+                    .expandingSectionScrollOverlay()
+            }
         }
         .expandingSectionScrollContainer()
         .sheet(item: $activePicker) { section in

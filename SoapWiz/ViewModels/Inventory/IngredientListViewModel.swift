@@ -44,14 +44,23 @@ final class IngredientListViewModel {
     var selectedUnits: Set<IngredientUnit> = []
     var expiryFilter: ExpiryFilter = .all
 
+    /// Mirrors `AppSettings.tracksInventory`. Off, the stock and expiry filters
+    /// are ignored rather than cleared: their menus are hidden, and a filter set
+    /// before tracking was switched off must not silently empty the list, yet
+    /// it comes back as it was when tracking is switched on again.
+    var tracksInventory: Bool = true
+
     var hasActiveFilters: Bool { activeFilterCount > 0 }
 
     var activeFilterCount: Int {
         (selectedCategories.isEmpty ? 0 : 1) +
-        (stockStatus == .all ? 0 : 1) +
+        (effectiveStockStatus == .all ? 0 : 1) +
         (selectedUnits.isEmpty ? 0 : 1) +
-        (expiryFilter == .all ? 0 : 1)
+        (effectiveExpiryFilter == .all ? 0 : 1)
     }
+
+    private var effectiveStockStatus: StockStatusFilter { tracksInventory ? stockStatus : .all }
+    private var effectiveExpiryFilter: ExpiryFilter { tracksInventory ? expiryFilter : .all }
 
     /// Drops selections whose category no longer exists. `DuplicateMerger` deletes
     /// the losing row of a duplicate pair, and a filter still holding its ID would
@@ -129,7 +138,7 @@ final class IngredientListViewModel {
                 (ingredient.category.map { selectedCategories.contains($0.persistentModelID) } ?? false)
 
             let matchesStock: Bool
-            switch stockStatus {
+            switch effectiveStockStatus {
             case .all:        matchesStock = true
             case .inStock:    matchesStock = ingredient.totalRemaining > 0 && !ingredient.isLowStock
             case .lowStock:   matchesStock = ingredient.isLowStock && ingredient.totalRemaining > 0
@@ -140,7 +149,7 @@ final class IngredientListViewModel {
                 selectedUnits.contains(where: { $0.rawValue == ingredient.unit })
 
             let matchesExpiry: Bool
-            switch expiryFilter {
+            switch effectiveExpiryFilter {
             case .all:           matchesExpiry = true
             case .expiringSoon:  matchesExpiry = ingredient.nearestUpcomingExpiry != nil
             case .expired:       matchesExpiry = ingredient.hasExpiredPurchase

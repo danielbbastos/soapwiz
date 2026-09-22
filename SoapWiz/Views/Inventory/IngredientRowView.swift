@@ -2,6 +2,9 @@ import SwiftUI
 
 struct IngredientRowView: View {
     let ingredient: Ingredient
+    /// Off, the row drops its expiry and low-stock badges and the quantity: with
+    /// no purchases recorded, all of them would warn about stock never entered.
+    var tracksInventory: Bool = true
     let onToggleFavorite: () -> Void
 
     @Environment(\.editMode) private var editMode
@@ -26,53 +29,8 @@ struct IngredientRowView: View {
                 }
             }
             Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
-                HStack(spacing: 6) {
-                    if ingredient.hasExpiredPurchase {
-                        Button {
-                            showingExpiryPopover = true
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.red)
-                        }
-                        .buttonStyle(.borderless)
-                        .popover(isPresented: $showingExpiryPopover) {
-                            Text("This ingredient has an expired purchase.")
-                                .padding()
-                                .presentationCompactAdaptation(.popover)
-                        }
-                    } else if let expiry = ingredient.nearestUpcomingExpiry {
-                        Button {
-                            showingExpiryPopover = true
-                        } label: {
-                            Image(systemName: "calendar.badge.exclamationmark")
-                                .foregroundStyle(.red)
-                        }
-                        .buttonStyle(.borderless)
-                        .popover(isPresented: $showingExpiryPopover) {
-                            Text("Expires on \(expiry.formatted(.dateTime.day().month(.wide)))")
-                                .padding()
-                                .presentationCompactAdaptation(.popover)
-                        }
-                    }
-                    if ingredient.isLowStock {
-                        Button {
-                            showingLowStockPopover = true
-                        } label: {
-                            Image(systemName: "gauge.low")
-                                .foregroundStyle(.orange)
-                        }
-                        .buttonStyle(.borderless)
-                        .popover(isPresented: $showingLowStockPopover) {
-                            Text("Low stock")
-                                .padding()
-                                .presentationCompactAdaptation(.popover)
-                        }
-                    }
-                }
-                Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundStyle(ingredient.totalRemaining > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+            if tracksInventory {
+                stockColumn
             }
             // Beside the warnings-and-quantity column rather than stacked above it.
             // Inside it, the star adds a line to every row — including the many
@@ -100,5 +58,56 @@ struct IngredientRowView: View {
         // both name their own colours.
         .foregroundStyle(Color.primary)
         .padding(.vertical, 2)
+    }
+
+    private var stockColumn: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            HStack(spacing: 6) {
+                if ingredient.hasExpiredPurchase {
+                    Button {
+                        showingExpiryPopover = true
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.borderless)
+                    .popover(isPresented: $showingExpiryPopover) {
+                        Text("This ingredient has an expired purchase.")
+                            .padding()
+                            .presentationCompactAdaptation(.popover)
+                    }
+                } else if let expiry = ingredient.nearestUpcomingExpiry {
+                    Button {
+                        showingExpiryPopover = true
+                    } label: {
+                        Image(systemName: "calendar.badge.exclamationmark")
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.borderless)
+                    .popover(isPresented: $showingExpiryPopover) {
+                        Text("Expires on \(expiry.formatted(.dateTime.day().month(.wide)))")
+                            .padding()
+                            .presentationCompactAdaptation(.popover)
+                    }
+                }
+                if ingredient.isLowStock {
+                    Button {
+                        showingLowStockPopover = true
+                    } label: {
+                        Image(systemName: "gauge.low")
+                            .foregroundStyle(.orange)
+                    }
+                    .buttonStyle(.borderless)
+                    .popover(isPresented: $showingLowStockPopover) {
+                        Text("Low stock")
+                            .padding()
+                            .presentationCompactAdaptation(.popover)
+                    }
+                }
+            }
+            Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
+                .font(.subheadline.monospacedDigit())
+                .foregroundStyle(ingredient.totalRemaining > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+        }
     }
 }

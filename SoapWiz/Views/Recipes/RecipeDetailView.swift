@@ -12,6 +12,7 @@ struct RecipeDetailView: View {
     var lyeIngredients: [Ingredient]
     @Query(filter: RecipeDetailView.additivesPredicate)
     var additiveIngredients: [Ingredient]
+    @Query private var settingsRecords: [AppSettings]
 
     @State private var model = RecipeFormViewModel()
     @State private var showInGrams = false
@@ -103,7 +104,8 @@ struct RecipeDetailView: View {
             CreateBatchSheet(
                 recipe: recipe,
                 lyeCandidates: lyeCandidates,
-                neutralizerCandidates: neutralizerCandidates
+                neutralizerCandidates: neutralizerCandidates,
+                tracksInventory: AppSettings.tracksInventory(from: settingsRecords)
             ) { batch in
                 navigation.showBatch(batch)
             }

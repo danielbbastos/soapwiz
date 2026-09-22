@@ -40,6 +40,9 @@ struct BackupData: Codable {
 extension BackupData {
     struct SettingsDTO: Codable {
         var pvpFactor: Double
+        /// Optional so a backup written before SW-81 still decodes; `nil`
+        /// restores as tracked, the only behaviour those builds had.
+        var tracksInventory: Bool?
     }
 
     struct CategoryDTO: Codable {
@@ -197,6 +200,9 @@ extension BackupData {
         var dateCreated: Date
         var batchCount: Int
         var totalCost: Double
+        /// Optional so a backup written before SW-81 still decodes; `nil`
+        /// restores as tracked, the only kind of batch those builds could make.
+        var tracksInventory: Bool?
         var lineItems: [BatchLineItemDTO]
     }
 

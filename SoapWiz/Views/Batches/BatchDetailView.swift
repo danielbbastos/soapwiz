@@ -2,7 +2,8 @@ import SwiftUI
 
 /// Read-only view of the immutable snapshot a `Batch` recorded at creation:
 /// what was consumed, which purchases it drew from, and what it cost. Nothing
-/// here recomputes against the live recipe or inventory.
+/// here recomputes against the live recipe or inventory — including whether
+/// the batch was costed at all, which is the snapshot's `tracksInventory`.
 struct BatchDetailView: View {
     let batch: Batch
 
@@ -31,9 +32,15 @@ struct BatchDetailView: View {
                 LabeledContent("Recipe", value: batch.recipeName)
                 LabeledContent("Date", value: batch.dateCreated.formatted(date: .abbreviated, time: .shortened))
                 LabeledContent("Batches", value: "\(batch.batchCount)")
-                LabeledContent("Total cost", value: formatCurrency(batch.totalCost))
-                if batch.batchCount > 1 {
-                    LabeledContent("Cost per batch", value: formatCurrency(BatchHistoryViewModel.costPerBatch(of: batch)))
+                if batch.tracksInventory {
+                    LabeledContent("Total cost", value: formatCurrency(batch.totalCost))
+                    if batch.batchCount > 1, let costPerBatch = BatchHistoryViewModel.costPerBatch(of: batch) {
+                        LabeledContent("Cost per batch", value: formatCurrency(costPerBatch))
+                    }
+                }
+            } footer: {
+                if !batch.tracksInventory {
+                    Text("Made without inventory tracking, so no cost was recorded.")
                 }
             }
             .listRowBackground(Color.cardBackground)

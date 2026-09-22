@@ -15,7 +15,10 @@ enum BatchHistoryViewModel {
         batch.lineItems.sorted { $0.ingredientName < $1.ingredientName }
     }
 
-    static func costPerBatch(of batch: Batch) -> Double {
+    /// Nil for a batch made without inventory tracking: it recorded no cost, so
+    /// there is nothing to divide — a zero would read as "this batch was free".
+    static func costPerBatch(of batch: Batch) -> Double? {
+        guard batch.tracksInventory else { return nil }
         guard batch.batchCount > 0 else { return 0 }
         return batch.totalCost / Double(batch.batchCount)
     }

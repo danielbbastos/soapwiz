@@ -69,20 +69,36 @@ struct BatchHistoryViewModelTests {
 
     // MARK: - Cost per batch
 
-    @Test func costPerBatch_MultipleBatches_DividesTotalCost() {
+    @Test func costPerBatch_MultipleBatches_DividesTotalCost() throws {
         let batch = Batch(recipe: nil, recipeName: "Soap", batchCount: 4, totalCost: 10)
 
-        #expect(abs(BatchHistoryViewModel.costPerBatch(of: batch) - 2.5) < 1e-9)
+        let cost = try #require(BatchHistoryViewModel.costPerBatch(of: batch))
+        #expect(abs(cost - 2.5) < 1e-9)
     }
 
-    @Test func costPerBatch_SingleBatch_EqualsTotalCost() {
+    @Test func costPerBatch_SingleBatch_EqualsTotalCost() throws {
         let batch = Batch(recipe: nil, recipeName: "Soap", batchCount: 1, totalCost: 7.25)
 
-        #expect(abs(BatchHistoryViewModel.costPerBatch(of: batch) - 7.25) < 1e-9)
+        let cost = try #require(BatchHistoryViewModel.costPerBatch(of: batch))
+        #expect(abs(cost - 7.25) < 1e-9)
     }
 
     @Test func costPerBatch_ZeroBatchCount_ReturnsZero() {
         let batch = Batch(recipe: nil, recipeName: "Soap", batchCount: 0, totalCost: 10)
+
+        #expect(BatchHistoryViewModel.costPerBatch(of: batch) == 0)
+    }
+
+    @Test func costPerBatch_UntrackedBatch_ReturnsNil() {
+        let batch = Batch(recipe: nil, recipeName: "Soap", batchCount: 3, tracksInventory: false)
+
+        #expect(BatchHistoryViewModel.costPerBatch(of: batch) == nil)
+    }
+
+    /// A tracked batch whose ingredients happened to cost nothing is genuinely
+    /// free, and must not be conflated with an untracked one.
+    @Test func costPerBatch_TrackedFreeBatch_ReturnsZero() {
+        let batch = Batch(recipe: nil, recipeName: "Soap", batchCount: 2, totalCost: 0)
 
         #expect(BatchHistoryViewModel.costPerBatch(of: batch) == 0)
     }

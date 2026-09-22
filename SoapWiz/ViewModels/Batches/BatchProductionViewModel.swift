@@ -19,17 +19,26 @@ struct BatchRequirement: Identifiable {
 /// Drives creating a `Batch` from a recipe: computes how much of each ingredient
 /// is needed (reusing the SW-71 cost/consumption engine for the per-ingredient
 /// amounts), checks stock, and on confirmation deducts inventory FIFO and
-/// records an immutable snapshot.
+/// records an immutable snapshot. With `tracksInventory` off, stock is neither
+/// checked nor deducted and the snapshot records amounts without any cost.
 @Observable
 @MainActor
 final class BatchProductionViewModel {
     var batchCount: Int = 1
 
+    let tracksInventory: Bool
+
     private let recipe: Recipe
     private let engine: RecipeFormViewModel
 
-    init(recipe: Recipe, lyeCandidates: [Ingredient], neutralizerCandidates: [Ingredient] = []) {
+    init(
+        recipe: Recipe,
+        lyeCandidates: [Ingredient],
+        neutralizerCandidates: [Ingredient] = [],
+        tracksInventory: Bool = true
+    ) {
         self.recipe = recipe
+        self.tracksInventory = tracksInventory
         let engine = RecipeFormViewModel()
         engine.load(from: recipe)
         engine.resolveDefaultLyeIngredient(from: lyeCandidates)
@@ -75,9 +84,17 @@ final class BatchProductionViewModel {
         .sorted { $0.ingredient.name < $1.ingredient.name }
     }
 
-    /// Requirements that can't be fully satisfied from stock.
+    /// Requirements that can't be fully satisfied from stock. Always empty when
+    /// inventory isn't tracked, since nothing is drawn from stock.
     var shortages: [BatchRequirement] {
-        requirements.filter(\.isShort)
+        shortages(in: requirements)
+    }
+
+    /// `shortages` for requirements the caller already computed, so a view that
+    /// shows both doesn't rebuild the breakdown twice per render.
+    func shortages(in requirements: [BatchRequirement]) -> [BatchRequirement] {
+        guard tracksInventory else { return [] }
+        return requirements.filter(\.isShort)
     }
 
     /// Total mass the current `batchCount` will produce, in `batchWeightUnit`:
@@ -92,14 +109,16 @@ final class BatchProductionViewModel {
     var batchWeightUnit: String { engine.displayWeightUnit }
 
     var canCreate: Bool {
-        !requirements.isEmpty && shortages.isEmpty
+        let reqs = requirements
+        return !reqs.isEmpty && shortages(in: reqs).isEmpty
     }
 
     /// What the current `batchCount` would cost, computed from the same FIFO
     /// plan `create(context:)` applies — the preview always matches the charge.
     /// Inventory is not touched.
     var estimatedCost: Double {
-        requirements.reduce(0) { total, req in
+        guard tracksInventory else { return 0 }
+        return requirements.reduce(0) { total, req in
             total + plannedDraws(for: req).reduce(0) { $0 + $1.drawn * $1.purchase.pricePerUnit }
         }
     }
@@ -110,9 +129,14 @@ final class BatchProductionViewModel {
     @discardableResult
     func create(context: ModelContext) -> Batch? {
         let reqs = requirements
-        guard !reqs.isEmpty, reqs.allSatisfy({ !$0.isShort }) else { return nil }
+        guard !reqs.isEmpty, shortages(in: reqs).isEmpty else { return nil }
 
-        let batch = Batch(recipe: recipe, recipeName: recipe.name, batchCount: max(1, batchCount))
+        let batch = Batch(
+            recipe: recipe,
+            recipeName: recipe.name,
+            batchCount: max(1, batchCount),
+            tracksInventory: tracksInventory
+        )
         context.insert(batch)
 
         var total = 0.0
@@ -148,7 +172,7 @@ final class BatchProductionViewModel {
         var draws: [BatchPurchaseDraw] = []
         var cost = 0.0
 
-        for (purchase, drawn) in plannedDraws(for: req) {
+        for (purchase, drawn) in tracksInventory ? plannedDraws(for: req) : [] {
             purchase.remainingAmount -= drawn
             purchase.markOpened()
             let drawCost = drawn * purchase.pricePerUnit

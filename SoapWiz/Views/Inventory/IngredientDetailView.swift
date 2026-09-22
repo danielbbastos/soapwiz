@@ -4,6 +4,7 @@ import UIKit
 
 struct IngredientDetailView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query private var settingsRecords: [AppSettings]
 
     @State private var model: IngredientDetailViewModel
 
@@ -78,6 +79,10 @@ struct IngredientDetailView: View {
         model.ingredient.imageData.flatMap(UIImage.init(data:))
     }
 
+    /// Off, everything about purchases is hidden — the stock rows, the purchase
+    /// log and the add button — but the purchases themselves are kept.
+    private var tracksInventory: Bool { AppSettings.tracksInventory(from: settingsRecords) }
+
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             List {
@@ -88,12 +93,14 @@ struct IngredientDetailView: View {
                     if !model.ingredient.unit.isEmpty {
                         LabeledContent("Unit", value: IngredientUnit(rawValue: model.ingredient.unit)?.label ?? model.ingredient.unit)
                     }
-                    LabeledContent("Total Remaining") {
-                        let symbol = model.ingredient.unit
-                        Text("\(model.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(symbol)")
-                            .foregroundStyle(model.totalRemaining > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
+                    if tracksInventory {
+                        LabeledContent("Total Remaining") {
+                            let symbol = model.ingredient.unit
+                            Text("\(model.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(symbol)")
+                                .foregroundStyle(model.totalRemaining > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
+                        }
+                        LabeledContent("Purchases", value: "\(model.ingredient.purchases.count)")
                     }
-                    LabeledContent("Purchases", value: "\(model.ingredient.purchases.count)")
                     // Oils carry SAP in the dedicated chemistry block below; this
                     // is the fallback for the rare non-oil that still has a value.
                     if !model.showsChemistry, let sap = model.ingredient.sapValue {
@@ -130,7 +137,9 @@ struct IngredientDetailView: View {
                 // Purchases sit directly under Summary: for an ingredient you
                 // already own, what you have and when you bought it matters more
                 // than its chemistry, which the block below covers in full.
-                purchasesSection
+                if tracksInventory {
+                    purchasesSection
+                }
 
                 if let stats = model.chemistryStats {
                     chemistrySections(stats: stats)
@@ -168,7 +177,9 @@ struct IngredientDetailView: View {
                 }
             }
 
-            FloatingActionButton { model.showingAddPurchase = true }
+            if tracksInventory {
+                FloatingActionButton { model.showingAddPurchase = true }
+            }
         }
         .sheet(isPresented: $model.showingAddPurchase) {
             PurchaseFormView(ingredient: model.ingredient)
