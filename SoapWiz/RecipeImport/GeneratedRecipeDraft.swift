@@ -110,3 +110,41 @@ extension GeneratedIngredient {
         )
     }
 }
+
+@available(iOS 26, macOS 26, *)
+extension GeneratedRecipeDraft.PartiallyGenerated {
+    /// Maps a mid-stream snapshot to the plain draft the progress screen shows.
+    ///
+    /// Every field is optional until the model fills it, so each falls back to
+    /// the same empty default `RecipeImportDraft` uses. Ingredient rows that
+    /// have no name yet are dropped rather than shown as blank lines. The
+    /// completed final snapshot maps identically to `asImportDraft()` on the
+    /// whole value, so the extractor checks this rather than the stream again.
+    func asImportDraft() -> RecipeImportDraft {
+        RecipeImportDraft(
+            name: (name ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+            desc: "",
+            oils: (oils ?? []).compactMap { $0.asImportedIngredient() },
+            additives: (additives ?? []).compactMap { $0.asImportedIngredient() },
+            fragrances: (fragrances ?? []).compactMap { $0.asImportedIngredient() },
+            amountsArePercentages: amountsArePercentages ?? true,
+            batchSize: batchSize.flatMap { $0 > 0 ? $0 : nil },
+            batchUnit: batchUnit.flatMap { RecipeImportDraft.supportedWeightUnits.contains($0) ? $0 : nil },
+            lyeType: lyeType.map { $0 == "KOH" ? "KOH" : "NaOH" },
+            superFat: superFat,
+            waterParts: waterParts,
+            fragrancePercentage: fragrancePercentage
+        )
+    }
+}
+
+@available(iOS 26, macOS 26, *)
+extension GeneratedIngredient.PartiallyGenerated {
+    /// A row from a mid-stream snapshot, or `nil` while it has no name to show.
+    func asImportedIngredient() -> ImportedIngredient? {
+        let name = (name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return nil }
+        let unit = (unit ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return ImportedIngredient(name: name, amount: amount ?? 0, unit: unit.isEmpty ? nil : unit)
+    }
+}

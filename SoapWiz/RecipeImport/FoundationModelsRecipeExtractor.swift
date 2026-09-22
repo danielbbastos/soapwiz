@@ -8,6 +8,13 @@ import FoundationModels
 @available(iOS 26, macOS 26, *)
 struct FoundationModelsRecipeExtractor: RecipeDraftExtracting {
     func extract(from text: SanitizedRecipeText) async throws -> RecipeImportDraft {
+        try await extract(from: text, onPartial: { _ in })
+    }
+
+    func extract(
+        from text: SanitizedRecipeText,
+        onPartial: (RecipeImportDraft) -> Void
+    ) async throws -> RecipeImportDraft {
         guard !text.isEmpty else { throw RecipeImportError.nothingRecognised }
 
         // A fresh session per attempt. The transcript counts against the same
@@ -18,12 +25,22 @@ struct FoundationModelsRecipeExtractor: RecipeDraftExtracting {
         do {
             // Greedy, so the same text gives the same draft: sampled output put
             // one ingredient under Additives on one run and Oils on the next.
-            let response = try await session.respond(
+            let stream = session.streamResponse(
                 to: text.text,
                 generating: GeneratedRecipeDraft.self,
                 options: GenerationOptions(sampling: .greedy)
             )
-            let draft = RecipeImportDraftChecker.checked(response.content.asImportDraft(), against: text.text)
+
+            // Each snapshot is cumulative and the last is the complete result,
+            // so the final one doubles as the draft to check — no second pass
+            // over the stream, which is consumed once.
+            var latest = RecipeImportDraft()
+            for try await partial in stream {
+                latest = partial.content.asImportDraft()
+                onPartial(latest)
+            }
+
+            let draft = RecipeImportDraftChecker.checked(latest, against: text.text)
             guard draft.hasAnyIngredient else { throw RecipeImportError.nothingRecognised }
             return draft
         } catch let error as LanguageModelSession.GenerationError {
