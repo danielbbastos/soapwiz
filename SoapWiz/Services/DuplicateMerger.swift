@@ -86,6 +86,8 @@ enum DuplicateMerger {
     /// Collapses every duplicate in the store. Safe to call repeatedly — a second
     /// pass finds only groups of one and saves nothing.
     static func mergeAll(in context: ModelContext) throws {
+        let stamped = try IngredientLinkRepair.stampSlugs(in: context)
+
         var losers: [any PersistentModel] = []
         losers += try collapse(IngredientCategory.self, in: context)
         losers += try collapse(Provider.self, in: context)
@@ -94,18 +96,30 @@ enum DuplicateMerger {
         losers += try collapse(Ingredient.self, in: context)
         losers += try collapseSettings(in: context)
 
-        guard !losers.isEmpty else { return }
+        guard !losers.isEmpty else {
+            if try IngredientLinkRepair.reattachDetachedRows(in: context) || stamped {
+                try context.save()
+            }
+            return
+        }
 
-        // Two phases. If a loser's deletion reaches another device before the
-        // repointing does, that device applies `.nullify` and an ingredient loses
-        // its category for good — a later pass will not adopt an orphan back. Saving
-        // the repoints first pushes them to CloudKit ahead of the tombstones.
+        // Two phases. Saving the repoints first pushes them to CloudKit ahead of
+        // the tombstones — but only the export is ordered. The receiving device
+        // can still apply a deletion before the repoint that goes with it, which
+        // is why nothing may cascade from a merged row: `.nullify` detaches, and
+        // `reattachDetachedRows` below or on that device puts recipe rows and
+        // purchases back. An ingredient that loses its category that way stays
+        // uncategorised, which is survivable; deleted user data would not be.
         try context.save()
 
         for loser in losers {
             context.delete(loser)
         }
         try context.save()
+
+        if try IngredientLinkRepair.reattachDetachedRows(in: context) {
+            try context.save()
+        }
 
         log.notice("Merged \(losers.count, privacy: .public) duplicate record(s).")
 

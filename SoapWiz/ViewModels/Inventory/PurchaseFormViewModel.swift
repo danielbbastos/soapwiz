@@ -180,7 +180,7 @@ final class PurchaseFormViewModel {
                 storageLocation: selectedLocation
             )
             context.insert(newPurchase)
-            live.purchases.append(newPurchase)
+            newPurchase.attach(to: live)
         }
     }
 }

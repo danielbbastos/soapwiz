@@ -7,9 +7,9 @@ import SwiftData
 /// `DuplicateMerger` deletes the losing copy of a duplicated library ingredient,
 /// and a screen that captured that row before the merge ran still holds it. The
 /// reference is then detached: `isDeleted` reads `false` on it, so a write site
-/// cannot tell, and appending a child to it loses the child — the cascade on
-/// `Ingredient.purchases` takes the new row down with the dead parent. That is
-/// how SW-136 lost a purchase leaving no orphan behind.
+/// cannot tell, and a child appended to it can't keep its link. In SW-136 the
+/// then-cascading `Ingredient.purchases` took the new row down with the dead
+/// parent, losing a purchase without leaving an orphan behind.
 ///
 /// The key has to be captured while the row is still alive. Reading a stored
 /// attribute off a detached model traps — the same hazard `RestoreCoordinator`

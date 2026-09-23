@@ -150,9 +150,12 @@ struct CloudKitRelationshipTests {
         #expect(ingredient.totalRemaining == 100)
     }
 
-    // MARK: - Cascade delete rules
+    // MARK: - Delete rules
 
-    @Test func deleteIngredient_CascadesToPurchases() throws {
+    /// Nothing cascades from `Ingredient` (SW-165): the duplicate merge deletes
+    /// ingredient rows on other devices, so a rule-driven delete must only detach.
+    /// A user's delete goes through `deleteWithOwnedRows(in:)` instead.
+    @Test func deleteIngredient_DetachesPurchases() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let ingredient = Ingredient(name: "Olive Oil", unit: "g")
@@ -165,10 +168,12 @@ struct CloudKitRelationshipTests {
         ctx.delete(ingredient)
         try ctx.save()
 
-        #expect(try ctx.fetch(FetchDescriptor<IngredientPurchase>()).isEmpty)
+        let remaining = try ctx.fetch(FetchDescriptor<IngredientPurchase>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.ingredient == nil)
     }
 
-    @Test func deleteIngredient_CascadesToRecipeIngredients() throws {
+    @Test func deleteIngredient_DetachesRecipeIngredients() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let ingredient = Ingredient(name: "Olive Oil", unit: "g")
@@ -183,7 +188,9 @@ struct CloudKitRelationshipTests {
         ctx.delete(ingredient)
         try ctx.save()
 
-        #expect(try ctx.fetch(FetchDescriptor<RecipeIngredient>()).isEmpty)
+        let remaining = try ctx.fetch(FetchDescriptor<RecipeIngredient>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.ingredient == nil)
         #expect(try ctx.fetch(FetchDescriptor<Recipe>()).count == 1)
     }
 

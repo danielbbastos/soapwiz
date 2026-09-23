@@ -37,7 +37,7 @@ xcodebuild -project SoapWiz.xcodeproj -scheme SoapWiz \
 
 ## Invariants
 
-- Delete rules encode intent, not convenience: `Ingredient.purchases`, `Recipe.ingredients`/`products`, and `Batch.lineItems` cascade; `Ingredient.batchLineItems`, `Recipe.batches`, and `Recipe.lyeIngredient` nullify — batch history must outlive the ingredient and the recipe.
+- Delete rules live on the `@Relationship` declarations. Two must hold: batch history outlives its ingredient and recipe, and nothing cascades from `Ingredient` — the duplicate merge deletes ingredient rows on other devices, so a cascade there silently deletes user data.
 - All SwiftData model access stays on `@MainActor`. The project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` globally.
 - `AppSettings` is a singleton, resolved at launch via `AppSettings.resolve(in:)`.
 - CloudKit schema changes are additive only once the schema is in Production (container `iCloud.pt.tachyon.SoapWiz`): never delete or rename a `@Model` type or stored property, since Production record types and fields can't be removed. Add new ones instead, run the app with `-SoapWizInitializeCloudKitSchema` (DEBUG) to push them to Development, then deploy to Production before shipping.

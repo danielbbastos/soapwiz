@@ -52,9 +52,14 @@ final class Ingredient {
     var density: Double?
     var fattyAcidProfile: FattyAcidProfile?
 
+    /// `.nullify`, never `.cascade`: the duplicate merge on another device can
+    /// delete this row before its re-pointing of the purchases arrives, and a
+    /// cascade would take the purchases down with it. `deleteWithOwnedRows(in:)`
+    /// deletes them when the user deletes the ingredient. See SW-165.
+    ///
     /// Optional for CloudKit; read and write through `purchases`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .cascade, originalName: "purchases", inverse: \IngredientPurchase.ingredient)
+    @Relationship(deleteRule: .nullify, originalName: "purchases", inverse: \IngredientPurchase.ingredient)
     var purchasesStorage: [IngredientPurchase]? = []
 
     var purchases: [IngredientPurchase] {
@@ -62,9 +67,12 @@ final class Ingredient {
         set { purchasesStorage = newValue }
     }
 
+    /// `.nullify` for the same reason as `purchases`: a cascade here deleted a
+    /// recipe's oils on one device when another merged the ingredient away.
+    ///
     /// Optional for CloudKit; read and write through `recipeIngredients`. Neither
     /// name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
-    @Relationship(deleteRule: .cascade, originalName: "recipeIngredients", inverse: \RecipeIngredient.ingredient)
+    @Relationship(deleteRule: .nullify, originalName: "recipeIngredients", inverse: \RecipeIngredient.ingredient)
     var recipeIngredientsStorage: [RecipeIngredient]? = []
 
     var recipeIngredients: [RecipeIngredient] {

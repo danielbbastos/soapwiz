@@ -8,6 +8,8 @@ final class IngredientPurchase {
     /// can't serve as the link.
     var uuid: UUID = UUID()
     var ingredient: Ingredient?
+    /// The library slug of `ingredient` — see `RecipeIngredient.ingredientSlug`.
+    var ingredientSlug: String = ""
     var provider: Provider?
     var dateOfPurchase: Date = Date.now
     var quantity: Double = 0
@@ -18,6 +20,14 @@ final class IngredientPurchase {
     var openingDate: Date?
     var remainingAmount: Double = 0
     var storageLocation: StorageLocation?
+
+    /// Links the purchase to `ingredient` and records its slug in the same write.
+    /// Always link through this: a purchase whose slug is only stamped by a later
+    /// merge pass has no way back if a sync race detaches it first.
+    func attach(to ingredient: Ingredient) {
+        self.ingredient = ingredient
+        ingredientSlug = ingredient.librarySlug
+    }
 
     var pricePerUnit: Double {
         guard quantity > 0 else { return 0 }
