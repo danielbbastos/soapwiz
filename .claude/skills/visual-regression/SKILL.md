@@ -19,7 +19,7 @@ Where `<screen>` is one of: `inventory`, `ingredient-detail`, `purchase-detail`,
 
 ## Project Context
 
-- **Bundle ID:** `pt.daphnia.SoapWiz`
+- **Bundle ID:** `pt.tachyon.SoapWiz`
 - **Primary simulator:** iPad Air 11-inch (M2) — `BD145A0B-D38F-48F7-87CB-735E850987FF`
 - **Fallback simulator:** iPad (A16) — `34E90319-8EDC-4B0F-BA5F-81650ED7AAE3`
 - **Scripts root:** `.claude/skills/visual-regression/scripts/`
@@ -47,7 +47,7 @@ Run `xcodebuild build` (quiet). Stop and report on error.
 ```bash
 # Prefer already-booted simulator; boot if needed
 python .claude/skills/visual-regression/scripts/app_launcher.py \
-  --install <path-to.app> --launch pt.daphnia.SoapWiz
+  --install <path-to.app> --launch pt.tachyon.SoapWiz
 ```
 **Schema change rule:** Always uninstall before reinstalling when a model was added or a property type changed.
 

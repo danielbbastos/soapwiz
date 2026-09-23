@@ -19,7 +19,7 @@ import SwiftData
 /// sync, not this pass's job.
 @MainActor
 enum IngredientLibraryInstaller {
-    private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "library")
+    private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "library")
 
     /// Runs the install and swallows a failure, having logged it. An incomplete
     /// library is survivable — the next launch tries again. Losing the launch to

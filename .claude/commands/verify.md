@@ -50,9 +50,9 @@ Ask: "Full xcodebuild takes 2-5 minutes. Run in background? (yes/no)"
 
 ```bash
 xcodebuild build \
-  -project /Users/danielbastos/Documents/Code/daphnia/SoapWiz/SoapWiz.xcodeproj \
+  -project SoapWiz.xcodeproj \
   -scheme SoapWiz \
-  -destination 'platform=iOS Simulator,name=iPhone 16' \
+  -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
   -quiet \
   2>&1 | grep -E "(error:|warning:|BUILD|FAILED|SUCCEEDED)"
 ```

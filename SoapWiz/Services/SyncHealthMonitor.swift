@@ -41,7 +41,7 @@ final class SyncHealthMonitor {
     /// macro from wrapping them, which also leaves `observer` a plain stored
     /// property that `nonisolated(unsafe)` can still apply to.
     @ObservationIgnored private let store: SyncStatusStore
-    @ObservationIgnored private let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "sync")
+    @ObservationIgnored private let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "sync")
     /// `nonisolated` so `deinit` can unregister it. Written once in `init` and
     /// read once in `deinit`, never concurrently.
     @ObservationIgnored private nonisolated(unsafe) var observer: (any NSObjectProtocol)?

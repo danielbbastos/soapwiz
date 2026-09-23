@@ -4,7 +4,7 @@ import OSLog
 /// The ingredients SoapWiz ships with, read from `IngredientLibrary.json` in the
 /// app bundle.
 struct IngredientLibrary {
-    private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "library")
+    private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "library")
 
     let entries: [IngredientLibraryEntry]
 

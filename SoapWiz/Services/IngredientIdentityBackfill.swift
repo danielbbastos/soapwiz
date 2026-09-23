@@ -14,7 +14,7 @@ import SwiftData
 /// field existed is never touched, and a second pass writes nothing.
 @MainActor
 enum IngredientIdentityBackfill {
-    private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "backfill")
+    private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "backfill")
 
     /// Runs the pass and swallows a failure, having logged it. Shared identities
     /// only matter once duplicates need merging, which is survivable; losing the

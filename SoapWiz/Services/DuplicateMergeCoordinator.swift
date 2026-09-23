@@ -16,7 +16,7 @@ import SwiftData
 @MainActor
 final class DuplicateMergeCoordinator {
     private let context: ModelContext
-    private let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "merge")
+    private let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "merge")
     private var pendingMerge: Task<Void, Never>?
     /// `nonisolated` so `deinit` can unregister it. Written once in `init` and read
     /// once in `deinit`, never concurrently.

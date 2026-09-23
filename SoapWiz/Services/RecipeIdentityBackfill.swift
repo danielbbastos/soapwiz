@@ -21,7 +21,7 @@ import SwiftData
 /// converging on either device's value is correct.
 @MainActor
 enum RecipeIdentityBackfill {
-    private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "backfill")
+    private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "backfill")
 
     /// Runs the pass and swallows a failure, having logged it. A library left
     /// with shared identities still works everywhere except sharing, which is
