@@ -204,8 +204,8 @@ extension RecipeFormViewModel {
     /// A draft's ingredient can have been merged away while the form was open, so
     /// each is resolved back to the row actually in the store. When nothing
     /// resolves, the line item is written with no ingredient rather than pointing
-    /// at a detached one: `Ingredient.recipeIngredients` cascades, so a dead
-    /// parent would take the line item with it on the next save. A row with no
+    /// at a detached one: a link to a deleted row can't be saved (before SW-165
+    /// a cascade took the line item with it). A row with no
     /// ingredient is a shape the recipe already has to tolerate from sync, and
     /// `load(from:)` counts it into `unresolvedLineItemCount` where the form
     /// shows it.

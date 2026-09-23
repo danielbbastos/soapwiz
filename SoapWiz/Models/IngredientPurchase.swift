@@ -8,6 +8,8 @@ final class IngredientPurchase {
     /// can't serve as the link.
     var uuid: UUID = UUID()
     var ingredient: Ingredient?
+    /// The library slug of `ingredient` — see `RecipeIngredient.ingredientSlug`.
+    var ingredientSlug: String = ""
     var provider: Provider?
     var dateOfPurchase: Date = Date.now
     var quantity: Double = 0

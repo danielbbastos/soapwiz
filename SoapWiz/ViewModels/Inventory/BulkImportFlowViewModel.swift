@@ -86,8 +86,8 @@ final class BulkImportFlowViewModel {
     ///
     /// An entry the merge deleted is passed over rather than presented:
     /// `PurchaseFormViewModel.init` reads the row's slug, which traps on a
-    /// detached reference, and a purchase written against one would be lost to
-    /// the cascade on `Ingredient.purchases` anyway. Resolving by slug lands on
+    /// detached reference, and a purchase written against one could not keep its
+    /// link anyway. Resolving by slug lands on
     /// the survivor whenever there is one, so this passes over only entries that
     /// could not have been saved under any spelling.
     private func advance(context: ModelContext) {

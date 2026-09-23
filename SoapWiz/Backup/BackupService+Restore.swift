@@ -218,12 +218,14 @@ extension BackupService {
     /// `delete(model:)`) because batch deletes bypass the cascade/nullify
     /// relationship rules and trip the mandatory-inverse constraints between
     /// batches and their line items. Deleting the owners individually lets
-    /// SwiftData cascade to the owned children (purchases, line items, recipe
-    /// line items) the same way the app does.
+    /// SwiftData cascade to the owned children (line items, recipe line items)
+    /// the same way the app does. Purchases are deleted explicitly: nothing
+    /// cascades from `Ingredient` (SW-165).
     private static func wipe(_ context: ModelContext) throws {
         try deleteAll(Batch.self, in: context)
         try deleteAll(Recipe.self, in: context)
         try deleteAll(RecipeCollection.self, in: context)
+        try deleteAll(IngredientPurchase.self, in: context)
         try deleteAll(Ingredient.self, in: context)
         try deleteAll(IngredientCategory.self, in: context)
         try deleteAll(Provider.self, in: context)
