@@ -21,6 +21,14 @@ final class IngredientPurchase {
     var remainingAmount: Double = 0
     var storageLocation: StorageLocation?
 
+    /// Links the purchase to `ingredient` and records its slug in the same write.
+    /// Always link through this: a purchase whose slug is only stamped by a later
+    /// merge pass has no way back if a sync race detaches it first.
+    func attach(to ingredient: Ingredient) {
+        self.ingredient = ingredient
+        ingredientSlug = ingredient.librarySlug
+    }
+
     var pricePerUnit: Double {
         guard quantity > 0 else { return 0 }
         return totalPrice / quantity

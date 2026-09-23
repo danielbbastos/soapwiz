@@ -85,7 +85,59 @@ struct DuplicateMergerLinkRepairTests: DuplicateMergerIngredientHelpers {
         #expect(try ingredients(ctx).count == 1)
     }
 
+    /// The PR review's case: the purchase is saved and its ingredient deleted
+    /// before this device has run a single merge pass, so only a slug recorded
+    /// at save time can bring it back.
+    @Test func mergeAll_PurchaseDetachedBeforeAnyMergePass_LandsOnTheSurvivor() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let local = try installed(coconut, 2)
+        ctx.insert(local)
+        try ctx.save()
+        let form = PurchaseFormViewModel(ingredient: local)
+        form.quantityText = "500"
+        try form.save(context: ctx)
+        let stock = try #require(try ctx.fetch(FetchDescriptor<IngredientPurchase>()).first)
+
+        let remote = try installed(coconut, 1)
+        ctx.insert(remote)
+        ctx.delete(local)
+        try ctx.save()
+        #expect(stock.ingredient == nil)
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        #expect(stock.ingredient?.uuid == remote.uuid)
+    }
+
     // MARK: - Slugs
+
+    @Test func purchaseFormSave_LibraryIngredient_RecordsSlugImmediately() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredient = try installed(olive, 1)
+        ctx.insert(ingredient)
+        let form = PurchaseFormViewModel(ingredient: ingredient)
+        form.quantityText = "500"
+
+        try form.save(context: ctx)
+
+        let stock = try #require(try ctx.fetch(FetchDescriptor<IngredientPurchase>()).first)
+        #expect(stock.ingredientSlug == olive.slug)
+    }
+
+    @Test func attach_CustomIngredient_LeavesSlugEmpty() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredient = Ingredient.mock(name: "My Tallow")
+        ctx.insert(ingredient)
+        let stock = purchase(on: ingredient, in: ctx)
+
+        stock.attach(to: ingredient)
+
+        #expect(stock.ingredient === ingredient)
+        #expect(stock.ingredientSlug.isEmpty)
+    }
 
     @Test func recipeIngredientInit_LibraryIngredient_RecordsSlug() throws {
         let ingredient = try installed(olive, 1)

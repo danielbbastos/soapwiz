@@ -208,8 +208,8 @@ extension DataSeeder {
                 storageLocation: lookups.storage[purchaseSeed.storageLocation]
             )
             purchase.remainingAmount = purchaseSeed.remainingAmount
-            ingredient.purchases.append(purchase)
             context.insert(purchase)
+            purchase.attach(to: ingredient)
         }
     }
 }
