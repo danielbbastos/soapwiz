@@ -5,7 +5,7 @@ import SwiftData
 /// Loading an existing recipe into the form and persisting the form back to a
 /// `Recipe`. Kept apart from the view-model's live editing state for clarity.
 extension RecipeFormViewModel {
-    private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "recipe")
+    private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "recipe")
 
     func load(from recipe: Recipe) {
         editingRecipe = recipe

@@ -13,7 +13,7 @@ extension Notification.Name {
     /// Nothing is posted when a pass finds no duplicates, which is the common
     /// case — only the first sync on a device that joined an existing account
     /// deletes anything.
-    static let duplicatesMerged = Notification.Name("pt.daphnia.SoapWiz.duplicatesMerged")
+    static let duplicatesMerged = Notification.Name("pt.tachyon.SoapWiz.duplicatesMerged")
 }
 
 /// A lookup entity that CloudKit can duplicate: two devices offline both create
@@ -70,7 +70,7 @@ extension MergeableLookup {
 /// entity a `uuid` and keeps the lowest.
 @MainActor
 enum DuplicateMerger {
-    private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "merge")
+    private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "merge")
 
     /// Runs the merge and swallows a failure, having logged it. A failed merge
     /// leaves duplicates in place, which is survivable — the next trigger tries

@@ -16,7 +16,7 @@ import SwiftData
 /// pass writes nothing.
 @MainActor
 enum IngredientCodeBackfill {
-    private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "backfill")
+    private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "backfill")
 
     /// Runs the pass and swallows a failure, having logged it. A missing journal
     /// code only weakens a suggestion, which is survivable; losing the launch to

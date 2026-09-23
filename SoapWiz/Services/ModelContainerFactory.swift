@@ -9,9 +9,9 @@ enum ModelContainerFactory {
     /// The fallback is deliberately silent to the user but must not be silent to
     /// us: a schema CloudKit rejects looks exactly like a healthy local-only
     /// launch from the outside.
-    private static let log = Logger(subsystem: "pt.daphnia.SoapWiz", category: "store")
+    private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "store")
 
-    static let cloudKitContainerIdentifier = "iCloud.pt.daphnia.SoapWiz"
+    static let cloudKitContainerIdentifier = "iCloud.pt.tachyon.SoapWiz"
 
     /// Which of the two stores `makeProduction()` actually opened.
     ///
@@ -51,7 +51,12 @@ enum ModelContainerFactory {
     /// To filter on a to-many, build the traversal as an `#Expression` over the
     /// storage property and evaluate it inside the predicate. See
     /// `CloudKitRelationshipTests.fetchFiltersOnToManyViaExpression`.
-    static let schema = Schema([
+    static let schema = Schema(modelTypes)
+
+    /// The raw type list behind `schema`, kept separately because building the
+    /// Core Data model for `CloudKitSchemaInitializer` needs the types, not a
+    /// `Schema`.
+    static let modelTypes: [any PersistentModel.Type] = [
         Ingredient.self,
         IngredientPurchase.self,
         IngredientCategory.self,
@@ -64,7 +69,7 @@ enum ModelContainerFactory {
         Batch.self,
         BatchLineItem.self,
         AppSettings.self
-    ])
+    ]
 
     /// Tries CloudKit-mirrored storage, then plain local storage. In DEBUG a
     /// third attempt wipes the store first, since a schema change during
@@ -103,6 +108,16 @@ enum ModelContainerFactory {
             isStoredInMemoryOnly: false,
             cloudKitDatabase: .private(cloudKitContainerIdentifier)
         )
+        #if DEBUG
+        if CloudKitSchemaInitializer.isRequested {
+            do {
+                try CloudKitSchemaInitializer.run(storeURL: mirrored.url)
+                log.notice("CloudKit Development schema initialized.")
+            } catch {
+                log.error("CloudKit schema initialization failed: \(error, privacy: .public)")
+            }
+        }
+        #endif
         do {
             let container = try ModelContainer(for: schema, configurations: [mirrored])
             log.notice("Store is CloudKit-mirrored.")

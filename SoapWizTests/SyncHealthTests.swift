@@ -63,7 +63,7 @@ struct SyncErrorClassifierTests {
     }
 
     @Test func classify_NonCloudKitError_IsAnUnknownFault() {
-        let error = NSError(domain: "pt.daphnia.test", code: 1)
+        let error = NSError(domain: "pt.tachyon.test", code: 1)
         #expect(
             SyncErrorClassifier.classify(error) == .fault(.other(error.localizedDescription))
         )

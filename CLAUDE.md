@@ -40,6 +40,7 @@ xcodebuild -project SoapWiz.xcodeproj -scheme SoapWiz \
 - Delete rules encode intent, not convenience: `Ingredient.purchases`, `Recipe.ingredients`/`products`, and `Batch.lineItems` cascade; `Ingredient.batchLineItems`, `Recipe.batches`, and `Recipe.lyeIngredient` nullify — batch history must outlive the ingredient and the recipe.
 - All SwiftData model access stays on `@MainActor`. The project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` globally.
 - `AppSettings` is a singleton, resolved at launch via `AppSettings.resolve(in:)`.
+- CloudKit schema changes are additive only once the schema is in Production (container `iCloud.pt.tachyon.SoapWiz`): never delete or rename a `@Model` type or stored property, since Production record types and fields can't be removed. Add new ones instead, run the app with `-SoapWizInitializeCloudKitSchema` (DEBUG) to push them to Development, then deploy to Production before shipping.
 
 ## Git Workflow
 
@@ -56,10 +57,10 @@ Available simulator: **iPhone 15 Pro** — use for `xcodebuild test`
 **⚠️ Always uninstall before reinstalling when the SwiftData schema has changed.** Reinstalling over an existing app with an incompatible schema causes a crash on launch. The correct sequence is:
 
 ```bash
-xcrun simctl terminate <id> pt.daphnia.SoapWiz
-xcrun simctl uninstall <id> pt.daphnia.SoapWiz
+xcrun simctl terminate <id> pt.tachyon.SoapWiz
+xcrun simctl uninstall <id> pt.tachyon.SoapWiz
 xcrun simctl install <id> <path-to.app>
-xcrun simctl launch <id> pt.daphnia.SoapWiz
+xcrun simctl launch <id> pt.tachyon.SoapWiz
 ```
 
 Build output path: `~/Library/Developer/Xcode/DerivedData/SoapWiz-*/Build/Products/Debug-iphonesimulator/SoapWiz.app`

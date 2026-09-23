@@ -13,15 +13,17 @@
 			<string>Owner</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>pt.daphnia.soapwiz.recipe</string>
+				<string>pt.tachyon.soapwiz.recipe</string>
 			</array>
 		</dict>
 	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
 			<key>UTTypeIdentifier</key>
-			<string>pt.daphnia.soapwiz.recipe</string>
+			<string>pt.tachyon.soapwiz.recipe</string>
 			<key>UTTypeDescription</key>
 			<string>SoapWiz Recipe</string>
 			<key>UTTypeConformsTo</key>

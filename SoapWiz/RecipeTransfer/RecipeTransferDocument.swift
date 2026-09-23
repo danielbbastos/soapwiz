@@ -10,5 +10,5 @@ extension UTType {
     ///
     /// Declaring it is also what makes the share sheet name the thing being
     /// shared — "SoapWiz Recipe · 3 KB" rather than an anonymous document.
-    static let soapWizRecipe = UTType(exportedAs: "pt.daphnia.soapwiz.recipe")
+    static let soapWizRecipe = UTType(exportedAs: "pt.tachyon.soapwiz.recipe")
 }
