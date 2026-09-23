@@ -136,7 +136,7 @@ struct IngredientListView: View {
                     )
                     .onAppear { model.pendingIngredient = nil }
                 }
-                .searchable(text: $model.searchText, prompt: "Search ingredients")
+                .searchable(text: $model.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ingredients")
                 // No background of its own, so the list keeps scrolling under
                 // the navigation bar's material rather than under a flat band.
                 // Hidden while selecting: the chips would compete with the
