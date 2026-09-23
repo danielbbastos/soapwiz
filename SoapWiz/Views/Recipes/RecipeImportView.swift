@@ -81,6 +81,7 @@ struct RecipeImportView: View {
             guard let fileURL, !hasOpenedFile else { return }
             hasOpenedFile = true
             model.openFile(at: fileURL, inventory: inventory, collections: collections, recipes: recipes)
+            ReceivedFileInbox.removeIfReceived(fileURL)
         }
         .onChange(of: photoItem) { _, item in
             guard let item else { return }
