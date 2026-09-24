@@ -28,6 +28,9 @@ enum RecipeImportDraftChecker {
         // only reads as a header once that amount is gone.
         checked = checked.droppingSectionHeaders()
         checked.batchSize = checked.batchSize.flatMap { RecipeTextNumbers.contains($0, in: numbers) ? $0 : nil }
+        // After the batch size check: a batch size read from the oil weights is
+        // their sum, which the text need not write anywhere.
+        checked = statedPercentageRecipe(checked, in: text) ?? matchingOilUnits(checked)
 
         let stated = RecipeTextSettingsParser.parse(text)
         checked.superFat = stated.superFat ?? valueNear(

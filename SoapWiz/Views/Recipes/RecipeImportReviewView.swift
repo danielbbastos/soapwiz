@@ -85,7 +85,7 @@ struct RecipeImportReviewView: View {
                 ForEach(rows) { row in
                     RecipeImportRowView(
                         row: row,
-                        amountText: amountText(for: row),
+                        amountText: draftSummary.amountText(for: row.imported, role: row.role),
                         onCreate: { creatingRow = row },
                         onSkip: { model.skip(row.id) },
                         onUnskip: { model.unskip(row.id) }
@@ -126,16 +126,6 @@ struct RecipeImportReviewView: View {
     private var trimmedNote: String? {
         guard let sanitized = model.sanitized, sanitized.wasTrimmed else { return nil }
         return "Read the recipe out of \(sanitized.originalLength) characters of pasted text."
-    }
-
-    private func amountText(for row: RecipeImportRow) -> String {
-        let amount = row.imported.amount
-        guard amount > 0 else { return "—" }
-        let formatted = PercentageFormatter.string(amount)
-        guard let unit = row.imported.unit else {
-            return draftSummary.amountsArePercentages ? "\(formatted)%" : "\(formatted) \(draftSummary.resolvedBatchUnit)"
-        }
-        return unit == "%" ? "\(formatted)%" : "\(formatted) \(unit)"
     }
 
     private func category(named name: String) -> IngredientCategory? {

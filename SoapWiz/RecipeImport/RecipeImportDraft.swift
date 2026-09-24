@@ -140,6 +140,23 @@ struct RecipeImportDraft: Equatable {
         !oils.isEmpty || !additives.isEmpty || !fragrances.isEmpty
     }
 
+    /// The unit the oil amounts are in: `%`, or the weight unit. The same value
+    /// the recipe form puts in `weightUnit`, so the review screen can never show
+    /// the oils in a unit the form doesn't open in.
+    var oilAmountUnit: String {
+        amountsArePercentages ? "%" : resolvedBatchUnit
+    }
+
+    /// How the review screen writes an extracted amount. Oils are always in
+    /// `oilAmountUnit` whatever unit their row carries; additives and fragrances
+    /// keep their own.
+    func amountText(for ingredient: ImportedIngredient, role: RecipeIngredientRole) -> String {
+        guard ingredient.amount > 0 else { return "—" }
+        let formatted = PercentageFormatter.string(ingredient.amount)
+        let unit = role == .oil ? oilAmountUnit : ingredient.unit ?? oilAmountUnit
+        return unit == "%" ? "\(formatted)%" : "\(formatted) \(unit)"
+    }
+
     /// The unit to measure the recipe in, falling back to grams when the source
     /// gave a unit the form can't offer.
     var resolvedBatchUnit: String {
