@@ -50,7 +50,14 @@ enum RecipeTextExporter {
     private static func collectionsLine(_ recipe: Recipe) -> String? {
         let names = recipe.collections.sortedByName.map(\.name)
         guard !names.isEmpty else { return nil }
-        return "Collections: \(names.joined(separator: ", "))"
+        return "Collections: \(names.map(listed).joined(separator: ", "))"
+    }
+
+    /// A name holding a comma is quoted, CSV-style, so the list reads back into
+    /// the same names: "Kids, Sensitive Skin" is one collection, not two.
+    private static func listed(_ name: String) -> String {
+        guard name.contains(",") || name.hasPrefix("\"") else { return name }
+        return "\"\(name.replacingOccurrences(of: "\"", with: "\"\""))\""
     }
 
     private static func oilsBlock(_ model: RecipeFormViewModel) -> String? {

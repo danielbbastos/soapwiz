@@ -157,6 +157,40 @@ struct RecipeTextExportReaderTests {
         #expect(draft.collectionNames == ["Gifts", "Summer"])
     }
 
+    /// A comma inside a name is the exporter's separator too, so the name is
+    /// quoted rather than read back as two collections.
+    @Test func read_CollectionNameWithAComma_ReadsAsOneName() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe.exportMock(in: ctx)
+        let kids = RecipeCollection(name: "Kids, Sensitive Skin")
+        let quoted = RecipeCollection(name: "\"Best\", Ever")
+        let summer = RecipeCollection(name: "Summer")
+        [kids, quoted, summer].forEach(ctx.insert)
+        recipe.collections = [summer, kids, quoted]
+        try ctx.save()
+
+        let draft = try #require(RecipeTextExportReader.read(RecipeTextExporter.text(for: recipe)))
+
+        #expect(draft.collectionNames == ["\"Best\", Ever", "Kids, Sensitive Skin", "Summer"])
+    }
+
+    @Test(arguments: [
+        ("Gifts", ["Gifts"]),
+        ("Gifts, Summer", ["Gifts", "Summer"]),
+        ("\"Kids, Sensitive Skin\", Summer", ["Kids, Sensitive Skin", "Summer"]),
+        ("Gifts, \"Say \"\"Hi\"\", Mum\"", ["Gifts", "Say \"Hi\", Mum"]),
+        ("Mum's \"Best\" Bars", ["Mum's \"Best\" Bars"])
+    ])
+    func collectionNames_ExporterList_ReadsEachName(_ list: String, _ expected: [String]) {
+        #expect(RecipeTextExportReader.collectionNames(in: list[...]) == expected)
+    }
+
+    @Test(arguments: ["\"Kids, Sensitive Skin", "\"Kids\" Summer"])
+    func collectionNames_BrokenQuoting_ReturnsNil(_ list: String) {
+        #expect(RecipeTextExportReader.collectionNames(in: list[...]) == nil)
+    }
+
     @Test func read_MultiLineDescription_KeepsEveryLine() throws {
         let (container, ctx) = try makeContext()
         _ = container
@@ -268,6 +302,8 @@ struct RecipeTextExportReaderTests {
         "Bar\n\nOils\n  Olive Oil — 100% (500 g)\n\nNaOH (99% pure) · 5% superfat\nMy grandmother's recipe",
         "Bar\n\nOils\n  Olive Oil — 100% (500 g)\n\nNaOH · 5% superfat",
         "Bar\n\nOils\n  Olive Oil — 100% (500 g)\n\nNaOH (140% pure) · 5% superfat",
+        "Bar\n\nOils\n  Olive Oil — 100% (500 g)\n\nKOH (90% pure) · 5% superfat · Failor method",
+        "Bar\nCollections: \"Kids, Sensitive Skin\nOils\n  Olive Oil — 100% (500 g)",
         "Bar\n\nOils\n  Olive Oil — 100% (500 g)\nOils\n  Coconut Oil — 100% (500 g)",
         "Bar\n\nOils\n  Olive Oil — 60% (300 g)\n  Coconut Oil — 40% (200 oz)",
         "Bar\n\nOils\n  Olive Oil — 100% (500 g)\n\nAdditives\n  Clay — 1 % of oils (5 oz)"

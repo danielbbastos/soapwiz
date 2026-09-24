@@ -93,10 +93,10 @@ enum RecipeTextExportReader {
                 rows[heading] = []
                 section = heading
             } else if line.hasPrefix(collectionsPrefix) {
-                guard draft.collectionNames.isEmpty, section == nil else { return nil }
-                draft.collectionNames = line.dropFirst(collectionsPrefix.count)
-                    .components(separatedBy: ", ")
-                    .filter { !$0.isEmpty }
+                guard draft.collectionNames.isEmpty, section == nil,
+                      let names = collectionNames(in: line.dropFirst(collectionsPrefix.count))
+                else { return nil }
+                draft.collectionNames = names
             } else if let current = section, line.contains(rowSeparator) {
                 guard let row = row(from: line, in: current) else { return nil }
                 rows[current, default: []].append(row)
@@ -123,6 +123,45 @@ enum RecipeTextExportReader {
         draft.name = name
         draft.desc = trimmed.dropFirst().joined(separator: "\n")
         return true
+    }
+
+    /// `Gifts, "Kids, Sensitive Skin", Summer`: names separated by a comma and
+    /// a space, a name holding a comma quoted, and a quote inside one doubled —
+    /// how `RecipeTextExporter` lists them. `nil` when a quote doesn't close.
+    static func collectionNames(in list: Substring) -> [String]? {
+        var names: [String] = []
+        var rest = list
+        while !rest.isEmpty {
+            if rest.first == "\"" {
+                guard let name = quotedName(&rest) else { return nil }
+                names.append(name)
+            } else {
+                let end = rest.range(of: ", ")?.lowerBound ?? rest.endIndex
+                names.append(String(rest[..<end]))
+                rest = rest[end...]
+            }
+            guard !rest.isEmpty else { break }
+            guard rest.hasPrefix(", ") else { return nil }
+            rest = rest.dropFirst(2)
+        }
+        return names.filter { !$0.isEmpty }
+    }
+
+    /// Reads a quoted name off the front of `rest`, leaving what follows the
+    /// closing quote.
+    private static func quotedName(_ rest: inout Substring) -> String? {
+        var name = ""
+        rest = rest.dropFirst()
+        while let character = rest.popFirst() {
+            guard character == "\"" else {
+                name.append(character)
+                continue
+            }
+            guard rest.first == "\"" else { return name }
+            name.append("\"")
+            rest = rest.dropFirst()
+        }
+        return nil
     }
 
     // MARK: - Rows
@@ -266,14 +305,8 @@ enum RecipeTextExportReader {
             }
             return draft.cfmNeutralizer != nil
         }
-        switch segment {
-        case "Failor method":
-            draft.cfmNeutralizer = .boricAcid
-        case "cream soap method":
-            draft.isCreamSoap = true
-        default:
-            return false
-        }
+        guard segment == "cream soap method" else { return false }
+        draft.isCreamSoap = true
         return true
     }
 

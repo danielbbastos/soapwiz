@@ -267,6 +267,20 @@ struct RecipeTextExporterTests {
         #expect(RecipeTextExporter.text(for: recipe).contains("· Failor method (borax)"))
     }
 
+    @Test func text_CollectionNameWithAComma_IsQuoted() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+        let kids = RecipeCollection(name: "Kids, Sensitive Skin")
+        let gifts = RecipeCollection(name: "Gifts")
+        ctx.insert(kids)
+        ctx.insert(gifts)
+        recipe.collections = [kids, gifts]
+        try ctx.save()
+
+        #expect(RecipeTextExporter.text(for: recipe).contains("Collections: Gifts, \"Kids, Sensitive Skin\""))
+    }
+
     @Test func text_CreamSoapRecipe_AppendsTheMethod() throws {
         let (container, ctx) = try makeContext()
         _ = container
