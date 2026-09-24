@@ -10,9 +10,8 @@ import Foundation
 /// lose the hybrid lye split, the cream-soap and CFM settings, the recipe kind,
 /// the fragrance unit and the products.
 ///
-/// Carried two ways — as a `.soapwizrecipe` file, and as a marker line appended
-/// to the text "Copy Recipe" puts on the clipboard. The format is the same
-/// either way; only the envelope differs. See `RecipeTransferMarker`.
+/// Carried as a `.soapwizrecipe` file, which can also reach the importer pasted
+/// as text from the share sheet's Copy — see `RecipeTransferDecoder.scan(text:)`.
 struct RecipeTransferData: Codable, Equatable {
     /// Bumped whenever the format changes in a way an older build would read
     /// wrongly. Decoding rejects any payload whose `version` is newer than this

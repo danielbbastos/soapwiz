@@ -1,8 +1,8 @@
 import Foundation
 
-/// The one JSON configuration both transports use.
+/// The one JSON configuration the payload is written and read with.
 ///
-/// Shared so a file and a clipboard marker can never disagree about how a date
+/// Shared so the encoder and the decoder can never disagree about how a date
 /// or a number is written. Dates are ISO-8601 and keys keep their Swift names:
 /// the payload crosses between devices in different locales and time zones, and
 /// nothing in it may depend on the sender's.

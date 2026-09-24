@@ -15,12 +15,11 @@ enum RecipeImportPhase: Equatable {
 
 /// Drives the import flow, whichever way a recipe arrives.
 ///
-/// Three paths meet here. A `.soapwizrecipe` file, or text carrying the marker
-/// "Copy for SoapWiz" writes, is decoded exactly and needs no language model at
-/// all. The readable text "Copy Recipe" writes is read back by
-/// `RecipeTextExportReader`, also without the model. Anything else is read by
-/// the on-device model, as before. Which path applies is decided by looking,
-/// not by asking the user to declare it.
+/// Three paths meet here. A `.soapwizrecipe` file, opened or pasted, is decoded
+/// exactly and needs no language model at all. The readable text "Copy Recipe"
+/// writes is read back by `RecipeTextExportReader`, also without the model.
+/// Anything else is read by the on-device model. Which path applies is decided
+/// by looking, not by asking the user to declare it.
 ///
 /// Nothing here writes to the store. `RecipeTransferImporter` does that, from
 /// the plan this builds, once the user confirms.

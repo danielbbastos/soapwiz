@@ -1,27 +1,16 @@
 import Foundation
 import SwiftData
 
-/// Renders a recipe for the clipboard: readable text for a person ("Copy
-/// Recipe") or the exact payload for another SoapWiz user ("Copy for SoapWiz").
+/// Renders a recipe as the readable text "Copy Recipe" puts on the clipboard.
 ///
 /// The numbers are reached the same way the recipe detail screen reaches them —
 /// through `RecipeFormViewModel` — so a pasted recipe and the screen it was
 /// copied from can never disagree. Amounts are formatted in the current locale,
-/// like everywhere else in the app: the text is for a person to read, not for
-/// the app to parse back.
+/// like everywhere else in the app: the text is for a person first.
+/// `RecipeTextExportReader` reads it back, so a change to the format here needs
+/// the same change there.
 @MainActor
 enum RecipeTextExporter {
-
-    /// What "Copy for SoapWiz" puts on the clipboard: the exact payload on its
-    /// own, since the only thing that reads it is the importer, which decodes
-    /// the marker and never looks at any surrounding text. The human-readable
-    /// copy is "Copy Recipe" (`text(for:)`), a separate menu action.
-    ///
-    /// Falls back to the readable text if the payload can't be encoded, so the
-    /// clipboard is never left empty.
-    static func soapwizText(for recipe: Recipe) -> String {
-        RecipeTransferMarker.line(for: RecipeTransferEncoder.payload(for: [recipe])) ?? text(for: recipe)
-    }
 
     static func text(for recipe: Recipe) -> String {
         let model = RecipeFormViewModel()
