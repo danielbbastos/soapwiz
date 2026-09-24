@@ -27,7 +27,7 @@ Follow the steps in order. Each step gates the next — never skip a failing gat
 - State workflow: if not Todo, set Todo; then set **In Progress** and assign to me.
 
 ### 2. Branch
-- `git checkout -b <branchName>` using the issue's `gitBranchName` from Linear, off up-to-date `main`.
+- `git checkout -b sw-{n}-{short-summary}` off up-to-date `main`: the issue ID plus a 3-5 word kebab summary of the change (e.g. `sw-170-prefer-oil-percentages-on-import`). Never use Linear's auto-generated `branchName`.
 
 ### 3. Implement
 - Read the relevant existing code first; match its patterns (load **swiftui-patterns-soapwiz** for views, **tests-developer** before writing any tests).
