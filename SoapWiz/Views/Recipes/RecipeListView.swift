@@ -118,11 +118,6 @@ struct RecipeListView: View {
         } label: {
             Label("Copy Recipe", systemImage: "doc.on.doc")
         }
-        Button {
-            model.copyForSoapWiz(recipe)
-        } label: {
-            Label("Copy for SoapWiz", systemImage: "square.and.arrow.up.on.square")
-        }
         Divider()
         Button(role: .destructive) {
             model.delete(recipe, context: modelContext)

@@ -4,9 +4,8 @@ import Foundation
 ///
 /// Two entry points because the two transports fail differently. A file the user
 /// deliberately picked has no fallback — if it can't be read they need to be
-/// told why. A clipboard marker sits under readable text, so a damaged one is
-/// better ignored than reported: the language model can still make something of
-/// the recipe above it.
+/// told why. Pasted text that merely looks like a payload is better ignored
+/// than reported: it goes on to be read as a recipe like any other text.
 enum RecipeTransferDecoder {
 
     /// Decodes a `.soapwizrecipe` file, throwing what went wrong.
@@ -18,23 +17,15 @@ enum RecipeTransferDecoder {
         return payload
     }
 
-    /// Reads pasted text however the payload happens to be expressed in it.
+    /// Reads a `.soapwizrecipe` file pasted as text.
     ///
-    /// Two forms, because the app produces both. "Copy Recipe" appends a marker
-    /// line to readable text. The share sheet's own Copy puts the *file* on the
-    /// pasteboard, and since the type conforms to `public.json` — and so to
-    /// `public.text` — pasting it yields the bare JSON with no marker around it.
-    /// Refusing that would mean the app writing something it then can't read
-    /// back, from a button sitting right next to Save to Files.
-    ///
-    /// The marker is looked for first: text carrying one is readable text with a
-    /// payload appended, and the payload is the authority. Bare JSON is only
-    /// tried when no marker is found, and anything that isn't our payload shape
-    /// simply fails to decode and falls through to the language model.
+    /// The share sheet's Copy puts the *file* on the pasteboard, and since the
+    /// type conforms to `public.json` — and so to `public.text` — pasting it
+    /// yields the bare JSON. Refusing that would mean the app writing something
+    /// it then can't read back, from a button sitting right next to Save to
+    /// Files. Anything that isn't our payload shape simply fails to decode and
+    /// goes on to `RecipeTextExportReader` or the language model.
     static func scan(text: String) -> RecipeTransferScan {
-        let marker = RecipeTransferMarker.scan(text)
-        guard marker == .none else { return marker }
-
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard trimmed.hasPrefix("{"), let json = trimmed.data(using: .utf8) else { return .none }
         return scan(json)
@@ -76,4 +67,13 @@ enum RecipeTransferDecoder {
             throw RecipeTransferError.malformedFile
         }
     }
+}
+
+/// What pasted text turned out to hold.
+enum RecipeTransferScan: Equatable {
+    case none
+    case payload(RecipeTransferData)
+
+    /// A payload this build must not read, such as one from a newer version.
+    case rejected(RecipeTransferError)
 }

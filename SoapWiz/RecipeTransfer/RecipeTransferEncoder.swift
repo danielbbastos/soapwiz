@@ -25,9 +25,8 @@ enum RecipeTransferEncoder {
         )
     }
 
-    /// The bytes of a `.soapwizrecipe` file. Plain JSON: nothing reads a file by
-    /// eye, so it has no reason to be compressed or armoured the way the
-    /// clipboard marker is.
+    /// The bytes of a `.soapwizrecipe` file. Plain JSON, which is also what the
+    /// share sheet's Copy puts on the clipboard.
     static func fileData(for recipes: [Recipe], exportedAt: Date = .now) throws -> Data {
         try RecipeTransferCoding.encoder.encode(payload(for: recipes, exportedAt: exportedAt))
     }

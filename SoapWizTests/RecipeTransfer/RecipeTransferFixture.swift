@@ -135,12 +135,10 @@ struct RecipeTransferFixture {
         return recipe
     }
 
-    /// Readable text with the payload marker embedded at the end — the shape the
-    /// importer must still tolerate when a marker is quoted or forwarded inside
-    /// other text, even though no copy action produces it directly.
-    func combinedText(for recipe: Recipe) throws -> String {
-        let marker = try #require(RecipeTransferMarker.line(for: RecipeTransferEncoder.payload(for: [recipe])))
-        return "\(RecipeTextExporter.text(for: recipe))\n\n\(marker)"
+    /// A payload as pasted text: what the share sheet's Copy puts on the
+    /// clipboard for a `.soapwizrecipe` file.
+    func pastedFile(_ payload: RecipeTransferData) throws -> String {
+        try #require(String(data: try RecipeTransferCoding.encoder.encode(payload), encoding: .utf8))
     }
 }
 

@@ -185,16 +185,16 @@ struct RecipeTransferRoundTripTests {
         #expect(olives.count == 1)
     }
 
-    // MARK: - Clipboard transport
+    // MARK: - Pasted file
 
-    /// The same round trip, over the other transport.
-    @Test func clipboardRoundTrip_PopulatedRecipe_RestoresTheSameRecipe() throws {
+    /// The same round trip, with the file pasted as text from the share sheet.
+    @Test func pastedFileRoundTrip_PopulatedRecipe_RestoresTheSameRecipe() throws {
         let original = source.populatedRecipe()
         source.context.processPendingChanges()
 
-        let clipboard = RecipeTextExporter.soapwizText(for: original)
-        guard case .payload(let payload) = RecipeTransferMarker.scan(clipboard) else {
-            Issue.record("Expected the clipboard text to carry a payload")
+        let pasted = try source.pastedFile(RecipeTransferEncoder.payload(for: [original]))
+        guard case .payload(let payload) = RecipeTransferDecoder.scan(text: pasted) else {
+            Issue.record("Expected the pasted file to carry a payload")
             return
         }
         let imported = try #require(try harness.importIntoDestination(payload).first)

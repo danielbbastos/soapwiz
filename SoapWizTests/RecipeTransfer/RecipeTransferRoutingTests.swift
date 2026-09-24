@@ -22,10 +22,10 @@ struct RecipeTransferRoutingTests {
 
     /// The exact path runs without the model even being asked, which is what
     /// makes import work on a device Apple Intelligence can't run on.
-    @Test func extract_TextCarryingAPayload_NeverCallsTheExtractor() async throws {
+    @Test func extract_PastedFile_NeverCallsTheExtractor() async throws {
         let extractor = StubRecipeExtractor(error: .modelUnavailable("should not be reached"))
         let model = RecipeImportViewModel(extractor: extractor)
-        model.rawText = RecipeTextExporter.soapwizText(for: fixture.populatedRecipe())
+        model.rawText = try fixture.pastedFile(fixture.payload([fixture.populatedRecipe()]))
 
         await model.extract(inventory: [], collections: [])
 
@@ -34,7 +34,7 @@ struct RecipeTransferRoutingTests {
         #expect(model.transferPlan != nil)
     }
 
-    @Test func extract_TextWithNoMarker_StillTakesTheLanguageModelPath() async throws {
+    @Test func extract_OrdinaryText_StillTakesTheLanguageModelPath() async throws {
         var draft = RecipeImportDraft()
         draft.name = "Read By The Model"
         draft.oils = [ImportedIngredient(name: "Olive Oil", amount: 100, unit: nil)]
@@ -49,15 +49,16 @@ struct RecipeTransferRoutingTests {
         #expect(extractor.recorder.lastText != nil)
     }
 
-    /// A recipe mangled in transit should still import approximately: the
-    /// readable text above the marker is intact.
-    @Test func extract_TruncatedPayload_FallsBackToTheLanguageModel() async throws {
+    /// The pasted marker "Copy for SoapWiz" used to write is no longer read
+    /// exactly: it is just text now, and goes the way any other text goes.
+    @Test func extract_RetiredMarkerLine_IsNotReadExactly() async throws {
         var draft = RecipeImportDraft()
         draft.oils = [ImportedIngredient(name: "Olive Oil", amount: 100, unit: nil)]
         let extractor = StubRecipeExtractor(draft: draft)
         let model = RecipeImportViewModel(extractor: extractor)
-        let clipboard = try fixture.combinedText(for: fixture.populatedRecipe())
-        model.rawText = String(clipboard.prefix(clipboard.count - 200))
+        model.rawText = "SOAPWIZ-RECIPE-V1:eJyrVkrOz0nNTc0rKVayUqpWKkktLlGyUkrOzytJzSvRS87PBQA"
+
+        #expect(!model.textCarriesExactPayload)
 
         await model.extract(inventory: fixture.inventoryForImport(), collections: [])
 
@@ -72,7 +73,7 @@ struct RecipeTransferRoutingTests {
         let model = RecipeImportViewModel(extractor: extractor)
         var newer = fixture.payload([fixture.populatedRecipe()])
         newer.version = RecipeTransferData.currentVersion + 1
-        model.rawText = try #require(RecipeTransferMarker.line(for: newer))
+        model.rawText = try fixture.pastedFile(newer)
 
         await model.extract(inventory: [], collections: [])
 
@@ -87,26 +88,36 @@ struct RecipeTransferRoutingTests {
     @Test func extract_PayloadWithNoRecipes_ReportsNothingToImport() async throws {
         let model = RecipeImportViewModel(extractor: StubRecipeExtractor(draft: RecipeImportDraft()))
         let empty = RecipeTransferData(exportedAt: .now, ingredients: [], recipes: [])
-        model.rawText = try #require(RecipeTransferMarker.line(for: empty))
+        model.rawText = try fixture.pastedFile(empty)
 
         await model.extract(inventory: [], collections: [])
 
         #expect(model.phase == .failed(.nothingRecognised))
     }
 
-    @Test func textCarriesExactPayload_MarkerPresent_IsTrue() {
+    @Test func textCarriesExactPayload_PastedFile_IsTrue() throws {
         let model = RecipeImportViewModel(extractor: StubRecipeExtractor(draft: RecipeImportDraft()))
 
         model.rawText = "Olive Oil 100%"
         #expect(!model.textCarriesExactPayload)
 
-        model.rawText = RecipeTextExporter.soapwizText(for: fixture.populatedRecipe())
+        model.rawText = try fixture.pastedFile(fixture.payload([fixture.populatedRecipe()]))
         #expect(model.textCarriesExactPayload)
+    }
+
+    /// "Copy Recipe" text is read by `RecipeTextExportReader`, not as a file.
+    @Test func textCarriesExactPayload_CopyRecipeText_IsFalse() {
+        let model = RecipeImportViewModel(extractor: StubRecipeExtractor(draft: RecipeImportDraft()))
+
+        model.rawText = RecipeTextExporter.text(for: fixture.populatedRecipe())
+
+        #expect(!model.textCarriesExactPayload)
+        #expect(model.textIsSoapWizCopy)
     }
 
     @Test func returnToInput_AfterReadingAPayload_ForgetsIt() async throws {
         let model = RecipeImportViewModel(extractor: StubRecipeExtractor(draft: RecipeImportDraft()))
-        model.rawText = RecipeTextExporter.soapwizText(for: fixture.populatedRecipe())
+        model.rawText = try fixture.pastedFile(fixture.payload([fixture.populatedRecipe()]))
         await model.extract(inventory: [], collections: [])
 
         model.returnToInput()
@@ -119,18 +130,18 @@ struct RecipeTransferRoutingTests {
 
     /// The share sheet's own Copy puts the file on the pasteboard, and because
     /// the type conforms to `public.json` — and so to `public.text` — pasting it
-    /// yields the raw JSON with no marker around it. Refusing that would mean
-    /// the app writing something it then can't read back.
+    /// yields the raw JSON. Refusing that would mean the app writing something
+    /// it then can't read back.
     @Test func scan_BarePayloadJSON_IsRecognised() throws {
         let built = fixture.payload([fixture.populatedRecipe()])
-        let json = try #require(String(data: try RecipeTransferCoding.encoder.encode(built), encoding: .utf8))
+        let json = try fixture.pastedFile(built)
 
         #expect(RecipeTransferDecoder.scan(text: json) == .payload(built))
     }
 
     @Test func scan_BarePayloadJSONWithSurroundingWhitespace_IsStillRecognised() throws {
         let built = fixture.payload([fixture.populatedRecipe()])
-        let json = try #require(String(data: try RecipeTransferCoding.encoder.encode(built), encoding: .utf8))
+        let json = try fixture.pastedFile(built)
 
         #expect(RecipeTransferDecoder.scan(text: "\n\n  \(json)  \n") == .payload(built))
     }
@@ -138,7 +149,7 @@ struct RecipeTransferRoutingTests {
     @Test func scan_BareJSONFromANewerVersion_IsRejected() throws {
         var built = fixture.payload([fixture.populatedRecipe()])
         built.version = RecipeTransferData.currentVersion + 1
-        let json = try #require(String(data: try RecipeTransferCoding.encoder.encode(built), encoding: .utf8))
+        let json = try fixture.pastedFile(built)
 
         #expect(RecipeTransferDecoder.scan(text: json) == .rejected(
             .unsupportedVersion(found: RecipeTransferData.currentVersion + 1, supported: RecipeTransferData.currentVersion)
@@ -151,33 +162,6 @@ struct RecipeTransferRoutingTests {
 
     @Test func scan_OrdinaryRecipeText_IsNotMistakenForJSON() {
         #expect(RecipeTransferDecoder.scan(text: "Olive Oil 55%\nCoconut Oil 30%") == RecipeTransferScan.none)
-    }
-
-    /// Text carrying both readable recipe and a marker is still read from the
-    /// marker: it is the authority, and the JSON attempt never runs.
-    @Test func scan_MarkerBearingText_StillPrefersTheMarker() throws {
-        let recipe = fixture.populatedRecipe()
-        fixture.context.processPendingChanges()
-
-        let outcome = RecipeTransferDecoder.scan(text: try fixture.combinedText(for: recipe))
-
-        guard case .payload(let decoded) = outcome else {
-            Issue.record("Expected the marker to be read, got \(outcome)")
-            return
-        }
-        #expect(decoded.recipes.first?.name == recipe.name)
-    }
-
-    @Test func extract_BarePayloadJSON_NeverCallsTheExtractor() async throws {
-        let extractor = StubRecipeExtractor(error: .modelUnavailable("should not be reached"))
-        let model = RecipeImportViewModel(extractor: extractor)
-        let built = fixture.payload([fixture.populatedRecipe()])
-        model.rawText = try #require(String(data: try RecipeTransferCoding.encoder.encode(built), encoding: .utf8))
-
-        await model.extract(inventory: [], collections: [])
-
-        #expect(model.phase == .exactReview)
-        #expect(extractor.recorder.lastText == nil)
     }
 
 }

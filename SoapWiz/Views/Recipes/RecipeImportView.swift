@@ -223,7 +223,7 @@ struct RecipeImportView: View {
         let count = model.rawText.count
         guard count > 0 else {
             guard model.canReadFreeText else {
-                return "Paste a recipe copied from SoapWiz. It carries everything the recipe needs."
+                return "Paste a recipe copied from SoapWiz with Copy Recipe. It’s read as written."
             }
             return "Paste a recipe from a website, a forum or your notes. Oils, amounts and lye settings are enough."
         }
