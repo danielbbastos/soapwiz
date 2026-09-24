@@ -73,12 +73,14 @@ struct StubRecipeExtractor: RecipeDraftExtracting {
 /// in for the on-device model's stream. `afterPartial` runs synchronously right
 /// after each snapshot is delivered — the whole extract call is one main-actor
 /// hop — so a test can inspect the view model mid-stream without coordinating
-/// tasks.
+/// tasks. `beforeFirstPartial` is the one suspension point, standing in for a
+/// model slow to produce anything.
 @MainActor
 final class StreamingStubExtractor: RecipeDraftExtracting {
     private let partials: [RecipeImportDraft]
     private let finalDraft: RecipeImportDraft
     var afterPartial: (() -> Void)?
+    var beforeFirstPartial: (() async -> Void)?
 
     init(partials: [RecipeImportDraft], final finalDraft: RecipeImportDraft) {
         self.partials = partials
@@ -93,6 +95,7 @@ final class StreamingStubExtractor: RecipeDraftExtracting {
         from text: SanitizedRecipeText,
         onPartial: (RecipeImportDraft) -> Void
     ) async throws -> RecipeImportDraft {
+        await beforeFirstPartial?()
         for partial in partials {
             onPartial(partial)
             afterPartial?()
@@ -106,6 +109,7 @@ final class StreamingStubExtractor: RecipeDraftExtracting {
 struct StreamingFailingExtractor: RecipeDraftExtracting {
     let partials: [RecipeImportDraft]
     let error: RecipeImportError
+    var beforeFirstPartial: (() async -> Void)?
 
     func extract(from text: SanitizedRecipeText) async throws -> RecipeImportDraft {
         try await extract(from: text, onPartial: { _ in })
@@ -115,6 +119,7 @@ struct StreamingFailingExtractor: RecipeDraftExtracting {
         from text: SanitizedRecipeText,
         onPartial: (RecipeImportDraft) -> Void
     ) async throws -> RecipeImportDraft {
+        await beforeFirstPartial?()
         for partial in partials { onPartial(partial) }
         throw error
     }
