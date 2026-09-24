@@ -126,7 +126,7 @@ struct RecipeListView: View {
         }
     }
 
-    /// Entering the mode, and leaving it with or without sharing.
+    /// Entering the mode, and leaving it with or without sharing or deleting.
     ///
     /// Laid out to match the Inventory tab: the bulk action leading, Select and
     /// Done trailing. Two lists that both offer a selection mode should not put
@@ -138,7 +138,7 @@ struct RecipeListView: View {
     @ToolbarContentBuilder
     private func selectionToolbar() -> some ToolbarContent {
         if model.isSelecting {
-            ToolbarItem(placement: .topBarLeading) {
+            ToolbarItemGroup(placement: .topBarLeading) {
                 Button {
                     // Every selected recipe, not just the ones on screen. A
                     // collection chip tapped mid-selection changes what is
@@ -149,6 +149,14 @@ struct RecipeListView: View {
                     Label("Share", systemImage: "square.and.arrow.up")
                 }
                 .accessibilityLabel(model.exportButtonTitle)
+                .disabled(!model.hasSelection)
+
+                Button(role: .destructive) {
+                    model.requestDeleteSelection(from: recipes)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+                .accessibilityLabel(model.deleteButtonTitle)
                 .disabled(!model.hasSelection)
             }
         }
@@ -223,6 +231,18 @@ struct RecipeListView: View {
                     Button("OK", role: .cancel) { model.exportErrorMessage = nil }
                 } message: {
                     Text(model.exportErrorMessage ?? "")
+                }
+                .alert(
+                    model.deleteConfirmationTitle,
+                    isPresented: Binding(
+                        get: { model.isConfirmingDelete },
+                        set: { if !$0 { model.cancelDelete() } }
+                    )
+                ) {
+                    Button("Delete", role: .destructive) { model.confirmDelete(context: modelContext) }
+                    Button("Cancel", role: .cancel) { model.cancelDelete() }
+                } message: {
+                    Text(model.deleteConfirmationMessage)
                 }
                 // No background of its own, so the list keeps scrolling under
                 // the navigation bar's material rather than under a flat band.

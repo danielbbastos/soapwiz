@@ -52,6 +52,9 @@ final class RecipeListViewModel {
     /// User-facing message for the export step.
     var exportErrorMessage: String?
 
+    /// Selected recipes staged for deletion, waiting on the confirmation alert.
+    var confirmingDelete: [Recipe] = []
+
     var hasActiveFilters: Bool { !selectedCollections.isEmpty }
 
     var hasSelection: Bool { !selectedRecipes.isEmpty }
@@ -193,6 +196,56 @@ final class RecipeListViewModel {
             endSelecting()
         } catch {
             exportErrorMessage = "Couldn’t prepare those recipes for sharing. Please try again."
+        }
+    }
+
+    // MARK: - Bulk delete
+
+    var isConfirmingDelete: Bool { !confirmingDelete.isEmpty }
+
+    /// Spoken by VoiceOver on the delete button, where the visible label is only
+    /// an icon.
+    var deleteButtonTitle: String { Self.deleteTitle(count: selectedRecipes.count) }
+
+    /// Counts what was staged rather than the selection, which can still hold a
+    /// recipe deleted on another device since it was ticked.
+    var deleteConfirmationTitle: String { "\(Self.deleteTitle(count: confirmingDelete.count))?" }
+
+    private static func deleteTitle(count: Int) -> String {
+        count == 1 ? "Delete 1 Recipe" : "Delete \(count) Recipes"
+    }
+
+    /// Names what goes, and says what doesn't: batches made from a deleted recipe
+    /// stay in History, and a user about to delete a recipe they've made may
+    /// fear otherwise.
+    var deleteConfirmationMessage: String {
+        guard !confirmingDelete.isEmpty else { return "" }
+        let names = confirmingDelete.map(\.name).abbreviatedList()
+        let pronoun = confirmingDelete.count == 1 ? "it" : "them"
+        let consequence = confirmingDelete.contains { !$0.batches.isEmpty }
+            ? "Batches made from \(pronoun) stay in History."
+            : "This can’t be undone."
+        return "\(names) will be deleted. \(consequence)"
+    }
+
+    /// Stages every selected recipe, not just the ones on screen, for the same
+    /// reason the export does: a collection chip tapped mid-selection must not
+    /// shrink the set behind the count the title shows.
+    func requestDeleteSelection(from recipes: [Recipe]) {
+        confirmingDelete = selection(from: recipes)
+    }
+
+    func cancelDelete() {
+        confirmingDelete = []
+    }
+
+    /// Deletes the staged recipes and ends selection mode. Their batches are
+    /// nullified rather than deleted, by `Recipe.batches`' delete rule.
+    func confirmDelete(context: ModelContext) {
+        withAnimation {
+            confirmingDelete.forEach { context.delete($0) }
+            confirmingDelete = []
+            endSelecting()
         }
     }
 
