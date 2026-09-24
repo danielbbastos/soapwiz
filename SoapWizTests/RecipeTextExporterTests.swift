@@ -219,13 +219,14 @@ struct RecipeTextExporterTests {
         _ = container
         let recipe = seedRecipe(ctx)
         recipe.lyeType = "KOH"
+        recipe.lyePurity = 90
         recipe.superFat = 8
         recipe.waterParts = 2
         try ctx.save()
 
         let text = RecipeTextExporter.text(for: recipe)
 
-        #expect(text.contains("KOH · \(number(8))% superfat · water \(number(2)):1"))
+        #expect(text.contains("KOH (\(number(90))% pure) · \(number(8))% superfat · water \(number(2)):1"))
     }
 
     @Test func text_HybridRecipe_SpellsOutTheKOHNaOHSplit() throws {
@@ -240,6 +241,7 @@ struct RecipeTextExporterTests {
         let text = RecipeTextExporter.text(for: recipe)
 
         #expect(text.contains("KOH/NaOH \(number(70))/\(number(30))"))
+        #expect(text.contains("(\(number(recipe.kohPurity))%/\(number(recipe.naohPurity))% pure)"))
     }
 
     @Test func text_FailorRecipe_AppendsTheMethod() throws {
@@ -250,6 +252,19 @@ struct RecipeTextExporterTests {
         try ctx.save()
 
         #expect(RecipeTextExporter.text(for: recipe).contains("· Failor method"))
+    }
+
+    /// Named so a pasted copy comes back with the same neutraliser, not the
+    /// default one.
+    @Test func text_FailorRecipe_NamesTheNeutralizer() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+        recipe.useCFM = true
+        recipe.cfmNeutralizer = CFMNeutralizer.borax.rawValue
+        try ctx.save()
+
+        #expect(RecipeTextExporter.text(for: recipe).contains("· Failor method (borax)"))
     }
 
     @Test func text_CreamSoapRecipe_AppendsTheMethod() throws {
@@ -293,7 +308,7 @@ struct RecipeTextExporterTests {
         let text = RecipeTextExporter.text(for: recipe)
 
         #expect(text.contains("\n\nOils"))
-        #expect(text.contains("\n\nNaOH · "))
+        #expect(text.contains("\n\nNaOH ("))
         #expect(!text.hasSuffix("\n"))
     }
 }

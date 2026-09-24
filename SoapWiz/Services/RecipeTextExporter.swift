@@ -93,14 +93,18 @@ enum RecipeTextExporter {
         guard model.makesSoap, !model.oilDrafts.isEmpty else { return nil }
 
         var segments = [lyeSegment(model), "\(number(model.superFat))% superfat", "water \(number(model.waterParts)):1"]
-        if model.useCFM { segments.append("Failor method") }
+        if model.useCFM { segments.append("Failor method (\(model.cfmNeutralizer.displayName.lowercased()))") }
         if model.isCreamSoap { segments.append("cream soap method") }
         return segments.joined(separator: " · ")
     }
 
+    /// The purity is spelled out because it moves the lye weight: the same
+    /// recipe at 90% and at 99% KOH needs different amounts.
     private static func lyeSegment(_ model: RecipeFormViewModel) -> String {
-        guard model.useHybrid else { return model.lyeType }
-        return "KOH/NaOH \(number(model.kohPercentage))/\(number(model.naohPercentage))"
+        guard model.useHybrid else { return "\(model.lyeType) (\(number(model.lyePurity))% pure)" }
+        let split = "\(number(model.kohPercentage))/\(number(model.naohPercentage))"
+        let purities = "\(number(model.kohPurity))%/\(number(model.naohPurity))%"
+        return "KOH/NaOH \(split) (\(purities) pure)"
     }
 
     // MARK: - Rows

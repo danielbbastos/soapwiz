@@ -10,6 +10,9 @@ struct PreparedRecipeImport: Hashable {
     let draft: RecipeImportDraft
     let rows: [RecipeImportRow]
 
+    /// The user's own collections matching `draft.collectionNames`.
+    var collections: [RecipeCollection] = []
+
     static func == (lhs: PreparedRecipeImport, rhs: PreparedRecipeImport) -> Bool {
         lhs.id == rhs.id
     }
