@@ -50,7 +50,14 @@ enum RecipeTextExporter {
     private static func collectionsLine(_ recipe: Recipe) -> String? {
         let names = recipe.collections.sortedByName.map(\.name)
         guard !names.isEmpty else { return nil }
-        return "Collections: \(names.joined(separator: ", "))"
+        return "Collections: \(names.map(listed).joined(separator: ", "))"
+    }
+
+    /// A name holding a comma is quoted, CSV-style, so the list reads back into
+    /// the same names: "Kids, Sensitive Skin" is one collection, not two.
+    private static func listed(_ name: String) -> String {
+        guard name.contains(",") || name.hasPrefix("\"") else { return name }
+        return "\"\(name.replacingOccurrences(of: "\"", with: "\"\""))\""
     }
 
     private static func oilsBlock(_ model: RecipeFormViewModel) -> String? {
@@ -93,14 +100,18 @@ enum RecipeTextExporter {
         guard model.makesSoap, !model.oilDrafts.isEmpty else { return nil }
 
         var segments = [lyeSegment(model), "\(number(model.superFat))% superfat", "water \(number(model.waterParts)):1"]
-        if model.useCFM { segments.append("Failor method") }
+        if model.useCFM { segments.append("Failor method (\(model.cfmNeutralizer.displayName.lowercased()))") }
         if model.isCreamSoap { segments.append("cream soap method") }
         return segments.joined(separator: " · ")
     }
 
+    /// The purity is spelled out because it moves the lye weight: the same
+    /// recipe at 90% and at 99% KOH needs different amounts.
     private static func lyeSegment(_ model: RecipeFormViewModel) -> String {
-        guard model.useHybrid else { return model.lyeType }
-        return "KOH/NaOH \(number(model.kohPercentage))/\(number(model.naohPercentage))"
+        guard model.useHybrid else { return "\(model.lyeType) (\(number(model.lyePurity))% pure)" }
+        let split = "\(number(model.kohPercentage))/\(number(model.naohPercentage))"
+        let purities = "\(number(model.kohPurity))%/\(number(model.naohPurity))%"
+        return "KOH/NaOH \(split) (\(purities) pure)"
     }
 
     // MARK: - Rows

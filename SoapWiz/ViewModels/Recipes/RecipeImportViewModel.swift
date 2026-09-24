@@ -15,10 +15,12 @@ enum RecipeImportPhase: Equatable {
 
 /// Drives the import flow, whichever way a recipe arrives.
 ///
-/// Two paths meet here. A `.soapwizrecipe` file, or text carrying the marker
-/// "Copy Recipe" appends, is decoded exactly and needs no language model at all.
-/// Anything else is read by the on-device model, as before. Which path applies
-/// is decided by looking, not by asking the user to declare it.
+/// Three paths meet here. A `.soapwizrecipe` file, or text carrying the marker
+/// "Copy for SoapWiz" writes, is decoded exactly and needs no language model at
+/// all. The readable text "Copy Recipe" writes is read back by
+/// `RecipeTextExportReader`, also without the model. Anything else is read by
+/// the on-device model, as before. Which path applies is decided by looking,
+/// not by asking the user to declare it.
 ///
 /// Nothing here writes to the store. `RecipeTransferImporter` does that, from
 /// the plan this builds, once the user confirms.
@@ -38,6 +40,11 @@ final class RecipeImportViewModel {
 
     /// What an exact payload would do, once one has been read.
     private(set) var transferPlan: RecipeTransferPlan?
+
+    /// The collections the last read was given, for matching the names a
+    /// SoapWiz copy files its recipe under.
+    @ObservationIgnored
+    private var knownCollections: [RecipeCollection] = []
 
     /// The draft the review screen renders, empty before anything is extracted
     /// so the view has no optional to unwrap on every row.
@@ -95,6 +102,10 @@ final class RecipeImportViewModel {
         return false
     }
 
+    /// Whether the text in the box is SoapWiz's own readable copy, which is
+    /// read without the model.
+    var textIsSoapWizCopy: Bool { RecipeTextExportReader.read(rawText) != nil }
+
     var isExtracting: Bool { phase == .extracting }
 
     /// A short line naming the current step, so an empty early snapshot still
@@ -128,7 +139,12 @@ final class RecipeImportViewModel {
 
     var prepared: PreparedRecipeImport? {
         guard let extractedDraft, canConfirm else { return nil }
-        return PreparedRecipeImport(draft: extractedDraft, rows: rows)
+        let byName = Dictionary(
+            knownCollections.map { ($0.name.lookupKey, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let matched = extractedDraft.collectionNames.compactMap { byName[$0.lookupKey] }
+        return PreparedRecipeImport(draft: extractedDraft, rows: rows, collections: matched)
     }
 
     // MARK: - Exact payloads
@@ -215,6 +231,8 @@ final class RecipeImportViewModel {
             collections: collections,
             recipes: recipes
         ) else { return }
+        knownCollections = collections
+        guard !adoptSoapWizCopy(inventory: inventory) else { return }
 
         guard let extractor, modelIsUsable else {
             phase = .failed(.modelUnavailable(RecipeImportAvailability.current.explanation))
@@ -253,6 +271,17 @@ final class RecipeImportViewModel {
             streamingDraft = nil
             phase = .failed(importError(from: error))
         }
+    }
+
+    /// Reads SoapWiz's own "Copy Recipe" text straight into review, when that is
+    /// what the box holds. The model misreads it — see `RecipeTextExportReader`.
+    private func adoptSoapWizCopy(inventory: [Ingredient]) -> Bool {
+        guard let draft = RecipeTextExportReader.read(rawText) else { return false }
+        sanitized = nil
+        extractedDraft = draft
+        rows = RecipeIngredientReconciler.reconcile(draft, against: inventory)
+        phase = .review
+        return true
     }
 
     private func runExtraction(

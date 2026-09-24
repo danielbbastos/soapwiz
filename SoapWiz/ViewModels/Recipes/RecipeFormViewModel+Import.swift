@@ -89,8 +89,12 @@ extension RecipeFormViewModel {
 
         let draft = prepared.draft
         name = draft.name
+        // Before any row is applied: the kind decides which units the rows may
+        // take.
+        if let kind = draft.recipeKind { recipeKind = kind }
         applyWeightMode(from: draft)
         applyLyeSettings(from: draft)
+        if !prepared.collections.isEmpty { selectedCollections = prepared.collections.sortedByName }
 
         var repeated: [String] = []
         var merged: [[String]] = []
@@ -135,6 +139,10 @@ extension RecipeFormViewModel {
     /// it wants 0%.
     private func applyLyeSettings(from draft: RecipeImportDraft) {
         if let lyeType = draft.lyeType { setLyeType(lyeType) }
+        // After the lye type, which moves the purity to that lye's default.
+        if let lyePurity = draft.lyePurity { self.lyePurity = lyePurity }
+        if let kohPurity = draft.kohPurity { self.kohPurity = kohPurity }
+        if let naohPurity = draft.naohPurity { self.naohPurity = naohPurity }
         if let superFat = draft.superFat { self.superFat = superFat }
         if let waterParts = draft.waterParts { self.waterParts = waterParts }
         if let fragrancePercentage = draft.fragrancePercentage {
@@ -144,6 +152,14 @@ extension RecipeFormViewModel {
             useCFM = true
             self.cfmNeutralizer = cfmNeutralizer
         }
+        if let kohPercentage = draft.kohPercentage {
+            useHybrid = true
+            setKOHPercentage(kohPercentage)
+        }
+        // The flag alone, not `setCreamSoap`: a recipe copied with the method on
+        // already lists its glycerine among the additives, and the toggle would
+        // add a second one.
+        if draft.isCreamSoap { isCreamSoap = true }
     }
 
     private func importedDescription(

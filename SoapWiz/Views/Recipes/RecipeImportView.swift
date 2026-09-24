@@ -153,7 +153,7 @@ struct RecipeImportView: View {
                 Button {
                     Task { await model.extract(inventory: inventory, collections: collections, recipes: recipes) }
                 } label: {
-                    Text(model.textCarriesExactPayload ? "Read Copied Recipe" : "Read Recipe")
+                    Text(model.textCarriesExactPayload || model.textIsSoapWizCopy ? "Read Copied Recipe" : "Read Recipe")
                 }
                 .disabled(!model.canExtract || isReadingPhoto)
             } footer: {
@@ -163,11 +163,14 @@ struct RecipeImportView: View {
         }
     }
 
-    /// Says which of the two paths the text in the box will take, since they
+    /// Says which path the text in the box will take, since they
     /// give very different results and the difference is invisible otherwise.
     private var readFooter: String {
         if model.textCarriesExactPayload {
             return "This was copied from SoapWiz, so it comes back exactly — every setting, not just the oils."
+        }
+        if model.textIsSoapWizCopy {
+            return "This was copied from SoapWiz, so it’s read as written. Nothing is saved until you confirm."
         }
         guard model.canReadFreeText else {
             return "Paste a recipe copied from SoapWiz, or open a shared file above. "
@@ -226,6 +229,9 @@ struct RecipeImportView: View {
         }
         if model.textCarriesExactPayload {
             return "A SoapWiz recipe — this will come back exactly as it was sent."
+        }
+        if model.textIsSoapWizCopy {
+            return "A recipe copied from SoapWiz."
         }
         guard count > RecipeTextSanitizer.defaultCharacterBudget else {
             return "\(count) characters."

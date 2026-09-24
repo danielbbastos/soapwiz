@@ -81,11 +81,32 @@ struct RecipeImportDraft: Equatable {
 
     /// The Catherine Failor neutraliser this import uses, when it names borax or
     /// boric acid in a liquid or cream soap. `nil` for the common case of a
-    /// recipe that doesn't use the method. Set only by `RecipeImportDraftChecker`,
+    /// recipe that doesn't use the method. Set by `RecipeImportDraftChecker`,
     /// which gates it on a KOH lye and pulls the neutraliser out of the rows so
-    /// it isn't costed twice; the recipe form reads it into `useCFM` and
-    /// `cfmNeutralizer`.
+    /// it isn't costed twice, and by `RecipeTextExportReader` from SoapWiz's own
+    /// settings line. The recipe form reads it into `useCFM` and `cfmNeutralizer`.
     var cfmNeutralizer: CFMNeutralizer?
+
+    /// The KOH share of a hybrid lye, with NaOH making up the rest. Only
+    /// `RecipeTextExportReader` sets this and the fields after it: SoapWiz's own
+    /// copy states them exactly, and the model is never asked for them.
+    var kohPercentage: Double?
+
+    /// The single lye's purity, or each lye's in a hybrid.
+    var lyePurity: Double?
+    var kohPurity: Double?
+    var naohPurity: Double?
+
+    /// Set to `.general` for a copy with no lye settings line, which the
+    /// exporter writes for every soap recipe and never for anything else.
+    var recipeKind: RecipeKind?
+
+    var isCreamSoap: Bool = false
+
+    /// Collections the recipe was filed under, by name. Matched against the
+    /// user's own collections when the form opens; a name they don't have is
+    /// dropped rather than created.
+    var collectionNames: [String] = []
 
     /// Whether the source said anything about saponifying at all.
     ///
