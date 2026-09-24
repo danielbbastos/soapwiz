@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// The "Cost Calculator" section of a recipe's detail screen: the whole-batch
+/// The "Cost breakdown" section of a recipe's detail screen: the whole-batch
 /// total with RRP, plus an expandable cost breakdown for each product size the
 /// user tries out. Reads its figures from the view model and the app's RRP
 /// factor from settings, and writes back only the recipe's products, which can
@@ -117,10 +117,10 @@ struct RecipeCostSection: View {
                 Text("The change was not saved. Please try again.")
             }
         } header: {
-            Text("Cost Calculator")
+            Text("Cost breakdown")
         } footer: {
             Text("Try product sizes, like one bar or a quarter of the batch, to see what each would cost. "
-                + "Nothing else in the app uses them.")
+                + "They don't affect batches or inventory.")
         }
         .listRowBackground(Color.cardBackground)
     }
@@ -150,12 +150,7 @@ struct RecipeCostSection: View {
     }
 
     private var nonWholeBatchProducts: [RecipeProductDraft] {
-        model.productDrafts.filter { draft in
-            let unit = ProductUnit(rawValue: draft.unitSymbol)
-            if unit == .wholeBatch { return false }
-            if unit == .partsOfBatch && draft.size <= 1 { return false }
-            return true
-        }
+        model.productDrafts.filter(\.isSeparateFromBatch)
     }
 
     private func productBreakdowns(

@@ -63,6 +63,18 @@ struct RecipeProductDraft: Identifiable, Equatable {
     /// for a fresh row snaps its size to 1 — and that row must still be saved.
     private(set) var isSeededPlaceholder = false
 
+    /// Whether this size costs something other than the whole batch. A whole
+    /// batch, or a batch split into one part, is the batch total again, which
+    /// every cost screen already shows, so those rows are left out of the sizes
+    /// listed and counted.
+    var isSeparateFromBatch: Bool {
+        switch ProductUnit(rawValue: unitSymbol) {
+        case .wholeBatch: false
+        case .partsOfBatch: size > 1
+        default: true
+        }
+    }
+
     static func seededPlaceholder() -> RecipeProductDraft {
         var draft = RecipeProductDraft(size: 1, unitSymbol: ProductUnit.partsOfBatch.rawValue)
         draft.isSeededPlaceholder = true

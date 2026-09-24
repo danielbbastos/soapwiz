@@ -211,7 +211,7 @@ struct AddProductCardView: View {
 
     var body: some View {
         Button(action: action) {
-            Label("Add product", systemImage: "plus.circle.fill")
+            Label("Add size", systemImage: "plus.circle.fill")
                 .font(.subheadline)
                 .foregroundStyle(.tint)
                 .frame(maxWidth: .infinity, minHeight: 80)
