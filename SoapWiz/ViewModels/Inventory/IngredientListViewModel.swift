@@ -168,11 +168,6 @@ final class IngredientListViewModel {
         }
     }
 
-    /// At most this many names are spelled out before the rest are summarised.
-    /// Alert messages don't scroll, so an unbounded list stops being readable —
-    /// the exact count carries the information anyway.
-    private static let maxNamesListed = 3
-
     /// Hiding is immediate and needs no confirmation: nothing is lost, the row keeps
     /// its purchases, recipes already built on it are untouched, and Unhide is one tap
     /// away in the filter sheet.
@@ -273,12 +268,12 @@ final class IngredientListViewModel {
         if deleteBlockedIngredients.count == 1, let ingredient = deleteBlockedIngredients.first {
             let recipes = ingredient.recipesUsingThis.map(\.name).sorted()
             let target = recipes.count == 1 ? "that recipe" : "those recipes"
-            return "\"\(ingredient.name)\" is used in \(Self.abbreviated(recipes)). "
+            return "\"\(ingredient.name)\" is used in \(recipes.abbreviatedList()). "
                 + "Remove it from \(target) first."
         }
 
         let names = deleteBlockedIngredients.map(\.name).sorted()
-        return "\(Self.abbreviated(names)) are used in recipes. Remove them from those recipes first."
+        return "\(names.abbreviatedList()) are used in recipes. Remove them from those recipes first."
     }
 
     /// Message for the delete confirmation. Lives here rather than in the view so the
@@ -298,16 +293,6 @@ final class IngredientListViewModel {
         let purchaseWord = purchaseCount == 1 ? "purchase" : "purchases"
         return "Deleting \(confirmingDelete.count) \(ingredientWord) will also delete "
             + "\(purchaseCount) \(purchaseWord). This can't be undone."
-    }
-
-    /// Spells out the first few names and summarises the rest. The overflow form joins
-    /// manually because `ListFormatStyle` has no notion of truncation, and appending to
-    /// its output would read "A, B, and C and 22 others".
-    private static func abbreviated(_ names: [String]) -> String {
-        guard names.count > maxNamesListed else { return names.formatted() }
-        let remaining = names.count - maxNamesListed
-        let otherWord = remaining == 1 ? "other" : "others"
-        return names.prefix(maxNamesListed).joined(separator: ", ") + " and \(remaining) \(otherWord)"
     }
 
     /// Applies both halves of the staged removal: library rows are hidden, the rest
