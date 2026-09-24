@@ -63,7 +63,10 @@ final class RecipeImportViewModel {
     @ObservationIgnored
     private let modelIsUsable: Bool
 
-    init(extractor: RecipeDraftExtracting? = nil) {
+    private let waitHints: RecipeImportWaitHints
+
+    init(extractor: RecipeDraftExtracting? = nil, waitHints: RecipeImportWaitHints = RecipeImportWaitHints()) {
+        self.waitHints = waitHints
         if let extractor {
             self.extractor = extractor
             modelIsUsable = true
@@ -111,7 +114,9 @@ final class RecipeImportViewModel {
     /// says something. Driven by how far `streamingDraft` has filled in, so it
     /// can't drift from what the progress screen actually shows.
     var extractionStatus: String {
-        guard let streamingDraft, streamingDraft.hasAnyIngredient else { return "Reading the text\u{2026}" }
+        guard let streamingDraft, streamingDraft.hasAnyIngredient else {
+            return waitHints.current ?? "Reading the text\u{2026}"
+        }
         return streamingDraft.statesLyeSettings ? "Checking amounts\u{2026}" : "Finding ingredients\u{2026}"
     }
 
@@ -239,6 +244,8 @@ final class RecipeImportViewModel {
         }
         streamingDraft = nil
         phase = .extracting
+        waitHints.start()
+        defer { waitHints.stop() }
 
         let names = inventory.map(\.name)
         var budget = RecipeTextSanitizer.defaultCharacterBudget
