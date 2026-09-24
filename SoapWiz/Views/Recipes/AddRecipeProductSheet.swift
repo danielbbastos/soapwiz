@@ -44,9 +44,9 @@ struct AddRecipeProductSheet: View {
                 }
                 .listRowBackground(Color.cardBackground)
             }
-            .navigationTitle("Add Product")
+            .navigationTitle("Add Size")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Add Product")
+            .warmNavigationTitle("Add Size")
             .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
