@@ -161,7 +161,7 @@ linctl issue update SW-1234 --parent SW-5 --json
 linctl issue get SW-1234 --json | jq -r '.branchName'
 ```
 
-The field is `branchName`, not `gitBranchName` — the latter is the Linear GraphQL name and returns `null` through `linctl`.
+The field is `branchName`, not `gitBranchName` — the latter is the Linear GraphQL name and returns `null` through `linctl`. Don't use it as the git branch: name branches `sw-{n}-{3-5 word summary of the change}`.
 
 ### Release Task Hierarchy
 ```bash
