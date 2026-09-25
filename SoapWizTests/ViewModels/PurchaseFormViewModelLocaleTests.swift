@@ -75,6 +75,24 @@ struct PurchaseFormViewModelLocaleTests {
         #expect(!model.isValid)
     }
 
+    /// An unreadable price used to save as 0; it now blocks Save instead.
+    @Test func isValid_UnreadablePrice_BlocksSave() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let ingredient = Ingredient(name: "Olive Oil")
+        ctx.insert(ingredient)
+        let model = PurchaseFormViewModel(ingredient: ingredient, locale: unitedStates)
+        model.quantityText = "500"
+
+        model.totalPriceText = "1.234.5"
+        #expect(!model.isValid)
+        model.totalPriceText = ""
+        #expect(model.isValid)
+        model.totalPriceText = "0.500"
+        #expect(model.isValid)
+        #expect(model.totalPrice == 0.5)
+    }
+
     @Test func editing_PrefillsInTheLocale_AndReadsBackTheSameValues() throws {
         let container = try makeContainer()
         let ctx = container.mainContext

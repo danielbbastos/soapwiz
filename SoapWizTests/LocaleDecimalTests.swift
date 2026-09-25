@@ -33,7 +33,13 @@ struct LocaleDecimalTests {
         Case(text: "1\u{202F}234,5", locale: "fr_FR", expected: 1234.5),
         Case(text: "1.500", locale: "fr_FR", expected: 1.5),
         Case(text: "1’234.5", locale: "de_CH", expected: 1234.5),
-        Case(text: "1,23,456", locale: "en_IN", expected: 123_456)
+        Case(text: "1,23,456", locale: "en_IN", expected: 123_456),
+        Case(text: "0.134", locale: "de_DE", expected: 0.134),
+        Case(text: "0.915", locale: "es_ES", expected: 0.915),
+        Case(text: "0.134", locale: "en_DE", expected: 0.134),
+        Case(text: "0,125", locale: "en_US", expected: 0.125),
+        Case(text: "0,500", locale: "en_US", expected: 0.5),
+        Case(text: "012,345", locale: "en_US", expected: 12.345)
     ])
     func parse_ReadsTheLocaleSeparators(_ testCase: Case) {
         #expect(LocaleDecimal.parse(testCase.text, locale: Locale(identifier: testCase.locale)) == testCase.expected)
@@ -62,6 +68,15 @@ struct LocaleDecimalTests {
     @Test(arguments: ["", "   ", "abc", "1.2.3", "1,2,3", "1,5.000,2", "12a", "1.23,45,6", "-", "--5", "5-"])
     func parse_Unreadable_ReturnsNil(_ text: String) {
         #expect(LocaleDecimal.parse(text, locale: Locale(identifier: "en_US")) == nil)
+    }
+
+    @Test func isReadable_EmptyOrNumber_IsTrue() {
+        let english = Locale(identifier: "en_US")
+        #expect(LocaleDecimal.isReadable("", locale: english))
+        #expect(LocaleDecimal.isReadable("  ", locale: english))
+        #expect(LocaleDecimal.isReadable("1,500", locale: english))
+        #expect(!LocaleDecimal.isReadable("1.2.3", locale: english))
+        #expect(!LocaleDecimal.isReadable("0,13,5", locale: english))
     }
 
     /// What the forms pre-fill must read back as the same number.

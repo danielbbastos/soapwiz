@@ -148,7 +148,7 @@ final class PurchaseFormViewModel {
             || selectedLocation !== snap.location
     }
 
-    var isValid: Bool { quantity > 0 && isDirty }
+    var isValid: Bool { quantity > 0 && LocaleDecimal.isReadable(totalPriceText, locale: locale) && isDirty }
 
     /// Throws when the ingredient this sheet was opened for has been merged away
     /// and no surviving row carries its slug. Appending to the detached reference

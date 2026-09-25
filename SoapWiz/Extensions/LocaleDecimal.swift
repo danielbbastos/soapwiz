@@ -12,6 +12,12 @@ import Foundation
 /// Pasted recipe text goes through `RecipeTextNumbers` instead — that is
 /// foreign text, not the user's own input.
 enum LocaleDecimal {
+    /// Whether a numeric field's text can be saved: empty, or a number. A form
+    /// must refuse to save anything else rather than store it as nothing.
+    static func isReadable(_ text: String, locale: Locale = .autoupdatingCurrent) -> Bool {
+        text.allSatisfy(\.isWhitespace) || parse(text, locale: locale) != nil
+    }
+
     static func parse(_ text: String, locale: Locale = .autoupdatingCurrent) -> Double? {
         let groupingSeparator = locale.groupingSeparator ?? ","
         var compact = text.filter { !$0.isWhitespace }
@@ -60,11 +66,13 @@ enum LocaleDecimal {
 
     /// The digits of a whole number grouped by `grouping`, or nil when the
     /// groups are malformed. The last group must have three digits and earlier
-    /// ones two or three, which also accepts Indian grouping ("1,23,456").
+    /// ones two or three, which also accepts Indian grouping ("1,23,456"). A
+    /// grouped number never starts with a zero, so "0.134" is a decimal even
+    /// where "." groups — a SAP value read as 134 would multiply the lye.
     private static func groupedDigits(_ text: String, grouping: Character) -> String? {
         let groups = text.split(separator: grouping, omittingEmptySubsequences: false).map(String.init)
         guard groups.count > 1,
-              let first = groups.first, (1...3).contains(first.count),
+              let first = groups.first, (1...3).contains(first.count), first.first != "0",
               let last = groups.last, last.count == 3,
               groups.dropFirst().dropLast().allSatisfy({ (2...3).contains($0.count) }),
               groups.allSatisfy({ $0.allSatisfy(\.isASCIIDigit) }) else { return nil }

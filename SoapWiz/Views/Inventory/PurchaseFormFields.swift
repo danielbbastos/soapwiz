@@ -50,7 +50,7 @@ struct PurchaseFormFields: View {
             HStack {
                 Text("Total Price")
                 Spacer()
-                TextField("0.00", text: $model.totalPriceText.decimalOnly())
+                TextField(0.0.formatted(.number.precision(.fractionLength(2))), text: $model.totalPriceText.decimalOnly())
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .frame(width: 100)

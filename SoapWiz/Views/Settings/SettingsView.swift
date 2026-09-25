@@ -157,16 +157,8 @@ struct SettingsView: View {
 
     private func pricingSection(_ settings: AppSettings) -> some View {
         Section {
-            Picker("Currency", selection: Binding(
-                get: { currencyCode },
-                set: { settings.currencyCode = $0 }
-            )) {
-                ForEach(CurrencyChoice.all(including: currencyCode)) { choice in
-                    Text(choice.label).tag(choice.code)
-                }
-            }
-            .pickerStyle(.navigationLink)
-            .listRowBackground(Color.cardBackground)
+            CurrencyPickerRow(settings: settings)
+                .listRowBackground(Color.cardBackground)
             HStack {
                 Text("RRP factor")
                 InfoPopoverIcon(

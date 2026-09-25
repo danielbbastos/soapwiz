@@ -9,9 +9,11 @@ final class PurchaseDetailViewModel {
     var editingValue: String = ""
     private let originalAmount: Double
     private let originalOpeningDate: Date?
+    private let locale: Locale
 
-    init(purchase: IngredientPurchase) {
+    init(purchase: IngredientPurchase, locale: Locale = .autoupdatingCurrent) {
         self.purchase = purchase
+        self.locale = locale
         self.originalAmount = purchase.remainingAmount
         self.originalOpeningDate = purchase.openingDate
     }
@@ -30,7 +32,7 @@ final class PurchaseDetailViewModel {
     }
 
     func startEditing() {
-        editingValue = purchase.remainingAmount.formatted(.number.precision(.fractionLength(0...2)).grouping(.never))
+        editingValue = purchase.remainingAmount.formatted(.number.precision(.fractionLength(0...2)).grouping(.never).locale(locale))
         isEditingAmount = true
     }
 
@@ -41,7 +43,7 @@ final class PurchaseDetailViewModel {
     }
 
     func commitEdit() {
-        if let parsed = LocaleDecimal.parse(editingValue) {
+        if let parsed = LocaleDecimal.parse(editingValue, locale: locale) {
             purchase.remainingAmount = parsed.clamped(to: 0...purchase.quantity)
             purchase.markOpenedIfPartlyUsed()
         }

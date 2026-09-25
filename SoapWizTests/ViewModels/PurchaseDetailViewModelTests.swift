@@ -208,3 +208,75 @@ struct PurchaseDetailViewModelTests {
         #expect(purchase.openingDate == existingDate)
     }
 }
+
+/// The remaining-amount edit reads in the user's locale (SW-179).
+@Suite("PurchaseDetailViewModel — locale", .serialized)
+@MainActor
+struct PurchaseDetailViewModelLocaleTests {
+
+    private func makePurchase(in ctx: ModelContext, quantity: Double = 5000, remaining: Double = 100) -> IngredientPurchase {
+        let purchase = IngredientPurchase(
+            dateOfPurchase: .now, quantity: quantity, totalPrice: 10,
+            badge: "", journalCode: "", expiryDate: nil, openingDate: nil
+        )
+        purchase.remainingAmount = remaining
+        ctx.insert(purchase)
+        return purchase
+    }
+
+    private func makeContext() throws -> (ModelContainer, ModelContext) {
+        let schema = Schema([Ingredient.self, IngredientPurchase.self, IngredientCategory.self, StorageLocation.self, Provider.self])
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
+        return (container, container.mainContext)
+    }
+
+    @Test func commitEdit_EnglishGroupedThousands_ReadsAsThousands() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let purchase = makePurchase(in: ctx)
+        let model = PurchaseDetailViewModel(purchase: purchase, locale: Locale(identifier: "en_US"))
+
+        model.editingValue = "1,500"
+        model.commitEdit()
+
+        #expect(purchase.remainingAmount == 1500)
+    }
+
+    @Test func commitEdit_PortugueseDecimalComma_ReadsAsDecimal() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let purchase = makePurchase(in: ctx)
+        let model = PurchaseDetailViewModel(purchase: purchase, locale: Locale(identifier: "pt_PT"))
+
+        model.editingValue = "12,5"
+        model.commitEdit()
+
+        #expect(purchase.remainingAmount == 12.5)
+    }
+
+    @Test func startEditing_PrefillsInTheLocale_AndCommitsUnchanged() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let purchase = makePurchase(in: ctx, remaining: 1234.5)
+        let germany = Locale(identifier: "de_DE")
+        let model = PurchaseDetailViewModel(purchase: purchase, locale: germany)
+
+        model.startEditing()
+        model.commitEdit()
+
+        #expect(model.editingValue == 1234.5.formatted(.number.precision(.fractionLength(0...2)).grouping(.never).locale(germany)))
+        #expect(purchase.remainingAmount == 1234.5)
+    }
+
+    @Test func commitEdit_Unreadable_KeepsTheStoredAmount() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let purchase = makePurchase(in: ctx)
+        let model = PurchaseDetailViewModel(purchase: purchase, locale: Locale(identifier: "en_US"))
+
+        model.editingValue = "1.2.3"
+        model.commitEdit()
+
+        #expect(purchase.remainingAmount == 100)
+    }
+}
