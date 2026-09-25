@@ -61,7 +61,7 @@ struct BackupSchemaCoverageTests {
         ],
         "IngredientPurchase": [
             "ingredient": "the inverse of nesting under the ingredient",
-            "ingredientSlug": "restamped from the ingredient by IngredientLinkRepair"
+            "ingredientSlug": "set from the restored ingredient by attach(to:) / RecipeIngredient.init"
         ],
         "Provider": [
             "uuid": "restore mints a fresh identity",
@@ -77,7 +77,7 @@ struct BackupSchemaCoverageTests {
         ],
         "RecipeIngredient": [
             "recipe": "the inverse of nesting under the recipe",
-            "ingredientSlug": "restamped from the ingredient by IngredientLinkRepair"
+            "ingredientSlug": "set from the restored ingredient by attach(to:) / RecipeIngredient.init"
         ],
         "RecipeProduct": ["recipe": "the inverse of nesting under the recipe"],
         "StorageLocation": [

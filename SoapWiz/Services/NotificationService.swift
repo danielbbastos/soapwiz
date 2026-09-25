@@ -11,13 +11,22 @@ enum NotificationService {
         }
     }
 
+    /// What a sync does with the reminders scheduled on this device.
+    enum SyncAction: Equatable {
+        case cancel
+        case schedule
+    }
+
+    /// Reminders or tracking can be switched off without the Settings toggle —
+    /// synced from another device, or by a restore — so either being off clears
+    /// the reminders already scheduled here rather than leaving them to fire.
+    static func syncAction(for settings: AppSettings) -> SyncAction {
+        settings.expiryNotificationsEnabled && settings.tracksInventory ? .schedule : .cancel
+    }
+
     static func syncIfEnabled(modelContext: ModelContext) async {
         let settings = AppSettings.resolve(in: modelContext)
-        guard settings.expiryNotificationsEnabled else { return }
-        // Tracking can be switched off without the Settings toggle — synced from
-        // another device, or by a restore — so reminders already scheduled here
-        // are cleared rather than left to fire.
-        guard settings.tracksInventory else {
+        guard syncAction(for: settings) == .schedule else {
             await cancelAllExpiryNotifications()
             return
         }
