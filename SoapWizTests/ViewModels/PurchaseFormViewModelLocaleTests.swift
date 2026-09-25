@@ -108,6 +108,20 @@ struct PurchaseFormViewModelLocaleTests {
         #expect(!model.isDirty)
     }
 
+    /// Arabic formatting pre-fills native digits; the form must still read them.
+    @Test func editing_ArabicPrefill_IsReadableAndValid() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let (ingredient, stored) = purchase(quantity: 500, totalPrice: 12.5, in: ctx)
+        let model = PurchaseFormViewModel(ingredient: ingredient, purchase: stored, locale: Locale(identifier: "ar_SA"))
+
+        model.badge = "B"
+
+        #expect(model.quantity == 500)
+        #expect(model.totalPrice == 12.5)
+        #expect(model.isValid)
+    }
+
     @Test func editing_SavingUnchangedPrefill_KeepsTheStoredValues() throws {
         let container = try makeContainer()
         let ctx = container.mainContext

@@ -62,12 +62,30 @@ struct LocaleDecimalTests {
         let portuguese = Locale(identifier: "pt_PT")
         #expect(LocaleDecimal.parse("1,", locale: portuguese) == 1)
         #expect(LocaleDecimal.parse(",5", locale: portuguese) == 0.5)
-        #expect(LocaleDecimal.parse(",", locale: portuguese) == 0)
     }
 
-    @Test(arguments: ["", "   ", "abc", "1.2.3", "1,2,3", "1,5.000,2", "12a", "1.23,45,6", "-", "--5", "5-"])
+    @Test(arguments: ["", "   ", "abc", "1.2.3", "1,2,3", "1,5.000,2", "12a", "1.23,45,6", "-", "--5", "5-", ",", ".", "-,"])
     func parse_Unreadable_ReturnsNil(_ text: String) {
         #expect(LocaleDecimal.parse(text, locale: Locale(identifier: "en_US")) == nil)
+    }
+
+    /// Native digits and the Arabic decimal mark, as those locales format and
+    /// as their keyboards type them.
+    @Test func parse_NativeDigits_ReadAsNumbers() {
+        #expect(LocaleDecimal.parse("\u{0661}\u{0662}\u{066B}\u{0665}", locale: Locale(identifier: "ar_SA")) == 12.5)
+        #expect(LocaleDecimal.parse("\u{06F1}\u{066C}\u{06F2}\u{06F3}\u{06F4}", locale: Locale(identifier: "fa_IR")) == 1234)
+        #expect(LocaleDecimal.parse("\u{0967}.\u{096B}", locale: Locale(identifier: "ne_NP")) == 1.5)
+    }
+
+    @Test @MainActor func decimalOnly_KeepsTheArabicDecimalMark() {
+        var stored = ""
+        let arabic = Locale(identifier: "ar_SA")
+        let binding = Binding(get: { stored }, set: { stored = $0 }).decimalOnly(locale: arabic)
+
+        binding.wrappedValue = "\u{0661}\u{0662}\u{066B}\u{0665}"
+
+        #expect(stored == "\u{0661}\u{0662}\u{066B}\u{0665}")
+        #expect(LocaleDecimal.parse(stored, locale: arabic) == 12.5)
     }
 
     @Test func isReadable_EmptyOrNumber_IsTrue() {
@@ -77,10 +95,11 @@ struct LocaleDecimalTests {
         #expect(LocaleDecimal.isReadable("1,500", locale: english))
         #expect(!LocaleDecimal.isReadable("1.2.3", locale: english))
         #expect(!LocaleDecimal.isReadable("0,13,5", locale: english))
+        #expect(!LocaleDecimal.isReadable(",", locale: english))
     }
 
     /// What the forms pre-fill must read back as the same number.
-    @Test(arguments: ["en_US", "pt_PT", "de_DE", "fr_FR", "de_CH", "en_IN"])
+    @Test(arguments: ["en_US", "pt_PT", "de_DE", "fr_FR", "de_CH", "en_IN", "ar_SA", "ar_EG", "fa_IR", "ne_NP", "my_MM"])
     func parse_FormattedValue_RoundTrips(_ identifier: String) {
         let locale = Locale(identifier: identifier)
         for value in [0.0, 0.25, 12.5, 1234.56, 1_234_567.0] {

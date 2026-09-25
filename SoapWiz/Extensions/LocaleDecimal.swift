@@ -24,6 +24,12 @@ enum LocaleDecimal {
         if groupingSeparator != ".", groupingSeparator != "," {
             compact = compact.replacingOccurrences(of: groupingSeparator, with: "")
         }
+        // Arabic and Persian write "١٫٥": their own decimal mark becomes a
+        // point, and native digits become ASCII, so the rules below apply.
+        if let decimalSeparator = locale.decimalSeparator, decimalSeparator != ".", decimalSeparator != "," {
+            compact = compact.replacingOccurrences(of: decimalSeparator, with: ".")
+        }
+        compact = String(compact.map(asciiDigit))
         let isNegative = compact.first == "-" || compact.first == "\u{2212}"
         if isNegative {
             compact.removeFirst()
@@ -60,7 +66,7 @@ enum LocaleDecimal {
         guard parts.count == 2, parts[1].allSatisfy(\.isASCIIDigit) else { return nil }
         let grouping: Character = decimal == "," ? "." : ","
         let integer = parts[0].contains(grouping) ? groupedDigits(parts[0], grouping: grouping) : parts[0]
-        guard let integer else { return nil }
+        guard let integer, !(integer.isEmpty && parts[1].isEmpty) else { return nil }
         return Double("\(integer.isEmpty ? "0" : integer).\(parts[1].isEmpty ? "0" : parts[1])")
     }
 
@@ -77,6 +83,14 @@ enum LocaleDecimal {
               groups.dropFirst().dropLast().allSatisfy({ (2...3).contains($0.count) }),
               groups.allSatisfy({ $0.allSatisfy(\.isASCIIDigit) }) else { return nil }
         return groups.joined()
+    }
+}
+
+private extension LocaleDecimal {
+    static func asciiDigit(_ character: Character) -> Character {
+        guard !character.isASCII, character.isNumber,
+              let value = character.wholeNumberValue, (0...9).contains(value) else { return character }
+        return Character(String(value))
     }
 }
 
