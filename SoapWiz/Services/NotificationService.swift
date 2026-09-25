@@ -15,35 +15,43 @@ enum NotificationService {
     enum SyncAction: Equatable {
         case cancel
         case schedule
+        case requestPermission
+        /// This device may not notify; leave the setting and the schedule alone.
+        case skip
     }
 
     /// Reminders or tracking can be switched off without the Settings toggle —
     /// synced from another device, or by a restore — so either being off clears
     /// the reminders already scheduled here rather than leaving them to fire.
-    static func syncAction(for settings: AppSettings) -> SyncAction {
-        settings.expiryNotificationsEnabled && settings.tracksInventory ? .schedule : .cancel
+    ///
+    /// A missing permission never turns the setting off: the setting syncs, the
+    /// permission is this device's alone, and switching it off here would cancel
+    /// the reminders on every other device.
+    static func syncAction(for settings: AppSettings, authorization: UNAuthorizationStatus) -> SyncAction {
+        guard settings.expiryNotificationsEnabled, settings.tracksInventory else { return .cancel }
+        switch authorization {
+        case .authorized: return .schedule
+        case .notDetermined: return .requestPermission
+        default: return .skip
+        }
     }
 
     static func syncIfEnabled(modelContext: ModelContext) async {
         let settings = AppSettings.resolve(in: modelContext)
-        guard syncAction(for: settings) == .schedule else {
+        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+
+        switch syncAction(for: settings, authorization: status) {
+        case .cancel:
             await cancelAllExpiryNotifications()
-            return
-        }
-
-        let center = UNUserNotificationCenter.current()
-        let status = await center.notificationSettings().authorizationStatus
-        if status == .notDetermined {
-            guard await requestAuthorization() else {
-                settings.expiryNotificationsEnabled = false
-                return
+        case .schedule:
+            await syncNotifications(modelContext: modelContext)
+        case .requestPermission:
+            if await requestAuthorization() {
+                await syncNotifications(modelContext: modelContext)
             }
-        } else if status != .authorized {
-            settings.expiryNotificationsEnabled = false
-            return
+        case .skip:
+            break
         }
-
-        await syncNotifications(modelContext: modelContext)
     }
 
     static func syncNotifications(modelContext: ModelContext) async {
