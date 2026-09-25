@@ -5,9 +5,22 @@ import Foundation
 /// A plain `Double(text)` only understands a point, and swapping every comma
 /// for a point turns an English "1,500" into 1.5. This reads the locale's
 /// separators instead, and stays lenient about the other one where the text is
-/// unambiguous: a separator is taken as grouping only when it is the locale's
-/// grouping separator and the digits after it form whole groups, so "1.5" is
-/// 1.5 even in Germany while "1.500" there is 1500.
+/// unambiguous. The rules, in the order they apply:
+///
+/// 1. A locale's own mark other than "." and "," (the Arabic "٬", the Swiss
+///    "’", the French space) is grouping, and the whole part must be properly
+///    grouped: "1’234.5" is 1234.5, "1’5" is unreadable.
+/// 2. With both "." and ",", the last one is the decimal in any locale:
+///    "1.234,5" is 1234.5 even in the US.
+/// 3. A separator that repeats is grouping in any locale: "1,500,000" is
+///    1500000 even in Germany.
+/// 4. A single separator is grouping only when it is the locale's grouping
+///    separator and the digits after it form whole groups: "1.500" is 1500 in
+///    Germany, but "1.5" and "0.134" are decimals there.
+/// 5. Otherwise it is the decimal: "1,5" is 1.5 even in the US.
+///
+/// Whole groups have three digits (the first one to three, never starting
+/// with 0), so a grouped reading never shrinks or inflates a decimal.
 ///
 /// Pasted recipe text goes through `RecipeTextNumbers` instead — that is
 /// foreign text, not the user's own input.
@@ -19,15 +32,19 @@ enum LocaleDecimal {
     }
 
     /// Whether `character` can be part of a number typed in `locale`. The
-    /// input filter keeps exactly these, so it never drops a character the
+    /// input filter keeps exactly these, so it never drops a separator the
     /// parser would need — dropping the full-width point from "１．５" left
-    /// "１５", which reads as 15.
+    /// "１５", which reads as 15. The minus sign is left out on purpose: no
+    /// field takes a negative number.
     static func isNumberCharacter(_ character: Character, locale: Locale = .autoupdatingCurrent) -> Bool {
         if isDecimalDigit(character) || ".,\u{FF0E}\u{FF0C}".contains(character) { return true }
         let separators = [locale.groupingSeparator, locale.decimalSeparator].compactMap(\.self)
         return separators.contains(String(character)) || (character.isWhitespace && groupsWithSpace(locale))
     }
 
+    /// The number in `text`, or nil when it isn't one. A leading minus is read
+    /// rather than rejected, so a caller that gets text past the input filter
+    /// clamps or refuses a negative value itself.
     static func parse(_ text: String, locale: Locale = .autoupdatingCurrent) -> Double? {
         var compact = String(normalized(text.trimmingCharacters(in: .whitespaces), locale: locale))
         let isNegative = compact.first == "-"
