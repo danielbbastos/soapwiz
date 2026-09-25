@@ -19,8 +19,10 @@ import Foundation
 ///    Germany, but "1.5" and "0.134" are decimals there.
 /// 5. Otherwise it is the decimal: "1,5" is 1.5 even in the US.
 ///
-/// Whole groups have three digits (the first one to three, never starting
-/// with 0), so a grouped reading never shrinks or inflates a decimal.
+/// In a properly grouped number the first group has one to three digits and
+/// never starts with 0, the last has three, and any in between two or three
+/// (Indian "1,23,456"), so a grouped reading never shrinks or inflates a
+/// decimal.
 ///
 /// Pasted recipe text goes through `RecipeTextNumbers` instead — that is
 /// foreign text, not the user's own input.
