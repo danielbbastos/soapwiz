@@ -18,27 +18,52 @@ enum LocaleDecimal {
         text.allSatisfy(\.isWhitespace) || parse(text, locale: locale) != nil
     }
 
+    /// Whether `character` can be part of a number typed in `locale`. The
+    /// input filter keeps exactly these, so it never drops a character the
+    /// parser would need — dropping the full-width point from "１．５" left
+    /// "１５", which reads as 15.
+    static func isNumberCharacter(_ character: Character, locale: Locale = .autoupdatingCurrent) -> Bool {
+        if isDecimalDigit(character) || ".,\u{FF0E}\u{FF0C}".contains(character) { return true }
+        let separators = [locale.groupingSeparator, locale.decimalSeparator].compactMap(\.self)
+        return separators.contains(String(character)) || (character.isWhitespace && groupsWithSpace(locale))
+    }
+
     static func parse(_ text: String, locale: Locale = .autoupdatingCurrent) -> Double? {
-        let groupingSeparator = locale.groupingSeparator ?? ","
-        var compact = text.filter { !$0.isWhitespace }
-        if groupingSeparator != ".", groupingSeparator != "," {
-            compact = compact.replacingOccurrences(of: groupingSeparator, with: "")
-        }
-        // Arabic and Persian write "١٫٥": their own decimal mark becomes a
-        // point, and native digits become ASCII, so the rules below apply.
-        if let decimalSeparator = locale.decimalSeparator, decimalSeparator != ".", decimalSeparator != "," {
-            compact = compact.replacingOccurrences(of: decimalSeparator, with: ".")
-        }
-        compact = String(compact.map(asciiDigit))
-        let isNegative = compact.first == "-" || compact.first == "\u{2212}"
+        var compact = String(normalized(text.trimmingCharacters(in: .whitespaces), locale: locale))
+        let isNegative = compact.first == "-"
         if isNegative {
             compact.removeFirst()
         }
-        return magnitude(compact, groupingSeparator: groupingSeparator)
+        return magnitude(compact, groupingSeparator: locale.groupingSeparator ?? ",")
             .map { isNegative ? -$0 : $0 }
     }
 
+    /// Rewrites `text` into ASCII digits, ".", "," and `groupingMark`. A
+    /// locale's own marks other than "." and "," — the Arabic "٫" and "٬", the
+    /// Swiss "’", the French space — become the point and `groupingMark`, so
+    /// they go through the same checks rather than being dropped unchecked: a
+    /// dropped "٬" read "٠٬١٣٤" as 134.
+    private static func normalized(_ text: String, locale: Locale) -> [Character] {
+        let decimalSeparator = locale.decimalSeparator ?? "."
+        let groupingSeparator = locale.groupingSeparator ?? ","
+        return text.map { character in
+            let string = String(character)
+            if string == decimalSeparator, decimalSeparator != ".", decimalSeparator != "," { return "." }
+            if string == groupingSeparator, groupingSeparator != ".", groupingSeparator != "," { return groupingMark }
+            if character.isWhitespace { return groupsWithSpace(locale) ? groupingMark : character }
+            switch character {
+            case "\u{FF0E}": return "."
+            case "\u{FF0C}": return ","
+            case "\u{2212}": return "-"
+            default: return asciiDigit(character)
+            }
+        }
+    }
+
     private static func magnitude(_ compact: String, groupingSeparator: String) -> Double? {
+        if compact.contains(groupingMark) {
+            return markGrouped(compact)
+        }
         guard !compact.isEmpty, compact.allSatisfy({ $0.isASCIIDigit || $0 == "." || $0 == "," }) else {
             return nil
         }
@@ -70,6 +95,18 @@ enum LocaleDecimal {
         return Double("\(integer.isEmpty ? "0" : integer).\(parts[1].isEmpty ? "0" : parts[1])")
     }
 
+    /// A number grouped by the locale's own mark, which is never "." or ",", so
+    /// whichever of those comes last is the decimal and the whole part must be
+    /// properly grouped.
+    private static func markGrouped(_ text: String) -> Double? {
+        let decimalIndex = text.lastIndex { $0 == "." || $0 == "," }
+        let integerText = decimalIndex.map { String(text[..<$0]) } ?? text
+        let fraction = decimalIndex.map { String(text[text.index(after: $0)...]) } ?? ""
+        guard fraction.allSatisfy(\.isASCIIDigit),
+              let digits = groupedDigits(integerText, grouping: groupingMark) else { return nil }
+        return Double(fraction.isEmpty ? digits : "\(digits).\(fraction)")
+    }
+
     /// The digits of a whole number grouped by `grouping`, or nil when the
     /// groups are malformed. The last group must have three digits and earlier
     /// ones two or three, which also accepts Indian grouping ("1,23,456"). A
@@ -87,10 +124,25 @@ enum LocaleDecimal {
 }
 
 private extension LocaleDecimal {
+    /// Stands in for a locale's own grouping mark; a private-use character, so
+    /// nothing typed can collide with it.
+    static let groupingMark: Character = "\u{E000}"
+
+    /// Only true decimal digits in any script; "²" or "①" are numbers too but
+    /// not digits, and reading "1²" as 12 would be a silent typo.
+    static func isDecimalDigit(_ character: Character) -> Bool {
+        character.unicodeScalars.count == 1 && character.unicodeScalars.first?.properties.numericType == .decimal
+    }
+
     static func asciiDigit(_ character: Character) -> Character {
-        guard !character.isASCII, character.isNumber,
-              let value = character.wholeNumberValue, (0...9).contains(value) else { return character }
+        guard !character.isASCII, isDecimalDigit(character), let value = character.wholeNumberValue else { return character }
         return Character(String(value))
+    }
+
+    /// French and Portuguese group with a (no-break) space, so a space inside
+    /// a number is grouping there.
+    static func groupsWithSpace(_ locale: Locale) -> Bool {
+        locale.groupingSeparator?.allSatisfy(\.isWhitespace) ?? false
     }
 }
 

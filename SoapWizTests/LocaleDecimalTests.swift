@@ -88,6 +88,49 @@ struct LocaleDecimalTests {
         #expect(LocaleDecimal.parse(stored, locale: arabic) == 12.5)
     }
 
+    /// A locale's own grouping mark goes through the same checks as "." and
+    /// ",": the Arabic thousands mark looks like its decimal mark, and dropping
+    /// it unchecked read a mistyped SAP value as 134.
+    @Test(arguments: [
+        Case(text: "\u{0660}\u{066C}\u{0661}\u{0663}\u{0664}", locale: "ar_SA", expected: nil),
+        Case(text: "\u{0661}\u{066C}\u{0662}\u{0663}\u{0664}\u{066B}\u{0665}", locale: "ar_SA", expected: 1234.5),
+        Case(text: "0’134", locale: "de_CH", expected: nil),
+        Case(text: "1’5", locale: "de_CH", expected: nil),
+        Case(text: "1’234’567", locale: "de_CH", expected: 1_234_567),
+        Case(text: "1 5", locale: "fr_FR", expected: nil),
+        Case(text: "1 234 567", locale: "fr_FR", expected: 1_234_567),
+        Case(text: "1 500", locale: "en_US", expected: nil)
+    ])
+    func parse_LocaleGroupingMark_IsChecked(_ testCase: Case) {
+        #expect(LocaleDecimal.parse(testCase.text, locale: Locale(identifier: testCase.locale)) == testCase.expected)
+    }
+
+    @Test func parse_NonDigitNumerals_AreUnreadable() {
+        let english = Locale(identifier: "en_US")
+        #expect(LocaleDecimal.parse("1\u{00B2}", locale: english) == nil)
+        #expect(LocaleDecimal.parse("\u{2460}", locale: english) == nil)
+    }
+
+    @Test func parse_FullWidth_ReadsLikeASCII() {
+        let japanese = Locale(identifier: "ja_JP")
+        #expect(LocaleDecimal.parse("\u{FF11}\u{FF0E}\u{FF15}", locale: japanese) == 1.5)
+        #expect(LocaleDecimal.parse("\u{FF11}\u{FF0C}\u{FF15}\u{FF10}\u{FF10}", locale: japanese) == 1500)
+    }
+
+    /// Pasting "１．５" used to lose the full-width point in the filter, leaving
+    /// "１５", which reads as 15.
+    @Test @MainActor func decimalOnly_KeepsFullWidthPunctuation_AndDropsNonDigits() {
+        var stored = ""
+        let japanese = Locale(identifier: "ja_JP")
+        let binding = Binding(get: { stored }, set: { stored = $0 }).decimalOnly(locale: japanese)
+
+        binding.wrappedValue = "\u{FF11}\u{FF0E}\u{FF15}"
+        #expect(LocaleDecimal.parse(stored, locale: japanese) == 1.5)
+
+        binding.wrappedValue = "1\u{00B2}"
+        #expect(stored == "1")
+    }
+
     @Test func isReadable_EmptyOrNumber_IsTrue() {
         let english = Locale(identifier: "en_US")
         #expect(LocaleDecimal.isReadable("", locale: english))

@@ -7,10 +7,7 @@ extension Binding where Value == String {
         Binding(
             get: { wrappedValue },
             set: { newValue in
-                let localeSeparators = [locale.groupingSeparator, locale.decimalSeparator].compactMap(\.self)
-                wrappedValue = newValue.filter {
-                    $0.isNumber || $0 == "." || $0 == "," || localeSeparators.contains(String($0))
-                }
+                wrappedValue = newValue.filter { LocaleDecimal.isNumberCharacter($0, locale: locale) }
             }
         )
     }
