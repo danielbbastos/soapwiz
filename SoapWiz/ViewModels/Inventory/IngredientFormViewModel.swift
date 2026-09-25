@@ -203,19 +203,19 @@ final class IngredientFormViewModel {
     /// it.
     private var sapValueToSave: Double? {
         guard showsSapValue else { return capturedSapValue }
-        return Double(sapValue.replacingOccurrences(of: ",", with: "."))
+        return LocaleDecimal.parse(sapValue)
     }
 
     /// The KOH SAP value this save would write. Preserved when off-screen, for the
     /// same reason as `sapValueToSave`: a non-oil edit must not drop it.
     private var kohSapValueToSave: Double? {
         guard showsSapValue else { return capturedKohSapValue }
-        return Double(kohSapValue.replacingOccurrences(of: ",", with: "."))
+        return LocaleDecimal.parse(kohSapValue)
     }
 
     private var densityToSave: Double? {
         guard showsDensity else { return capturedDensity }
-        return Double(density.replacingOccurrences(of: ",", with: "."))
+        return LocaleDecimal.parse(density)
     }
 
     /// The profile this save would write. Preserved when off-screen; an unspecified
@@ -240,7 +240,7 @@ final class IngredientFormViewModel {
 
     @discardableResult
     func save(context: ModelContext) -> Ingredient? {
-        let parsedThreshold = Double(lowStockThreshold.replacingOccurrences(of: ",", with: "."))
+        let parsedThreshold = LocaleDecimal.parse(lowStockThreshold)
         let savedSap = sapValueToSave
         let savedKohSap = kohSapValueToSave
         let savedDensity = densityToSave

@@ -6,6 +6,7 @@ import SwiftData
 /// creation is blocked until the count is reduced or stock is replenished.
 /// With inventory tracking off there is no stock check and no cost estimate.
 struct CreateBatchSheet: View {
+    @Environment(\.currencyCode) private var currencyCode
     let recipe: Recipe
     let lyeCandidates: [Ingredient]
     let neutralizerCandidates: [Ingredient]
@@ -35,13 +36,6 @@ struct CreateBatchSheet: View {
         ))
     }
 
-    private static let currencyFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = .autoupdatingCurrent
-        return formatter
-    }()
-
     private func amountText(_ amount: Double, unit: String) -> String {
         "\(amount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)"
     }
@@ -70,7 +64,7 @@ struct CreateBatchSheet: View {
                     if shortages.isEmpty && estimatedCost > 0 {
                         LabeledContent(
                             "Estimated cost",
-                            value: Self.currencyFormatter.string(from: NSNumber(value: estimatedCost)) ?? "—"
+                            value: estimatedCost.formatted(.currency(code: currencyCode))
                         )
                     }
                 }

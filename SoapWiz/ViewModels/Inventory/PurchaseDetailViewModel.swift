@@ -41,7 +41,7 @@ final class PurchaseDetailViewModel {
     }
 
     func commitEdit() {
-        if let parsed = Double(editingValue.replacingOccurrences(of: ",", with: ".")) {
+        if let parsed = LocaleDecimal.parse(editingValue) {
             purchase.remainingAmount = parsed.clamped(to: 0...purchase.quantity)
             purchase.markOpenedIfPartlyUsed()
         }

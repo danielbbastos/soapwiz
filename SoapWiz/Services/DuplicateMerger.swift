@@ -171,6 +171,10 @@ enum DuplicateMerger {
             winner.expiryNotificationsEnabled = winner.expiryNotificationsEnabled || loser.expiryNotificationsEnabled
             // On is the default, so switching tracking off is the choice to keep.
             winner.tracksInventory = winner.tracksInventory && loser.tracksInventory
+            // Empty means never chosen, so any chosen currency beats it.
+            if winner.currencyCode.isEmpty {
+                winner.currencyCode = loser.currencyCode
+            }
         }
         return Array(ordered.dropFirst())
     }

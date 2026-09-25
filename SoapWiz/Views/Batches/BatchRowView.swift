@@ -1,14 +1,8 @@
 import SwiftUI
 
 struct BatchRowView: View {
+    @Environment(\.currencyCode) private var currencyCode
     let batch: Batch
-
-    private static let currencyFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = .autoupdatingCurrent
-        return formatter
-    }()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -20,7 +14,7 @@ struct BatchRowView: View {
                 Text("^[\(batch.batchCount) batch](inflect: true)")
                     .monospacedDigit()
                 if batch.tracksInventory && batch.totalCost > 0 {
-                    Text("\(Self.currencyFormatter.string(from: NSNumber(value: batch.totalCost)) ?? "—") total")
+                    Text("\(batch.totalCost.formatted(.currency(code: currencyCode))) total")
                         .monospacedDigit()
                 }
             }

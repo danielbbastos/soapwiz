@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PurchaseDetailView: View {
+    @Environment(\.currencyCode) private var currencyCode
     let purchase: IngredientPurchase
 
     @State private var model: PurchaseDetailViewModel
@@ -25,11 +26,11 @@ struct PurchaseDetailView: View {
                 )
                 LabeledContent(
                     "Total Price",
-                    value: purchase.totalPrice.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
+                    value: purchase.totalPrice.formatted(.currency(code: currencyCode))
                 )
                 LabeledContent(
                     "Price / \(unit.isEmpty ? "unit" : unit)",
-                    value: purchase.pricePerUnit.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD"))
+                    value: purchase.pricePerUnit.formatted(.currency(code: currencyCode))
                 )
             }
             .listRowBackground(Color.cardBackground)

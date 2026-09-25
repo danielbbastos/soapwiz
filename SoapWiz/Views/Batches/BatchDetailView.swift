@@ -5,17 +5,11 @@ import SwiftUI
 /// here recomputes against the live recipe or inventory — including whether
 /// the batch was costed at all, which is the snapshot's `tracksInventory`.
 struct BatchDetailView: View {
+    @Environment(\.currencyCode) private var currencyCode
     let batch: Batch
 
-    private static let currencyFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = .autoupdatingCurrent
-        return formatter
-    }()
-
     private func formatCurrency(_ value: Double) -> String {
-        Self.currencyFormatter.string(from: NSNumber(value: value)) ?? "—"
+        value.formatted(.currency(code: currencyCode))
     }
 
     private func amountText(_ amount: Double, unit: String) -> String {

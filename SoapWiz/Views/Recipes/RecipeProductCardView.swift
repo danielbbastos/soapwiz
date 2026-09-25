@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RecipeProductCardView: View {
+    @Environment(\.currencyCode) private var currencyCode
     @Binding var draft: RecipeProductDraft
     let breakdown: ProductCostBreakdown
     let availableUnits: [ProductUnit]
@@ -14,13 +15,6 @@ struct RecipeProductCardView: View {
         formatter.locale = .autoupdatingCurrent
         formatter.minimumFractionDigits = 0
         formatter.maximumFractionDigits = 2
-        return formatter
-    }()
-
-    private static let currencyFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = .autoupdatingCurrent
         return formatter
     }()
 
@@ -188,7 +182,7 @@ struct RecipeProductCardView: View {
                     .foregroundStyle(Color.secondary)
             }
             if cost > 0 {
-                Text(Self.currencyFormatter.string(from: NSNumber(value: cost)) ?? "")
+                Text(cost.formatted(.currency(code: currencyCode)))
                     .font(.caption)
                     .foregroundStyle(style)
                     .fontWeight(weight)

@@ -5,6 +5,7 @@ import SwiftData
 /// the bulk import flow (`BulkImportFlowView`). Owns no navigation or toolbar so
 /// each caller can wrap it with its own chrome.
 struct PurchaseFormFields: View {
+    @Environment(\.currencyCode) private var currencyCode
     @Bindable var model: PurchaseFormViewModel
 
     @Query(sort: \Provider.name) private var providers: [Provider]
@@ -56,7 +57,7 @@ struct PurchaseFormFields: View {
             }
             if model.quantity > 0 && model.totalPrice > 0 {
                 LabeledContent("Price\(model.ingredient.unit.isEmpty ? "" : " / \(model.ingredient.unit)")") {
-                    Text(model.pricePerUnit.formatted(.currency(code: Locale.current.currency?.identifier ?? "USD")))
+                    Text(model.pricePerUnit.formatted(.currency(code: currencyCode)))
                         .foregroundStyle(.secondary)
                 }
             }
