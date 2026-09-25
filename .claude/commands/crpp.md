@@ -59,7 +59,7 @@ Each review round has three reviewers of the diff `git diff origin/main...HEAD`:
 2. Merge the three lists into one: de-duplicate, and check each finding against the code yourself. Mark any you believe is a false positive and say why, but still show it.
 3. **If no new issues found**: auto-proceed to push/PR. A finding the developer already decided in an earlier round doesn't count, so a round is clean when it raises nothing new.
 4. **If any issues found**: stop and present the merged findings. Let the developer decide whether to fix, skip, or flag as false positives. Never auto-amend.
-5. Apply only what the developer approves, run the tests, and commit the fixes as a new commit. Then run another round with **two new** agents, and repeat until a round finds nothing or the developer says to move on.
+5. Apply only what the developer approves, run the tests, and commit the fixes as a new commit. Then run another round with **two new** agents, and repeat until a round finds nothing new (see step 3) or the developer says to move on.
 
 ### 6. Push and PR
 - Push to remote with tracking.
