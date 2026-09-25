@@ -128,6 +128,7 @@ enum BackupService {
             cfmNeutralizer: recipe.cfmNeutralizer,
             lyeIngredientIndex: recipe.lyeIngredient.flatMap { ingredientIndex[$0.persistentModelID] },
             kohLyeIngredientIndex: recipe.kohLyeIngredient.flatMap { ingredientIndex[$0.persistentModelID] },
+            neutralizerIngredientIndex: recipe.neutralizerIngredient.flatMap { ingredientIndex[$0.persistentModelID] },
             // Sorted so the exported file is stable: the relationship array's
             // own order is not, and an unsorted export would differ between two
             // runs over an unchanged store.
@@ -155,7 +156,8 @@ enum BackupService {
         BackupData.SettingsDTO(
             pvpFactor: settings.pvpFactor,
             tracksInventory: settings.tracksInventory,
-            currencyCode: settings.currencyCode
+            currencyCode: settings.currencyCode,
+            expiryNotificationsEnabled: settings.expiryNotificationsEnabled
         )
     }
 

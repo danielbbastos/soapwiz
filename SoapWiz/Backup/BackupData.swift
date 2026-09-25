@@ -46,6 +46,9 @@ extension BackupData {
         /// Optional so a backup written before SW-179 still decodes; `nil`
         /// restores as not chosen, which shows the region's currency.
         var currencyCode: String?
+        /// Optional so a backup written before SW-186 still decodes; `nil`
+        /// keeps whatever this device had, since the file says nothing either way.
+        var expiryNotificationsEnabled: Bool?
     }
 
     struct CategoryDTO: Codable {
@@ -173,6 +176,10 @@ extension BackupData {
         /// Index into `BackupData.ingredients`, or `nil`.
         var lyeIngredientIndex: Int?
         var kohLyeIngredientIndex: Int?
+        /// Index into `BackupData.ingredients` for the Failor neutraliser, or
+        /// `nil`. Optional so a backup written before SW-186 still decodes; its
+        /// recipes restore without one, as they were exported.
+        var neutralizerIngredientIndex: Int?
         /// Indices into `BackupData.collections`. Optional so a version-1 file
         /// still decodes; it restores unfiled.
         var collectionIndices: [Int]?

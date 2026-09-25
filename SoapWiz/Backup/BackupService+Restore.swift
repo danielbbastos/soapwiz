@@ -15,6 +15,10 @@ extension BackupService {
         }
 
         do {
+            // Read before the wipe deletes the settings row: a file that
+            // predates the key leaves the reminders as they were.
+            let remindersWereOn = try context.fetch(FetchDescriptor<AppSettings>())
+                .contains(where: \.expiryNotificationsEnabled)
             try wipe(context)
 
             let categories = backup.categories.map { dto -> IngredientCategory in
@@ -51,6 +55,7 @@ extension BackupService {
             settings.pvpFactor = backup.settings.pvpFactor
             settings.tracksInventory = backup.settings.tracksInventory ?? true
             settings.currencyCode = backup.settings.currencyCode ?? ""
+            settings.expiryNotificationsEnabled = backup.settings.expiryNotificationsEnabled ?? remindersWereOn
 
             try context.save()
         } catch {
@@ -153,6 +158,7 @@ extension BackupService {
         recipe.cfmNeutralizer = dto.cfmNeutralizer
         recipe.lyeIngredient = element(ingredients, at: dto.lyeIngredientIndex)
         recipe.kohLyeIngredient = element(ingredients, at: dto.kohLyeIngredientIndex)
+        recipe.neutralizerIngredient = element(ingredients, at: dto.neutralizerIngredientIndex)
         recipe.collections = (dto.collectionIndices ?? []).compactMap { element(collections, at: $0) }
         context.insert(recipe)
 
