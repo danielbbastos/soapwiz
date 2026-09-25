@@ -152,7 +152,11 @@ enum BackupService {
     }
 
     private static func settingsDTO(_ settings: AppSettings) -> BackupData.SettingsDTO {
-        BackupData.SettingsDTO(pvpFactor: settings.pvpFactor, tracksInventory: settings.tracksInventory)
+        BackupData.SettingsDTO(
+            pvpFactor: settings.pvpFactor,
+            tracksInventory: settings.tracksInventory,
+            currencyCode: settings.currencyCode
+        )
     }
 
     private static func batchDTO(

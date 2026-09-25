@@ -313,7 +313,7 @@ struct RecipeConfigTabView: View {
         HStack {
             Text("Water to lye ratio")
             Spacer()
-            NumericTextField(prompt: "1.5", value: $model.waterParts, width: 30, alignment: .center)
+            NumericTextField(prompt: 1.5.formatted(), value: $model.waterParts, width: 30, alignment: .center)
             Text(":")
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)

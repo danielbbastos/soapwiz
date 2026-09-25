@@ -33,6 +33,7 @@ final class IngredientFormViewModel {
     private(set) var codeIsManuallyEdited: Bool = false
 
     let ingredient: Ingredient?
+    private let locale: Locale
 
     /// The edited ingredient's merge key, read in `init` while the row is
     /// certainly still in the store — it cannot be recovered later, because
@@ -80,8 +81,14 @@ final class IngredientFormViewModel {
 
     private var snapshot: Snapshot?
 
-    init(ingredient: Ingredient? = nil, defaultCategory: IngredientCategory? = nil, prefilledName: String? = nil) {
+    init(
+        ingredient: Ingredient? = nil,
+        defaultCategory: IngredientCategory? = nil,
+        prefilledName: String? = nil,
+        locale: Locale = .autoupdatingCurrent
+    ) {
         self.ingredient = ingredient
+        self.locale = locale
         self.ingredientSlug = ingredient?.librarySlug ?? ""
         self.capturedUnitIsEmpty = ingredient?.unit.isEmpty ?? false
         self.capturedIsLibraryInstalled = ingredient?.isLibraryInstalled ?? false
@@ -100,16 +107,16 @@ final class IngredientFormViewModel {
             selectedUnit = IngredientUnit(rawValue: ingredient.unit)
             selectedCategory = ingredient.category
             if let threshold = ingredient.lowStockThreshold {
-                lowStockThreshold = threshold.formatted(.number.precision(.fractionLength(0...2)).grouping(.never))
+                lowStockThreshold = threshold.formatted(.number.precision(.fractionLength(0...2)).grouping(.never).locale(locale))
             }
             if let sap = ingredient.sapValue {
-                sapValue = sap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
+                sapValue = sap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never).locale(locale))
             }
             if let kohSap = ingredient.kohSapValue {
-                kohSapValue = kohSap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
+                kohSapValue = kohSap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never).locale(locale))
             }
             if let dens = ingredient.density {
-                density = dens.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))
+                density = dens.formatted(.number.precision(.fractionLength(0...4)).grouping(.never).locale(locale))
             }
             if let profile = ingredient.fattyAcidProfile {
                 fattyAcidProfile = profile
@@ -162,7 +169,17 @@ final class IngredientFormViewModel {
         guard selectedUnit != nil || (isEditing && capturedUnitIsEmpty) else { return false }
         let code = trimmedCode
         if !code.isEmpty && code.count < 3 { return false }
-        return true
+        return numericFieldsAreReadable
+    }
+
+    /// A typo such as "0,13,5" must block Save: saving it would write `nil`
+    /// and wipe the stored value. Only the fields on screen count — the others
+    /// are preserved, not parsed.
+    private var numericFieldsAreReadable: Bool {
+        var fields = [lowStockThreshold]
+        if showsSapValue { fields += [sapValue, kohSapValue] }
+        if showsDensity { fields.append(density) }
+        return fields.allSatisfy { LocaleDecimal.isReadable($0, locale: locale) }
     }
 
     /// Excludes the row being edited by slug as well as by identity. The merge
@@ -203,19 +220,19 @@ final class IngredientFormViewModel {
     /// it.
     private var sapValueToSave: Double? {
         guard showsSapValue else { return capturedSapValue }
-        return Double(sapValue.replacingOccurrences(of: ",", with: "."))
+        return LocaleDecimal.parse(sapValue, locale: locale)
     }
 
     /// The KOH SAP value this save would write. Preserved when off-screen, for the
     /// same reason as `sapValueToSave`: a non-oil edit must not drop it.
     private var kohSapValueToSave: Double? {
         guard showsSapValue else { return capturedKohSapValue }
-        return Double(kohSapValue.replacingOccurrences(of: ",", with: "."))
+        return LocaleDecimal.parse(kohSapValue, locale: locale)
     }
 
     private var densityToSave: Double? {
         guard showsDensity else { return capturedDensity }
-        return Double(density.replacingOccurrences(of: ",", with: "."))
+        return LocaleDecimal.parse(density, locale: locale)
     }
 
     /// The profile this save would write. Preserved when off-screen; an unspecified
@@ -240,7 +257,7 @@ final class IngredientFormViewModel {
 
     @discardableResult
     func save(context: ModelContext) -> Ingredient? {
-        let parsedThreshold = Double(lowStockThreshold.replacingOccurrences(of: ",", with: "."))
+        let parsedThreshold = LocaleDecimal.parse(lowStockThreshold, locale: locale)
         let savedSap = sapValueToSave
         let savedKohSap = kohSapValueToSave
         let savedDensity = densityToSave

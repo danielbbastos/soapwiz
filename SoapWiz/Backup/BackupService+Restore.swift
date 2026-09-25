@@ -50,6 +50,7 @@ extension BackupService {
             let settings = AppSettings.resolve(in: context)
             settings.pvpFactor = backup.settings.pvpFactor
             settings.tracksInventory = backup.settings.tracksInventory ?? true
+            settings.currencyCode = backup.settings.currencyCode ?? ""
 
             try context.save()
         } catch {

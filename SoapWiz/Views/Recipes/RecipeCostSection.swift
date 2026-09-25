@@ -10,6 +10,7 @@ import SwiftData
 /// Hidden with inventory tracking off: without prices there is nothing to
 /// calculate. The sizes stay stored and come back when tracking is switched on.
 struct RecipeCostSection: View {
+    @Environment(\.currencyCode) private var currencyCode
     let model: RecipeFormViewModel
     let batch: ProductCostBreakdown
 
@@ -19,13 +20,6 @@ struct RecipeCostSection: View {
     @State private var expandedProducts: [UUID: Bool] = [:]
     @State private var showingAddProduct = false
     @State private var showingSaveError = false
-
-    private static let currencyFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = .autoupdatingCurrent
-        return formatter
-    }()
 
     private static let amountFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
@@ -180,7 +174,7 @@ struct RecipeCostSection: View {
     }
 
     private func formatCurrency(_ value: Double) -> String {
-        Self.currencyFormatter.string(from: NSNumber(value: value)) ?? "—"
+        value.formatted(.currency(code: currencyCode))
     }
 
     private func amountText(_ amount: Double, unit: String) -> String {

@@ -8,6 +8,7 @@ struct SettingsView: View {
     /// that follows it live on `ContentView`. This screen only stages the file.
     @Environment(RestoreCoordinator.self) private var restore
     @Environment(SyncHealthMonitor.self) private var syncHealth
+    @Environment(\.currencyCode) private var currencyCode
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
     @Query private var providers: [Provider]
@@ -155,20 +156,27 @@ struct SettingsView: View {
     }
 
     private func pricingSection(_ settings: AppSettings) -> some View {
-        Section("Pricing") {
+        Section {
+            CurrencyPickerRow(settings: settings)
+                .listRowBackground(Color.cardBackground)
             HStack {
                 Text("RRP factor")
                 InfoPopoverIcon(
                     title: "RRP Factor",
                     text: "A multiplier applied to the total ingredient cost of a product to "
                         + "estimate its recommended retail price (RRP — Recommended Retail Price)."
-                        + "\n\nFor example, a factor of 4 means a product costing €2.50 to make "
-                        + "would be priced at €10.00."
+                        + "\n\nFor example, a factor of 4 means a product costing "
+                        + "\(2.5.formatted(.currency(code: currencyCode))) to make "
+                        + "would be priced at \(10.0.formatted(.currency(code: currencyCode)))."
                 )
                 Spacer()
                 NumericTextField(prompt: "4", value: Bindable(settings).pvpFactor, fractionLength: 0...2)
             }
             .listRowBackground(Color.cardBackground)
+        } header: {
+            Text("Pricing")
+        } footer: {
+            Text("Prices are kept as amounts, so changing the currency relabels them without converting.")
         }
     }
 

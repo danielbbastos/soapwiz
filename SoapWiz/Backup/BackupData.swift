@@ -43,6 +43,9 @@ extension BackupData {
         /// Optional so a backup written before SW-81 still decodes; `nil`
         /// restores as tracked, the only behaviour those builds had.
         var tracksInventory: Bool?
+        /// Optional so a backup written before SW-179 still decodes; `nil`
+        /// restores as not chosen, which shows the region's currency.
+        var currencyCode: String?
     }
 
     struct CategoryDTO: Codable {

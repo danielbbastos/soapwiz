@@ -19,6 +19,7 @@ final class PurchaseFormViewModel {
 
     let ingredient: Ingredient
     let purchase: IngredientPurchase?
+    private let locale: Locale
 
     /// The ingredient's merge key, read in `init` while the row is certainly
     /// still in the store. The duplicate merge can delete it while this sheet is
@@ -42,16 +43,17 @@ final class PurchaseFormViewModel {
 
     private let initialSnapshot: Snapshot?
 
-    init(ingredient: Ingredient, purchase: IngredientPurchase? = nil) {
+    init(ingredient: Ingredient, purchase: IngredientPurchase? = nil, locale: Locale = .autoupdatingCurrent) {
         self.ingredient = ingredient
         self.ingredientSlug = ingredient.librarySlug
         self.purchase = purchase
+        self.locale = locale
         if let purchase {
-            let posixFormat = FloatingPointFormatStyle<Double>(locale: Locale(identifier: "en_US_POSIX"))
+            let fieldFormat = FloatingPointFormatStyle<Double>(locale: locale)
                 .precision(.fractionLength(0...2))
                 .grouping(.never)
-            let qtyText = purchase.quantity.formatted(posixFormat)
-            let priceText = purchase.totalPrice.formatted(posixFormat)
+            let qtyText = purchase.quantity.formatted(fieldFormat)
+            let priceText = purchase.totalPrice.formatted(fieldFormat)
             let hasExpiry = purchase.expiryDate != nil
             let expiry = purchase.expiryDate ?? Calendar.current.date(
                 byAdding: .year, value: 1, to: Date()
@@ -124,8 +126,8 @@ final class PurchaseFormViewModel {
     }
 
     var isEditing: Bool { purchase != nil }
-    var quantity: Double { Double(quantityText) ?? 0 }
-    var totalPrice: Double { Double(totalPriceText) ?? 0 }
+    var quantity: Double { LocaleDecimal.parse(quantityText, locale: locale) ?? 0 }
+    var totalPrice: Double { LocaleDecimal.parse(totalPriceText, locale: locale) ?? 0 }
     var pricePerUnit: Double {
         guard quantity > 0 else { return 0 }
         return totalPrice / quantity
@@ -146,7 +148,7 @@ final class PurchaseFormViewModel {
             || selectedLocation !== snap.location
     }
 
-    var isValid: Bool { quantity > 0 && isDirty }
+    var isValid: Bool { quantity > 0 && LocaleDecimal.isReadable(totalPriceText, locale: locale) && isDirty }
 
     /// Throws when the ingredient this sheet was opened for has been merged away
     /// and no surviving row carries its slug. Appending to the detached reference

@@ -1,14 +1,13 @@
 import SwiftUI
 
 extension Binding where Value == String {
-    func decimalOnly() -> Binding<String> {
+    /// Drops anything that can't be part of a number, but keeps the separators
+    /// as typed: reading them in the user's locale is `LocaleDecimal`'s job.
+    func decimalOnly(locale: Locale = .autoupdatingCurrent) -> Binding<String> {
         Binding(
             get: { wrappedValue },
-            set: {
-                let filtered = $0.filter { $0.isNumber || $0 == "." || $0 == "," }
-                let normalised = filtered.replacingOccurrences(of: ",", with: ".")
-                let parts = normalised.components(separatedBy: ".")
-                wrappedValue = parts.count > 2 ? parts.prefix(2).joined(separator: ".") : normalised
+            set: { newValue in
+                wrappedValue = newValue.filter { LocaleDecimal.isNumberCharacter($0, locale: locale) }
             }
         )
     }

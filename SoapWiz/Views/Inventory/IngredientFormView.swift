@@ -80,11 +80,11 @@ struct IngredientFormView: View {
                 if model.showsSapValue || model.showsDensity {
                     Section("Properties") {
                         if model.showsSapValue {
-                            decimalRow(title: "SAP Value (NaOH)", placeholder: "0.134", text: $model.sapValue, unit: "g/g")
-                            decimalRow(title: "SAP Value (KOH)", placeholder: "0.188", text: $model.kohSapValue, unit: "g/g")
+                            decimalRow(title: "SAP Value (NaOH)", placeholder: 0.134, text: $model.sapValue, unit: "g/g")
+                            decimalRow(title: "SAP Value (KOH)", placeholder: 0.188, text: $model.kohSapValue, unit: "g/g")
                         }
                         if model.showsDensity {
-                            decimalRow(title: "Density", placeholder: "0.92", text: $model.density, unit: "g/ml")
+                            decimalRow(title: "Density", placeholder: 0.92, text: $model.density, unit: "g/ml")
                         }
                     }
                     .listRowBackground(Color.cardBackground)
@@ -183,11 +183,11 @@ struct IngredientFormView: View {
 
     /// One trailing-aligned decimal field with a trailing unit label. The SAP and
     /// density rows are the same shape, so they share this rather than repeating it.
-    private func decimalRow(title: String, placeholder: String, text: Binding<String>, unit: String) -> some View {
+    private func decimalRow(title: String, placeholder: Double, text: Binding<String>, unit: String) -> some View {
         HStack {
             Text(title)
             Spacer()
-            TextField(placeholder, text: text.decimalOnly())
+            TextField(placeholder.formatted(), text: text.decimalOnly())
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 80)

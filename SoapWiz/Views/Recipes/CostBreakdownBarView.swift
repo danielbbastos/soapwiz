@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct CostBreakdownBarView: View {
+    @Environment(\.currencyCode) private var currencyCode
     @Bindable var model: RecipeFormViewModel
     @Binding var isExpanded: Bool
     var availableHeight: CGFloat = 0
@@ -11,13 +12,6 @@ struct CostBreakdownBarView: View {
     @State private var keyboardVisible = false
 
     private var pvpFactor: Double { AppSettings.canonical(from: settingsRecords)?.pvpFactor ?? 4.0 }
-
-    private static let currencyFormatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.locale = .autoupdatingCurrent
-        return formatter
-    }()
 
     var body: some View {
         let batch = model.wholeBatchBreakdown
@@ -137,10 +131,8 @@ struct CostBreakdownBarView: View {
             Text("Total")
                 .font(.caption.weight(.semibold))
             Spacer()
-            if let costStr = Self.currencyFormatter.string(from: NSNumber(value: breakdown.total)) {
-                Text(costStr)
-                    .font(.caption.weight(.semibold))
-            }
+            Text(breakdown.total.formatted(.currency(code: currencyCode)))
+                .font(.caption.weight(.semibold))
         }
         .padding(.horizontal, 14)
         .padding(.top, 8)
@@ -150,18 +142,16 @@ struct CostBreakdownBarView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.tint)
             Spacer()
-            if let pvpStr = Self.currencyFormatter.string(from: NSNumber(value: breakdown.total * pvpFactor)) {
-                Text(pvpStr)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tint)
-            }
+            Text((breakdown.total * pvpFactor).formatted(.currency(code: currencyCode)))
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tint)
         }
         .padding(.horizontal, 14)
         .padding(.bottom, 8)
     }
 
     private func summaryText(canExpand: Bool, batchTotal: Double) -> String {
-        let totalText = Self.currencyFormatter.string(from: NSNumber(value: batchTotal)) ?? "—"
+        let totalText = batchTotal.formatted(.currency(code: currencyCode))
         if !canExpand {
             return "\(totalText) · Add ingredients first"
         }

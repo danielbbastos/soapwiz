@@ -3,6 +3,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query private var settingsRecords: [AppSettings]
 
     @State private var navigation = AppNavigation()
     @State private var restore = RestoreCoordinator()
@@ -33,6 +34,7 @@ struct ContentView: View {
         }
         .environment(navigation)
         .environment(restore)
+        .environment(\.currencyCode, AppSettings.currencyCode(from: settingsRecords))
         // A recipe file tapped in Mail, Messages or Files arrives here. Routed
         // to the Recipes tab, which opens the import review for it. Only file
         // URLs are ours to open; the guard drops anything else the scene is

@@ -79,6 +79,6 @@ struct RecipeCalculatedAmountsSection: View {
     }
 
     private func formatPct(_ pct: Double) -> String {
-        String(format: "%.1f%%", pct)
+        (pct / 100).formatted(.percent.precision(.fractionLength(1)))
     }
 }
