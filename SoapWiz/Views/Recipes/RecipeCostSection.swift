@@ -2,11 +2,13 @@ import SwiftUI
 import SwiftData
 
 /// The "Cost breakdown" section of a recipe's detail screen: the whole-batch
-/// total with RRP, plus an expandable per-product cost breakdown. Reads its
-/// figures from the view model and the app's RRP factor from settings, and
-/// writes back only the recipe's products, which can be added and deleted here.
-/// With inventory tracking off it becomes a plain "Products" list: the products
-/// still live here, but every price and RRP is left out rather than zeroed.
+/// total with RRP, plus an expandable cost breakdown for each product size the
+/// user tries out. Reads its figures from the view model and the app's RRP
+/// factor from settings, and writes back only the recipe's products, which can
+/// be added and deleted here.
+///
+/// Hidden with inventory tracking off: without prices there is nothing to
+/// calculate. The sizes stay stored and come back when tracking is switched on.
 struct RecipeCostSection: View {
     let model: RecipeFormViewModel
     let batch: ProductCostBreakdown
@@ -37,9 +39,15 @@ struct RecipeCostSection: View {
     private var tracksInventory: Bool { AppSettings.tracksInventory(from: settingsRecords) }
 
     var body: some View {
-        Section(tracksInventory ? "Cost breakdown" : "Products") {
+        if tracksInventory {
+            calculatorSection
+        }
+    }
+
+    private var calculatorSection: some View {
+        Section {
             let batchTotal = batch.total
-            if tracksInventory && batchTotal > 0 {
+            if batchTotal > 0 {
                 DisclosureGroup(isExpanded: $batchTotalExpanded) {
                     productBreakdownRows(batch)
                 } label: {
@@ -63,7 +71,7 @@ struct RecipeCostSection: View {
                     expanded: batchTotalExpanded,
                     spansWholeSection: true
                 )
-            } else if tracksInventory {
+            } else {
                 Text("No cost data — add purchase prices in Inventory")
                     .foregroundStyle(.secondary)
             }
@@ -72,12 +80,7 @@ struct RecipeCostSection: View {
             let breakdowns = productBreakdowns(products, batch: batch)
             ForEach(products, id: \.id) { draft in
                 let breakdown = breakdowns[draft.id] ?? ProductCostBreakdown()
-                // Without costs there is nothing to disclose, but the product is
-                // still listed — it was just added, and hiding it would read as
-                // the add having failed.
-                if !tracksInventory {
-                    Text(productLabel(draft))
-                } else if breakdown.total > 0 {
+                if breakdown.total > 0 {
                     DisclosureGroup(isExpanded: isExpanded(draft)) {
                         productBreakdownRows(breakdown)
                     } label: {
@@ -101,18 +104,23 @@ struct RecipeCostSection: View {
             Button {
                 showingAddProduct = true
             } label: {
-                Label("Add product", systemImage: "plus.circle.fill")
+                Label("Add size", systemImage: "plus.circle.fill")
             }
             .sheet(isPresented: $showingAddProduct) {
                 AddRecipeProductSheet { draft in
                     saveProducts { model.productDrafts.append(draft) }
                 }
             }
-            .alert("Couldn't save products", isPresented: $showingSaveError) {
+            .alert("Couldn't save sizes", isPresented: $showingSaveError) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text("The change was not saved. Please try again.")
             }
+        } header: {
+            Text("Cost breakdown")
+        } footer: {
+            Text("Try product sizes, like one bar or a quarter of the batch, to see what each would cost. "
+                + "They don't affect batches or inventory.")
         }
         .listRowBackground(Color.cardBackground)
     }
@@ -142,12 +150,7 @@ struct RecipeCostSection: View {
     }
 
     private var nonWholeBatchProducts: [RecipeProductDraft] {
-        model.productDrafts.filter { draft in
-            let unit = ProductUnit(rawValue: draft.unitSymbol)
-            if unit == .wholeBatch { return false }
-            if unit == .partsOfBatch && draft.size <= 1 { return false }
-            return true
-        }
+        model.productDrafts.filter(\.isSeparateFromBatch)
     }
 
     private func productBreakdowns(

@@ -79,7 +79,7 @@ struct CostBreakdownBarView: View {
     }
 
     private var swipeHintButton: some View {
-        InfoPopoverIcon(text: "Swipe left to add another product size.")
+        InfoPopoverIcon(text: "Swipe left to add another size.")
     }
 
     private func carousel(batch: ProductCostBreakdown) -> some View {
@@ -165,8 +165,10 @@ struct CostBreakdownBarView: View {
         if !canExpand {
             return "\(totalText) · Add ingredients first"
         }
-        if !model.productDrafts.isEmpty {
-            return "\(totalText) · \(model.productDrafts.count) product\(model.productDrafts.count == 1 ? "" : "s")"
+        // Counted the way the detail screen lists them, so the two agree.
+        let sizeCount = model.productDrafts.count(where: \.isSeparateFromBatch)
+        if sizeCount > 0 {
+            return "\(totalText) · \(sizeCount) size\(sizeCount == 1 ? "" : "s")"
         }
         return totalText
     }
