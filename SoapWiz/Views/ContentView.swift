@@ -104,7 +104,7 @@ struct ContentView: View {
         .tabViewStyle(.tabBarOnly)
         // Inside the font and size-class settings below, so the form keeps the
         // look it had as a push.
-        .fullScreenCover(item: $navigation.recipeFormRequest) { request in
+        .fullScreenCover(item: $navigation.recipeFormRequest, onDismiss: navigation.recipeFormDidClose) { request in
             RecipeFormCover(request: request)
         }
         .fontDesign(.rounded)

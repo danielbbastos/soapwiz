@@ -9,7 +9,10 @@ extension RecipeDetailView {
     var editToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             if RecipeFormRequest.opensFullScreen {
-                Button("Edit") { navigation.recipeFormRequest = .edit(recipe) }
+                Button("Edit") {
+                    isAwaitingEditClose = true
+                    navigation.recipeFormRequest = .edit(recipe)
+                }
             } else {
                 NavigationLink(value: RecipeEditRoute(recipe: recipe)) {
                     Text("Edit")

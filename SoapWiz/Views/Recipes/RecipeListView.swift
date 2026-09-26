@@ -108,9 +108,12 @@ struct RecipeListView: View {
     }
 
     /// Pushes the form on iPhone, as before SW-89; covers the screen with it on
-    /// iPad. See `RecipeFormRequest.opensFullScreen`.
+    /// iPad. The tab goes back to its list first there: the push's `onSave`
+    /// returns to the list, where the new recipe is, and closing a cover can't,
+    /// so the list is what the cover closes onto.
     private func openForm(_ request: RecipeFormRequest) {
         if RecipeFormRequest.opensFullScreen {
+            navigationPath = NavigationPath()
             nav.recipeFormRequest = request
         } else {
             navigationPath.append(request.route)
@@ -120,17 +123,16 @@ struct RecipeListView: View {
     private func presentFormAfterImport() {
         guard let request = formRequestAfterImport else { return }
         formRequestAfterImport = nil
-        nav.recipeFormRequest = request
+        openForm(request)
     }
 
     /// Opens the import review for a file handed in from another app. A sheet
     /// can't go up over the full-screen form, so while one is open the file
-    /// stays pending and this runs again when the form closes; either way the
-    /// form's unsaved edits are left alone. Transient sheets are cleared first
-    /// so the import isn't blocked by one already up.
+    /// stays pending and this runs again once the form has closed; either way
+    /// the form's unsaved edits are left alone. Transient sheets are cleared
+    /// first so the import isn't blocked by one already up.
     private func startPendingFileImport() {
-        guard nav.recipeFormRequest == nil, let request = nav.pendingRecipeFileImport else { return }
-        nav.pendingRecipeFileImport = nil
+        guard let request = nav.takePendingRecipeFileImport() else { return }
         model.endSelecting()
         model.filingRecipe = nil
         model.exportFile = nil
@@ -342,7 +344,7 @@ struct RecipeListView: View {
         .onChange(of: nav.pendingRecipeFileImport, initial: true) {
             startPendingFileImport()
         }
-        .onChange(of: nav.recipeFormRequest == nil) {
+        .onChange(of: nav.recipeFormClosings) {
             startPendingFileImport()
         }
         // A collection deleted here or merged away by `DuplicateMerger` would

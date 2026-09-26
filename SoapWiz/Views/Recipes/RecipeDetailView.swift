@@ -18,6 +18,9 @@ struct RecipeDetailView: View {
     @State private var model = RecipeFormViewModel()
     @State private var showInGrams = false
     @State private var showCreateBatch = false
+    /// Set while this screen's recipe is open in the full-screen form (iPad).
+    /// Non-private so `RecipeDetailView+Edit` can set it.
+    @State var isAwaitingEditClose = false
 
     /// Driven by the hero header: true while the photo is still behind the
     /// navigation bar, which decides whether the title is drawn for a
@@ -114,9 +117,12 @@ struct RecipeDetailView: View {
             RecipeFormView(recipe: route.recipe, onSave: { _ in reload() })
         }
         // The full-screen form (iPad) has no `onSave` back to this screen, so it
-        // reloads whenever that form closes, saved or not.
-        .onChange(of: navigation.recipeFormRequest == nil) { _, formClosed in
-            if formClosed { reload() }
+        // reloads once its own edit has closed, saved or not. Only its own: a
+        // screen left in another tab can hold a recipe deleted since.
+        .onChange(of: navigation.recipeFormClosings) {
+            guard isAwaitingEditClose else { return }
+            isAwaitingEditClose = false
+            reload()
         }
         .task(id: recipe.persistentModelID) {
             reload()

@@ -51,6 +51,26 @@ final class AppNavigation {
     /// so a file opened meanwhile can wait for it (SW-89).
     var recipeFormRequest: RecipeFormRequest?
 
+    /// Counts the full-screen recipe form's finished dismissals. Screens that act
+    /// once it has gone watch this rather than `recipeFormRequest` turning nil,
+    /// which happens as the cover starts to leave: nothing else can be presented
+    /// until it has finished.
+    private(set) var recipeFormClosings = 0
+
+    /// Called by the cover's `onDismiss`, once it is fully off screen.
+    func recipeFormDidClose() {
+        recipeFormClosings += 1
+    }
+
+    /// Hands out the recipe file waiting to open, once: nil while the recipe
+    /// form covers the screen, since the import review can't go up over it, and
+    /// nil again after the file has been taken.
+    func takePendingRecipeFileImport() -> RecipeFileImport? {
+        guard recipeFormRequest == nil, let request = pendingRecipeFileImport else { return nil }
+        pendingRecipeFileImport = nil
+        return request
+    }
+
     /// Switches to the History tab showing `batch`'s detail screen, with the
     /// history list as the only screen underneath it.
     func showBatch(_ batch: Batch) {
