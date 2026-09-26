@@ -117,11 +117,10 @@ struct RecipeDetailView: View {
             RecipeFormView(recipe: route.recipe, onSave: { _ in reload() })
         }
         // The full-screen form (iPad) has no `onSave` back to this screen, so it
-        // reloads once its own edit has closed, saved or not. Also on reappearing:
-        // a file opened mid-edit switches to the Recipes tab, and a screen in a
-        // tab that isn't showing may miss the close.
+        // reloads once its own edit has closed, saved or not. A screen in a tab
+        // that isn't showing when that happens (a file opened mid-edit switches
+        // to Recipes) reloads anyway on reappearing, through the `.task` below.
         .onChange(of: navigation.recipeFormClosings) { reloadAfterOwnEdit() }
-        .onAppear { reloadAfterOwnEdit() }
         .task(id: recipe.persistentModelID) {
             reload()
         }
