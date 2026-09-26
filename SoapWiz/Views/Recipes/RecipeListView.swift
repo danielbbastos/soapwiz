@@ -1,28 +1,6 @@
 import SwiftUI
 import SwiftData
 
-/// What opened the import sheet. The two ways in share one sheet so only ever
-/// one is up: the FAB, which starts on the input screen, and a file handed in
-/// from another app, which skips straight to the exact-import review.
-private enum RecipeImportRequest: Identifiable {
-    case manual
-    case file(RecipeFileImport)
-
-    var id: String {
-        switch self {
-        case .manual: "manual"
-        case .file(let request): request.id.uuidString
-        }
-    }
-
-    var fileURL: URL? {
-        switch self {
-        case .manual: nil
-        case .file(let request): request.url
-        }
-    }
-}
-
 struct RecipeListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
@@ -32,6 +10,9 @@ struct RecipeListView: View {
     @State private var model = RecipeListViewModel()
     @State private var navigationPath = NavigationPath()
     @State private var importRequest: RecipeImportRequest?
+    /// An import confirmed in the import sheet, waiting for that sheet to go
+    /// before its form can cover the screen.
+    @State private var formRequestAfterImport: RecipeFormRequest?
 
     // Favourites and recency can't be part of the `@Query` sort: `SortDescriptor`
     // has no `Bool` overload, and the recent cutoff is relative to now. Both are
@@ -124,6 +105,36 @@ struct RecipeListView: View {
         } label: {
             Label("Delete", systemImage: "trash")
         }
+    }
+
+    /// Pushes the form on iPhone, as before SW-89; covers the screen with it on
+    /// iPad. See `RecipeFormRequest.opensFullScreen`.
+    private func openForm(_ request: RecipeFormRequest) {
+        if RecipeFormRequest.opensFullScreen {
+            nav.recipeFormRequest = request
+        } else {
+            navigationPath.append(request.route)
+        }
+    }
+
+    private func presentFormAfterImport() {
+        guard let request = formRequestAfterImport else { return }
+        formRequestAfterImport = nil
+        nav.recipeFormRequest = request
+    }
+
+    /// Opens the import review for a file handed in from another app. A sheet
+    /// can't go up over the full-screen form, so while one is open the file
+    /// stays pending and this runs again when the form closes; either way the
+    /// form's unsaved edits are left alone. Transient sheets are cleared first
+    /// so the import isn't blocked by one already up.
+    private func startPendingFileImport() {
+        guard nav.recipeFormRequest == nil, let request = nav.pendingRecipeFileImport else { return }
+        nav.pendingRecipeFileImport = nil
+        model.endSelecting()
+        model.filingRecipe = nil
+        model.exportFile = nil
+        importRequest = .file(request)
     }
 
     /// Entering the mode, and leaving it with or without sharing or deleting.
@@ -269,11 +280,17 @@ struct RecipeListView: View {
                         navigationPath = NavigationPath()
                     })
                 }
-                .sheet(item: $importRequest) { request in
+                .sheet(item: $importRequest, onDismiss: presentFormAfterImport) { request in
                     RecipeImportView(
                         fileURL: request.fileURL,
                         onConfirm: { prepared in
-                            navigationPath.append(prepared)
+                            // A cover can't go up while this sheet is still on
+                            // screen, so on iPad the form waits for its dismissal.
+                            if RecipeFormRequest.opensFullScreen {
+                                formRequestAfterImport = .imported(prepared)
+                            } else {
+                                navigationPath.append(prepared)
+                            }
                         },
                         // An exact import is already saved by the time this
                         // runs. A single recipe opens so the user can see what
@@ -301,7 +318,7 @@ struct RecipeListView: View {
                 // button in the corner is not part of it.
                 if !model.isSelecting {
                     ExpandableFloatingActionButton(
-                        primaryAction: { navigationPath.append(true) },
+                        primaryAction: { openForm(.new()) },
                         secondaryActions: [
                             FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") {
                                 importRequest = .manual
@@ -317,21 +334,16 @@ struct RecipeListView: View {
         // *after* the seed is set and a plain change wouldn't fire.
         .onChange(of: nav.pendingRecipeSeed, initial: true) { _, seed in
             guard let seed else { return }
-            navigationPath.append(seed)
+            openForm(.seeded(seed))
             nav.pendingRecipeSeed = nil
         }
         // A recipe file opened from another app. `initial: true` covers the
-        // cold launch, when this tab is created after the file is set. Transient
-        // sheets are cleared first so the import isn't blocked by one already
-        // up; a pushed recipe form is left untouched, so unsaved edits survive
-        // under the import sheet.
-        .onChange(of: nav.pendingRecipeFileImport, initial: true) { _, request in
-            guard let request else { return }
-            model.endSelecting()
-            model.filingRecipe = nil
-            model.exportFile = nil
-            importRequest = .file(request)
-            nav.pendingRecipeFileImport = nil
+        // cold launch, when this tab is created after the file is set.
+        .onChange(of: nav.pendingRecipeFileImport, initial: true) {
+            startPendingFileImport()
+        }
+        .onChange(of: nav.recipeFormRequest == nil) {
+            startPendingFileImport()
         }
         // A collection deleted here or merged away by `DuplicateMerger` would
         // otherwise leave a selection matching nothing, and an empty list with

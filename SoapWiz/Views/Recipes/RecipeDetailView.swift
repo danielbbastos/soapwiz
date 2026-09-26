@@ -5,7 +5,8 @@ import UIKit
 struct RecipeDetailView: View {
     let recipe: Recipe
 
-    @Environment(AppNavigation.self) private var navigation
+    // Non-private so `RecipeDetailView+Edit` can open the full-screen form.
+    @Environment(AppNavigation.self) var navigation
 
     // Non-private so `RecipeDetailView+BatchCandidates` can read them.
     @Query(filter: RecipeDetailView.lyesPredicate)
@@ -93,11 +94,7 @@ struct RecipeDetailView: View {
         }
         .toolbar {
             shareToolbarItem
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(value: RecipeEditRoute(recipe: recipe)) {
-                    Text("Edit")
-                }
-            }
+            editToolbarItem
         }
         .modifier(sharingPresentation)
         .sheet(isPresented: $showCreateBatch) {
@@ -115,6 +112,11 @@ struct RecipeDetailView: View {
         // already route a bare `Recipe` to the detail itself.
         .navigationDestination(for: RecipeEditRoute.self) { route in
             RecipeFormView(recipe: route.recipe, onSave: { _ in reload() })
+        }
+        // The full-screen form (iPad) has no `onSave` back to this screen, so it
+        // reloads whenever that form closes, saved or not.
+        .onChange(of: navigation.recipeFormRequest == nil) { _, formClosed in
+            if formClosed { reload() }
         }
         .task(id: recipe.persistentModelID) {
             reload()

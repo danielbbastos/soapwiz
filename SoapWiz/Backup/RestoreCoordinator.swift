@@ -83,6 +83,7 @@ final class RestoreCoordinator {
 
         navigation.historyPath = NavigationPath()
         navigation.pendingRecipeSeed = nil
+        navigation.recipeFormRequest = nil
 
         phase = .restoring
     }

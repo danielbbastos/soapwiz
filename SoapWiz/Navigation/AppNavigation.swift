@@ -46,6 +46,11 @@ final class AppNavigation {
     /// observes it, opens the import review for the file, then clears it.
     var pendingRecipeFileImport: RecipeFileImport?
 
+    /// The recipe form open full screen, on iPad. Held here rather than by the
+    /// screen that opened it so no tab switch or layout change can close it, and
+    /// so a file opened meanwhile can wait for it (SW-89).
+    var recipeFormRequest: RecipeFormRequest?
+
     /// Switches to the History tab showing `batch`'s detail screen, with the
     /// history list as the only screen underneath it.
     func showBatch(_ batch: Batch) {

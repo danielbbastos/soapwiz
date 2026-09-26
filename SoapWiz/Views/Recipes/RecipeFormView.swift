@@ -36,13 +36,18 @@ struct RecipeFormView: View {
 
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
-    @State private var showDiscardConfirmation = false
+    @State private var closeReason: RecipeFormCloseReason?
     /// Set once the recipe, seed or import has been applied. Before that the
     /// model holds its defaults, which say soap, and would ask on a recipe
     /// with no lye.
     @State private var hasLoaded = false
 
     var onSave: ((Recipe) -> Void)?
+    /// A recipe file waiting to open while the form covers the screen (iPad).
+    /// The form offers to close for it, the way Cancel does, and again for each
+    /// later open: the same file opened twice arrives at the same URL, so the
+    /// request's own identity is what marks a new one.
+    var incomingFile: RecipeFileImport?
 
     var body: some View {
         currentTab
@@ -100,17 +105,25 @@ struct RecipeFormView: View {
             // An alert rather than a confirmation dialog: on iPad the latter
             // renders as a popover that drops the cancel button entirely,
             // leaving "keep editing" to an undiscoverable tap outside.
-            .alert("Discard changes?", isPresented: $showDiscardConfirmation) {
-                Button("Discard", role: .destructive) { dismiss() }
+            .alert(
+                closeReason?.title ?? "",
+                isPresented: Binding(get: { closeReason != nil }, set: { if !$0 { closeReason = nil } }),
+                presenting: closeReason
+            ) { reason in
+                Button(reason.discardTitle, role: .destructive) { dismiss() }
                 Button("Keep Editing", role: .cancel) { }
-            } message: {
-                Text("This recipe has changes that haven't been saved.")
+            } message: { reason in
+                Text(reason.message)
+            }
+            .onChange(of: incomingFile) { _, file in
+                guard let file else { return }
+                attemptDismiss(for: .fileImport(file.url))
             }
     }
 
-    private func attemptDismiss() {
+    private func attemptDismiss(for reason: RecipeFormCloseReason = .cancel) {
         if model.isDirty {
-            showDiscardConfirmation = true
+            closeReason = reason
         } else {
             dismiss()
         }
