@@ -5,7 +5,8 @@ import UIKit
 struct RecipeDetailView: View {
     let recipe: Recipe
 
-    @Environment(AppNavigation.self) private var navigation
+    // Non-private so `RecipeDetailView+Edit` can open the full-screen form.
+    @Environment(AppNavigation.self) var navigation
 
     // Non-private so `RecipeDetailView+BatchCandidates` can read them.
     @Query(filter: RecipeDetailView.lyesPredicate)
@@ -17,6 +18,9 @@ struct RecipeDetailView: View {
     @State private var model = RecipeFormViewModel()
     @State private var showInGrams = false
     @State private var showCreateBatch = false
+    /// Set while this screen's recipe is open in the full-screen form (iPad).
+    /// Non-private so `RecipeDetailView+Edit` can set it.
+    @State var isAwaitingEditClose = false
 
     /// Driven by the hero header: true while the photo is still behind the
     /// navigation bar, which decides whether the title is drawn for a
@@ -93,11 +97,7 @@ struct RecipeDetailView: View {
         }
         .toolbar {
             shareToolbarItem
-            ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(value: RecipeEditRoute(recipe: recipe)) {
-                    Text("Edit")
-                }
-            }
+            editToolbarItem
         }
         .modifier(sharingPresentation)
         .sheet(isPresented: $showCreateBatch) {
@@ -116,6 +116,11 @@ struct RecipeDetailView: View {
         .navigationDestination(for: RecipeEditRoute.self) { route in
             RecipeFormView(recipe: route.recipe, onSave: { _ in reload() })
         }
+        // The full-screen form (iPad) has no `onSave` back to this screen, so it
+        // reloads once its own edit has closed, saved or not. A screen in a tab
+        // that isn't showing when that happens (a file opened mid-edit switches
+        // to Recipes) reloads anyway on reappearing, through the `.task` below.
+        .onChange(of: navigation.recipeFormClosings) { reloadAfterOwnEdit() }
         .task(id: recipe.persistentModelID) {
             reload()
         }
@@ -131,8 +136,9 @@ struct RecipeDetailView: View {
     }
 
     /// Re-reads the recipe into the display model — on first appearance and
-    /// again after the edit form saves and pops.
-    private func reload() {
+    /// again after the edit form saves and pops. Non-private for
+    /// `RecipeDetailView+Edit`.
+    func reload() {
         model.load(from: recipe)
         model.resolveDefaultLyeIngredient(from: lyeIngredients)
         model.resolveDefaultNeutralizerIngredient(from: additiveIngredients)

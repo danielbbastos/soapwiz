@@ -23,12 +23,15 @@ struct RestoreCoordinatorTests: RestoreTestCase {
 
         let batch = Batch(recipe: nil, recipeName: "Castile", batchCount: 1)
         ctx.insert(batch)
+        let recipe = Recipe(name: "Castile", desc: "")
+        ctx.insert(recipe)
         let ingredient = try #require(try ctx.fetch(FetchDescriptor<Ingredient>()).first)
         try ctx.save()
 
         let navigation = AppNavigation()
         navigation.historyPath = NavigationPath([batch])
         navigation.pendingRecipeSeed = RecipeSeed(ingredients: [ingredient])
+        navigation.recipeFormRequest = .edit(recipe)
 
         let coordinator = makeCoordinator()
         coordinator.stage(try BackupService.makeBackup(from: ctx))
@@ -36,6 +39,8 @@ struct RestoreCoordinatorTests: RestoreTestCase {
 
         #expect(navigation.historyPath.isEmpty)
         #expect(navigation.pendingRecipeSeed == nil)
+        #expect(navigation.recipeFormRequest == nil)
+        #expect(navigation.isRecipeFormOnScreen == false)
     }
 
     @Test func begin_MovesToTheRestoringPhase() throws {
