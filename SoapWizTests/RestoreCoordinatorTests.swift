@@ -40,6 +40,7 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         #expect(navigation.historyPath.isEmpty)
         #expect(navigation.pendingRecipeSeed == nil)
         #expect(navigation.recipeFormRequest == nil)
+        #expect(navigation.isRecipeFormOnScreen == false)
     }
 
     @Test func begin_MovesToTheRestoringPhase() throws {

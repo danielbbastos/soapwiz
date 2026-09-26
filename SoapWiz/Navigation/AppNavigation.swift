@@ -49,24 +49,41 @@ final class AppNavigation {
     /// The recipe form open full screen, on iPad. Held here rather than by the
     /// screen that opened it so no tab switch or layout change can close it, and
     /// so a file opened meanwhile can wait for it (SW-89).
-    var recipeFormRequest: RecipeFormRequest?
+    var recipeFormRequest: RecipeFormRequest? {
+        didSet {
+            if recipeFormRequest != nil { isRecipeFormOnScreen = true }
+        }
+    }
 
-    /// Counts the full-screen recipe form's finished dismissals. Screens that act
-    /// once it has gone watch this rather than `recipeFormRequest` turning nil,
-    /// which happens as the cover starts to leave: nothing else can be presented
-    /// until it has finished.
+    /// True from the moment the full-screen form is requested until it has
+    /// finished closing. `recipeFormRequest` turns nil as the cover starts to
+    /// leave, and nothing else can be presented until it has gone.
+    private(set) var isRecipeFormOnScreen = false
+
+    /// Counts the full-screen recipe form's finished dismissals, for screens
+    /// that act once it has gone.
     private(set) var recipeFormClosings = 0
 
     /// Called by the cover's `onDismiss`, once it is fully off screen.
     func recipeFormDidClose() {
+        isRecipeFormOnScreen = false
         recipeFormClosings += 1
     }
 
+    /// Drops the form without waiting for its dismissal, for a restore: the
+    /// interface is torn down around it, so its `onDismiss` can't be relied on
+    /// to clear `isRecipeFormOnScreen`, and a flag left set would hold every
+    /// later file import back.
+    func discardRecipeForm() {
+        recipeFormRequest = nil
+        isRecipeFormOnScreen = false
+    }
+
     /// Hands out the recipe file waiting to open, once: nil while the recipe
-    /// form covers the screen, since the import review can't go up over it, and
-    /// nil again after the file has been taken.
+    /// form is on screen, closing included, since the import review can't go up
+    /// over it, and nil again after the file has been taken.
     func takePendingRecipeFileImport() -> RecipeFileImport? {
-        guard recipeFormRequest == nil, let request = pendingRecipeFileImport else { return nil }
+        guard !isRecipeFormOnScreen, let request = pendingRecipeFileImport else { return nil }
         pendingRecipeFileImport = nil
         return request
     }

@@ -117,13 +117,11 @@ struct RecipeDetailView: View {
             RecipeFormView(recipe: route.recipe, onSave: { _ in reload() })
         }
         // The full-screen form (iPad) has no `onSave` back to this screen, so it
-        // reloads once its own edit has closed, saved or not. Only its own: a
-        // screen left in another tab can hold a recipe deleted since.
-        .onChange(of: navigation.recipeFormClosings) {
-            guard isAwaitingEditClose else { return }
-            isAwaitingEditClose = false
-            reload()
-        }
+        // reloads once its own edit has closed, saved or not. Also on reappearing:
+        // a file opened mid-edit switches to the Recipes tab, and a screen in a
+        // tab that isn't showing may miss the close.
+        .onChange(of: navigation.recipeFormClosings) { reloadAfterOwnEdit() }
+        .onAppear { reloadAfterOwnEdit() }
         .task(id: recipe.persistentModelID) {
             reload()
         }
@@ -139,8 +137,9 @@ struct RecipeDetailView: View {
     }
 
     /// Re-reads the recipe into the display model — on first appearance and
-    /// again after the edit form saves and pops.
-    private func reload() {
+    /// again after the edit form saves and pops. Non-private for
+    /// `RecipeDetailView+Edit`.
+    func reload() {
         model.load(from: recipe)
         model.resolveDefaultLyeIngredient(from: lyeIngredients)
         model.resolveDefaultNeutralizerIngredient(from: additiveIngredients)

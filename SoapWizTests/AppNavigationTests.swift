@@ -108,8 +108,38 @@ struct AppNavigationTests {
         #expect(sut.pendingRecipeFileImport == opened)
 
         sut.recipeFormRequest = nil
+        sut.recipeFormDidClose()
 
         #expect(sut.takePendingRecipeFileImport() == opened)
+    }
+
+    /// The request clears as the cover starts to leave; the file must wait for
+    /// the cover to be gone, or its import review goes up mid-dismissal.
+    @Test func takePendingRecipeFileImport_FormStillClosing_HoldsTheFile() throws {
+        let sut = AppNavigation()
+        sut.recipeFormRequest = .new()
+        sut.openRecipeFile(URL(fileURLWithPath: "/tmp/shared.soapwizrecipe"))
+        let opened = try #require(sut.pendingRecipeFileImport)
+
+        sut.recipeFormRequest = nil
+
+        #expect(sut.isRecipeFormOnScreen)
+        #expect(sut.takePendingRecipeFileImport() == nil)
+
+        sut.recipeFormDidClose()
+
+        #expect(sut.isRecipeFormOnScreen == false)
+        #expect(sut.takePendingRecipeFileImport() == opened)
+    }
+
+    @Test func discardRecipeForm_ClearsTheFormAtOnce() {
+        let sut = AppNavigation()
+        sut.recipeFormRequest = .new()
+
+        sut.discardRecipeForm()
+
+        #expect(sut.recipeFormRequest == nil)
+        #expect(sut.isRecipeFormOnScreen == false)
     }
 
     /// Kept editing, then opened again: the file waiting is the newest open.
@@ -122,6 +152,7 @@ struct AppNavigationTests {
         let newest = try #require(sut.pendingRecipeFileImport)
 
         sut.recipeFormRequest = nil
+        sut.recipeFormDidClose()
 
         #expect(sut.takePendingRecipeFileImport() == newest)
     }

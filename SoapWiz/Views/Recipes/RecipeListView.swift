@@ -110,7 +110,9 @@ struct RecipeListView: View {
     /// Pushes the form on iPhone, as before SW-89; covers the screen with it on
     /// iPad. The tab goes back to its list first there: the push's `onSave`
     /// returns to the list, where the new recipe is, and closing a cover can't,
-    /// so the list is what the cover closes onto.
+    /// so the list is what the cover closes onto. Deliberately after Cancel too,
+    /// where a push would return to a recipe it was opened over: the cover has
+    /// no way to tell the two apart, and landing on the list is the safer miss.
     private func openForm(_ request: RecipeFormRequest) {
         if RecipeFormRequest.opensFullScreen {
             navigationPath = NavigationPath()
