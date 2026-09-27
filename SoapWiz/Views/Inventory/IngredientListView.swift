@@ -217,11 +217,18 @@ struct IngredientListView: View {
         // The open detail follows a merge onto the surviving row by itself; the
         // selection follows it here, so the next width change rebuilds the
         // detail from a live row and deleting or hiding that row closes it.
+        // A survivor that is hidden closes the detail instead: the merge keeps a
+        // copy hidden on another device hidden, and since the set of hidden rows
+        // doesn't change, the hidden-row check above never sees it.
         .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
             guard let selection = navigation.selection, selection.modelContext == nil,
                   let live = LiveIngredient.resolve(selection, slug: selectedSlug, in: modelContext)
             else { return }
-            navigation.replaceSelection(with: live)
+            if live.isHidden {
+                navigation.reset()
+            } else {
+                navigation.replaceSelection(with: live)
+            }
         }
         .alert(model.removalConfirmationTitle, isPresented: Binding(
             get: { model.isConfirmingRemoval },
