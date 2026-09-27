@@ -72,7 +72,7 @@ struct IngredientListView: View {
                     }
                 }
             }
-            .listDetailRowBackground(isSelected: navigation.isOpenBeside(ingredient))
+            .listDetailRow(isSelected: navigation.isOpenBeside(ingredient))
         }
     }
 
@@ -86,11 +86,14 @@ struct IngredientListView: View {
     }
 
     var body: some View {
+        // Filtered once per pass: filtering sums each row's stock and sorts,
+        // and several places below need the result.
+        let displayed = displayedIngredients
         ListDetailContainer(
             navigation: navigation,
             placeholder: "Select an Ingredient",
             placeholderSymbol: "flask",
-            hasItems: !displayedIngredients.isEmpty
+            hasItems: !displayed.isEmpty
         ) {
             ZStack(alignment: .bottomTrailing) {
                 Group {
@@ -100,7 +103,7 @@ struct IngredientListView: View {
                             systemImage: "flask",
                             description: Text("Tap + to add your first ingredient.")
                         )
-                    } else if displayedIngredients.isEmpty {
+                    } else if displayed.isEmpty {
                         if !model.searchText.isEmpty {
                             ContentUnavailableView.search(text: model.searchText)
                         } else {
@@ -124,12 +127,12 @@ struct IngredientListView: View {
                         // Nothing outside edit mode reads `selection`: it exists
                         // for the bulk delete, which only Select mode offers.
                         List(selection: $model.selection) {
-                            ForEach(displayedIngredients) { row($0) }
+                            ForEach(displayed) { row($0) }
                         }
                         .environment(\.editMode, $model.editMode)
                     } else {
                         List {
-                            ForEach(displayedIngredients) { row($0) }
+                            ForEach(displayed) { row($0) }
                         }
                         .environment(\.editMode, $model.editMode)
                         // The chips already stand off the list on their own; the
@@ -165,7 +168,7 @@ struct IngredientListView: View {
                             // "Remove" rather than "Delete": a selection can hold
                             // library rows, which are hidden rather than deleted.
                             Button("Remove", role: .destructive) {
-                                model.deleteSelected(in: displayedIngredients)
+                                model.deleteSelected(in: displayed)
                             }
                             .disabled(model.selection.isEmpty)
                         } else {
@@ -198,10 +201,12 @@ struct IngredientListView: View {
                 }
             }
         } detail: { detail($0) }
-        // Hidden as well as deleted: a hidden row has left the list, and its
-        // detail staying open beside the list would outlive it.
-        .onChange(of: ingredients.filter { !$0.isHidden }) { _, visible in
-            navigation.prune(keeping: visible)
+        // A hidden row has left the list, and its detail staying open beside
+        // the list would outlive it. Deletions aren't pruned here: the ones made
+        // in this list close the detail first, and a row `DuplicateMerger`
+        // deletes is one the open detail re-points at the surviving copy.
+        .onChange(of: ingredients.filter(\.isHidden)) { _, hidden in
+            navigation.close(ifShowingAnyOf: hidden)
         }
         .alert(model.removalConfirmationTitle, isPresented: Binding(
             get: { model.isConfirmingRemoval },
@@ -213,6 +218,7 @@ struct IngredientListView: View {
                 model.confirmingDelete.isEmpty ? "Hide" : "Delete",
                 role: model.confirmingDelete.isEmpty ? nil : .destructive
             ) {
+                navigation.close(ifShowingAnyOf: model.confirmingDelete + model.confirmingHide)
                 model.confirmDelete(context: modelContext)
             }
             Button("Cancel", role: .cancel) { model.cancelRemoval() }

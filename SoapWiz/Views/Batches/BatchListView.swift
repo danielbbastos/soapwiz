@@ -31,7 +31,7 @@ struct BatchListView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .listDetailRowBackground(isSelected: navigation.history.isOpenBeside(batch))
+        .listDetailRow(isSelected: navigation.history.isOpenBeside(batch))
     }
 
     var body: some View {

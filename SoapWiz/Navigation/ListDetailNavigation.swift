@@ -21,8 +21,9 @@ enum ListDetailLayout {
 ///
 /// Every open of an item goes through `show(_:)` so the selection is always
 /// known: `NavigationPath` can't be read back, so it is the one thing that
-/// carries across a width change. Anything pushed beyond the item is dropped
-/// when the width changes.
+/// carries across a width change. The item's detail moves from one stack to
+/// the other, so anything pushed beyond it, and any sheet it presented, is
+/// dropped when the width changes.
 @Observable
 @MainActor
 final class ListDetailNavigation<Item: Hashable> {
@@ -63,8 +64,17 @@ final class ListDetailNavigation<Item: Hashable> {
         path = NavigationPath()
     }
 
-    /// Clears a selection that is no longer in `items`, so a deleted item's
-    /// detail doesn't stay on screen over a detached model.
+    /// Closes the detail when it shows one of `items`. Called before those items
+    /// are deleted, not after: once the list stops showing a row, the detail
+    /// beside it can still render the deleted model for a frame, and reading a
+    /// deleted model traps.
+    func close(ifShowingAnyOf items: [Item]) {
+        guard let selection, items.contains(selection) else { return }
+        reset()
+    }
+
+    /// Clears a selection that is no longer in `items`, for deletions that
+    /// arrive without passing through the list, such as from another device.
     func prune(keeping items: [Item]) {
         guard let selection, !items.contains(selection) else { return }
         reset()

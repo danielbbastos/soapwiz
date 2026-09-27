@@ -56,7 +56,7 @@ struct RecipeListView: View {
         .swipeActions(edge: .trailing) {
             if !model.isSelecting {
                 Button("Delete", role: .destructive) {
-                    model.delete(recipe, context: modelContext)
+                    delete(recipe)
                 }
             }
         }
@@ -65,7 +65,7 @@ struct RecipeListView: View {
                 rowMenu(recipe)
             }
         }
-        .listDetailRowBackground(isSelected: !model.isSelecting && navigation.isOpenBeside(recipe))
+        .listDetailRow(isSelected: !model.isSelecting && navigation.isOpenBeside(recipe))
     }
 
     /// One titled group of the list. Renders nothing when its group is empty, so
@@ -101,10 +101,17 @@ struct RecipeListView: View {
         }
         Divider()
         Button(role: .destructive) {
-            model.delete(recipe, context: modelContext)
+            delete(recipe)
         } label: {
             Label("Delete", systemImage: "trash")
         }
+    }
+
+    /// Closes the recipe's detail first if it is open beside the list; see
+    /// `ListDetailNavigation.close(ifShowingAnyOf:)`.
+    private func delete(_ recipe: Recipe) {
+        navigation.close(ifShowingAnyOf: [recipe])
+        model.delete(recipe, context: modelContext)
     }
 
     /// Pushes the form on iPhone, as before SW-89; covers the screen with it on
@@ -260,7 +267,10 @@ struct RecipeListView: View {
                         set: { if !$0 { model.cancelDelete() } }
                     )
                 ) {
-                    Button("Delete", role: .destructive) { model.confirmDelete(context: modelContext) }
+                    Button("Delete", role: .destructive) {
+                        navigation.close(ifShowingAnyOf: model.confirmingDelete)
+                        model.confirmDelete(context: modelContext)
+                    }
                     Button("Cancel", role: .cancel) { model.cancelDelete() }
                 } message: {
                     Text(model.deleteConfirmationMessage)

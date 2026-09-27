@@ -168,6 +168,43 @@ struct ListDetailNavigationTests {
 
     // MARK: - Deletion
 
+    @Test func close_ShowingOneOfTheItems_ClosesTheDetail() {
+        sut.setWide(true)
+        sut.show("Castile")
+
+        sut.close(ifShowingAnyOf: ["Marseille", "Castile"])
+
+        #expect(sut.selection == nil)
+        #expect(sut.path.isEmpty)
+    }
+
+    @Test func close_ShowingAnotherItem_KeepsTheDetail() {
+        sut.setWide(true)
+        sut.show("Castile")
+        sut.path.append("Batch")
+
+        sut.close(ifShowingAnyOf: ["Marseille"])
+
+        #expect(sut.selection == "Castile")
+        #expect(sut.path.count == 1)
+    }
+
+    @Test func close_NoItems_KeepsTheDetail() {
+        sut.show("Castile")
+
+        sut.close(ifShowingAnyOf: [])
+
+        #expect(sut.selection == "Castile")
+    }
+
+    @Test func close_NothingSelected_LeavesThePathAlone() {
+        sut.path.append("New recipe form")
+
+        sut.close(ifShowingAnyOf: ["Castile"])
+
+        #expect(sut.path.count == 1)
+    }
+
     @Test func prune_SelectionGone_ClosesTheDetail() {
         sut.setWide(true)
         sut.show("Castile")
