@@ -55,12 +55,14 @@ struct ListDetailContainer<Item: Hashable, ListContent: View, Detail: View>: Vie
     }
 
     /// `.id` gives each item a fresh detail, so state a detail screen seeds
-    /// from its item on creation isn't carried over to the next one.
+    /// from its item on creation isn't carried over to the next one. Keyed by
+    /// `detailID` rather than the item, so a merge re-pointing the selection
+    /// doesn't rebuild the detail.
     @ViewBuilder
     private var detailRoot: some View {
         if let item = navigation.selection {
             detail(item)
-                .id(item)
+                .id(navigation.detailID)
         } else {
             Group {
                 if hasItems {

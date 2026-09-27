@@ -31,9 +31,22 @@ final class ListDetailNavigation<Item: Hashable> {
     private(set) var selection: Item?
     private(set) var isWide = false
 
+    /// The identity of the detail beside the list. It changes only when a
+    /// different item opens, so re-pointing the selection at the same item's
+    /// surviving row keeps the detail, and any sheet it has up.
+    private(set) var detailID = UUID()
+
     func show(_ item: Item) {
+        if item != selection { detailID = UUID() }
         selection = item
         path = isWide ? NavigationPath() : NavigationPath([item])
+    }
+
+    /// Points the selection at `item` without touching the screens or the
+    /// detail's identity: for a row a duplicate merge replaced with its
+    /// surviving copy, which the open detail has already moved to itself.
+    func replaceSelection(with item: Item) {
+        selection = item
     }
 
     /// Whether `item`'s detail is open beside the list, for its row's tint.

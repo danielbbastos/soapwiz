@@ -65,6 +65,49 @@ struct ListDetailNavigationTests {
         #expect(!sut.isOpenBeside("Castile"))
     }
 
+    // MARK: - Detail identity
+
+    @Test func show_DifferentItem_GivesTheDetailANewIdentity() {
+        sut.show("Castile")
+        let first = sut.detailID
+
+        sut.show("Marseille")
+
+        #expect(sut.detailID != first)
+    }
+
+    @Test func show_SameItemAgain_KeepsTheDetailIdentity() {
+        sut.setWide(true)
+        sut.show("Castile")
+        let first = sut.detailID
+
+        sut.show("Castile")
+
+        #expect(sut.detailID == first)
+    }
+
+    @Test func replaceSelection_KeepsPathAndDetailIdentity() {
+        sut.show("Castile")
+        sut.path.append("Purchase")
+        let first = sut.detailID
+
+        sut.replaceSelection(with: "Castile (survivor)")
+
+        #expect(sut.selection == "Castile (survivor)")
+        #expect(sut.path.count == 2)
+        #expect(sut.detailID == first)
+    }
+
+    @Test func replaceSelection_ThenNarrowToWide_KeepsTheReplacement() {
+        sut.show("Castile")
+        sut.replaceSelection(with: "Castile (survivor)")
+
+        sut.setWide(true)
+
+        #expect(sut.isOpenBeside("Castile (survivor)"))
+        #expect(!sut.isOpenBeside("Castile"))
+    }
+
     // MARK: - Width changes
 
     @Test func setWide_NarrowToWide_KeepsTheOpenItemAsSelection() {

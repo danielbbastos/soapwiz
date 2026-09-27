@@ -10,6 +10,9 @@ struct IngredientListView: View {
 
     @State private var model = IngredientListViewModel()
     @State private var navigation = ListDetailNavigation<Ingredient>()
+    /// The open ingredient's merge key, read when it opens: once a merge has
+    /// deleted the row it can't be read off it. See `LiveIngredient`.
+    @State private var selectedSlug = ""
 
     // Favourites can't be part of the `@Query` sort: `SortDescriptor` has no `Bool`
     // overload, so the pinning is applied here, after filtering.
@@ -207,6 +210,18 @@ struct IngredientListView: View {
         // deletes is one the open detail re-points at the surviving copy.
         .onChange(of: ingredients.filter(\.isHidden)) { _, hidden in
             navigation.close(ifShowingAnyOf: hidden)
+        }
+        .onChange(of: navigation.selection) { _, selection in
+            selectedSlug = selection?.librarySlug ?? ""
+        }
+        // The open detail follows a merge onto the surviving row by itself; the
+        // selection follows it here, so the next width change rebuilds the
+        // detail from a live row and deleting or hiding that row closes it.
+        .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
+            guard let selection = navigation.selection, selection.modelContext == nil,
+                  let live = LiveIngredient.resolve(selection, slug: selectedSlug, in: modelContext)
+            else { return }
+            navigation.replaceSelection(with: live)
         }
         .alert(model.removalConfirmationTitle, isPresented: Binding(
             get: { model.isConfirmingRemoval },
