@@ -108,6 +108,30 @@ struct ListDetailNavigationTests {
         #expect(!sut.isOpenBeside("Castile"))
     }
 
+    @Test func followMerge_VisibleSurvivor_RepointsWithoutRebuilding() {
+        sut.setWide(true)
+        sut.show("Castile")
+        sut.path.append("Purchase")
+        let first = sut.detailID
+
+        sut.followMerge(to: "Castile (survivor)", isHidden: false)
+
+        #expect(sut.selection == "Castile (survivor)")
+        #expect(sut.path.count == 1)
+        #expect(sut.detailID == first)
+    }
+
+    @Test func followMerge_HiddenSurvivor_ClosesTheDetail() {
+        sut.setWide(true)
+        sut.show("Castile")
+        sut.path.append("Purchase")
+
+        sut.followMerge(to: "Castile (survivor)", isHidden: true)
+
+        #expect(sut.selection == nil)
+        #expect(sut.path.isEmpty)
+    }
+
     // MARK: - Width changes
 
     @Test func setWide_NarrowToWide_KeepsTheOpenItemAsSelection() {

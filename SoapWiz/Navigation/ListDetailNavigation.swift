@@ -49,6 +49,18 @@ final class ListDetailNavigation<Item: Hashable> {
         selection = item
     }
 
+    /// Follows a duplicate merge onto `survivor`, the row that replaced the
+    /// open item. A hidden survivor closes the detail instead, as hiding any
+    /// open row does: the merge keeps a copy hidden on another device hidden,
+    /// and since the set of hidden rows doesn't change, nothing else notices.
+    func followMerge(to survivor: Item, isHidden: Bool) {
+        if isHidden {
+            reset()
+        } else {
+            replaceSelection(with: survivor)
+        }
+    }
+
     /// Whether `item`'s detail is open beside the list, for its row's tint.
     func isOpenBeside(_ item: Item) -> Bool {
         isWide && selection == item
