@@ -29,7 +29,7 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         try ctx.save()
 
         let navigation = AppNavigation()
-        navigation.historyPath = NavigationPath([batch])
+        navigation.history.show(batch)
         navigation.pendingRecipeSeed = RecipeSeed(ingredients: [ingredient])
         navigation.recipeFormRequest = .edit(recipe)
 
@@ -37,7 +37,8 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         coordinator.stage(try BackupService.makeBackup(from: ctx))
         coordinator.begin(navigation: navigation)
 
-        #expect(navigation.historyPath.isEmpty)
+        #expect(navigation.history.path.isEmpty)
+        #expect(navigation.history.selection == nil)
         #expect(navigation.pendingRecipeSeed == nil)
         #expect(navigation.recipeFormRequest == nil)
         #expect(navigation.isRecipeFormOnScreen == false)

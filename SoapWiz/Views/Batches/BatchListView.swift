@@ -11,9 +11,36 @@ struct BatchListView: View {
         BatchHistoryViewModel.sortedNewestFirst(batches)
     }
 
+    /// A `Button` rather than a `NavigationLink(value:)`, so every open goes
+    /// through `show(_:)` and the selection survives a width change. The
+    /// chevron a link would draw is drawn by hand, and only where the row
+    /// pushes.
+    private func row(_ batch: Batch) -> some View {
+        Button {
+            navigation.history.show(batch)
+        } label: {
+            HStack {
+                BatchRowView(batch: batch)
+                if !navigation.history.isWide {
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.forward")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .listDetailRowBackground(isSelected: navigation.history.isOpenBeside(batch))
+    }
+
     var body: some View {
-        @Bindable var navigation = navigation
-        NavigationStack(path: $navigation.historyPath) {
+        ListDetailContainer(
+            navigation: navigation.history,
+            placeholder: "Select a Batch",
+            placeholderSymbol: "clock.arrow.circlepath",
+            hasItems: !batches.isEmpty
+        ) {
             Group {
                 if batches.isEmpty {
                     ContentUnavailableView(
@@ -23,12 +50,7 @@ struct BatchListView: View {
                     )
                 } else {
                     List {
-                        ForEach(sortedBatches) { batch in
-                            NavigationLink(value: batch) {
-                                BatchRowView(batch: batch)
-                            }
-                            .listRowBackground(Color.cardBackground)
-                        }
+                        ForEach(sortedBatches) { row($0) }
                     }
                 }
             }
@@ -42,6 +64,14 @@ struct BatchListView: View {
             .navigationDestination(for: Recipe.self) { recipe in
                 RecipeDetailView(recipe: recipe)
             }
+        } detail: { batch in
+            BatchDetailView(batch: batch)
+                .navigationDestination(for: Recipe.self) { recipe in
+                    RecipeDetailView(recipe: recipe)
+                }
+        }
+        .onChange(of: batches) {
+            navigation.history.prune(keeping: batches)
         }
     }
 }

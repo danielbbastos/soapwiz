@@ -9,7 +9,7 @@ struct IngredientListView: View {
     @Query private var settingsRecords: [AppSettings]
 
     @State private var model = IngredientListViewModel()
-    @State private var navigationPath = NavigationPath()
+    @State private var navigation = ListDetailNavigation<Ingredient>()
 
     // Favourites can't be part of the `@Query` sort: `SortDescriptor` has no `Bool`
     // overload, so the pinning is applied here, after filtering.
@@ -45,7 +45,7 @@ struct IngredientListView: View {
                 .listRowBackground(Color.cardBackground)
         } else {
             Button {
-                navigationPath.append(ingredient)
+                navigation.show(ingredient)
             } label: {
                 // A `Button` is hit-tested over its drawn content only, so
                 // without this the row's padding and the gap left of the star
@@ -72,12 +72,26 @@ struct IngredientListView: View {
                     }
                 }
             }
-            .listRowBackground(Color.cardBackground)
+            .listDetailRowBackground(isSelected: navigation.isOpenBeside(ingredient))
         }
     }
 
+    private func detail(_ ingredient: Ingredient) -> some View {
+        IngredientDetailView(
+            ingredient: ingredient,
+            autoAddPurchase: model.tracksInventory
+                && model.pendingIngredient?.persistentModelID == ingredient.persistentModelID
+        )
+        .onAppear { model.pendingIngredient = nil }
+    }
+
     var body: some View {
-        NavigationStack(path: $navigationPath) {
+        ListDetailContainer(
+            navigation: navigation,
+            placeholder: "Select an Ingredient",
+            placeholderSymbol: "flask",
+            hasItems: !displayedIngredients.isEmpty
+        ) {
             ZStack(alignment: .bottomTrailing) {
                 Group {
                     if ingredients.isEmpty {
@@ -128,14 +142,7 @@ struct IngredientListView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .warmNavigationTitle("Inventory")
                 .warmBackground()
-                .navigationDestination(for: Ingredient.self) { ingredient in
-                    IngredientDetailView(
-                        ingredient: ingredient,
-                        autoAddPurchase: model.tracksInventory
-                            && model.pendingIngredient?.persistentModelID == ingredient.persistentModelID
-                    )
-                    .onAppear { model.pendingIngredient = nil }
-                }
+                .navigationDestination(for: Ingredient.self) { detail($0) }
                 .searchable(text: $model.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ingredients")
                 // No background of its own, so the list keeps scrolling under
                 // the navigation bar's material rather than under a flat band.
@@ -190,6 +197,11 @@ struct IngredientListView: View {
                     createRecipeButton
                 }
             }
+        } detail: { detail($0) }
+        // Hidden as well as deleted: a hidden row has left the list, and its
+        // detail staying open beside the list would outlive it.
+        .onChange(of: ingredients.filter { !$0.isHidden }) { _, visible in
+            navigation.prune(keeping: visible)
         }
         .alert(model.removalConfirmationTitle, isPresented: Binding(
             get: { model.isConfirmingRemoval },
@@ -220,7 +232,7 @@ struct IngredientListView: View {
         }
         .sheet(isPresented: $model.showingAddIngredient, onDismiss: {
             if let ingredient = model.pendingIngredient {
-                navigationPath.append(ingredient)
+                navigation.show(ingredient)
             }
         }, content: {
             IngredientFormView(onSave: { ingredient in

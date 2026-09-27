@@ -72,7 +72,7 @@ final class RestoreCoordinator {
     /// teardown and switches to the restoring phase, which takes the interface down.
     ///
     /// `AppNavigation` is owned above the rebuilt tree and so survives it. Its
-    /// `historyPath` can hold a `Batch` the wipe is about to delete, and a rebuilt
+    /// `history` can hold a `Batch` the wipe is about to delete, and a rebuilt
     /// history tab would push straight back onto that detached model; `pendingRecipeSeed`
     /// holds `Ingredient`s the same way. The tab-local paths need no such handling —
     /// they are discarded along with the views that own them.
@@ -81,7 +81,7 @@ final class RestoreCoordinator {
         pendingImport = nil
         stagedBackup = backup
 
-        navigation.historyPath = NavigationPath()
+        navigation.history.reset()
         navigation.pendingRecipeSeed = nil
         navigation.discardRecipeForm()
 

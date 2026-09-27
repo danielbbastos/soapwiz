@@ -23,7 +23,8 @@ struct AppNavigationTests {
         let sut = AppNavigation()
 
         #expect(sut.selectedTab == .inventory)
-        #expect(sut.historyPath.isEmpty)
+        #expect(sut.history.path.isEmpty)
+        #expect(sut.history.selection == nil)
     }
 
     @Test func showBatch_SelectsHistoryTab() throws {
@@ -42,21 +43,38 @@ struct AppNavigationTests {
         _ = container
         let sut = AppNavigation()
 
-        sut.showBatch(makeBatch(ctx))
+        let batch = makeBatch(ctx)
 
-        #expect(sut.historyPath.count == 1)
+        sut.showBatch(batch)
+
+        #expect(sut.history.path.count == 1)
+        #expect(sut.history.selection == batch)
     }
 
     @Test func showBatch_DeepHistoryStack_ReplacesPathInsteadOfStacking() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let sut = AppNavigation()
-        sut.historyPath.append(makeBatch(ctx, name: "Old Soap"))
-        sut.historyPath.append(makeBatch(ctx, name: "Older Soap"))
+        sut.history.show(makeBatch(ctx, name: "Old Soap"))
+        sut.history.path.append(makeBatch(ctx, name: "Older Soap"))
 
         sut.showBatch(makeBatch(ctx))
 
-        #expect(sut.historyPath.count == 1)
+        #expect(sut.history.path.count == 1)
+    }
+
+    @Test func showBatch_WideHistory_SelectsBesideTheListWithoutPushing() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.history.setWide(true)
+        let batch = makeBatch(ctx)
+
+        sut.showBatch(batch)
+
+        #expect(sut.selectedTab == .history)
+        #expect(sut.history.selection == batch)
+        #expect(sut.history.path.isEmpty)
     }
 
     @Test func openRecipeFile_SelectsRecipesTabAndStoresRequest() throws {

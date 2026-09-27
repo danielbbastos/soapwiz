@@ -30,13 +30,13 @@ struct RecipeFileImport: Hashable {
 }
 
 /// Cross-tab navigation state: which tab is selected and the History tab's
-/// stack path. Lets flows that end in another tab (creating a batch from a
+/// navigation. Lets flows that end in another tab (creating a batch from a
 /// recipe) land the user there directly.
 @Observable
 @MainActor
 final class AppNavigation {
     var selectedTab: AppTab = .inventory
-    var historyPath = NavigationPath()
+    let history = ListDetailNavigation<Batch>()
 
     /// Set by the inventory selection flow to request a seeded recipe; the
     /// Recipes tab observes it, opens the form, then clears it.
@@ -88,10 +88,11 @@ final class AppNavigation {
         return request
     }
 
-    /// Switches to the History tab showing `batch`'s detail screen, with the
-    /// history list as the only screen underneath it.
+    /// Switches to the History tab showing `batch`'s detail screen: beside the
+    /// list on a wide window, otherwise with the list as the only screen
+    /// underneath it.
     func showBatch(_ batch: Batch) {
-        historyPath = NavigationPath([batch])
+        history.show(batch)
         selectedTab = .history
     }
 
