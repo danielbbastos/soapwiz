@@ -35,7 +35,7 @@ final class ListDetailNavigation<Item: Hashable> {
     /// different item opens, so re-pointing the selection at the same item's
     /// surviving row keeps the detail, and any sheet it has up.
     private(set) var detailID = UUID()
-    
+
     /// Declared so the compiler doesn't synthesise one: Swift 6.2 crashes
     /// generating this generic class's implicit deinit in optimised (Release)
     /// builds, which breaks Archive.
