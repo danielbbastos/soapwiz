@@ -85,6 +85,22 @@ struct LiveIngredientSurvivorTests {
         #expect(LiveIngredient.survivor(slug: "olive-butter", excluding: gone, in: ctx) == nil)
     }
 
+    /// `resolve` goes through `survivor`, so it no longer hands a write site a
+    /// row that is about to be deleted.
+    @Test func resolve_CapturedDetached_OnlyCandidatePendingDelete_ReturnsNil() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let captured = try row(1, in: ctx)
+        let other = try row(2, in: ctx)
+        try ctx.save()
+        ctx.delete(captured)
+        try ctx.save()
+        ctx.delete(other)
+
+        #expect(captured.modelContext == nil)
+        #expect(LiveIngredient.resolve(captured, slug: "olive-butter", in: ctx) == nil)
+    }
+
     @Test func survivor_EmptySlug_ReturnsNil() throws {
         let (container, ctx) = try makeContext()
         _ = container
