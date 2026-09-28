@@ -55,6 +55,10 @@ struct NotificationSyncActionTests {
     /// Settings says this device won't deliver reminders exactly when they are
     /// on and it has refused them (SW-187) — not while it hasn't been asked yet,
     /// since the next sync asks, and not when reminders are off anyway.
+    ///
+    /// `.provisional` can't arise today, since the app only asks for full
+    /// alerts. It is listed because the sync skips it too, so reminders
+    /// wouldn't be scheduled and the note would still be true in substance.
     @Test(arguments: [
         NoteCase(remindersOn: true, tracksInventory: true, authorization: .denied, showsNote: true),
         NoteCase(remindersOn: true, tracksInventory: true, authorization: .provisional, showsNote: true),
@@ -71,5 +75,44 @@ struct NotificationSyncActionTests {
         let showsNote = NotificationService.deviceMayNotNotify(for: settings, authorization: testCase.authorization)
 
         #expect(showsNote == testCase.showsNote)
+    }
+
+    // MARK: - A tap on the toggle
+
+    @Test func applyToggle_OnAndGranted_TurnsRemindersOn() async {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = false
+
+        let showsDenied = await NotificationService.applyToggle(true, to: settings) { true }
+
+        #expect(settings.expiryNotificationsEnabled)
+        #expect(!showsDenied)
+    }
+
+    /// The setting is never written on a refusal: it syncs, and switching it
+    /// off here would switch reminders off on every other device too.
+    @Test func applyToggle_OnAndRefused_LeavesTheSettingAloneAndSaysWhy() async {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = false
+
+        let showsDenied = await NotificationService.applyToggle(true, to: settings) { false }
+
+        #expect(!settings.expiryNotificationsEnabled)
+        #expect(showsDenied)
+    }
+
+    @Test func applyToggle_Off_TurnsRemindersOffWithoutAsking() async {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = true
+        var asked = false
+
+        let showsDenied = await NotificationService.applyToggle(false, to: settings) {
+            asked = true
+            return false
+        }
+
+        #expect(!settings.expiryNotificationsEnabled)
+        #expect(!asked)
+        #expect(!showsDenied)
     }
 }

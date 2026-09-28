@@ -92,8 +92,19 @@ struct SettingsView: View {
         let mayNotNotify = notificationAuthorization.map {
             NotificationService.deviceMayNotNotify(for: settings, authorization: $0)
         } ?? false
+        // A binding of its own rather than the stored value, so the permission
+        // request runs for a tap and only for a tap; see `applyToggle`.
+        let isOn = Binding(
+            get: { settings.expiryNotificationsEnabled },
+            set: { newValue in
+                Task {
+                    showNotificationDenied = await NotificationService.applyToggle(newValue, to: settings)
+                    await refreshNotificationAuthorization()
+                }
+            }
+        )
         return Section {
-            Toggle("Expiry Reminders", isOn: Bindable(settings).expiryNotificationsEnabled)
+            Toggle("Expiry Reminders", isOn: isOn)
         } header: {
             Text("Notifications")
         } footer: {
@@ -114,19 +125,12 @@ struct SettingsView: View {
             }
         }
         .listRowBackground(Color.cardBackground)
-        .onChange(of: settings.expiryNotificationsEnabled) { _, enabled in
+        // However the setting changed, from a tap, another device or a restore,
+        // this device schedules, cancels or skips its own reminders to match,
+        // and never writes the setting back.
+        .onChange(of: settings.expiryNotificationsEnabled) {
             Task {
-                if enabled {
-                    let granted = await NotificationService.requestAuthorization()
-                    if !granted {
-                        settings.expiryNotificationsEnabled = false
-                        showNotificationDenied = true
-                    } else {
-                        await NotificationService.syncNotifications(modelContext: modelContext)
-                    }
-                } else {
-                    await NotificationService.cancelAllExpiryNotifications()
-                }
+                await NotificationService.syncIfEnabled(modelContext: modelContext)
                 await refreshNotificationAuthorization()
             }
         }
