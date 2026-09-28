@@ -101,8 +101,7 @@ struct IngredientListView: View {
         guard let selection = navigation.selection,
               selection.modelContext == nil || selection.isDeleted || !ingredients.contains(selection)
         else { return }
-        if let live = LiveIngredient.resolve(selection, slug: selectedSlug, in: modelContext),
-           live !== selection, !live.isDeleted {
+        if let live = LiveIngredient.survivor(slug: selectedSlug, excluding: selection, in: modelContext) {
             navigation.followMerge(to: live, isHidden: live.isHidden, detailFollowed: detailFollowed)
         } else {
             navigation.reset()
