@@ -83,9 +83,26 @@ struct NotificationSyncActionTests {
         let settings = AppSettings()
         settings.expiryNotificationsEnabled = false
 
-        let showsDenied = await NotificationService.applyToggle(true, to: settings) { true }
+        let showsDenied = await NotificationService.applyToggle(true, settings: { settings }) { true }
 
         #expect(settings.expiryNotificationsEnabled)
+        #expect(!showsDenied)
+    }
+
+    /// A first sync can merge this device's settings row away while the
+    /// permission prompt is up; the grant must land on the row that survived.
+    @Test func applyToggle_RowReplacedDuringThePrompt_WritesTheCurrentRow() async {
+        let tapped = AppSettings()
+        let survivor = AppSettings()
+        var current = tapped
+
+        let showsDenied = await NotificationService.applyToggle(true, settings: { current }) {
+            current = survivor
+            return true
+        }
+
+        #expect(survivor.expiryNotificationsEnabled)
+        #expect(!tapped.expiryNotificationsEnabled)
         #expect(!showsDenied)
     }
 
@@ -95,7 +112,7 @@ struct NotificationSyncActionTests {
         let settings = AppSettings()
         settings.expiryNotificationsEnabled = false
 
-        let showsDenied = await NotificationService.applyToggle(true, to: settings) { false }
+        let showsDenied = await NotificationService.applyToggle(true, settings: { settings }) { false }
 
         #expect(!settings.expiryNotificationsEnabled)
         #expect(showsDenied)
@@ -106,7 +123,7 @@ struct NotificationSyncActionTests {
         settings.expiryNotificationsEnabled = true
         var asked = false
 
-        let showsDenied = await NotificationService.applyToggle(false, to: settings) {
+        let showsDenied = await NotificationService.applyToggle(false, settings: { settings }) {
             asked = true
             return false
         }

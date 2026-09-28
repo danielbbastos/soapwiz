@@ -98,7 +98,9 @@ struct SettingsView: View {
             get: { settings.expiryNotificationsEnabled },
             set: { newValue in
                 Task {
-                    showNotificationDenied = await NotificationService.applyToggle(newValue, to: settings)
+                    showNotificationDenied = await NotificationService.applyToggle(newValue) {
+                        AppSettings.resolve(in: modelContext)
+                    }
                     await refreshNotificationAuthorization()
                 }
             }

@@ -52,17 +52,22 @@ enum NotificationService {
     /// Only a tap comes through here. A change that arrives from another device
     /// or a restore must never ask, and never write the setting back: a device
     /// that refused would switch reminders off on every other one.
+    ///
+    /// `settings` is read again after the permission prompt rather than taken
+    /// at the tap. The prompt stays up as long as the user leaves it, and a
+    /// first sync on a new device can merge this device's settings row away
+    /// meanwhile, which would swallow a write to the row captured earlier.
     static func applyToggle(
         _ isOn: Bool,
-        to settings: AppSettings,
+        settings: () -> AppSettings,
         askPermission: () async -> Bool = { await requestAuthorization() }
     ) async -> Bool {
         guard isOn else {
-            settings.expiryNotificationsEnabled = false
+            settings().expiryNotificationsEnabled = false
             return false
         }
         guard await askPermission() else { return true }
-        settings.expiryNotificationsEnabled = true
+        settings().expiryNotificationsEnabled = true
         return false
     }
 
