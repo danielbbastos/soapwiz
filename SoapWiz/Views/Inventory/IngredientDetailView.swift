@@ -161,6 +161,7 @@ struct IngredientDetailView: View {
                 }
                 .listRowBackground(Color.cardBackground)
             }
+            .readableWidth()
             // Before `warmBackground`, whose fill would otherwise cover the photo.
             .heroPhotoHeader(
                 image: heroImage,

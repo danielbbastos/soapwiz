@@ -56,6 +56,8 @@ struct RecipeFormView: View {
             .safeAreaInset(edge: .top, spacing: 0) {
                 tabPicker
                     .shadow(color: .black.opacity(0.12), radius: 4, y: 1)
+                    // As wide as the capped form below it, on a full-screen iPad.
+                    .frame(maxWidth: ReadableWidth.maximum)
                     .padding(.horizontal)
                     .padding(.bottom, 8)
             }

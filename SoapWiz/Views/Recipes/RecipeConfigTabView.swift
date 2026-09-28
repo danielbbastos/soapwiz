@@ -42,6 +42,7 @@ struct RecipeConfigTabView: View {
             }
             fragranceSection
         }
+        .readableWidth()
         .scrollClipDisabled()
         .animation(.default, value: model.makesSoap)
         .sheet(isPresented: $showMoldCalculator) {

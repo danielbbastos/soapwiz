@@ -72,6 +72,7 @@ struct RecipeDetailView: View {
             soapPropertiesSection
             RecipeCostSection(model: model, batch: batch)
         }
+        .readableWidth()
         .expandingSectionScrollContainer()
         // Before `warmBackground`, whose fill would otherwise cover the photo.
         .heroPhotoHeader(

@@ -38,6 +38,7 @@ struct CategoryListView: View {
                     }
                 }
             }
+            .readableWidth()
             .navigationTitle("Categories")
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("Categories")

@@ -58,6 +58,7 @@ struct BatchDetailView: View {
             }
             .listRowBackground(Color.cardBackground)
         }
+        .readableWidth()
         .navigationTitle("Batch")
         .navigationBarTitleDisplayMode(.inline)
         .warmNavigationTitle("Batch")

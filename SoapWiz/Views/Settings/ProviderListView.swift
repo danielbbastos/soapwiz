@@ -45,6 +45,7 @@ struct ProviderListView: View {
                     }
                 }
             }
+            .readableWidth()
             .navigationTitle("Providers")
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("Providers")

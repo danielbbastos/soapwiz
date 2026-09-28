@@ -86,6 +86,7 @@ struct LyeSafetyScreen: View {
             }
             .padding()
         }
+        .readableWidth(inset: 16)
         .navigationTitle("Lye Safety")
         .navigationBarTitleDisplayMode(.inline)
         .warmNavigationTitle("Lye Safety")
