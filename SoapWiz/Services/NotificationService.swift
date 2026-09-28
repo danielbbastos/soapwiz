@@ -36,9 +36,48 @@ enum NotificationService {
         }
     }
 
+    /// Whether Settings should say that this device won't deliver reminders
+    /// that are switched on: exactly when a sync skips it (SW-187). The setting
+    /// syncs and the permission doesn't, so without the note a device that
+    /// refused notifications shows reminders on while none ever arrive there.
+    static func deviceMayNotNotify(for settings: AppSettings, authorization: UNAuthorizationStatus) -> Bool {
+        syncAction(for: settings, authorization: authorization) == .skip
+    }
+
+    /// A tap on the Expiry Reminders toggle. Turning reminders on asks for this
+    /// device's permission first and stores the setting only once it's granted,
+    /// so a refusal never switches a synced setting that is on elsewhere off.
+    /// Returns whether to tell the user notifications are refused here.
+    ///
+    /// Only a tap comes through here. A change that arrives from another device
+    /// or a restore must never ask, and never write the setting back: a device
+    /// that refused would switch reminders off on every other one.
+    ///
+    /// `settings` is read again after the permission prompt rather than taken
+    /// at the tap. The prompt stays up as long as the user leaves it, and a
+    /// first sync on a new device can merge this device's settings row away
+    /// meanwhile, which would swallow a write to the row captured earlier.
+    static func applyToggle(
+        _ isOn: Bool,
+        settings: () -> AppSettings,
+        askPermission: () async -> Bool = { await requestAuthorization() }
+    ) async -> Bool {
+        guard isOn else {
+            settings().expiryNotificationsEnabled = false
+            return false
+        }
+        guard await askPermission() else { return true }
+        settings().expiryNotificationsEnabled = true
+        return false
+    }
+
+    static func authorizationStatus() async -> UNAuthorizationStatus {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
     static func syncIfEnabled(modelContext: ModelContext) async {
         let settings = AppSettings.resolve(in: modelContext)
-        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        let status = await authorizationStatus()
 
         switch syncAction(for: settings, authorization: status) {
         case .cancel:

@@ -41,4 +41,107 @@ struct NotificationSyncActionTests {
 
         #expect(action == testCase.expected)
     }
+
+    struct NoteCase: CustomTestStringConvertible, Sendable {
+        let remindersOn: Bool
+        let tracksInventory: Bool
+        let authorization: UNAuthorizationStatus
+        let showsNote: Bool
+        var testDescription: String {
+            "reminders \(remindersOn), tracking \(tracksInventory), authorization \(authorization.rawValue)"
+        }
+    }
+
+    /// Settings says this device won't deliver reminders exactly when they are
+    /// on and it has refused them (SW-187) — not while it hasn't been asked yet,
+    /// since the next sync asks, and not when reminders are off anyway.
+    ///
+    /// `.provisional` can't arise today, since the app only asks for full
+    /// alerts. It is listed because the sync skips it too, so reminders
+    /// wouldn't be scheduled and the note would still be true in substance.
+    @Test(arguments: [
+        NoteCase(remindersOn: true, tracksInventory: true, authorization: .denied, showsNote: true),
+        NoteCase(remindersOn: true, tracksInventory: true, authorization: .provisional, showsNote: true),
+        NoteCase(remindersOn: true, tracksInventory: true, authorization: .authorized, showsNote: false),
+        NoteCase(remindersOn: true, tracksInventory: true, authorization: .notDetermined, showsNote: false),
+        NoteCase(remindersOn: false, tracksInventory: true, authorization: .denied, showsNote: false),
+        NoteCase(remindersOn: true, tracksInventory: false, authorization: .denied, showsNote: false)
+    ])
+    func deviceMayNotNotify_OnlyWhenRemindersAreOnAndThisDeviceRefusedThem(_ testCase: NoteCase) {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = testCase.remindersOn
+        settings.tracksInventory = testCase.tracksInventory
+
+        let showsNote = NotificationService.deviceMayNotNotify(for: settings, authorization: testCase.authorization)
+
+        #expect(showsNote == testCase.showsNote)
+    }
+
+    // MARK: - A tap on the toggle
+
+    @Test func applyToggle_OnAndGranted_TurnsRemindersOn() async {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = false
+
+        let showsDenied = await NotificationService.applyToggle(
+            true, settings: { settings }, askPermission: { true }
+        )
+
+        #expect(settings.expiryNotificationsEnabled)
+        #expect(!showsDenied)
+    }
+
+    /// A first sync can merge this device's settings row away while the
+    /// permission prompt is up; the grant must land on the row that survived.
+    @Test func applyToggle_RowReplacedDuringThePrompt_WritesTheCurrentRow() async {
+        let tapped = AppSettings()
+        let survivor = AppSettings()
+        var current = tapped
+
+        let showsDenied = await NotificationService.applyToggle(
+            true,
+            settings: { current },
+            askPermission: {
+                current = survivor
+                return true
+            }
+        )
+
+        #expect(survivor.expiryNotificationsEnabled)
+        #expect(!tapped.expiryNotificationsEnabled)
+        #expect(!showsDenied)
+    }
+
+    /// The setting is never written on a refusal: it syncs, and switching it
+    /// off here would switch reminders off on every other device too.
+    @Test func applyToggle_OnAndRefused_LeavesTheSettingAloneAndSaysWhy() async {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = false
+
+        let showsDenied = await NotificationService.applyToggle(
+            true, settings: { settings }, askPermission: { false }
+        )
+
+        #expect(!settings.expiryNotificationsEnabled)
+        #expect(showsDenied)
+    }
+
+    @Test func applyToggle_Off_TurnsRemindersOffWithoutAsking() async {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = true
+        var asked = false
+
+        let showsDenied = await NotificationService.applyToggle(
+            false,
+            settings: { settings },
+            askPermission: {
+                asked = true
+                return false
+            }
+        )
+
+        #expect(!settings.expiryNotificationsEnabled)
+        #expect(!asked)
+        #expect(!showsDenied)
+    }
 }

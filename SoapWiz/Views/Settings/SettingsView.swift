@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+import UserNotifications
 
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -9,6 +10,7 @@ struct SettingsView: View {
     @Environment(RestoreCoordinator.self) private var restore
     @Environment(SyncHealthMonitor.self) private var syncHealth
     @Environment(\.currencyCode) private var currencyCode
+    @Environment(\.scenePhase) private var scenePhase
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
     @Query private var providers: [Provider]
@@ -17,6 +19,10 @@ struct SettingsView: View {
     private var settings: AppSettings? { AppSettings.canonical(from: settingsRecords) }
 
     @State private var showNotificationDenied = false
+    /// This device's notification permission, read when the screen appears and
+    /// whenever the app comes back to the foreground, which is how the user
+    /// returns after changing it in iOS Settings.
+    @State private var notificationAuthorization: UNAuthorizationStatus?
     @State private var dataTransfer = DataTransferViewModel()
 
     private var importError: Binding<Bool> {
@@ -65,39 +71,73 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("Settings")
             .warmBackground()
+            .task(id: scenePhase) {
+                guard scenePhase == .active else { return }
+                await refreshNotificationAuthorization()
+            }
+        }
+    }
+
+    private func refreshNotificationAuthorization() async {
+        notificationAuthorization = await NotificationService.authorizationStatus()
+    }
+
+    private func openAppSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
         }
     }
 
     private func notificationsSection(_ settings: AppSettings) -> some View {
-        Section {
-            Toggle("Expiry Reminders", isOn: Bindable(settings).expiryNotificationsEnabled)
+        let mayNotNotify = notificationAuthorization.map {
+            NotificationService.deviceMayNotNotify(for: settings, authorization: $0)
+        } ?? false
+        // A binding of its own rather than the stored value, so the permission
+        // request runs for a tap and only for a tap; see `applyToggle`.
+        let isOn = Binding(
+            get: { settings.expiryNotificationsEnabled },
+            set: { newValue in
+                Task {
+                    showNotificationDenied = await NotificationService.applyToggle(newValue) {
+                        AppSettings.resolve(in: modelContext)
+                    }
+                    await refreshNotificationAuthorization()
+                }
+            }
+        )
+        return Section {
+            Toggle("Expiry Reminders", isOn: isOn)
         } header: {
             Text("Notifications")
         } footer: {
-            Text("Get notified 1 month and 1 week before ingredients expire.")
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Get notified 1 month and 1 week before ingredients expire.")
+                // The setting is shared across devices and the permission isn't,
+                // so this one can show reminders on while none arrive here.
+                if mayNotNotify {
+                    Label(
+                        "Notifications are turned off for SoapWiz on this device, "
+                            + "so reminders won't arrive here.",
+                        systemImage: "exclamationmark.triangle.fill"
+                    )
+                    .foregroundStyle(.orange)
+                    Button("Open Settings", action: openAppSettings)
+                        .font(.footnote.weight(.semibold))
+                }
+            }
         }
         .listRowBackground(Color.cardBackground)
-        .onChange(of: settings.expiryNotificationsEnabled) { _, enabled in
+        // However the setting changed, from a tap, another device or a restore,
+        // this device schedules, cancels or skips its own reminders to match,
+        // and never writes the setting back.
+        .onChange(of: settings.expiryNotificationsEnabled) {
             Task {
-                if enabled {
-                    let granted = await NotificationService.requestAuthorization()
-                    if !granted {
-                        settings.expiryNotificationsEnabled = false
-                        showNotificationDenied = true
-                    } else {
-                        await NotificationService.syncNotifications(modelContext: modelContext)
-                    }
-                } else {
-                    await NotificationService.cancelAllExpiryNotifications()
-                }
+                await NotificationService.syncIfEnabled(modelContext: modelContext)
+                await refreshNotificationAuthorization()
             }
         }
         .alert("Notifications Disabled", isPresented: $showNotificationDenied) {
-            Button("Open Settings") {
-                if let url = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(url)
-                }
-            }
+            Button("Open Settings", action: openAppSettings)
             Button("OK", role: .cancel) {}
         } message: {
             Text("SoapWiz needs notification permission to send expiry reminders. "
