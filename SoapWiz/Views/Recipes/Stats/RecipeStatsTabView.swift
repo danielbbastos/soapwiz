@@ -14,6 +14,7 @@ struct RecipeStatsTabView: View {
                 calculatedValuesSection(stats)
             }
         }
+        .readableWidth()
         .scrollClipDisabled()
     }
 

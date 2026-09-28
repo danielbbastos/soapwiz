@@ -45,6 +45,7 @@ struct StorageLocationListView: View {
                     }
                 }
             }
+            .readableWidth()
             .navigationTitle("Storage Locations")
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("Storage Locations")

@@ -173,6 +173,7 @@ struct IngredientListView: View {
                         .contentMargins(.top, visibleCategories.isEmpty ? nil : 0, for: .scrollContent)
                     }
                 }
+                .readableWidth()
                 .navigationTitle("Inventory")
                 .navigationBarTitleDisplayMode(.inline)
                 .warmNavigationTitle("Inventory")

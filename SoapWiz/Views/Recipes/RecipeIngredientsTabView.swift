@@ -69,6 +69,7 @@ struct RecipeIngredientsTabView: View {
             RecipeCalculatedAmountsSection(model: model)
             RecipeExtraIngredientsSection(model: model)
         }
+        .readableWidth()
         .onChange(of: model.totalOilBatchWeight) {
             model.reconcileCreamSoapGlycerine(from: inventory)
         }

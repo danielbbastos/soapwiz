@@ -46,6 +46,7 @@ struct SettingsView: View {
                 backupSection
                 aboutSection
             }
+            .readableWidth()
             .sheet(item: $dataTransfer.exportFile) { file in
                 ShareSheet(items: [file.url])
             }

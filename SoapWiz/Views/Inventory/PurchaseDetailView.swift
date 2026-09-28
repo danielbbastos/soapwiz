@@ -128,6 +128,7 @@ struct PurchaseDetailView: View {
             }
             .listRowBackground(Color.cardBackground)
         }
+        .readableWidth()
         .onDisappear { model.isEditingAmount = false }
         .navigationTitle("Purchase Details")
         .navigationBarTitleDisplayMode(.inline)

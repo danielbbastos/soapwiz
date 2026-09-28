@@ -54,6 +54,7 @@ struct BatchListView: View {
                     }
                 }
             }
+            .readableWidth()
             .navigationTitle("History")
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("History")

@@ -241,6 +241,7 @@ struct RecipeListView: View {
                         .contentMargins(.top, collections.isEmpty ? nil : 0, for: .scrollContent)
                     }
                 }
+                .readableWidth()
                 .navigationTitle(model.navigationTitle)
                 .navigationBarTitleDisplayMode(.inline)
                 .warmNavigationTitle(model.navigationTitle)

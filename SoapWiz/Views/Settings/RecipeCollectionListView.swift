@@ -38,6 +38,7 @@ struct RecipeCollectionListView: View {
                     }
                 }
             }
+            .readableWidth()
             .navigationTitle("Collections")
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("Collections")

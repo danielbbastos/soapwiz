@@ -30,5 +30,8 @@ struct InventoryCategoryFilterBar: View {
             .padding(.bottom, 12)
         }
         .scrollIndicators(.hidden)
+        // Less the chips' own padding, so the first chip lines up with the
+        // capped list below it.
+        .readableWidth(inset: 16)
     }
 }
