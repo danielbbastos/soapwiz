@@ -9,7 +9,10 @@ struct IngredientListView: View {
     @Query private var settingsRecords: [AppSettings]
 
     @State private var model = IngredientListViewModel()
-    @State private var navigationPath = NavigationPath()
+    @State private var navigation = ListDetailNavigation<Ingredient>()
+    /// The open ingredient's merge key, read when it opens: once a merge has
+    /// deleted the row it can't be read off it. See `LiveIngredient`.
+    @State private var selectedSlug = ""
 
     // Favourites can't be part of the `@Query` sort: `SortDescriptor` has no `Bool`
     // overload, so the pinning is applied here, after filtering.
@@ -45,7 +48,7 @@ struct IngredientListView: View {
                 .listRowBackground(Color.cardBackground)
         } else {
             Button {
-                navigationPath.append(ingredient)
+                navigation.show(ingredient)
             } label: {
                 // A `Button` is hit-tested over its drawn content only, so
                 // without this the row's padding and the gap left of the star
@@ -72,12 +75,58 @@ struct IngredientListView: View {
                     }
                 }
             }
-            .listRowBackground(Color.cardBackground)
+            .listDetailRow(isSelected: navigation.isOpenBeside(ingredient))
         }
     }
 
+    /// Handles the open ingredient's row leaving the store without passing
+    /// through this list. When a duplicate merge deleted it, the selection
+    /// follows the surviving copy; otherwise it was deleted outright, on
+    /// another device, and the detail closes rather than go on reading a
+    /// deleted model.
+    ///
+    /// Unlike the other tabs, this can't just prune rows missing from the list:
+    /// a merge removes the open row too, and closing the detail then would
+    /// throw away whatever the user had open over it.
+    ///
+    /// The row counts as gone when SwiftData says so, or when the query no
+    /// longer returns it (it includes hidden rows), since a delete synced from
+    /// another device isn't certain to detach the instance. Both are needed:
+    /// when this device's merge posts its notification, the query may not
+    /// have caught up yet.
+    ///
+    /// `detailFollowed` is true only for that notification, which the open
+    /// detail also answers by moving to the survivor itself.
+    private func followRemovedSelection(detailFollowed: Bool) {
+        guard let selection = navigation.selection,
+              selection.modelContext == nil || selection.isDeleted || !ingredients.contains(selection)
+        else { return }
+        if let live = LiveIngredient.survivor(slug: selectedSlug, excluding: selection, in: modelContext) {
+            navigation.followMerge(to: live, isHidden: live.isHidden, detailFollowed: detailFollowed)
+        } else {
+            navigation.reset()
+        }
+    }
+
+    private func detail(_ ingredient: Ingredient) -> some View {
+        IngredientDetailView(
+            ingredient: ingredient,
+            autoAddPurchase: model.tracksInventory
+                && model.pendingIngredient?.persistentModelID == ingredient.persistentModelID
+        )
+        .onAppear { model.pendingIngredient = nil }
+    }
+
     var body: some View {
-        NavigationStack(path: $navigationPath) {
+        // Filtered once per pass: filtering sums each row's stock and sorts,
+        // and several places below need the result.
+        let displayed = displayedIngredients
+        ListDetailContainer(
+            navigation: navigation,
+            placeholder: "Select an Ingredient",
+            placeholderSymbol: "flask",
+            hasItems: !displayed.isEmpty
+        ) {
             ZStack(alignment: .bottomTrailing) {
                 Group {
                     if ingredients.isEmpty {
@@ -86,7 +135,7 @@ struct IngredientListView: View {
                             systemImage: "flask",
                             description: Text("Tap + to add your first ingredient.")
                         )
-                    } else if displayedIngredients.isEmpty {
+                    } else if displayed.isEmpty {
                         if !model.searchText.isEmpty {
                             ContentUnavailableView.search(text: model.searchText)
                         } else {
@@ -110,12 +159,12 @@ struct IngredientListView: View {
                         // Nothing outside edit mode reads `selection`: it exists
                         // for the bulk delete, which only Select mode offers.
                         List(selection: $model.selection) {
-                            ForEach(displayedIngredients) { row($0) }
+                            ForEach(displayed) { row($0) }
                         }
                         .environment(\.editMode, $model.editMode)
                     } else {
                         List {
-                            ForEach(displayedIngredients) { row($0) }
+                            ForEach(displayed) { row($0) }
                         }
                         .environment(\.editMode, $model.editMode)
                         // The chips already stand off the list on their own; the
@@ -128,14 +177,7 @@ struct IngredientListView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .warmNavigationTitle("Inventory")
                 .warmBackground()
-                .navigationDestination(for: Ingredient.self) { ingredient in
-                    IngredientDetailView(
-                        ingredient: ingredient,
-                        autoAddPurchase: model.tracksInventory
-                            && model.pendingIngredient?.persistentModelID == ingredient.persistentModelID
-                    )
-                    .onAppear { model.pendingIngredient = nil }
-                }
+                .navigationDestination(for: Ingredient.self) { detail($0) }
                 .searchable(text: $model.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ingredients")
                 // No background of its own, so the list keeps scrolling under
                 // the navigation bar's material rather than under a flat band.
@@ -158,7 +200,7 @@ struct IngredientListView: View {
                             // "Remove" rather than "Delete": a selection can hold
                             // library rows, which are hidden rather than deleted.
                             Button("Remove", role: .destructive) {
-                                model.deleteSelected(in: displayedIngredients)
+                                model.deleteSelected(in: displayed)
                             }
                             .disabled(model.selection.isEmpty)
                         } else {
@@ -190,6 +232,22 @@ struct IngredientListView: View {
                     createRecipeButton
                 }
             }
+        } detail: { detail($0) }
+        // A hidden row has left the list, and its detail staying open beside
+        // the list would outlive it.
+        .onChange(of: ingredients.filter(\.isHidden)) { _, hidden in
+            navigation.close(ifShowingAnyOf: hidden)
+        }
+        .onChange(of: navigation.selection) { _, selection in
+            selectedSlug = selection?.librarySlug ?? ""
+        }
+        // Deletions made in this list close the detail before they happen.
+        // These catch the rest: a merge, and a delete synced from another device.
+        .onChange(of: ingredients) {
+            followRemovedSelection(detailFollowed: false)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
+            followRemovedSelection(detailFollowed: true)
         }
         .alert(model.removalConfirmationTitle, isPresented: Binding(
             get: { model.isConfirmingRemoval },
@@ -201,6 +259,7 @@ struct IngredientListView: View {
                 model.confirmingDelete.isEmpty ? "Hide" : "Delete",
                 role: model.confirmingDelete.isEmpty ? nil : .destructive
             ) {
+                navigation.close(ifShowingAnyOf: model.confirmingDelete + model.confirmingHide)
                 model.confirmDelete(context: modelContext)
             }
             Button("Cancel", role: .cancel) { model.cancelRemoval() }
@@ -220,7 +279,7 @@ struct IngredientListView: View {
         }
         .sheet(isPresented: $model.showingAddIngredient, onDismiss: {
             if let ingredient = model.pendingIngredient {
-                navigationPath.append(ingredient)
+                navigation.show(ingredient)
             }
         }, content: {
             IngredientFormView(onSave: { ingredient in

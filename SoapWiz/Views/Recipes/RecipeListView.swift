@@ -8,7 +8,7 @@ struct RecipeListView: View {
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
 
     @State private var model = RecipeListViewModel()
-    @State private var navigationPath = NavigationPath()
+    @State private var navigation = ListDetailNavigation<Recipe>()
     @State private var importRequest: RecipeImportRequest?
     /// An import confirmed in the import sheet, waiting for that sheet to go
     /// before its form can cover the screen.
@@ -31,7 +31,7 @@ struct RecipeListView: View {
             if model.isSelecting {
                 model.toggleSelection(of: recipe)
             } else {
-                navigationPath.append(recipe)
+                navigation.show(recipe)
             }
         } label: {
             HStack(spacing: 12) {
@@ -56,7 +56,7 @@ struct RecipeListView: View {
         .swipeActions(edge: .trailing) {
             if !model.isSelecting {
                 Button("Delete", role: .destructive) {
-                    model.delete(recipe, context: modelContext)
+                    delete(recipe)
                 }
             }
         }
@@ -65,7 +65,7 @@ struct RecipeListView: View {
                 rowMenu(recipe)
             }
         }
-        .listRowBackground(Color.cardBackground)
+        .listDetailRow(isSelected: !model.isSelecting && navigation.isOpenBeside(recipe))
     }
 
     /// One titled group of the list. Renders nothing when its group is empty, so
@@ -101,10 +101,17 @@ struct RecipeListView: View {
         }
         Divider()
         Button(role: .destructive) {
-            model.delete(recipe, context: modelContext)
+            delete(recipe)
         } label: {
             Label("Delete", systemImage: "trash")
         }
+    }
+
+    /// Closes the recipe's detail first if it is open beside the list; see
+    /// `ListDetailNavigation.close(ifShowingAnyOf:)`.
+    private func delete(_ recipe: Recipe) {
+        navigation.close(ifShowingAnyOf: [recipe])
+        model.delete(recipe, context: modelContext)
     }
 
     /// Pushes the form on iPhone, as before SW-89; covers the screen with it on
@@ -113,12 +120,13 @@ struct RecipeListView: View {
     /// so the list is what the cover closes onto. Deliberately after Cancel too,
     /// where a push would return to a recipe it was opened over: the cover has
     /// no way to tell the two apart, and landing on the list is the safer miss.
+    /// Beside the list, the detail closes too, for the same reason.
     private func openForm(_ request: RecipeFormRequest) {
         if RecipeFormRequest.opensFullScreen {
-            navigationPath = NavigationPath()
+            navigation.reset()
             nav.recipeFormRequest = request
         } else {
-            navigationPath.append(request.route)
+            navigation.path.append(request.route)
         }
     }
 
@@ -192,7 +200,12 @@ struct RecipeListView: View {
         // Filtered once per pass: the branch below and the list itself both need
         // it, and the filter walks every recipe's collections.
         let displayed = displayedRecipes
-        NavigationStack(path: $navigationPath) {
+        ListDetailContainer(
+            navigation: navigation,
+            placeholder: "Select a Recipe",
+            placeholderSymbol: "function",
+            hasItems: !displayed.isEmpty
+        ) {
             ZStack(alignment: .bottomTrailing) {
                 Group {
                     if recipes.isEmpty {
@@ -254,7 +267,10 @@ struct RecipeListView: View {
                         set: { if !$0 { model.cancelDelete() } }
                     )
                 ) {
-                    Button("Delete", role: .destructive) { model.confirmDelete(context: modelContext) }
+                    Button("Delete", role: .destructive) {
+                        navigation.close(ifShowingAnyOf: model.confirmingDelete)
+                        model.confirmDelete(context: modelContext)
+                    }
                     Button("Cancel", role: .cancel) { model.cancelDelete() }
                 } message: {
                     Text(model.deleteConfirmationMessage)
@@ -271,17 +287,17 @@ struct RecipeListView: View {
                 }
                 .navigationDestination(for: Bool.self) { _ in
                     RecipeFormView(onSave: { _ in
-                        navigationPath = NavigationPath()
+                        navigation.reset()
                     })
                 }
                 .navigationDestination(for: RecipeSeed.self) { seed in
                     RecipeFormView(seed: seed, onSave: { _ in
-                        navigationPath = NavigationPath()
+                        navigation.reset()
                     })
                 }
                 .navigationDestination(for: PreparedRecipeImport.self) { prepared in
                     RecipeFormView(importDraft: prepared, onSave: { _ in
-                        navigationPath = NavigationPath()
+                        navigation.reset()
                     })
                 }
                 .sheet(item: $importRequest, onDismiss: presentFormAfterImport) { request in
@@ -293,7 +309,7 @@ struct RecipeListView: View {
                             if RecipeFormRequest.opensFullScreen {
                                 formRequestAfterImport = .imported(prepared)
                             } else {
-                                navigationPath.append(prepared)
+                                navigation.path.append(prepared)
                             }
                         },
                         // An exact import is already saved by the time this
@@ -302,7 +318,7 @@ struct RecipeListView: View {
                         // where fifteen new recipes are actually reviewed.
                         onImported: { recipes in
                             guard recipes.count == 1, let only = recipes.first else { return }
-                            navigationPath.append(only)
+                            navigation.show(only)
                         }
                     )
                 }
@@ -331,6 +347,11 @@ struct RecipeListView: View {
                     )
                 }
             }
+        } detail: { recipe in
+            RecipeDetailView(recipe: recipe)
+        }
+        .onChange(of: recipes) {
+            navigation.prune(keeping: recipes)
         }
         // Honour a seeded-recipe request from the inventory selection flow: open
         // the form pre-filled, then consume the request so it doesn't re-fire.

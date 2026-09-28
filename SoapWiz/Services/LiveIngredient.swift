@@ -31,10 +31,19 @@ enum LiveIngredient {
     /// screen opened.
     static func resolve(_ captured: Ingredient, slug: String, in context: ModelContext) -> Ingredient? {
         if captured.modelContext != nil { return captured }
+        return survivor(slug: slug, excluding: captured, in: context)
+    }
+
+    /// The row carrying `slug` other than `gone`, for a caller that already
+    /// knows `gone` has left the store, however SwiftData reports it: a delete
+    /// synced from another device isn't certain to detach the instance, and
+    /// `resolve` trusts any instance still in a context. `nil` when no other
+    /// row carries the slug, which means `gone` was deleted outright.
+    static func survivor(slug: String, excluding gone: Ingredient, in context: ModelContext) -> Ingredient? {
         guard !slug.isEmpty else { return nil }
 
         let descriptor = FetchDescriptor<Ingredient>(predicate: #Predicate { $0.librarySlug == slug })
-        let candidates = (try? context.fetch(descriptor)) ?? []
+        let candidates = ((try? context.fetch(descriptor)) ?? []).filter { $0 !== gone && !$0.isDeleted }
         // The merge keeps the lowest `uuid`, so resolving the same way lands on
         // the row it kept even when a later import has yet to be collapsed.
         return candidates.min { $0.uuid.uuidString < $1.uuid.uuidString }
