@@ -83,7 +83,9 @@ struct NotificationSyncActionTests {
         let settings = AppSettings()
         settings.expiryNotificationsEnabled = false
 
-        let showsDenied = await NotificationService.applyToggle(true, settings: { settings }) { true }
+        let showsDenied = await NotificationService.applyToggle(
+            true, settings: { settings }, askPermission: { true }
+        )
 
         #expect(settings.expiryNotificationsEnabled)
         #expect(!showsDenied)
@@ -96,10 +98,14 @@ struct NotificationSyncActionTests {
         let survivor = AppSettings()
         var current = tapped
 
-        let showsDenied = await NotificationService.applyToggle(true, settings: { current }) {
-            current = survivor
-            return true
-        }
+        let showsDenied = await NotificationService.applyToggle(
+            true,
+            settings: { current },
+            askPermission: {
+                current = survivor
+                return true
+            }
+        )
 
         #expect(survivor.expiryNotificationsEnabled)
         #expect(!tapped.expiryNotificationsEnabled)
@@ -112,7 +118,9 @@ struct NotificationSyncActionTests {
         let settings = AppSettings()
         settings.expiryNotificationsEnabled = false
 
-        let showsDenied = await NotificationService.applyToggle(true, settings: { settings }) { false }
+        let showsDenied = await NotificationService.applyToggle(
+            true, settings: { settings }, askPermission: { false }
+        )
 
         #expect(!settings.expiryNotificationsEnabled)
         #expect(showsDenied)
@@ -123,10 +131,14 @@ struct NotificationSyncActionTests {
         settings.expiryNotificationsEnabled = true
         var asked = false
 
-        let showsDenied = await NotificationService.applyToggle(false, settings: { settings }) {
-            asked = true
-            return false
-        }
+        let showsDenied = await NotificationService.applyToggle(
+            false,
+            settings: { settings },
+            askPermission: {
+                asked = true
+                return false
+            }
+        )
 
         #expect(!settings.expiryNotificationsEnabled)
         #expect(!asked)
