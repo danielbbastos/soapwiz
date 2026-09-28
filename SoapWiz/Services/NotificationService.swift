@@ -36,9 +36,21 @@ enum NotificationService {
         }
     }
 
+    /// Whether Settings should say that this device won't deliver reminders
+    /// that are switched on: exactly when a sync skips it (SW-187). The setting
+    /// syncs and the permission doesn't, so without the note a device that
+    /// refused notifications shows reminders on while none ever arrive there.
+    static func deviceMayNotNotify(for settings: AppSettings, authorization: UNAuthorizationStatus) -> Bool {
+        syncAction(for: settings, authorization: authorization) == .skip
+    }
+
+    static func authorizationStatus() async -> UNAuthorizationStatus {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
     static func syncIfEnabled(modelContext: ModelContext) async {
         let settings = AppSettings.resolve(in: modelContext)
-        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        let status = await authorizationStatus()
 
         switch syncAction(for: settings, authorization: status) {
         case .cancel:

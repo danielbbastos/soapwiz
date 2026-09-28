@@ -41,4 +41,35 @@ struct NotificationSyncActionTests {
 
         #expect(action == testCase.expected)
     }
+
+    struct NoteCase: CustomTestStringConvertible, Sendable {
+        let remindersOn: Bool
+        let tracksInventory: Bool
+        let authorization: UNAuthorizationStatus
+        let showsNote: Bool
+        var testDescription: String {
+            "reminders \(remindersOn), tracking \(tracksInventory), authorization \(authorization.rawValue)"
+        }
+    }
+
+    /// Settings says this device won't deliver reminders exactly when they are
+    /// on and it has refused them (SW-187) — not while it hasn't been asked yet,
+    /// since the next sync asks, and not when reminders are off anyway.
+    @Test(arguments: [
+        NoteCase(remindersOn: true, tracksInventory: true, authorization: .denied, showsNote: true),
+        NoteCase(remindersOn: true, tracksInventory: true, authorization: .provisional, showsNote: true),
+        NoteCase(remindersOn: true, tracksInventory: true, authorization: .authorized, showsNote: false),
+        NoteCase(remindersOn: true, tracksInventory: true, authorization: .notDetermined, showsNote: false),
+        NoteCase(remindersOn: false, tracksInventory: true, authorization: .denied, showsNote: false),
+        NoteCase(remindersOn: true, tracksInventory: false, authorization: .denied, showsNote: false)
+    ])
+    func deviceMayNotNotify_OnlyWhenRemindersAreOnAndThisDeviceRefusedThem(_ testCase: NoteCase) {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = testCase.remindersOn
+        settings.tracksInventory = testCase.tracksInventory
+
+        let showsNote = NotificationService.deviceMayNotNotify(for: settings, authorization: testCase.authorization)
+
+        #expect(showsNote == testCase.showsNote)
+    }
 }
