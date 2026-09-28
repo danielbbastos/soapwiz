@@ -81,19 +81,29 @@ struct IngredientListView: View {
 
     /// Handles the open ingredient's row leaving the store without passing
     /// through this list. When a duplicate merge deleted it, the selection
-    /// follows the surviving copy, which the open detail has already moved to
-    /// itself; otherwise it was deleted outright, on another device, and the
-    /// detail closes rather than go on reading a deleted model.
+    /// follows the surviving copy; otherwise it was deleted outright, on
+    /// another device, and the detail closes rather than go on reading a
+    /// deleted model.
     ///
     /// Unlike the other tabs, this can't just prune rows missing from the list:
     /// a merge removes the open row too, and closing the detail then would
     /// throw away whatever the user had open over it.
-    private func followRemovedSelection() {
+    ///
+    /// The row counts as gone when SwiftData says so, or when the query no
+    /// longer returns it (it includes hidden rows), since a delete synced from
+    /// another device isn't certain to detach the instance. Both are needed:
+    /// when this device's merge posts its notification, the query may not
+    /// have caught up yet.
+    ///
+    /// `detailFollowed` is true only for that notification, which the open
+    /// detail also answers by moving to the survivor itself.
+    private func followRemovedSelection(detailFollowed: Bool) {
         guard let selection = navigation.selection,
-              selection.modelContext == nil || selection.isDeleted else { return }
+              selection.modelContext == nil || selection.isDeleted || !ingredients.contains(selection)
+        else { return }
         if let live = LiveIngredient.resolve(selection, slug: selectedSlug, in: modelContext),
            live !== selection, !live.isDeleted {
-            navigation.followMerge(to: live, isHidden: live.isHidden)
+            navigation.followMerge(to: live, isHidden: live.isHidden, detailFollowed: detailFollowed)
         } else {
             navigation.reset()
         }
@@ -235,10 +245,10 @@ struct IngredientListView: View {
         // Deletions made in this list close the detail before they happen.
         // These catch the rest: a merge, and a delete synced from another device.
         .onChange(of: ingredients) {
-            followRemovedSelection()
+            followRemovedSelection(detailFollowed: false)
         }
         .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
-            followRemovedSelection()
+            followRemovedSelection(detailFollowed: true)
         }
         .alert(model.removalConfirmationTitle, isPresented: Binding(
             get: { model.isConfirmingRemoval },

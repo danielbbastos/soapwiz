@@ -108,25 +108,49 @@ struct ListDetailNavigationTests {
         #expect(!sut.isOpenBeside("Castile"))
     }
 
-    @Test func followMerge_VisibleSurvivor_RepointsWithoutRebuilding() {
+    @Test func followMerge_DetailFollowed_RepointsWithoutRebuilding() {
         sut.setWide(true)
         sut.show("Castile")
         sut.path.append("Purchase")
         let first = sut.detailID
 
-        sut.followMerge(to: "Castile (survivor)", isHidden: false)
+        sut.followMerge(to: "Castile (survivor)", isHidden: false, detailFollowed: true)
 
         #expect(sut.selection == "Castile (survivor)")
         #expect(sut.path.count == 1)
         #expect(sut.detailID == first)
     }
 
-    @Test func followMerge_HiddenSurvivor_ClosesTheDetail() {
+    @Test func followMerge_DetailNotFollowed_OpensTheSurvivorAfresh() {
+        sut.setWide(true)
+        sut.show("Castile")
+        sut.path.append("Purchase")
+        let first = sut.detailID
+
+        sut.followMerge(to: "Castile (survivor)", isHidden: false, detailFollowed: false)
+
+        #expect(sut.selection == "Castile (survivor)")
+        #expect(sut.path.isEmpty)
+        #expect(sut.detailID != first)
+    }
+
+    @Test func followMerge_DetailNotFollowedNarrow_PushesTheSurvivorAlone() {
+        sut.show("Castile")
+        sut.path.append("Purchase")
+
+        sut.followMerge(to: "Castile (survivor)", isHidden: false, detailFollowed: false)
+
+        #expect(sut.selection == "Castile (survivor)")
+        #expect(sut.path.count == 1)
+    }
+
+    @Test(arguments: [true, false])
+    func followMerge_HiddenSurvivor_ClosesTheDetail(detailFollowed: Bool) {
         sut.setWide(true)
         sut.show("Castile")
         sut.path.append("Purchase")
 
-        sut.followMerge(to: "Castile (survivor)", isHidden: true)
+        sut.followMerge(to: "Castile (survivor)", isHidden: true, detailFollowed: detailFollowed)
 
         #expect(sut.selection == nil)
         #expect(sut.path.isEmpty)

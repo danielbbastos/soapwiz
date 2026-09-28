@@ -53,11 +53,19 @@ final class ListDetailNavigation<Item: Hashable> {
     /// open item. A hidden survivor closes the detail instead, as hiding any
     /// open row does: the merge keeps a copy hidden on another device hidden,
     /// and since the set of hidden rows doesn't change, nothing else notices.
-    func followMerge(to survivor: Item, isHidden: Bool) {
+    ///
+    /// `detailFollowed` says whether the open detail has already moved to the
+    /// survivor itself, which it does for a merge run on this device. Then the
+    /// detail is kept, with any sheet it has up. A merge run on another device
+    /// arrives as a plain delete that the detail never hears about, so the
+    /// survivor opens afresh rather than leave the detail on the deleted row.
+    func followMerge(to survivor: Item, isHidden: Bool, detailFollowed: Bool) {
         if isHidden {
             reset()
-        } else {
+        } else if detailFollowed {
             replaceSelection(with: survivor)
+        } else {
+            show(survivor)
         }
     }
 
