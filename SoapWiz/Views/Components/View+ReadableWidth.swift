@@ -6,15 +6,24 @@ import SwiftUI
 enum ReadableWidth {
     static let maximum: CGFloat = 700
 
+    /// The margin an inset-grouped list keeps on its own on iPad. The cap only
+    /// takes over once it would leave more than this, so content never gets
+    /// wider, nor closer to the edge, as a window grows past `maximum`: just
+    /// over 700 pt, centring alone would leave a margin of a point or two.
+    static let systemMargin: CGFloat = 20
+
     /// The horizontal margin that centres content of `maximum` width in
-    /// `width`, or `nil` (the system's own margin) when it already fits, as on
-    /// every iPhone, in a sheet and in the list column beside a detail.
+    /// `width`, or `nil` (the system's own margin) while that margin would be
+    /// no wider than `systemMargin`, as on every iPhone, in a sheet and in the
+    /// list column beside a detail. At the switch, 740 pt, both give content
+    /// exactly `maximum` wide.
     ///
     /// `inset` is padding the content already has of its own, taken off the
     /// margin so that content still lines up with the capped rows around it.
     static func margin(for width: CGFloat, inset: CGFloat = 0) -> CGFloat? {
-        guard width > maximum else { return nil }
-        return max((width - maximum) / 2 - inset, 0)
+        let centred = (width - maximum) / 2
+        guard centred > systemMargin else { return nil }
+        return centred - inset
     }
 }
 
@@ -26,10 +35,11 @@ extension View {
     /// Measured on the screen itself rather than set once for the whole app, so
     /// a screen in a narrower container, like a sheet, is left alone.
     ///
-    /// Apply it directly to the `List`, `Form` or `ScrollView`, before any
-    /// `.sheet`. The margin reaches every scroll view inside what it modifies,
-    /// and a sheet declared inside would inherit a margin sized for the window
-    /// behind it.
+    /// The margin reaches every scroll view inside what it modifies. Sheets
+    /// don't inherit it: one declared inside a capped list (Add Size in a
+    /// recipe's cost breakdown) keeps its own margins on iPadOS 26. Apply it
+    /// directly to the `List`, `Form` or `ScrollView` all the same, before any
+    /// `.sheet`, so that doesn't have to hold.
     func readableWidth(inset: CGFloat = 0) -> some View {
         modifier(ReadableWidthModifier(inset: inset))
     }
