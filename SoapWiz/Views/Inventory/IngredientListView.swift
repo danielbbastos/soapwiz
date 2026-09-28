@@ -79,6 +79,26 @@ struct IngredientListView: View {
         }
     }
 
+    /// Handles the open ingredient's row leaving the store without passing
+    /// through this list. When a duplicate merge deleted it, the selection
+    /// follows the surviving copy, which the open detail has already moved to
+    /// itself; otherwise it was deleted outright, on another device, and the
+    /// detail closes rather than go on reading a deleted model.
+    ///
+    /// Unlike the other tabs, this can't just prune rows missing from the list:
+    /// a merge removes the open row too, and closing the detail then would
+    /// throw away whatever the user had open over it.
+    private func followRemovedSelection() {
+        guard let selection = navigation.selection,
+              selection.modelContext == nil || selection.isDeleted else { return }
+        if let live = LiveIngredient.resolve(selection, slug: selectedSlug, in: modelContext),
+           live !== selection, !live.isDeleted {
+            navigation.followMerge(to: live, isHidden: live.isHidden)
+        } else {
+            navigation.reset()
+        }
+    }
+
     private func detail(_ ingredient: Ingredient) -> some View {
         IngredientDetailView(
             ingredient: ingredient,
@@ -205,23 +225,20 @@ struct IngredientListView: View {
             }
         } detail: { detail($0) }
         // A hidden row has left the list, and its detail staying open beside
-        // the list would outlive it. Deletions aren't pruned here: the ones made
-        // in this list close the detail first, and a row `DuplicateMerger`
-        // deletes is one the open detail re-points at the surviving copy.
+        // the list would outlive it.
         .onChange(of: ingredients.filter(\.isHidden)) { _, hidden in
             navigation.close(ifShowingAnyOf: hidden)
         }
         .onChange(of: navigation.selection) { _, selection in
             selectedSlug = selection?.librarySlug ?? ""
         }
-        // The open detail follows a merge onto the surviving row by itself; the
-        // selection follows it here, so the next width change rebuilds the
-        // detail from a live row and deleting or hiding that row closes it.
+        // Deletions made in this list close the detail before they happen.
+        // These catch the rest: a merge, and a delete synced from another device.
+        .onChange(of: ingredients) {
+            followRemovedSelection()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
-            guard let selection = navigation.selection, selection.modelContext == nil,
-                  let live = LiveIngredient.resolve(selection, slug: selectedSlug, in: modelContext)
-            else { return }
-            navigation.followMerge(to: live, isHidden: live.isHidden)
+            followRemovedSelection()
         }
         .alert(model.removalConfirmationTitle, isPresented: Binding(
             get: { model.isConfirmingRemoval },
