@@ -276,7 +276,7 @@ struct RecipeListView: View {
                 } message: {
                     Text(model.deleteConfirmationMessage)
                 }
-                .headerStrip {
+                .headerStrip(showsList: !displayed.isEmpty) {
                     if !collections.isEmpty {
                         RecipeCollectionFilterBar(collections: collections, model: model)
                     }

@@ -182,7 +182,7 @@ struct IngredientListView: View {
                 .searchable(text: $model.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ingredients")
                 // Hidden while selecting: the chips would compete with the
                 // selection the toolbar is there to act on.
-                .headerStrip {
+                .headerStrip(showsList: !displayed.isEmpty) {
                     if !visibleCategories.isEmpty && model.editMode == .inactive {
                         InventoryCategoryFilterBar(categories: visibleCategories, model: model)
                     }

@@ -51,8 +51,9 @@ extension View {
     }
 
     /// Puts `strip` (a list's filter chips) under the navigation bar.
-    func headerStrip<Strip: View>(@ViewBuilder _ strip: () -> Strip) -> some View {
-        modifier(HeaderStrip(strip: strip()))
+    /// `showsList` is false while an empty state stands in for the list.
+    func headerStrip<Strip: View>(showsList: Bool, @ViewBuilder _ strip: () -> Strip) -> some View {
+        modifier(HeaderStrip(showsList: showsList, strip: strip()))
     }
 }
 
@@ -64,7 +65,12 @@ extension View {
 /// screen to the strip's bottom edge, and the navigation bar's own background
 /// is hidden so the two don't stack with a seam between them. The strip is laid
 /// out even when it has nothing to show, to carry that material under the bar.
+///
+/// Only the list reports its scrolling. An empty state that replaces it
+/// reports nothing, so the scrolled state is dropped whenever the list comes
+/// or goes: a list that returns starts at the top.
 private struct HeaderStrip<Strip: View>: ViewModifier {
+    let showsList: Bool
     let strip: Strip
 
     @State private var isScrolled = false
@@ -75,6 +81,9 @@ private struct HeaderStrip<Strip: View>: ViewModifier {
                 geometry.contentOffset.y + geometry.contentInsets.top > 0
             } action: { _, scrolled in
                 isScrolled = scrolled
+            }
+            .onChange(of: showsList) {
+                isScrolled = false
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 if #available(iOS 26, *) {
