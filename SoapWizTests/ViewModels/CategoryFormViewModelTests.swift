@@ -90,12 +90,36 @@ struct CategoryFormViewModelTests {
     @Test func saveUpdatesExistingCategory() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let existing = IngredientCategory(name: "Oils")
+        let existing = IngredientCategory(name: "Clays")
         ctx.insert(existing)
         let model = CategoryFormViewModel(category: existing)
-        model.name = "Carrier Oils"
+        model.name = "Cosmetic Clays"
         model.save(context: ctx)
-        #expect(existing.name == "Carrier Oils")
+        #expect(existing.name == "Cosmetic Clays")
+    }
+
+    @Test func save_EditingOthers_Renames() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = IngredientCategory(name: IngredientCategory.Name.others)
+        ctx.insert(existing)
+        let model = CategoryFormViewModel(category: existing)
+        model.name = "Miscellaneous"
+        model.save(context: ctx)
+        #expect(existing.name == "Miscellaneous")
+    }
+
+    @Test(arguments: IngredientCategory.Name.all.filter { $0 != IngredientCategory.Name.others })
+    func save_EditingLockedBuiltIn_KeepsName(name: String) throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = IngredientCategory(name: name)
+        ctx.insert(existing)
+        let model = CategoryFormViewModel(category: existing)
+        model.name = "Renamed"
+        let saved = model.save(context: ctx)
+        #expect(saved === existing)
+        #expect(existing.name == name)
     }
 
     @Test func save_NewCategory_ReturnsInsertedCategory() throws {
@@ -110,10 +134,10 @@ struct CategoryFormViewModelTests {
     @Test func save_EditingCategory_ReturnsSameCategory() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let existing = IngredientCategory(name: "Oils")
+        let existing = IngredientCategory(name: "Clays")
         ctx.insert(existing)
         let model = CategoryFormViewModel(category: existing)
-        model.name = "Carrier Oils"
+        model.name = "Cosmetic Clays"
         let saved = model.save(context: ctx)
         #expect(saved === existing)
     }

@@ -90,6 +90,31 @@ struct CategoryTests {
         #expect(IngredientCategory(name: IngredientCategory.Name.others).ingredientRole == .additive)
     }
 
+    // MARK: - Built-in protection
+
+    @Test(arguments: IngredientCategory.Name.all)
+    func isBuiltIn_DefaultCategory_IsTrue(name: String) {
+        #expect(IngredientCategory(name: name).isBuiltIn)
+    }
+
+    @Test(arguments: ["Clays", "oils", "Oils ", ""])
+    func isBuiltIn_CustomOrNearMissName_IsFalse(name: String) {
+        #expect(!IngredientCategory(name: name).isBuiltIn)
+    }
+
+    @Test(arguments: IngredientCategory.Name.all.filter { $0 != IngredientCategory.Name.others })
+    func isRenamable_LockedBuiltIn_IsFalse(name: String) {
+        #expect(!IngredientCategory(name: name).isRenamable)
+    }
+
+    @Test func isRenamable_Others_IsTrue() {
+        #expect(IngredientCategory(name: IngredientCategory.Name.others).isRenamable)
+    }
+
+    @Test func isRenamable_Custom_IsTrue() {
+        #expect(IngredientCategory(name: "Clays").isRenamable)
+    }
+
     @Test func deletingCategoryNullifiesIngredientCategory() throws {
         let container = try makeContainer()
         let context = container.mainContext
