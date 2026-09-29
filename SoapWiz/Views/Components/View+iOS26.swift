@@ -18,6 +18,16 @@ struct GlassEffectContainerIOS26<Content: View>: View {
     }
 }
 
+@available(iOS 26, *)
+extension Glass {
+    /// The add buttons' yellow glass. `FABTint` carries its own opacity per
+    /// appearance: light mode's darker accent needs less of it to let the list
+    /// show through.
+    static var floatingActionButton: Glass {
+        .clear.tint(Color.fabTint).interactive()
+    }
+}
+
 extension View {
     @ViewBuilder
     func glassEffectIOS26<S: Shape>(in shape: S) -> some View {

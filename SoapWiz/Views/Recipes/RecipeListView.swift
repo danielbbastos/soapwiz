@@ -344,7 +344,8 @@ struct RecipeListView: View {
                             FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") {
                                 importRequest = .manual
                             }
-                        ]
+                        ],
+                        besideTabBar: navigation.fabBesideTabBar
                     )
                 }
             }

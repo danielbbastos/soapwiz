@@ -13,6 +13,21 @@ enum ListDetailLayout {
     static func isWide(width: CGFloat) -> Bool {
         width >= minimumWideWidth
     }
+
+    /// Height of the floating tab bar's centre line above the bottom of the
+    /// screen, measured on iPadOS 26 (15 pt margin, 62 pt bar). A list's add
+    /// button beside the tab bar is centred on it.
+    static let tabBarCentreLine: CGFloat = 46
+
+    /// From this width the tab bar, centred in the window, clears the list
+    /// column's add button, which can then drop to the tab bar's line instead
+    /// of floating above it. Narrower wide windows would put the two on top of
+    /// each other.
+    static let minimumFABBesideTabBarWidth: CGFloat = 1_100
+
+    static func fabSitsBesideTabBar(width: CGFloat) -> Bool {
+        width >= minimumFABBesideTabBarWidth
+    }
 }
 
 /// One tab's navigation, in either layout. Narrow, the selected item is the
@@ -30,6 +45,8 @@ final class ListDetailNavigation<Item: Hashable> {
     var path = NavigationPath()
     private(set) var selection: Item?
     private(set) var isWide = false
+    /// Whether the list's add button sits beside the tab bar rather than above it.
+    var fabBesideTabBar = false
 
     /// The identity of the detail beside the list. It changes only when a
     /// different item opens, so re-pointing the selection at the same item's
