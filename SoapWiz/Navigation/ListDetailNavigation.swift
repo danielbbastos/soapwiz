@@ -25,8 +25,11 @@ enum ListDetailLayout {
     /// each other.
     static let minimumFABBesideTabBarWidth: CGFloat = 1_100
 
+    /// Never before iOS 26: the compact tab bar there spans the whole width,
+    /// list column included, so the add button stays above it.
     static func fabSitsBesideTabBar(width: CGFloat) -> Bool {
-        width >= minimumFABBesideTabBarWidth
+        guard #available(iOS 26, *) else { return false }
+        return width >= minimumFABBesideTabBarWidth
     }
 }
 
