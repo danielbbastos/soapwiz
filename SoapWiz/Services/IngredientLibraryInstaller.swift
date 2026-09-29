@@ -73,8 +73,9 @@ enum IngredientLibraryInstaller {
     }
 
     /// Existing categories keyed by lookup key. A store with none at all — a
-    /// fresh install — starts with every default category. After that, deleting
-    /// or renaming one is the user's decision, and this pass never undoes it.
+    /// fresh install — starts with every default category. After that, a missing
+    /// one (a renamed Others, or a category deleted before the built-ins were
+    /// locked) only comes back when a library ingredient needs it.
     private static func categoryIndex(
         in context: ModelContext,
         changes: inout Int
