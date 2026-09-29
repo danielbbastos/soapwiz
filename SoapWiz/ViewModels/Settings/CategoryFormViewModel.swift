@@ -30,7 +30,9 @@ final class CategoryFormViewModel {
     @discardableResult
     func save(context: ModelContext) -> IngredientCategory {
         if let category {
-            category.name = trimmedName
+            if category.isRenamable {
+                category.name = trimmedName
+            }
             return category
         }
         let newCategory = IngredientCategory(name: trimmedName)

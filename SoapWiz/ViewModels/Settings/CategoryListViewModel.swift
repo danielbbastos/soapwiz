@@ -11,6 +11,7 @@ final class CategoryListViewModel {
     func delete(at offsets: IndexSet, in categories: [IngredientCategory], context: ModelContext) {
         for index in offsets {
             let category = categories[index]
+            guard !category.isBuiltIn else { continue }
             if category.ingredients.isEmpty {
                 context.delete(category)
             } else {

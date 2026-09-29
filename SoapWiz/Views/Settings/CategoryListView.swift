@@ -19,22 +19,25 @@ struct CategoryListView: View {
                     )
                 } else {
                     List {
-                        ForEach(categories) { category in
-                            Button {
-                                model.categoryToEdit = category
-                            } label: {
-                                HStack {
-                                    Text(category.name)
-                                        .foregroundStyle(.primary)
-                                    Spacer()
-                                    Text("\(category.ingredients.count)")
-                                        .foregroundStyle(.secondary)
-                                        .font(.subheadline)
+                        Section {
+                            ForEach(categories) { category in
+                                if category.isRenamable {
+                                    Button {
+                                        model.categoryToEdit = category
+                                    } label: {
+                                        row(for: category)
+                                    }
+                                    .deleteDisabled(category.isBuiltIn)
+                                } else {
+                                    row(for: category)
+                                        .deleteDisabled(true)
                                 }
                             }
+                            .onDelete { model.delete(at: $0, in: categories, context: modelContext) }
+                            .listRowBackground(Color.cardBackground)
+                        } footer: {
+                            Text("Built-in categories can't be deleted, and only Others can be renamed.")
                         }
-                        .onDelete { model.delete(at: $0, in: categories, context: modelContext) }
-                        .listRowBackground(Color.cardBackground)
                     }
                 }
             }
@@ -67,6 +70,23 @@ struct CategoryListView: View {
             let count = category.ingredients.count
             Text("\"\(category.name)\" is assigned to \(count) ingredient\(count == 1 ? "" : "s"). "
                  + "Remove the category from those ingredients first.")
+        }
+    }
+
+    private func row(for category: IngredientCategory) -> some View {
+        HStack {
+            Text(category.name)
+                .foregroundStyle(.primary)
+            if category.isBuiltIn {
+                Image(systemName: "lock.fill")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Built-in")
+            }
+            Spacer()
+            Text("\(category.ingredients.count)")
+                .foregroundStyle(.secondary)
+                .font(.subheadline)
         }
     }
 }

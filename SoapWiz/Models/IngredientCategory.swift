@@ -45,6 +45,13 @@ final class IngredientCategory {
 
     var showsSapValue: Bool { ingredientRole == .oil }
 
+    /// One of the categories a fresh install starts with. They can't be deleted,
+    /// and only Others can be renamed: the rest are looked up by name to decide
+    /// how their ingredients behave in recipes, so a rename would change that.
+    var isBuiltIn: Bool { Name.all.contains(name) }
+
+    var isRenamable: Bool { !isBuiltIn || name == Name.others }
+
     init(name: String) {
         self.name = name
     }

@@ -16,9 +16,9 @@ struct ListViewModelTests {
     @Test func categoryDeleteBlockedWhenIngredientsAssigned() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let category = IngredientCategory(name: "Oils")
+        let category = IngredientCategory(name: "Clays")
         ctx.insert(category)
-        let ingredient = Ingredient(name: "Olive Oil", category: category)
+        let ingredient = Ingredient(name: "Kaolin", category: category)
         ctx.insert(ingredient)
         try ctx.save()
 
@@ -33,7 +33,7 @@ struct ListViewModelTests {
     @Test func categoryDeleteSucceedsWhenEmpty() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
-        let category = IngredientCategory(name: "Oils")
+        let category = IngredientCategory(name: "Clays")
         ctx.insert(category)
         try ctx.save()
 
@@ -44,6 +44,40 @@ struct ListViewModelTests {
 
         let remaining = try ctx.fetch(FetchDescriptor<IngredientCategory>())
         #expect(remaining.isEmpty)
+    }
+
+    @Test(arguments: IngredientCategory.Name.all)
+    func categoryDelete_EmptyBuiltIn_IsKept(name: String) throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let category = IngredientCategory(name: name)
+        ctx.insert(category)
+        try ctx.save()
+
+        let model = CategoryListViewModel()
+        model.delete(at: IndexSet(integer: 0), in: [category], context: ctx)
+        try ctx.save()
+        #expect(model.deleteBlockedCategory == nil)
+
+        let remaining = try ctx.fetch(FetchDescriptor<IngredientCategory>())
+        #expect(remaining.count == 1)
+    }
+
+    @Test func categoryDelete_MixedSelection_DeletesOnlyCustom() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let builtIn = IngredientCategory(name: IngredientCategory.Name.waxes)
+        let custom = IngredientCategory(name: "Clays")
+        ctx.insert(builtIn)
+        ctx.insert(custom)
+        try ctx.save()
+
+        let model = CategoryListViewModel()
+        model.delete(at: IndexSet([0, 1]), in: [builtIn, custom], context: ctx)
+        try ctx.save()
+
+        let remaining = try ctx.fetch(FetchDescriptor<IngredientCategory>())
+        #expect(remaining.map(\.name) == [IngredientCategory.Name.waxes])
     }
 
     @Test func storageLocationDeleteBlockedWhenPurchasesAssigned() throws {
