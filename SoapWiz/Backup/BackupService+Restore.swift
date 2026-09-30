@@ -212,7 +212,7 @@ extension BackupService {
             context.insert(item)
         }
 
-        for entryDTO in dto.logEntries {
+        for entryDTO in dto.logEntries ?? [] {
             let entry = BatchLogEntry(date: entryDTO.date, text: entryDTO.text)
             context.insert(entry)
             entry.batch = batch

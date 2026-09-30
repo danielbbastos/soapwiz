@@ -60,6 +60,25 @@ struct BackupBatchLogTests: BackupTestHelpers {
         #expect(try ctx.fetch(FetchDescriptor<BatchLogEntry>()).isEmpty)
     }
 
+    /// A file written before batch logs existed is version 2 and has no
+    /// `logEntries` key at all. It must still import, with its batches, rather
+    /// than being rejected as unreadable.
+    @Test func restore_Version2BackupWithoutLogs_RestoresItsBatches() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedFullGraph(ctx)
+        let data = try BackupService.encode(try BackupService.makeBackup(from: ctx))
+
+        let decoded = try BackupService.decode(try asVersion2(data))
+        try BackupService.restore(decoded, into: ctx)
+
+        #expect(decoded.batches.first?.logEntries == nil)
+        let batch = try seededBatch(ctx)
+        #expect(batch.recipeName == "Castile")
+        #expect(batch.lineItems.count == 1)
+        #expect(batch.logEntries.isEmpty)
+    }
+
     /// Sync can leave an entry or a photo without its parent, and no cascade
     /// reaches those. A restore replaces everything, so they go too.
     @Test func restore_LogRowsWithoutAParent_AreWiped() async throws {
@@ -100,7 +119,7 @@ struct BackupBatchLogTests: BackupTestHelpers {
 
         #expect(backup.ingredients.first?.imageData != nil)
         #expect(backup.recipes.first?.imageData != nil)
-        #expect(backup.batches.first?.logEntries.first?.photos.count == 1)
+        #expect(backup.batches.first?.logEntries?.first?.photos.count == 1)
     }
 
     @Test func makeBackup_WithoutPhotos_LeavesOutIngredientRecipeAndLogPhotos() async throws {
@@ -112,7 +131,7 @@ struct BackupBatchLogTests: BackupTestHelpers {
 
         #expect(backup.ingredients.first?.imageData == nil)
         #expect(backup.recipes.first?.imageData == nil)
-        #expect(backup.batches.first?.logEntries.first?.photos.isEmpty == true)
+        #expect(backup.batches.first?.logEntries?.first?.photos.isEmpty == true)
     }
 
     @Test func makeBackup_WithoutPhotos_KeepsEverythingElse() async throws {
@@ -124,7 +143,7 @@ struct BackupBatchLogTests: BackupTestHelpers {
 
         #expect(backup.ingredients.first?.name == "Olive Oil")
         #expect(backup.recipes.first?.name == "Castile")
-        #expect(backup.batches.first?.logEntries.map(\.text) == ["Cut"])
+        #expect(backup.batches.first?.logEntries?.map(\.text) == ["Cut"])
     }
 
     /// An entry that was only photos has nothing left without them; it is left
@@ -142,8 +161,8 @@ struct BackupBatchLogTests: BackupTestHelpers {
         let without = try BackupService.makeBackup(from: ctx, includingPhotos: false)
         let with = try BackupService.makeBackup(from: ctx)
 
-        #expect(without.batches.first?.logEntries.map(\.text) == ["Cut"])
-        #expect(with.batches.first?.logEntries.map(\.text) == ["Cut", ""])
+        #expect(without.batches.first?.logEntries?.map(\.text) == ["Cut"])
+        #expect(with.batches.first?.logEntries?.map(\.text) == ["Cut", ""])
     }
 
     @Test func restore_BackupMadeWithoutPhotos_RestoresWithNoPhotosOrThumbnails() async throws {
@@ -184,7 +203,7 @@ struct BackupBatchLogTests: BackupTestHelpers {
         let written = try BackupService.decode(try Data(contentsOf: file.url))
         #expect(written.ingredients.first?.imageData == nil)
         #expect(written.recipes.first?.imageData == nil)
-        #expect(written.batches.first?.logEntries.first?.photos.isEmpty == true)
+        #expect(written.batches.first?.logEntries?.first?.photos.isEmpty == true)
     }
 
     @Test func export_IncludesPhotosOn_WritesAFileWithPhotos() async throws {
@@ -200,13 +219,27 @@ struct BackupBatchLogTests: BackupTestHelpers {
         let written = try BackupService.decode(try Data(contentsOf: file.url))
         #expect(written.ingredients.first?.imageData != nil)
         #expect(written.recipes.first?.imageData != nil)
-        #expect(written.batches.first?.logEntries.first?.photos.count == 1)
+        #expect(written.batches.first?.logEntries?.first?.photos.count == 1)
     }
 
     // MARK: - Helpers
 
     private func seededBatch(_ ctx: ModelContext) throws -> Batch {
         try #require(try ctx.fetch(FetchDescriptor<Batch>()).first)
+    }
+
+    /// Rewrites an exported file as a version-2 backup: the version number
+    /// lowered and each batch's `logEntries` key removed rather than nulled.
+    private func asVersion2(_ data: Data) throws -> Data {
+        let object = try JSONSerialization.jsonObject(with: data)
+        var json = try #require(object as? [String: Any])
+        json["version"] = 2
+        json["batches"] = try #require(json["batches"] as? [[String: Any]]).map { batch in
+            var batch = batch
+            batch.removeValue(forKey: "logEntries")
+            return batch
+        }
+        return try JSONSerialization.data(withJSONObject: json)
     }
 
     /// The full graph, with a photo on the ingredient, on the recipe, and on

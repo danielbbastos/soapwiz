@@ -217,8 +217,10 @@ extension BackupData {
         /// restores as tracked, the only kind of batch those builds could make.
         var tracksInventory: Bool?
         var lineItems: [BatchLineItemDTO]
-        /// Oldest first, the order the log displays.
-        var logEntries: [BatchLogEntryDTO]
+        /// Oldest first, the order the log displays. Optional so a backup
+        /// written before SW-192 still decodes; `nil` restores the batch
+        /// without a log, as it was exported.
+        var logEntries: [BatchLogEntryDTO]?
     }
 
     struct BatchLogEntryDTO: Codable {
