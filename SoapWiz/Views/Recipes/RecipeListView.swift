@@ -276,9 +276,7 @@ struct RecipeListView: View {
                 } message: {
                     Text(model.deleteConfirmationMessage)
                 }
-                // No background of its own, so the list keeps scrolling under
-                // the navigation bar's material rather than under a flat band.
-                .safeAreaInset(edge: .top, spacing: 0) {
+                .headerStrip(showsList: !displayed.isEmpty) {
                     if !collections.isEmpty {
                         RecipeCollectionFilterBar(collections: collections, model: model)
                     }

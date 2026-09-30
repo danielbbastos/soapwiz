@@ -180,11 +180,9 @@ struct IngredientListView: View {
                 .warmBackground()
                 .navigationDestination(for: Ingredient.self) { detail($0) }
                 .searchable(text: $model.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ingredients")
-                // No background of its own, so the list keeps scrolling under
-                // the navigation bar's material rather than under a flat band.
                 // Hidden while selecting: the chips would compete with the
                 // selection the toolbar is there to act on.
-                .safeAreaInset(edge: .top, spacing: 0) {
+                .headerStrip(showsList: !displayed.isEmpty) {
                     if !visibleCategories.isEmpty && model.editMode == .inactive {
                         InventoryCategoryFilterBar(categories: visibleCategories, model: model)
                     }
