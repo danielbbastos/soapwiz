@@ -14,12 +14,16 @@ final class DataTransferViewModel {
     var isImporterPresented = false
     /// User-facing error message for the export and file-reading steps.
     var errorMessage: String?
+    /// Whether the next export carries recipe, ingredient and batch log photos.
+    /// On unless the user turns it off, and not remembered between launches: a
+    /// backup that silently stopped including photos is the worse surprise.
+    var includesPhotos = true
 
     // MARK: - Export
 
     func export(from context: ModelContext) {
         do {
-            let backup = try BackupService.makeBackup(from: context)
+            let backup = try BackupService.makeBackup(from: context, includingPhotos: includesPhotos)
             let data = try BackupService.encode(backup)
             let url = FileManager.default.temporaryDirectory
                 .appendingPathComponent(Self.fileName(for: backup.exportedAt))

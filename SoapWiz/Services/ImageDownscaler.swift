@@ -65,6 +65,14 @@ enum ImageDownscaler {
         UIImage(data: data).flatMap(thumbnail)
     }
 
+    /// `thumbnail(from:)` off the main actor, for a caller that has just made a
+    /// display image with `hero` and would otherwise decode it again on the
+    /// main thread — once per photo, for a picker that hands over several.
+    @concurrent
+    static func thumbnailInBackground(from data: Data) async -> Data? {
+        thumbnail(from: data)
+    }
+
     /// Redraws the image at the target size and encodes the result as JPEG.
     ///
     /// Redrawing rather than re-encoding the existing pixels is what normalises

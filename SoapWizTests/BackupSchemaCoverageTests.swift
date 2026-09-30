@@ -15,8 +15,13 @@ struct BackupSchemaCoverageTests {
     /// (a relationship becomes an index, owned children are nested).
     private static let backedUp: [String: Set<String>] = [
         "AppSettings": ["pvpFactor", "expiryNotificationsEnabled", "tracksInventory", "currencyCode"],
-        "Batch": ["recipe", "code", "recipeName", "dateCreated", "batchCount", "totalCost", "tracksInventory", "lineItemsStorage"],
+        "Batch": [
+            "recipe", "code", "recipeName", "dateCreated", "batchCount", "totalCost", "tracksInventory",
+            "lineItemsStorage", "logEntriesStorage"
+        ],
         "BatchLineItem": ["ingredient", "ingredientName", "amountConsumed", "unit", "cost", "draws"],
+        "BatchLogEntry": ["date", "text", "photosStorage"],
+        "BatchLogPhoto": ["imageData", "position"],
         "Ingredient": [
             "name", "code", "category", "unit", "isFavorite", "uuid", "librarySlug", "hasCustomChemistry",
             "isHidden", "imageData", "avatarColorName", "lowStockThreshold", "sapValue", "kohSapValue",
@@ -47,6 +52,11 @@ struct BackupSchemaCoverageTests {
         "AppSettings": ["uuid": "a singleton; restore resolves a fresh row"],
         "Batch": [:],
         "BatchLineItem": ["batch": "the inverse of nesting under the batch"],
+        "BatchLogEntry": ["batch": "the inverse of nesting under the batch"],
+        "BatchLogPhoto": [
+            "entry": "the inverse of nesting under the entry",
+            "thumbnailData": "rebuilt from imageData on restore"
+        ],
         "Ingredient": [
             "thumbnailData": "rebuilt from imageData on restore",
             "recipeIngredientsStorage": "inverse, rebuilt from the recipe side",
