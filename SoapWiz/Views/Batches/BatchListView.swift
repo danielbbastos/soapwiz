@@ -1,16 +1,17 @@
 import SwiftUI
 import SwiftData
 
-/// History tab: every batch ever produced, newest first. Read-only — batches
-/// are created from a recipe's detail screen, not from here.
+/// History tab: every batch ever produced, newest first under a header for the
+/// month it was made in. Read-only — batches are created from a recipe's detail
+/// screen, not from here.
 struct BatchListView: View {
     @Query private var batches: [Batch]
     @Environment(AppNavigation.self) private var navigation
 
     @State private var searchText = ""
 
-    private var displayedBatches: [Batch] {
-        BatchHistoryViewModel.sortedNewestFirst(
+    private var displayedSections: [BatchMonthSection] {
+        BatchHistoryViewModel.monthSections(
             BatchHistoryViewModel.filtered(batches, matching: searchText)
         )
     }
@@ -30,8 +31,8 @@ struct BatchListView: View {
     }
 
     var body: some View {
-        // Filtered and sorted once per pass; several places below need it.
-        let displayed = displayedBatches
+        // Filtered and grouped once per pass; several places below need it.
+        let displayed = displayedSections
         ListDetailContainer(
             navigation: navigation.history,
             placeholder: "Select a Batch",
@@ -49,7 +50,11 @@ struct BatchListView: View {
                     ContentUnavailableView.search(text: searchText)
                 } else {
                     List {
-                        ForEach(displayed) { row($0) }
+                        ForEach(displayed) { section in
+                            Section(section.title) {
+                                ForEach(section.batches) { row($0) }
+                            }
+                        }
                     }
                 }
             }
