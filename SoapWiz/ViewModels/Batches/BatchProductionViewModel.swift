@@ -1,3 +1,4 @@
+import OSLog
 import SwiftUI
 import SwiftData
 
@@ -24,6 +25,8 @@ struct BatchRequirement: Identifiable {
 @Observable
 @MainActor
 final class BatchProductionViewModel {
+    private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "batch")
+
     var batchCount: Int = 1
 
     /// The code the batch will be labelled with. Starts as `suggestedCode` and
@@ -163,17 +166,25 @@ final class BatchProductionViewModel {
     }
 
     /// Deducts inventory FIFO and persists an immutable `Batch` snapshot. Returns
-    /// `nil` without mutating anything when stock is insufficient or the code
-    /// typed belongs to another batch — both are checked before any purchase
-    /// is touched.
+    /// `nil` without mutating anything when stock is insufficient, when the
+    /// code typed belongs to another batch, or when the existing batches can't
+    /// be read to check — all before any purchase is touched.
     @discardableResult
     func create(context: ModelContext, date: Date = .now) -> Batch? {
         let reqs = requirements
         guard !reqs.isEmpty, shortages(in: reqs).isEmpty else { return nil }
 
         // Read before the batch is inserted, so these are only the batches its
-        // code could clash with — including one this model made earlier.
-        let existing = (try? context.fetch(FetchDescriptor<Batch>())) ?? []
+        // code could clash with — including one this model made earlier. A
+        // failed read must not pass for "no batches": the code would go
+        // unchecked, and a generated one would start again at 01.
+        let existing: [Batch]
+        do {
+            existing = try context.fetch(FetchDescriptor<Batch>())
+        } catch {
+            Self.log.error("Couldn't read the existing batches, so none was created: \(error, privacy: .public)")
+            return nil
+        }
         guard !BatchCodeGenerator.isTaken(code, among: existing) else { return nil }
 
         let batch = Batch(
