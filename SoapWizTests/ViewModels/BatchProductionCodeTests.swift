@@ -234,6 +234,59 @@ struct BatchProductionCodeTests: BatchProductionTestHelpers {
         #expect(BatchCodeGenerator.isTaken(second.code, among: [first, second], excluding: second) == false)
     }
 
+    // MARK: - After creating
+
+    /// The sheet is still on screen while it closes, with the new batch already
+    /// in the store under the code the field shows.
+    @Test func codeIsTaken_AfterCreating_DoesNotCountTheBatchJustMade() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModel(ctx)
+        model.code = "2026/14"
+
+        let batch = try #require(model.create(context: ctx))
+
+        #expect(model.codeIsTaken(among: [batch]) == false)
+    }
+
+    @Test func codeIsTaken_AfterCreating_StillCountsOtherBatches() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModel(ctx)
+        model.code = "2026/14"
+        let batch = try #require(model.create(context: ctx))
+        let other = Batch.mock(code: "2026/14")
+
+        #expect(model.codeIsTaken(among: [batch, other]))
+    }
+
+    @Test func suggestCode_AfterCreating_LeavesTheCodeAlone() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModel(ctx)
+        let now = Date.now
+        model.suggestCode(existingCodes: [], date: now)
+        let batch = try #require(model.create(context: ctx, date: now))
+
+        model.suggestCode(existingCodes: [batch.code], date: now)
+
+        #expect(model.code == batch.code)
+        #expect(model.suggestedCode == batch.code)
+    }
+
+    /// Not counting the batch just made is for the closing sheet only — it
+    /// must not let the same model make a second batch under that code.
+    @Test func create_AgainWithTheSameTypedCode_CreatesNothing() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeModel(ctx)
+        model.code = "2026/14"
+        _ = try #require(model.create(context: ctx))
+
+        #expect(model.create(context: ctx) == nil)
+        #expect(try ctx.fetch(FetchDescriptor<Batch>()).count == 1)
+    }
+
     @Test func create_InsufficientStock_CreatesNoBatchAndNoCode() throws {
         let (container, ctx) = try makeContext()
         _ = container

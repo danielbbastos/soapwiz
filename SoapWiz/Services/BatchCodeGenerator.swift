@@ -22,6 +22,10 @@ enum BatchCodeGenerator {
 
     private static let dateStampLength = 6
 
+    /// A tail longer than this isn't a sequence anyone counted up to — it is
+    /// something typed by hand — and counting on from it could overflow.
+    private static let maxSequenceDigits = 9
+
     /// The code as it is stored and shown: what was typed, without the stray
     /// space a keyboard leaves at either end.
     static func trimmed(_ code: String) -> String {
@@ -82,13 +86,13 @@ enum BatchCodeGenerator {
     }
 
     /// The sequence number `code` holds under `stem`, or `nil` when it belongs
-    /// to another stem or its tail isn't a number.
+    /// to another stem or its tail isn't a number a sequence could have reached.
     static func sequence(of code: String, in stem: String) -> Int? {
         let prefix = "\(normalized(stem))-"
         let code = normalized(code)
         guard code.hasPrefix(prefix) else { return nil }
         let digits = code.dropFirst(prefix.count)
-        guard isNumber(digits) else { return nil }
+        guard isNumber(digits), digits.count <= maxSequenceDigits else { return nil }
         return Int(digits)
     }
 

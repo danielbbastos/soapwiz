@@ -7,9 +7,17 @@ import SwiftData
 /// older build syncs in.
 ///
 /// Batches are coded oldest first, so a day's sequence follows the order they
-/// were made in, and two devices backfilling the same history reach the same
-/// codes without coordinating. A batch that already has a code is never
-/// touched, so a second pass writes nothing.
+/// were made in. A batch that already has a code is never touched, so a second
+/// pass writes nothing.
+///
+/// Two devices backfilling the same history reach the same codes only when
+/// they share a time zone and hold the same batches; otherwise the last one
+/// to sync wins and `BatchCodeDeduplicator` settles any clash. One case is
+/// accepted rather than solved: a device still on a build without the field
+/// drops the codes it syncs, so once it updates, an empty code here can mean
+/// "coded elsewhere" — and this pass writes a generated code over it, even
+/// over one the user typed on the other device. Nothing on this device can
+/// tell the two apart.
 @MainActor
 enum BatchCodeBackfill {
     private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "backfill")

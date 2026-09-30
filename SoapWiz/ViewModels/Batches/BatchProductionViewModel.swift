@@ -37,6 +37,12 @@ final class BatchProductionViewModel {
 
     let tracksInventory: Bool
 
+    /// The batch this model made, once it has. The sheet stays on screen while
+    /// it closes, by which time the batch is in the store carrying the very
+    /// code the field shows — it must not be mistaken for a clash, nor prompt
+    /// a fresh suggestion.
+    private var createdBatch: Batch?
+
     private let recipe: Recipe
     private let engine: RecipeFormViewModel
 
@@ -137,6 +143,7 @@ final class BatchProductionViewModel {
     /// again when the batches change, so a code that arrives by sync while the
     /// sheet is open moves the suggestion on instead of colliding with it.
     func suggestCode(existingCodes: [String], date: Date = .now) {
+        guard createdBatch == nil else { return }
         let suggestion = BatchCodeGenerator.suggestedCode(
             recipeName: recipe.name,
             date: date,
@@ -152,7 +159,7 @@ final class BatchProductionViewModel {
     /// blocks creation: two batches under one code can't be told apart on a
     /// label.
     func codeIsTaken(among batches: [Batch]) -> Bool {
-        BatchCodeGenerator.isTaken(code, among: batches)
+        BatchCodeGenerator.isTaken(code, among: batches, excluding: createdBatch)
     }
 
     /// Deducts inventory FIFO and persists an immutable `Batch` snapshot. Returns
@@ -165,9 +172,9 @@ final class BatchProductionViewModel {
         guard !reqs.isEmpty, shortages(in: reqs).isEmpty else { return nil }
 
         // Read before the batch is inserted, so these are only the batches its
-        // code could clash with.
+        // code could clash with — including one this model made earlier.
         let existing = (try? context.fetch(FetchDescriptor<Batch>())) ?? []
-        guard !codeIsTaken(among: existing) else { return nil }
+        guard !BatchCodeGenerator.isTaken(code, among: existing) else { return nil }
 
         let batch = Batch(
             recipe: recipe,
@@ -185,6 +192,7 @@ final class BatchProductionViewModel {
             total += lineItem.cost
         }
         batch.totalCost = total
+        createdBatch = batch
         return batch
     }
 

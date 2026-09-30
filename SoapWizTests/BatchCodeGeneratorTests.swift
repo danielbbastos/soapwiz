@@ -153,6 +153,25 @@ struct BatchCodeGeneratorTests {
         #expect(BatchCodeGenerator.sequence(of: "LAVX-260930-07", in: "LAV-260930") == nil)
     }
 
+    @Test func sequence_NineDigits_IsStillASequence() {
+        #expect(BatchCodeGenerator.sequence(of: "LAV-260930-123456789", in: "LAV-260930") == 123_456_789)
+    }
+
+    @Test(arguments: ["LAV-260930-1234567890", "LAV-260930-\(Int.max)", "LAV-260930-99999999999999999999999"])
+    func sequence_TailTooLongToBeCountedTo_ReturnsNil(code: String) {
+        #expect(BatchCodeGenerator.sequence(of: code, in: "LAV-260930") == nil)
+    }
+
+    /// Counting on from the largest integer would overflow and crash.
+    @Test func suggestedCode_ExistingCodeEndsInLargestInteger_IgnoresItInsteadOfOverflowing() throws {
+        let code = BatchCodeGenerator.suggestedCode(
+            recipeName: "Lavender", date: try date(2026, 9, 30),
+            existingCodes: ["LAV-260930-\(Int.max)", "LAV-260930-02"], timeZone: utc
+        )
+
+        #expect(code == "LAV-260930-03")
+    }
+
     // MARK: - Generated stem
 
     @Test func generatedStem_GeneratedCode_ReturnsStem() {
