@@ -50,7 +50,7 @@ struct BatchLogEntryFormView: View {
                         model.save(context: modelContext)
                         dismiss()
                     }
-                    .disabled(!model.isValid)
+                    .disabled(!model.canSave)
                 }
             }
         }

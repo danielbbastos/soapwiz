@@ -46,6 +46,15 @@ struct BatchLogModelTests {
         #expect(thumbnail.count < image.count)
     }
 
+    @Test func photoInit_ThumbnailGiven_KeepsItRatherThanDerivingOne() async throws {
+        let image = try await BatchLogFixture.photoData()
+        let thumbnail = Data("already made".utf8)
+
+        let photo = BatchLogPhoto(imageData: image, thumbnailData: thumbnail, position: 0)
+
+        #expect(photo.thumbnailData == thumbnail)
+    }
+
     @Test func photoInit_NilImage_HasNoThumbnail() {
         let photo = BatchLogPhoto(imageData: nil, position: 0)
 

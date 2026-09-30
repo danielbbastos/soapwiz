@@ -36,6 +36,10 @@ final class BatchLogEntryFormViewModel {
     var text: String = ""
     private(set) var photos: [BatchLogPhotoDraft] = []
 
+    /// True while picked photos are still being read and downscaled. Saving
+    /// then would store the ones already done and silently drop the rest.
+    var isLoadingPhotos = false
+
     let batch: Batch
     let entry: BatchLogEntry?
 
@@ -55,6 +59,8 @@ final class BatchLogEntryFormViewModel {
     /// A note, a photo, or both — an entry with neither records nothing.
     var isValid: Bool { !trimmedText.isEmpty || !photos.isEmpty }
 
+    var canSave: Bool { isValid && !isLoadingPhotos }
+
     var remainingPhotoSlots: Int { max(0, Self.maxPhotos - photos.count) }
     var canAddPhoto: Bool { remainingPhotoSlots > 0 }
 
@@ -70,10 +76,19 @@ final class BatchLogEntryFormViewModel {
         photos.removeAll { $0.id == draft.id }
     }
 
+    /// Writes the form onto its entry, or onto a new one on the batch.
+    ///
+    /// Another device can delete the entry while this form is open. Written to
+    /// then, the edit would land on a detached model and vanish, and any new
+    /// photo would be linked to nothing; so a deleted entry is saved as a new
+    /// one instead. `modelContext` is the only thing read off it to tell: it
+    /// is truthful once the row is gone, where `isDeleted` is not, and reading
+    /// a stored attribute off a detached model traps (see `LiveIngredient`).
+    /// Its stored photos went with it and are skipped the same way.
     @discardableResult
     func save(context: ModelContext) -> BatchLogEntry {
         let target: BatchLogEntry
-        if let entry {
+        if let entry, entry.modelContext != nil {
             target = entry
         } else {
             target = BatchLogEntry()
@@ -83,7 +98,8 @@ final class BatchLogEntryFormViewModel {
         target.date = date
         target.text = trimmedText
 
-        let keptIDs = Set(photos.compactMap { $0.stored?.persistentModelID })
+        let kept = photos.filter { $0.stored == nil || $0.stored?.modelContext != nil }
+        let keptIDs = Set(kept.compactMap { $0.stored?.persistentModelID })
         for photo in target.photos where !keptIDs.contains(photo.persistentModelID) {
             // Unlinked first: a deleted photo otherwise lingers in
             // `target.photos` until the context saves, and the log row
@@ -91,11 +107,18 @@ final class BatchLogEntryFormViewModel {
             photo.entry = nil
             context.delete(photo)
         }
-        for (position, draft) in photos.enumerated() {
+        for (position, draft) in kept.enumerated() {
             if let stored = draft.stored {
                 stored.position = position
             } else {
-                let photo = BatchLogPhoto(imageData: draft.imageData, position: position)
+                // The draft's preview is the thumbnail already: deriving it
+                // again here would redo a decode and an encode per photo on
+                // the main actor, just as the sheet closes.
+                let photo = BatchLogPhoto(
+                    imageData: draft.imageData,
+                    thumbnailData: draft.previewData,
+                    position: position
+                )
                 context.insert(photo)
                 photo.entry = target
             }

@@ -26,6 +26,7 @@ struct BatchLogSection: View {
 
     var body: some View {
         Section {
+            addRow
             ForEach(sortedEntries) { entry in
                 BatchLogEntryRow(
                     entry: entry,
@@ -34,7 +35,6 @@ struct BatchLogSection: View {
                     onOpenPhoto: { index in openPhoto(at: index, of: entry) }
                 )
             }
-            addRow
         } header: {
             Text("Log")
         } footer: {
@@ -46,7 +46,7 @@ struct BatchLogSection: View {
 
     /// The presentations hang off this row because it is the one row the
     /// section always has; a modifier on the `Section` itself would be applied
-    /// to every row in it.
+    /// to every row in it. First in the section, above the entries.
     private var addRow: some View {
         Button {
             addingEntry = true

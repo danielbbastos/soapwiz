@@ -13,7 +13,6 @@ struct BatchLogPhotosField: View {
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showingLibrary = false
     @State private var showingCamera = false
-    @State private var isLoading = false
 
     /// Set when a chosen file couldn't be turned into an image. Shown in place
     /// of the hint: otherwise nothing on screen says the pick was refused.
@@ -24,7 +23,7 @@ struct BatchLogPhotosField: View {
 
     private var hint: String {
         if let problem { return problem }
-        if isLoading { return "Loading\u{2026}" }
+        if model.isLoadingPhotos { return "Loading\u{2026}" }
         if !model.canAddPhoto { return "An entry holds up to \(BatchLogEntryFormViewModel.maxPhotos) photos" }
         return "Take one or choose from your library"
     }
@@ -110,7 +109,7 @@ struct BatchLogPhotosField: View {
             }
         }
         .tint(.primary)
-        .disabled(!model.canAddPhoto || isLoading)
+        .disabled(!model.canAddPhoto || model.isLoadingPhotos)
         .photosPicker(
             isPresented: $showingLibrary,
             selection: $pickerItems,
@@ -133,10 +132,10 @@ struct BatchLogPhotosField: View {
     /// `pickerItems` is cleared afterwards so the next visit to the library
     /// starts with nothing selected.
     private func load(_ items: [PhotosPickerItem]) async {
-        isLoading = true
+        model.isLoadingPhotos = true
         problem = nil
         defer {
-            isLoading = false
+            model.isLoadingPhotos = false
             pickerItems = []
         }
         var failures = 0
@@ -156,9 +155,9 @@ struct BatchLogPhotosField: View {
     }
 
     private func add(_ captured: UIImage) async {
-        isLoading = true
+        model.isLoadingPhotos = true
         problem = nil
-        defer { isLoading = false }
+        defer { model.isLoadingPhotos = false }
         guard let downscaled = await ImageDownscaler.hero(from: captured) else {
             problem = "Couldn't read that photo. Try another one."
             return

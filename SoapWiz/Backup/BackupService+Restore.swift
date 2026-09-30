@@ -240,8 +240,16 @@ extension BackupService {
     /// SwiftData cascade to the owned children (line items, log entries and
     /// their photos, recipe line items) the same way the app does. Purchases
     /// are deleted explicitly: nothing cascades from `Ingredient` (SW-165).
+    ///
+    /// Log entries and photos are deleted explicitly as well, after the
+    /// batches have taken theirs. Sync can leave one without its parent — a
+    /// photo added on one device to an entry another device deleted — and no
+    /// cascade reaches a row that has lost its parent, so a restore that
+    /// promises to replace everything would otherwise keep it.
     private static func wipe(_ context: ModelContext) throws {
         try deleteAll(Batch.self, in: context)
+        try deleteAll(BatchLogEntry.self, in: context)
+        try deleteAll(BatchLogPhoto.self, in: context)
         try deleteAll(Recipe.self, in: context)
         try deleteAll(RecipeCollection.self, in: context)
         try deleteAll(IngredientPurchase.self, in: context)

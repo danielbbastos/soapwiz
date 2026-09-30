@@ -64,6 +64,31 @@ struct BatchLogEntryFormViewModelTests {
         #expect(sut.isValid)
     }
 
+    /// Saving while picked photos are still loading would keep the ones done
+    /// so far and drop the rest.
+    @Test func canSave_ValidButPhotosStillLoading_IsFalse() {
+        let sut = BatchLogEntryFormViewModel(batch: Batch(recipe: nil, recipeName: "Castile", batchCount: 1))
+        sut.text = "Poured"
+
+        sut.isLoadingPhotos = true
+
+        #expect(sut.isValid)
+        #expect(!sut.canSave)
+    }
+
+    @Test func canSave_ValidAndNothingLoading_IsTrue() {
+        let sut = BatchLogEntryFormViewModel(batch: Batch(recipe: nil, recipeName: "Castile", batchCount: 1))
+        sut.text = "Poured"
+
+        #expect(sut.canSave)
+    }
+
+    @Test func canSave_Invalid_IsFalse() {
+        let sut = BatchLogEntryFormViewModel(batch: Batch(recipe: nil, recipeName: "Castile", batchCount: 1))
+
+        #expect(!sut.canSave)
+    }
+
     // MARK: - Photo drafts
 
     @Test func addPhoto_NewPhoto_AppendsADraftWithAPreview() async throws {
@@ -247,6 +272,19 @@ struct BatchLogEntryFormViewModelTests {
 
         #expect(entry.sortedPhotos.map(\.imageData) == [existing, added])
         #expect(entry.sortedPhotos.map(\.position) == [0, 1])
+    }
+
+    @Test func save_NewPhoto_KeepsTheThumbnailTheDraftAlreadyMade() async throws {
+        let (container, ctx) = try BatchLogFixture.makeContext()
+        _ = container
+        let batch = BatchLogFixture.insertBatch(ctx)
+        let sut = BatchLogEntryFormViewModel(batch: batch)
+        sut.addPhoto(try await BatchLogFixture.photoData())
+        let preview = try #require(sut.photos.first?.previewData)
+
+        let saved = sut.save(context: ctx)
+
+        #expect(saved.photos.first?.thumbnailData == preview)
     }
 
     // MARK: - Deleting

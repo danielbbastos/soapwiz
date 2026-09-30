@@ -60,6 +60,24 @@ struct BackupBatchLogTests: BackupTestHelpers {
         #expect(try ctx.fetch(FetchDescriptor<BatchLogEntry>()).isEmpty)
     }
 
+    /// Sync can leave an entry or a photo without its parent, and no cascade
+    /// reaches those. A restore replaces everything, so they go too.
+    @Test func restore_LogRowsWithoutAParent_AreWiped() async throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedFullGraph(ctx)
+        let orphanEntry = BatchLogEntry(date: try BatchLogFixture.date(day: 0), text: "Lost its batch")
+        ctx.insert(orphanEntry)
+        ctx.insert(BatchLogPhoto(imageData: try await BatchLogFixture.photoData(), position: 0))
+        try ctx.save()
+        let backup = try BackupService.makeBackup(from: ctx)
+
+        try BackupService.restore(backup, into: ctx)
+
+        #expect(try ctx.fetch(FetchDescriptor<BatchLogEntry>()).isEmpty)
+        #expect(try ctx.fetch(FetchDescriptor<BatchLogPhoto>()).isEmpty)
+    }
+
     @Test func export_LogPhoto_DoesNotWriteTheThumbnail() async throws {
         let (container, ctx) = try makeContext()
         _ = container

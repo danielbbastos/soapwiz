@@ -17,16 +17,19 @@ final class BatchLogPhoto {
     /// reason.
     @Attribute(.externalStorage) var imageData: Data?
 
-    /// The log row's copy of `imageData`, derived from it when the photo is
-    /// created and never set independently.
+    /// The log row's copy of `imageData`, made when the photo is created and
+    /// never set independently.
     var thumbnailData: Data?
 
     /// Where the photo sits among its entry's photos.
     var position: Int = 0
 
-    init(imageData: Data?, position: Int) {
+    /// `thumbnailData` is for a caller that already made the thumbnail from
+    /// this same image, as the entry form does for its preview. Left out, it
+    /// is derived here.
+    init(imageData: Data?, thumbnailData: Data? = nil, position: Int) {
         self.imageData = imageData
-        self.thumbnailData = imageData.flatMap(ImageDownscaler.thumbnail(from:))
+        self.thumbnailData = thumbnailData ?? imageData.flatMap(ImageDownscaler.thumbnail(from:))
         self.position = position
     }
 }
