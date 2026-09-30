@@ -1,24 +1,27 @@
 import SwiftUI
 import SwiftData
 
-/// The log on a batch's detail screen: its entries oldest first, and a row to
-/// add another. The part of the screen that is not a snapshot — everything
+/// What the log on a batch's screen has asked to show: the form for a new or
+/// an existing entry, the delete confirmation, or photos at full size.
+struct BatchLogPresentation {
+    var addingEntry = false
+    var editingEntry: BatchLogEntry?
+    var entryPendingDelete: BatchLogEntry?
+    var viewerContent: PhotoViewerContent?
+}
+
+/// The log on a batch's detail screen: a row to add an entry, then the entries
+/// oldest first. The part of the screen that is not a snapshot — everything
 /// here is written after the batch was made.
+///
+/// The section only records what it wants shown; the screen presents it, with
+/// `batchLogPresentations(_:batch:)`. A list builds only the rows on screen,
+/// so a presentation hung off one of this section's rows fails to open once
+/// that row has scrolled away — on a long log, a delete confirmation for an
+/// entry far below the add row never appeared until the row came back.
 struct BatchLogSection: View {
-    @Environment(\.modelContext) private var modelContext
     let batch: Batch
-
-    @State private var addingEntry = false
-    @State private var editingEntry: BatchLogEntry?
-    @State private var entryPendingDelete: BatchLogEntry?
-    @State private var viewerContent: PhotoViewerContent?
-
-    private var confirmingDelete: Binding<Bool> {
-        Binding(
-            get: { entryPendingDelete != nil },
-            set: { if !$0 { entryPendingDelete = nil } }
-        )
-    }
+    @Binding var presentation: BatchLogPresentation
 
     private var sortedEntries: [BatchLogEntry] {
         BatchHistoryViewModel.sortedLogEntries(of: batch)
@@ -26,12 +29,16 @@ struct BatchLogSection: View {
 
     var body: some View {
         Section {
-            addRow
+            Button {
+                presentation.addingEntry = true
+            } label: {
+                Label("Add Entry", systemImage: "plus")
+            }
             ForEach(sortedEntries) { entry in
                 BatchLogEntryRow(
                     entry: entry,
-                    onEdit: { editingEntry = entry },
-                    onDelete: { entryPendingDelete = entry },
+                    onEdit: { presentation.editingEntry = entry },
+                    onDelete: { presentation.entryPendingDelete = entry },
                     onOpenPhoto: { index in openPhoto(at: index, of: entry) }
                 )
             }
@@ -44,34 +51,6 @@ struct BatchLogSection: View {
         }
     }
 
-    /// The presentations hang off this row because it is the one row the
-    /// section always has; a modifier on the `Section` itself would be applied
-    /// to every row in it. First in the section, above the entries.
-    private var addRow: some View {
-        Button {
-            addingEntry = true
-        } label: {
-            Label("Add Entry", systemImage: "plus")
-        }
-        .sheet(isPresented: $addingEntry) {
-            BatchLogEntryFormView(batch: batch)
-        }
-        .sheet(item: $editingEntry) { entry in
-            BatchLogEntryFormView(batch: batch, entry: entry)
-        }
-        .fullScreenCover(item: $viewerContent) { content in
-            PhotoViewer(content: content)
-        }
-        .alert("Delete Entry", isPresented: confirmingDelete, presenting: entryPendingDelete) { entry in
-            Button("Delete", role: .destructive) {
-                BatchLogEntryFormViewModel.delete(entry, context: modelContext)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: { _ in
-            Text("This entry and its photos will be deleted.")
-        }
-    }
-
     /// Reads the full-size images only now, when they are about to be shown;
     /// the rows draw from thumbnails.
     private func openPhoto(at index: Int, of entry: BatchLogEntry) {
@@ -80,6 +59,57 @@ struct BatchLogSection: View {
         // A photo whose file hasn't arrived from iCloud yet has no data, so
         // the tapped one is counted again among those that do.
         let startIndex = photos[..<index].count { $0.imageData != nil }
-        viewerContent = PhotoViewerContent(images: photos.compactMap(\.imageData), startIndex: startIndex)
+        presentation.viewerContent = PhotoViewerContent(
+            images: photos.compactMap(\.imageData),
+            startIndex: startIndex
+        )
+    }
+}
+
+/// Presents what a `BatchLogSection` asked for. Applied to the screen's form
+/// rather than to a row of the section, so it is there wherever the log has
+/// been scrolled to.
+private struct BatchLogPresentations: ViewModifier {
+    @Environment(\.modelContext) private var modelContext
+    @Binding var presentation: BatchLogPresentation
+    let batch: Batch
+
+    private var confirmingDelete: Binding<Bool> {
+        Binding(
+            get: { presentation.entryPendingDelete != nil },
+            set: { if !$0 { presentation.entryPendingDelete = nil } }
+        )
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .sheet(isPresented: $presentation.addingEntry) {
+                BatchLogEntryFormView(batch: batch)
+            }
+            .sheet(item: $presentation.editingEntry) { entry in
+                BatchLogEntryFormView(batch: batch, entry: entry)
+            }
+            .fullScreenCover(item: $presentation.viewerContent) { content in
+                PhotoViewer(content: content)
+            }
+            .alert(
+                "Delete Entry",
+                isPresented: confirmingDelete,
+                presenting: presentation.entryPendingDelete
+            ) { entry in
+                Button("Delete", role: .destructive) {
+                    BatchLogEntryFormViewModel.delete(entry, context: modelContext)
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("This entry and its photos will be deleted.")
+            }
+    }
+}
+
+extension View {
+    /// Presents what the `BatchLogSection` bound to `presentation` asks for.
+    func batchLogPresentations(_ presentation: Binding<BatchLogPresentation>, batch: Batch) -> some View {
+        modifier(BatchLogPresentations(presentation: presentation, batch: batch))
     }
 }

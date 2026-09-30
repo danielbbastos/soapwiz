@@ -14,6 +14,7 @@ struct BatchDetailView: View {
 
     @State private var editingCode = false
     @State private var codeCopied = false
+    @State private var logPresentation = BatchLogPresentation()
 
     private func formatCurrency(_ value: Double) -> String {
         value.formatted(.currency(code: currencyCode))
@@ -55,7 +56,7 @@ struct BatchDetailView: View {
             }
             .listRowBackground(Color.cardBackground)
 
-            BatchLogSection(batch: batch)
+            BatchLogSection(batch: batch, presentation: $logPresentation)
                 .listRowBackground(Color.cardBackground)
 
             Section("Consumed") {
@@ -85,6 +86,7 @@ struct BatchDetailView: View {
         .sheet(isPresented: $editingCode) {
             BatchCodeEditSheet(batch: batch)
         }
+        .batchLogPresentations($logPresentation, batch: batch)
         .task(id: codeCopied) {
             guard codeCopied else { return }
             try? await Task.sleep(for: .seconds(1.5))
