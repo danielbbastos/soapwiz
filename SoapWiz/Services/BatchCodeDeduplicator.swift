@@ -19,6 +19,17 @@ import SwiftData
 /// guess differently from its peer, and the two would renumber each other's
 /// pick forever.
 ///
+/// Who keeps a code is settled that way; where the other batch moves to is
+/// not. "The next free sequence" is read from the codes this device holds,
+/// and an import can land in parts. A device that has only seen half of a
+/// day's batches can move the loser onto a number the other half already
+/// uses, and then, when that half arrives, move whichever of the two is
+/// later — a batch that was never in the original clash. Every device still
+/// ends on the same unique codes, but a code already on a label can change.
+/// Accepted: it takes the same recipe made on several devices on the same day
+/// while out of touch, and avoiding it means numbering losers outside the
+/// day's sequence.
+///
 /// Only codes of the generated shape are moved. The forms refuse a code that
 /// is already taken, so a clash in a maker's own numbering can only come from
 /// two devices typing it independently — and that one is theirs to settle:
