@@ -238,8 +238,8 @@ extension BackupService {
     /// relationship rules and trip the mandatory-inverse constraints between
     /// batches and their line items. Deleting the owners individually lets
     /// SwiftData cascade to the owned children (line items, log entries and
-    /// their photos, recipe line items) the same way the app does. Purchases are deleted explicitly: nothing
-    /// cascades from `Ingredient` (SW-165).
+    /// their photos, recipe line items) the same way the app does. Purchases
+    /// are deleted explicitly: nothing cascades from `Ingredient` (SW-165).
     private static func wipe(_ context: ModelContext) throws {
         try deleteAll(Batch.self, in: context)
         try deleteAll(Recipe.self, in: context)
