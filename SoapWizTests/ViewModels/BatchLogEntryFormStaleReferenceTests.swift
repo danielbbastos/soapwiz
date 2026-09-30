@@ -81,7 +81,7 @@ struct BatchLogEntryFormStaleReferenceTests {
         try ctx.save()
         #expect(entry.modelContext == nil)
 
-        let saved = sut.save(context: ctx)
+        let saved = try #require(sut.save(context: ctx))
         try ctx.save()
 
         #expect(saved !== entry)
@@ -115,6 +115,54 @@ struct BatchLogEntryFormStaleReferenceTests {
         #expect(try ctx.fetch(FetchDescriptor<BatchLogEntry>()).count == 1)
     }
 
+    /// An entry that was only photos, edited without a note or a new photo:
+    /// once its photos have gone with it, saving would leave a bare date.
+    @Test func save_PhotoOnlyEntryDeletedWhileOpen_MakesNoEntry() async throws {
+        let (container, ctx) = try BatchLogFixture.makeContext()
+        _ = container
+        let batch = BatchLogFixture.insertBatch(ctx)
+        let entry = BatchLogFixture.insertEntry(
+            ctx, batch: batch, date: try BatchLogFixture.date(day: 0), text: "",
+            photos: [try await BatchLogFixture.photoData()]
+        )
+        try ctx.save()
+        let sut = BatchLogEntryFormViewModel(batch: batch, entry: entry)
+        sut.date = try BatchLogFixture.date(day: 1)
+        #expect(sut.canSave)
+
+        BatchLogEntryFormViewModel.delete(entry, context: ctx)
+        try ctx.save()
+        let saved = sut.save(context: ctx)
+        try ctx.save()
+
+        #expect(saved == nil)
+        #expect(batch.logEntries.isEmpty)
+        #expect(try ctx.fetch(FetchDescriptor<BatchLogEntry>()).isEmpty)
+    }
+
+    /// The same entry with a new photo added still has something to record.
+    @Test func save_PhotoOnlyEntryDeletedWhileOpenWithANewPhoto_KeepsTheNewPhoto() async throws {
+        let (container, ctx) = try BatchLogFixture.makeContext()
+        _ = container
+        let batch = BatchLogFixture.insertBatch(ctx)
+        let entry = BatchLogFixture.insertEntry(
+            ctx, batch: batch, date: try BatchLogFixture.date(day: 0), text: "",
+            photos: [try await BatchLogFixture.photoData()]
+        )
+        try ctx.save()
+        let sut = BatchLogEntryFormViewModel(batch: batch, entry: entry)
+        let added = try await BatchLogFixture.photoData(.systemBlue)
+        sut.addPhoto(added)
+
+        BatchLogEntryFormViewModel.delete(entry, context: ctx)
+        try ctx.save()
+        let saved = try #require(sut.save(context: ctx))
+        try ctx.save()
+
+        #expect(saved.sortedPhotos.map(\.imageData) == [added])
+        #expect(batch.logEntries.count == 1)
+    }
+
     /// The delete confirmation can still be up when another device's delete
     /// of the same entry syncs in. Confirming then must not touch the detached
     /// row, or anything else.
@@ -145,7 +193,7 @@ struct BatchLogEntryFormStaleReferenceTests {
         let sut = BatchLogEntryFormViewModel(batch: batch, entry: entry)
         sut.text = "Edited"
 
-        let saved = sut.save(context: ctx)
+        let saved = try #require(sut.save(context: ctx))
         try ctx.save()
 
         #expect(saved === entry)

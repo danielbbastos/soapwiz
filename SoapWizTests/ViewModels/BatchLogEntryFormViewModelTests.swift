@@ -168,7 +168,7 @@ struct BatchLogEntryFormViewModelTests {
         sut.text = "Poured"
         sut.addPhoto(try await BatchLogFixture.photoData())
 
-        let saved = sut.save(context: ctx)
+        let saved = try #require(sut.save(context: ctx))
 
         #expect(batch.logEntries.map(\.text) == ["Poured"])
         #expect(saved.photos.count == 1)
@@ -184,7 +184,7 @@ struct BatchLogEntryFormViewModelTests {
         sut.addPhoto(first)
         sut.addPhoto(second)
 
-        let saved = sut.save(context: ctx)
+        let saved = try #require(sut.save(context: ctx))
         try ctx.save()
 
         #expect(saved.sortedPhotos.map(\.imageData) == [first, second])
@@ -282,7 +282,7 @@ struct BatchLogEntryFormViewModelTests {
         sut.addPhoto(try await BatchLogFixture.photoData())
         let preview = try #require(sut.photos.first?.previewData)
 
-        let saved = sut.save(context: ctx)
+        let saved = try #require(sut.save(context: ctx))
 
         #expect(saved.photos.first?.thumbnailData == preview)
     }

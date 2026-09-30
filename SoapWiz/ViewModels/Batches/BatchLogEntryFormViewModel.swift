@@ -121,17 +121,22 @@ final class BatchLogEntryFormViewModel {
     /// one instead. `modelContext` is the only thing read off it to tell: it
     /// is truthful once the row is gone, where `isDeleted` is not, and reading
     /// a stored attribute off a detached model traps (see `LiveIngredient`).
-    /// Its stored photos went with it and are skipped the same way.
+    /// Its stored photos went with it and are skipped the same way — and when
+    /// they were all it had, with no note and nothing new, there is nothing
+    /// left to record: no entry is made and the result is nil, rather than a
+    /// bare date the form would never let anyone save.
     ///
     /// Another device can also add a photo to the entry meanwhile. It stays,
     /// after the photos the form shows: only photos the user removed here are
     /// deleted.
     @discardableResult
-    func save(context: ModelContext) -> BatchLogEntry {
+    func save(context: ModelContext) -> BatchLogEntry? {
+        let kept = photos.filter { $0.stored == nil || $0.stored?.modelContext != nil }
         let target: BatchLogEntry
         if let entry, entry.modelContext != nil {
             target = entry
         } else {
+            guard !trimmedText.isEmpty || !kept.isEmpty else { return nil }
             target = BatchLogEntry()
             context.insert(target)
             target.batch = batch
@@ -147,7 +152,6 @@ final class BatchLogEntryFormViewModel {
             context.delete(photo)
         }
 
-        let kept = photos.filter { $0.stored == nil || $0.stored?.modelContext != nil }
         let keptIDs = Set(kept.compactMap(\.storedID))
         let arrived = target.sortedPhotos.filter { !keptIDs.contains($0.persistentModelID) }
 
