@@ -26,6 +26,15 @@ struct BatchRequirement: Identifiable {
 final class BatchProductionViewModel {
     var batchCount: Int = 1
 
+    /// The code the batch will be labelled with. Starts as `suggestedCode` and
+    /// is the user's to change, to anything no other batch carries; left empty,
+    /// `create(context:)` generates one.
+    var code: String = ""
+
+    /// What the code would be if the user left it alone — shown as the field's
+    /// placeholder once they clear it.
+    private(set) var suggestedCode: String = ""
+
     let tracksInventory: Bool
 
     private let recipe: Recipe
@@ -123,17 +132,48 @@ final class BatchProductionViewModel {
         }
     }
 
+    /// Works out the code this batch would take given the codes already in use,
+    /// and puts it in `code` unless the user has typed one of their own. Called
+    /// again when the batches change, so a code that arrives by sync while the
+    /// sheet is open moves the suggestion on instead of colliding with it.
+    func suggestCode(existingCodes: [String], date: Date = .now) {
+        let suggestion = BatchCodeGenerator.suggestedCode(
+            recipeName: recipe.name,
+            date: date,
+            existingCodes: existingCodes
+        )
+        if code.isEmpty || code == suggestedCode {
+            code = suggestion
+        }
+        suggestedCode = suggestion
+    }
+
+    /// Whether another batch already carries the code as typed. A taken code
+    /// blocks creation: two batches under one code can't be told apart on a
+    /// label.
+    func codeIsTaken(among batches: [Batch]) -> Bool {
+        BatchCodeGenerator.isTaken(code, among: batches)
+    }
+
     /// Deducts inventory FIFO and persists an immutable `Batch` snapshot. Returns
-    /// `nil` without mutating anything when stock is insufficient — the stock
-    /// check across every ingredient happens before any purchase is touched.
+    /// `nil` without mutating anything when stock is insufficient or the code
+    /// typed belongs to another batch — both are checked before any purchase
+    /// is touched.
     @discardableResult
-    func create(context: ModelContext) -> Batch? {
+    func create(context: ModelContext, date: Date = .now) -> Batch? {
         let reqs = requirements
         guard !reqs.isEmpty, shortages(in: reqs).isEmpty else { return nil }
 
+        // Read before the batch is inserted, so these are only the batches its
+        // code could clash with.
+        let existing = (try? context.fetch(FetchDescriptor<Batch>())) ?? []
+        guard !codeIsTaken(among: existing) else { return nil }
+
         let batch = Batch(
             recipe: recipe,
+            code: resolvedCode(among: existing, date: date),
             recipeName: recipe.name,
+            dateCreated: date,
             batchCount: max(1, batchCount),
             tracksInventory: tracksInventory
         )
@@ -146,6 +186,18 @@ final class BatchProductionViewModel {
         }
         batch.totalCost = total
         return batch
+    }
+
+    /// The code as typed, or a generated one when the field was left empty —
+    /// every batch leaves here with a code.
+    private func resolvedCode(among existing: [Batch], date: Date) -> String {
+        let typed = BatchCodeGenerator.trimmed(code)
+        guard typed.isEmpty else { return typed }
+        return BatchCodeGenerator.suggestedCode(
+            recipeName: recipe.name,
+            date: date,
+            existingCodes: existing.map(\.code)
+        )
     }
 
     /// FIFO plan for draining `req` from its ingredient's purchases oldest

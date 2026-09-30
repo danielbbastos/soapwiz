@@ -168,6 +168,7 @@ enum BackupService {
     ) -> BackupData.BatchDTO {
         BackupData.BatchDTO(
             recipeIndex: batch.recipe.flatMap { recipeIndex[$0.persistentModelID] },
+            code: batch.code,
             recipeName: batch.recipeName,
             dateCreated: batch.dateCreated,
             batchCount: batch.batchCount,

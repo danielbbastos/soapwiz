@@ -206,6 +206,9 @@ extension BackupData {
         /// Index into `BackupData.recipes`, or `nil` when the source recipe was
         /// already deleted (the batch's `.nullify` link).
         var recipeIndex: Int?
+        /// Optional so a backup written before SW-175 still decodes; `nil`
+        /// restores without a code, which the backfill then supplies.
+        var code: String?
         var recipeName: String
         var dateCreated: Date
         var batchCount: Int

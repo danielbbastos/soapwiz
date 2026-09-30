@@ -8,6 +8,13 @@ struct BatchRowView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(batch.recipeName)
                 .font(.body.weight(.medium))
+            let code = BatchCodeGenerator.trimmed(batch.code)
+            if !code.isEmpty {
+                Text(code)
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
             HStack {
                 Text(batch.dateCreated.formatted(date: .abbreviated, time: .shortened))
                 Spacer()

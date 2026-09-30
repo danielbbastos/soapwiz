@@ -12,6 +12,12 @@ final class Batch {
     // deleted recipe drops this link instead of taking the batch with it.
     var recipe: Recipe?
 
+    /// What goes on the label, so a bar sold can be traced back to this run —
+    /// `LAV-260930-01` by default, see `BatchCodeGenerator`. The one thing on a
+    /// batch the user can change afterwards, for makers with a numbering scheme
+    /// of their own. The forms refuse a code another batch carries, but two
+    /// devices can still hand out the same one, so it can't serve as identity.
+    var code: String = ""
     /// Recipe name as it was when the batch was made.
     var recipeName: String = ""
     var dateCreated: Date = Date.now
@@ -34,6 +40,7 @@ final class Batch {
 
     init(
         recipe: Recipe?,
+        code: String = "",
         recipeName: String,
         dateCreated: Date = .now,
         batchCount: Int,
@@ -41,6 +48,7 @@ final class Batch {
         tracksInventory: Bool = true
     ) {
         self.recipe = recipe
+        self.code = code
         self.recipeName = recipeName
         self.dateCreated = dateCreated
         self.batchCount = batchCount
