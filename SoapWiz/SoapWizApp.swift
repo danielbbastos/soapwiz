@@ -35,6 +35,11 @@ struct SoapWizApp: App {
         // every recipe that predates the field the same one. Independent of the
         // merge above — that one never touches recipes.
         RecipeIdentityBackfill.repairSharedIdentitiesLoggingFailure(in: container.mainContext)
+        // Codes the batches made before batches had one, then settles any code
+        // two devices handed out independently. In that order, so a code the
+        // backfill has just given is checked like any other.
+        BatchCodeBackfill.fillMissingCodesLoggingFailure(in: container.mainContext)
+        BatchCodeDeduplicator.resolveLoggingFailure(in: container.mainContext)
         _ = AppSettings.resolve(in: container.mainContext)
         sharedModelContainer = container
         _syncHealth = State(

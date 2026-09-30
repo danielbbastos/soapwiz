@@ -35,8 +35,14 @@ final class DuplicateMergeCoordinator {
 
     /// Runs the merge now. Used at launch and on foreground, where there is no
     /// burst to coalesce.
+    ///
+    /// Batch codes are settled on the same triggers, for the same reason: a
+    /// batch without a code, or with one another device also handed out, only
+    /// shows up once a sync brings it in.
     func mergeNow() {
         DuplicateMerger.mergeAllLoggingFailure(in: context)
+        BatchCodeBackfill.fillMissingCodesLoggingFailure(in: context)
+        BatchCodeDeduplicator.resolveLoggingFailure(in: context)
     }
 
     /// `.NSPersistentStoreRemoteChange` is public Core Data API, but Apple

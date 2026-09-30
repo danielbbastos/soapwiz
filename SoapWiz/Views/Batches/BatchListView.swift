@@ -7,39 +7,36 @@ struct BatchListView: View {
     @Query private var batches: [Batch]
     @Environment(AppNavigation.self) private var navigation
 
-    private var sortedBatches: [Batch] {
-        BatchHistoryViewModel.sortedNewestFirst(batches)
+    @State private var searchText = ""
+
+    private var displayedBatches: [Batch] {
+        BatchHistoryViewModel.sortedNewestFirst(
+            BatchHistoryViewModel.filtered(batches, matching: searchText)
+        )
     }
 
     /// A `Button` rather than a `NavigationLink(value:)`, so every open goes
     /// through `show(_:)` and the selection survives a width change. The
-    /// chevron a link would draw is drawn by hand, and only where the row
-    /// pushes.
+    /// chevron a link would draw is left out, as on the other lists.
     private func row(_ batch: Batch) -> some View {
         Button {
             navigation.history.show(batch)
         } label: {
-            HStack {
-                BatchRowView(batch: batch)
-                if !navigation.history.isWide {
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.forward")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
-            }
-            .contentShape(Rectangle())
+            BatchRowView(batch: batch)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .listDetailRow(isSelected: navigation.history.isOpenBeside(batch))
     }
 
     var body: some View {
+        // Filtered and sorted once per pass; several places below need it.
+        let displayed = displayedBatches
         ListDetailContainer(
             navigation: navigation.history,
             placeholder: "Select a Batch",
             placeholderSymbol: "clock.arrow.circlepath",
-            hasItems: !batches.isEmpty
+            hasItems: !displayed.isEmpty
         ) {
             Group {
                 if batches.isEmpty {
@@ -48,9 +45,11 @@ struct BatchListView: View {
                         systemImage: "clock.arrow.circlepath",
                         description: Text("Batches you produce from a recipe will appear here.")
                     )
+                } else if displayed.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
                 } else {
                     List {
-                        ForEach(sortedBatches) { row($0) }
+                        ForEach(displayed) { row($0) }
                     }
                 }
             }
@@ -59,6 +58,11 @@ struct BatchListView: View {
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("History")
             .warmBackground()
+            .searchable(
+                text: $searchText,
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: "Search batches"
+            )
             .navigationDestination(for: Batch.self) { batch in
                 BatchDetailView(batch: batch)
             }

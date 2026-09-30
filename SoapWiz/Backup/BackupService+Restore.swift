@@ -190,6 +190,7 @@ extension BackupService {
     ) {
         let batch = Batch(
             recipe: element(recipes, at: dto.recipeIndex),
+            code: dto.code ?? "",
             recipeName: dto.recipeName,
             dateCreated: dto.dateCreated,
             batchCount: dto.batchCount,

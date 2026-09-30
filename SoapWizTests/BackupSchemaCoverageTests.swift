@@ -15,7 +15,7 @@ struct BackupSchemaCoverageTests {
     /// (a relationship becomes an index, owned children are nested).
     private static let backedUp: [String: Set<String>] = [
         "AppSettings": ["pvpFactor", "expiryNotificationsEnabled", "tracksInventory", "currencyCode"],
-        "Batch": ["recipe", "recipeName", "dateCreated", "batchCount", "totalCost", "tracksInventory", "lineItemsStorage"],
+        "Batch": ["recipe", "code", "recipeName", "dateCreated", "batchCount", "totalCost", "tracksInventory", "lineItemsStorage"],
         "BatchLineItem": ["ingredient", "ingredientName", "amountConsumed", "unit", "cost", "draws"],
         "Ingredient": [
             "name", "code", "category", "unit", "isFavorite", "uuid", "librarySlug", "hasCustomChemistry",

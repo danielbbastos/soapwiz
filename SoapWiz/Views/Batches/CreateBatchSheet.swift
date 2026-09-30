@@ -15,6 +15,7 @@ struct CreateBatchSheet: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Query private var batches: [Batch]
     @State private var model: BatchProductionViewModel
 
     init(
@@ -41,6 +42,8 @@ struct CreateBatchSheet: View {
     }
 
     var body: some View {
+        let existingCodes = batches.map(\.code)
+        let codeIsTaken = model.codeIsTaken(among: batches)
         NavigationStack {
             Form {
                 let requirements = model.requirements
@@ -66,6 +69,19 @@ struct CreateBatchSheet: View {
                             "Estimated cost",
                             value: estimatedCost.formatted(.currency(code: currencyCode))
                         )
+                    }
+                }
+                .listRowBackground(Color.cardBackground)
+
+                Section {
+                    TextField("Batch Code", text: $model.code, prompt: Text(model.suggestedCode))
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                } header: {
+                    Text("Batch Code")
+                } footer: {
+                    if codeIsTaken {
+                        BatchCodeDuplicateWarning()
                     }
                 }
                 .listRowBackground(Color.cardBackground)
@@ -99,6 +115,9 @@ struct CreateBatchSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("Create Batch")
             .warmBackground()
+            .task(id: existingCodes) {
+                model.suggestCode(existingCodes: existingCodes)
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -110,7 +129,7 @@ struct CreateBatchSheet: View {
                             onCreated(batch)
                         }
                     }
-                    .disabled(!model.canCreate)
+                    .disabled(!model.canCreate || codeIsTaken)
                 }
             }
         }

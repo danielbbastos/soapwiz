@@ -40,6 +40,68 @@ struct BatchHistoryViewModelTests {
         #expect(sorted.map(\.recipeName) == ["Newest", "Middle", "Old"])
     }
 
+    // MARK: - Search
+
+    private func searchFixture() -> [Batch] {
+        [
+            Batch(recipe: nil, code: "LAV-260930-01", recipeName: "Lavender", batchCount: 1),
+            Batch(recipe: nil, code: "ROS-260930-01", recipeName: "Rose", batchCount: 1),
+            Batch(recipe: nil, code: "2026/14", recipeName: "Lavender Oatmeal", batchCount: 1)
+        ]
+    }
+
+    @Test func filtered_EmptyList_ReturnsEmpty() {
+        #expect(BatchHistoryViewModel.filtered([], matching: "LAV").isEmpty)
+    }
+
+    @Test(arguments: ["", "   "])
+    func filtered_BlankQuery_ReturnsEverything(query: String) {
+        #expect(BatchHistoryViewModel.filtered(searchFixture(), matching: query).count == 3)
+    }
+
+    @Test func filtered_QueryMatchesCode_ReturnsThatBatch() {
+        let result = BatchHistoryViewModel.filtered(searchFixture(), matching: "ROS-2609")
+
+        #expect(result.map(\.code) == ["ROS-260930-01"])
+    }
+
+    @Test func filtered_QueryInLowercaseWithSpaces_StillMatchesCode() {
+        let result = BatchHistoryViewModel.filtered(searchFixture(), matching: " lav-260930 ")
+
+        #expect(result.map(\.code) == ["LAV-260930-01"])
+    }
+
+    @Test func filtered_QueryMatchesRecipeName_ReturnsEveryBatchOfIt() {
+        let result = BatchHistoryViewModel.filtered(searchFixture(), matching: "lavender")
+
+        #expect(result.map(\.code) == ["LAV-260930-01", "2026/14"])
+    }
+
+    @Test func filtered_HandTypedCode_IsSearchable() {
+        let result = BatchHistoryViewModel.filtered(searchFixture(), matching: "2026/")
+
+        #expect(result.map(\.recipeName) == ["Lavender Oatmeal"])
+    }
+
+    @Test func filtered_NoMatch_ReturnsEmpty() {
+        #expect(BatchHistoryViewModel.filtered(searchFixture(), matching: "Castile").isEmpty)
+    }
+
+    // MARK: - Display code
+
+    @Test func displayCode_BatchWithCode_ShowsItTrimmed() {
+        let batch = Batch(recipe: nil, code: " LAV-260930-01 ", recipeName: "Lavender", batchCount: 1)
+
+        #expect(BatchHistoryViewModel.displayCode(of: batch) == "LAV-260930-01")
+    }
+
+    @Test(arguments: ["", "  "])
+    func displayCode_BatchWithoutCode_ShowsADash(code: String) {
+        let batch = Batch(recipe: nil, code: code, recipeName: "Lavender", batchCount: 1)
+
+        #expect(BatchHistoryViewModel.displayCode(of: batch) == "—")
+    }
+
     // MARK: - Line item sorting
 
     @Test func sortedLineItems_NoItems_ReturnsEmpty() throws {

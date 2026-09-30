@@ -1,12 +1,19 @@
 import SwiftUI
+import SwiftData
 
 /// Read-only view of the immutable snapshot a `Batch` recorded at creation:
 /// what was consumed, which purchases it drew from, and what it cost. Nothing
 /// here recomputes against the live recipe or inventory — including whether
 /// the batch was costed at all, which is the snapshot's `tracksInventory`.
+/// The batch code is the exception: it is a label, not part of the record, and
+/// can be changed from here.
 struct BatchDetailView: View {
     @Environment(\.currencyCode) private var currencyCode
+    @Query private var batches: [Batch]
     let batch: Batch
+
+    @State private var editingCode = false
+    @State private var codeCopied = false
 
     private func formatCurrency(_ value: Double) -> String {
         value.formatted(.currency(code: currencyCode))
@@ -22,6 +29,15 @@ struct BatchDetailView: View {
 
     var body: some View {
         Form {
+            Section {
+                codeRow
+            } footer: {
+                if BatchCodeGenerator.isTaken(batch.code, among: batches, excluding: batch) {
+                    BatchCodeDuplicateWarning()
+                }
+            }
+            .listRowBackground(Color.cardBackground)
+
             Section {
                 LabeledContent("Recipe", value: batch.recipeName)
                 LabeledContent("Date", value: batch.dateCreated.formatted(date: .abbreviated, time: .shortened))
@@ -63,6 +79,45 @@ struct BatchDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .warmNavigationTitle("Batch")
         .warmBackground()
+        .sheet(isPresented: $editingCode) {
+            BatchCodeEditSheet(batch: batch)
+        }
+        .task(id: codeCopied) {
+            guard codeCopied else { return }
+            try? await Task.sleep(for: .seconds(1.5))
+            codeCopied = false
+        }
+    }
+
+    /// Two buttons in one row, so both are borderless: a form row otherwise
+    /// takes the whole row as the tap target of whichever button comes first.
+    private var codeRow: some View {
+        LabeledContent("Batch code") {
+            HStack(spacing: 16) {
+                Text(BatchHistoryViewModel.displayCode(of: batch))
+                    .monospacedDigit()
+                    .textSelection(.enabled)
+                let code = BatchCodeGenerator.trimmed(batch.code)
+                if !code.isEmpty {
+                    Button {
+                        UIPasteboard.general.string = code
+                        codeCopied = true
+                    } label: {
+                        Image(systemName: codeCopied ? "checkmark" : "doc.on.doc")
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                    .buttonStyle(.borderless)
+                    .accessibilityLabel("Copy Batch Code")
+                }
+                Button {
+                    editingCode = true
+                } label: {
+                    Image(systemName: "pencil")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Edit Batch Code")
+            }
+        }
     }
 
     private func lineItemRow(_ item: BatchLineItem) -> some View {
