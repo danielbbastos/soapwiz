@@ -312,6 +312,7 @@ struct SettingsView: View {
 
     private var backupSection: some View {
         Section {
+            Toggle("Include Photos", isOn: $dataTransfer.includesPhotos)
             Button {
                 dataTransfer.export(from: modelContext)
             } label: {
@@ -326,6 +327,8 @@ struct SettingsView: View {
             Text("Backup")
         } footer: {
             Text("Export saves all your ingredients, recipes, and history to a single file. "
+                 + "Leaving photos out makes a much smaller file, but importing it brings "
+                 + "everything back without them. "
                  + "Importing a file replaces everything currently in the app.")
         }
         .listRowBackground(Color.cardBackground)

@@ -34,6 +34,16 @@ enum BatchHistoryViewModel {
         batch.lineItems.sorted { $0.ingredientName < $1.ingredientName }
     }
 
+    /// Log entries are unordered in SwiftData; display them oldest first, so
+    /// the log reads as the batch went. `persistentModelID` cannot break a tie
+    /// — it isn't comparable — so entries sharing a date fall back to their
+    /// text, which keeps the order from shuffling between redraws.
+    static func sortedLogEntries(of batch: Batch) -> [BatchLogEntry] {
+        batch.logEntries.sorted {
+            $0.date == $1.date ? $0.text < $1.text : $0.date < $1.date
+        }
+    }
+
     /// Nil for a batch made without inventory tracking: it recorded no cost, so
     /// there is nothing to divide — a zero would read as "this batch was free".
     static func costPerBatch(of batch: Batch) -> Double? {

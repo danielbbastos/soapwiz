@@ -211,6 +211,17 @@ extension BackupService {
             item.batch = batch
             context.insert(item)
         }
+
+        for entryDTO in dto.logEntries {
+            let entry = BatchLogEntry(date: entryDTO.date, text: entryDTO.text)
+            context.insert(entry)
+            entry.batch = batch
+            for (position, imageData) in entryDTO.photos.enumerated() {
+                let photo = BatchLogPhoto(imageData: imageData, position: position)
+                context.insert(photo)
+                photo.entry = entry
+            }
+        }
     }
 
     // MARK: - Helpers
@@ -226,8 +237,8 @@ extension BackupService {
     /// `delete(model:)`) because batch deletes bypass the cascade/nullify
     /// relationship rules and trip the mandatory-inverse constraints between
     /// batches and their line items. Deleting the owners individually lets
-    /// SwiftData cascade to the owned children (line items, recipe line items)
-    /// the same way the app does. Purchases are deleted explicitly: nothing
+    /// SwiftData cascade to the owned children (line items, log entries and
+    /// their photos, recipe line items) the same way the app does. Purchases are deleted explicitly: nothing
     /// cascades from `Ingredient` (SW-165).
     private static func wipe(_ context: ModelContext) throws {
         try deleteAll(Batch.self, in: context)

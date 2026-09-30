@@ -334,7 +334,7 @@ struct ModelContainerFactoryTests {
             "Ingredient", "IngredientPurchase", "IngredientCategory",
             "StorageLocation", "Provider",
             "Recipe", "RecipeIngredient", "RecipeProduct", "RecipeCollection",
-            "Batch", "BatchLineItem", "AppSettings"
+            "Batch", "BatchLineItem", "BatchLogEntry", "BatchLogPhoto", "AppSettings"
         ]
 
         #expect(registered == expected)

@@ -11,8 +11,8 @@ struct BackupData: Codable {
     /// Bumped whenever the on-disk format changes in a way that needs migration.
     /// Imports reject any file whose `version` is newer than this.
     ///
-    /// Version 2 added recipe collections.
-    static let currentVersion = 2
+    /// Version 2 added recipe collections. Version 3 added batch logs.
+    static let currentVersion = 3
 
     var version: Int
     var exportedAt: Date
@@ -217,6 +217,17 @@ extension BackupData {
         /// restores as tracked, the only kind of batch those builds could make.
         var tracksInventory: Bool?
         var lineItems: [BatchLineItemDTO]
+        /// Oldest first, the order the log displays.
+        var logEntries: [BatchLogEntryDTO]
+    }
+
+    struct BatchLogEntryDTO: Codable {
+        var date: Date
+        var text: String
+        /// Each photo at display size, base64 in the JSON, in the entry's own
+        /// order. Empty when the file was exported without photos. Thumbnails
+        /// are derived on restore, as for recipes and ingredients.
+        var photos: [Data]
     }
 
     struct BatchLineItemDTO: Codable {

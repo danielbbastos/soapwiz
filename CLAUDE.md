@@ -21,7 +21,7 @@ When context reaches 70%, run `/compact` preserving: current task, modified file
 1. **Ingredient inventory** — add ingredients, track quantities per purchase, low-stock and expiry warnings.
 2. **Purchase tracking** — each ingredient purchase is a separate record with its own quantity, price, dates, and metadata. Total remaining is the sum across all purchases.
 3. **Recipes** — soap formulas with lye calculation (NaOH/KOH, purity, superfat, water parts), fragrance %, end products, cost breakdown, and soap property stats from fatty-acid profiles.
-4. **Batches** — making a batch from a recipe deducts ingredient quantities from purchases (FIFO) and records an immutable production snapshot with costs (History tab).
+4. **Batches** — making a batch from a recipe deducts ingredient quantities from purchases (FIFO) and records an immutable production snapshot with costs (History tab). Each batch also carries an editable log of dated notes and photos.
 5. **Settings** — manage categories, providers, storage locations, and app-wide settings.
 
 For SwiftUI/SwiftData conventions — state, forms, FAB, navigation, ViewModel structure, anti-patterns — the `swiftui-patterns-soapwiz` and `ios-dev-guidelines` skills are authoritative. Invoke them before editing any `.swift` file.

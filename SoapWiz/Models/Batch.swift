@@ -5,7 +5,8 @@ import SwiftData
 /// recipe, with the ingredients it consumed and what they cost snapshotted at
 /// the time of making. The link back to `Recipe` is soft (`.nullify`) so a batch
 /// survives the recipe being edited or deleted — its `recipeName` and line items
-/// are stored copies, not live reads.
+/// are stored copies, not live reads. What the user adds afterwards — the code
+/// and the log — sits beside that record and never changes it.
 @Model
 final class Batch {
     // Inverse and `.nullify` delete rule are declared on `Recipe.batches`, so a
@@ -13,10 +14,10 @@ final class Batch {
     var recipe: Recipe?
 
     /// What goes on the label, so a bar sold can be traced back to this run —
-    /// `LAV-260930-01` by default, see `BatchCodeGenerator`. The one thing on a
-    /// batch the user can change afterwards, for makers with a numbering scheme
-    /// of their own. The forms refuse a code another batch carries, but two
-    /// devices can still hand out the same one, so it can't serve as identity.
+    /// `LAV-260930-01` by default, see `BatchCodeGenerator`. Editable
+    /// afterwards, for makers with a numbering scheme of their own. The forms
+    /// refuse a code another batch carries, but two devices can still hand out
+    /// the same one, so it can't serve as identity.
     var code: String = ""
     /// Recipe name as it was when the batch was made.
     var recipeName: String = ""
@@ -36,6 +37,20 @@ final class Batch {
     var lineItems: [BatchLineItem] {
         get { lineItemsStorage ?? [] }
         set { lineItemsStorage = newValue }
+    }
+
+    /// The notes and photos recorded as the batch progresses. Cascades from the
+    /// batch alone, so the log outlives the recipe and ingredients exactly as
+    /// the batch does.
+    ///
+    /// Optional for CloudKit; read and write through `logEntries`. Neither name
+    /// is usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .cascade, inverse: \BatchLogEntry.batch)
+    var logEntriesStorage: [BatchLogEntry]? = []
+
+    var logEntries: [BatchLogEntry] {
+        get { logEntriesStorage ?? [] }
+        set { logEntriesStorage = newValue }
     }
 
     init(

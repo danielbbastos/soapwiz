@@ -13,7 +13,11 @@ enum BackupService {
     // MARK: - Export
 
     /// Reads the current store into a `BackupData` snapshot.
-    static func makeBackup(from context: ModelContext) throws -> BackupData {
+    ///
+    /// `includingPhotos` is the user's choice on export: photos are most of a
+    /// backup's size, and a file without them is one that can be mailed. It
+    /// defaults to a complete snapshot, which is what a rollback must be.
+    static func makeBackup(from context: ModelContext, includingPhotos: Bool = true) throws -> BackupData {
         let categories = try context.fetch(FetchDescriptor<IngredientCategory>())
         let providers = try context.fetch(FetchDescriptor<Provider>())
         let storageLocations = try context.fetch(FetchDescriptor<StorageLocation>())
@@ -41,12 +45,20 @@ enum BackupService {
                 BackupData.StorageLocationDTO(name: $0.name, locationDescription: $0.locationDescription)
             },
             ingredients: ingredients.map {
-                ingredientDTO($0, categoryIndex: categoryIndex, providerIndex: providerIndex, storageIndex: storageIndex)
+                ingredientDTO(
+                    $0,
+                    categoryIndex: categoryIndex,
+                    providerIndex: providerIndex,
+                    storageIndex: storageIndex,
+                    includingPhotos: includingPhotos
+                )
             },
             recipes: recipes.map {
-                recipeDTO($0, ingredientIndex: ingredientIndex, collectionIndex: collectionIndex)
+                recipeDTO($0, ingredientIndex: ingredientIndex, collectionIndex: collectionIndex, includingPhotos: includingPhotos)
             },
-            batches: batches.map { batchDTO($0, recipeIndex: recipeIndex, ingredientIndex: ingredientIndex) },
+            batches: batches.map {
+                batchDTO($0, recipeIndex: recipeIndex, ingredientIndex: ingredientIndex, includingPhotos: includingPhotos)
+            },
             collections: collections.map {
                 BackupData.RecipeCollectionDTO(name: $0.name, colorName: $0.colorName)
             }
@@ -57,14 +69,15 @@ enum BackupService {
         _ ingredient: Ingredient,
         categoryIndex: [PersistentIdentifier: Int],
         providerIndex: [PersistentIdentifier: Int],
-        storageIndex: [PersistentIdentifier: Int]
+        storageIndex: [PersistentIdentifier: Int],
+        includingPhotos: Bool
     ) -> BackupData.IngredientDTO {
         BackupData.IngredientDTO(
             name: ingredient.name,
             code: ingredient.code,
             unit: ingredient.unit,
             isFavorite: ingredient.isFavorite,
-            imageData: ingredient.imageData,
+            imageData: includingPhotos ? ingredient.imageData : nil,
             avatarColorName: ingredient.avatarColorName,
             categoryIndex: ingredient.category.flatMap { categoryIndex[$0.persistentModelID] },
             lowStockThreshold: ingredient.lowStockThreshold,
@@ -99,7 +112,8 @@ enum BackupService {
     private static func recipeDTO(
         _ recipe: Recipe,
         ingredientIndex: [PersistentIdentifier: Int],
-        collectionIndex: [PersistentIdentifier: Int]
+        collectionIndex: [PersistentIdentifier: Int],
+        includingPhotos: Bool
     ) -> BackupData.RecipeDTO {
         BackupData.RecipeDTO(
             uuid: recipe.uuid,
@@ -107,7 +121,7 @@ enum BackupService {
             desc: recipe.desc,
             isFavorite: recipe.isFavorite,
             createdAt: recipe.createdAt,
-            imageData: recipe.imageData,
+            imageData: includingPhotos ? recipe.imageData : nil,
             weightUnit: recipe.weightUnit,
             recipeKind: recipe.recipeKind,
             totalOilWeight: recipe.totalOilWeight,
@@ -164,7 +178,8 @@ enum BackupService {
     private static func batchDTO(
         _ batch: Batch,
         recipeIndex: [PersistentIdentifier: Int],
-        ingredientIndex: [PersistentIdentifier: Int]
+        ingredientIndex: [PersistentIdentifier: Int],
+        includingPhotos: Bool
     ) -> BackupData.BatchDTO {
         BackupData.BatchDTO(
             recipeIndex: batch.recipe.flatMap { recipeIndex[$0.persistentModelID] },
@@ -183,8 +198,19 @@ enum BackupService {
                     cost: item.cost,
                     draws: item.draws
                 )
-            }
+            },
+            logEntries: logEntryDTOs(batch, includingPhotos: includingPhotos)
         )
+    }
+
+    /// Without photos, an entry that was nothing but photos has nothing left to
+    /// say, and is left out rather than restored as a bare date.
+    private static func logEntryDTOs(_ batch: Batch, includingPhotos: Bool) -> [BackupData.BatchLogEntryDTO] {
+        BatchHistoryViewModel.sortedLogEntries(of: batch).compactMap { entry in
+            let photos = includingPhotos ? entry.sortedPhotos.compactMap(\.imageData) : []
+            guard !entry.text.isEmpty || !photos.isEmpty else { return nil }
+            return BackupData.BatchLogEntryDTO(date: entry.date, text: entry.text, photos: photos)
+        }
     }
 
     // MARK: - Encoding

@@ -5,8 +5,8 @@ import SwiftData
 /// what was consumed, which purchases it drew from, and what it cost. Nothing
 /// here recomputes against the live recipe or inventory — including whether
 /// the batch was costed at all, which is the snapshot's `tracksInventory`.
-/// The batch code is the exception: it is a label, not part of the record, and
-/// can be changed from here.
+/// The batch code and the log are the exceptions: a label and a diary kept
+/// beside the record, not part of it, and both can be changed from here.
 struct BatchDetailView: View {
     @Environment(\.currencyCode) private var currencyCode
     @Query private var batches: [Batch]
@@ -54,6 +54,9 @@ struct BatchDetailView: View {
                 }
             }
             .listRowBackground(Color.cardBackground)
+
+            BatchLogSection(batch: batch)
+                .listRowBackground(Color.cardBackground)
 
             Section("Consumed") {
                 ForEach(sortedLineItems) { item in
