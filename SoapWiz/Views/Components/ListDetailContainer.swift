@@ -40,6 +40,11 @@ struct ListDetailContainer<Item: Hashable, ListContent: View, Detail: View>: Vie
         } action: { wide in
             navigation.setWide(wide)
         }
+        .onGeometryChange(for: Bool.self) { proxy in
+            ListDetailLayout.fabSitsBesideTabBar(width: proxy.size.width)
+        } action: { besideTabBar in
+            navigation.fabBesideTabBar = besideTabBar
+        }
         .onChange(of: navigation.path) {
             navigation.pathDidChange()
         }

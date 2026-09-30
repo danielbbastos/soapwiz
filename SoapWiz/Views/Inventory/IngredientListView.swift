@@ -225,7 +225,8 @@ struct IngredientListView: View {
                             FABAction(label: "Bulk Import", systemImage: "shippingbox") {
                                 model.showingBulkImport = true
                             }
-                        ]
+                        ],
+                        besideTabBar: navigation.fabBesideTabBar
                     )
                 } else if !model.selection.isEmpty {
                     createRecipeButton

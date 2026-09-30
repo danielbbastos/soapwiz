@@ -19,7 +19,8 @@ private struct FABStyle: ViewModifier {
     func body(content: Content) -> some View {
         if #available(iOS 26, *) {
             content
-                .glassEffect(.regular.interactive(), in: .circle)
+                .foregroundStyle(Color.fabInk)
+                .glassEffect(.floatingActionButton, in: .circle)
         } else {
             content
                 .foregroundStyle(.white)

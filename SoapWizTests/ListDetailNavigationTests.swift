@@ -24,6 +24,26 @@ struct ListDetailNavigationTests {
         #expect(ListDetailLayout.isWide(width: width) == expected)
     }
 
+    @Test(arguments: [
+        (CGFloat(820), false),
+        (1_000, false),
+        (1_099.5, false),
+        (1_100, true),
+        (1_180, true),
+        (1_366, true)
+    ])
+    func fabSitsBesideTabBar_ByWidth_OnlyOnceTheTabBarClearsTheListColumn(width: CGFloat, expected: Bool) {
+        guard #available(iOS 26, *) else {
+            #expect(!ListDetailLayout.fabSitsBesideTabBar(width: width))
+            return
+        }
+        #expect(ListDetailLayout.fabSitsBesideTabBar(width: width) == expected)
+    }
+
+    @Test func fabSitsBesideTabBar_OnlyEverInTheWideLayout() {
+        #expect(ListDetailLayout.minimumFABBesideTabBarWidth >= ListDetailLayout.minimumWideWidth)
+    }
+
     // MARK: - Showing an item
 
     @Test func initialState_NarrowWithNothingOpen() {

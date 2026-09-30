@@ -18,6 +18,9 @@ struct FABAction: Identifiable {
 struct ExpandableFloatingActionButton: View {
     let primaryAction: () -> Void
     let secondaryActions: [FABAction]
+    /// Beside the tab bar rather than above it: centred on the tab bar, measured
+    /// from the bottom of the screen instead of the safe area the tab bar adds.
+    var besideTabBar = false
 
     @State private var isExpanded = false
     /// Natural width of the labelled secondary buttons, measured so the capsule can
@@ -44,7 +47,9 @@ struct ExpandableFloatingActionButton: View {
 
             control
                 .padding(.trailing, 20)
-                .padding(.bottom, 20)
+                .padding(.bottom, besideTabBar ? ListDetailLayout.tabBarCentreLine - diameter / 2 : 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                .ignoresSafeArea(.container, edges: besideTabBar ? .bottom : [])
         }
     }
 
@@ -79,7 +84,7 @@ struct ExpandableFloatingActionButton: View {
 
     @ViewBuilder private var background: some View {
         if #available(iOS 26, *) {
-            Color.clear.glassEffect(.regular.interactive(), in: .capsule)
+            Color.clear.glassEffect(.floatingActionButton, in: .capsule)
         } else {
             Capsule().fill(Color.accentColor)
         }
@@ -171,7 +176,7 @@ struct ExpandableFloatingActionButton: View {
     }
 
     private var iconColor: Color {
-        if #available(iOS 26, *) { Color.warmInk } else { .white }
+        if #available(iOS 26, *) { Color.fabInk } else { .white }
     }
 
     private func expand() {
@@ -204,7 +209,7 @@ private struct RaisedPlus: ViewModifier {
     func body(content: Content) -> some View {
         if raised {
             if #available(iOS 26, *) {
-                content.glassEffect(.regular.interactive(), in: .circle)
+                content.glassEffect(.floatingActionButton, in: .circle)
             } else {
                 content.background(Color.accentColor, in: .circle)
             }
