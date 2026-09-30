@@ -75,3 +75,11 @@ enum BatchLogFixture {
         return photo
     }
 }
+
+extension BatchLogEntryFormViewModel {
+    /// Adds a photo with its thumbnail made here, as the photo field does off
+    /// the main actor, so tests don't have to.
+    func addPhoto(_ imageData: Data) {
+        addPhoto(imageData, preview: ImageDownscaler.thumbnail(from: imageData))
+    }
+}

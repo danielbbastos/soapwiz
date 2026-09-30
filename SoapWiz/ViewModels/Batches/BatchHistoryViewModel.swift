@@ -74,6 +74,17 @@ enum BatchHistoryViewModel {
         }
     }
 
+    /// What the photo viewer pages through when the photo at `tappedIndex` of
+    /// an entry's sorted photos is tapped, and which page it opens on. A photo
+    /// whose file hasn't arrived from iCloud yet has no data and is left out,
+    /// so the tapped one is counted again among those that do. Nil when the
+    /// tapped photo is one of those, or the index is out of range.
+    static func viewerPages(_ images: [Data?], tappedIndex: Int) -> (images: [Data], startIndex: Int)? {
+        guard images.indices.contains(tappedIndex), images[tappedIndex] != nil else { return nil }
+        let startIndex = images[..<tappedIndex].count { $0 != nil }
+        return (images.compactMap(\.self), startIndex)
+    }
+
     /// Nil for a batch made without inventory tracking: it recorded no cost, so
     /// there is nothing to divide — a zero would read as "this batch was free".
     static func costPerBatch(of batch: Batch) -> Double? {

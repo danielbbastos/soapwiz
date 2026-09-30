@@ -8,6 +8,7 @@ struct BatchLogEntryFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var model: BatchLogEntryFormViewModel
+    @State private var confirmingDiscard = false
 
     init(batch: Batch, entry: BatchLogEntry? = nil) {
         _model = State(initialValue: BatchLogEntryFormViewModel(batch: batch, entry: entry))
@@ -43,7 +44,13 @@ struct BatchLogEntryFormView: View {
             .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button("Cancel") {
+                        if model.hasChanges {
+                            confirmingDiscard = true
+                        } else {
+                            dismiss()
+                        }
+                    }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(model.isEditing ? "Save" : "Add") {
@@ -53,6 +60,18 @@ struct BatchLogEntryFormView: View {
                     .disabled(!model.canSave)
                 }
             }
+            // An alert rather than a confirmation dialog, as on the recipe
+            // form: on iPad a dialog becomes a popover without its cancel
+            // button, leaving "keep editing" to a tap outside it.
+            .alert("Discard changes?", isPresented: $confirmingDiscard) {
+                Button("Discard", role: .destructive) { dismiss() }
+                Button("Keep Editing", role: .cancel) {}
+            } message: {
+                Text("This entry has changes that haven't been saved.")
+            }
         }
+        // Notes and picked photos are slow to redo, so a swipe can't throw
+        // them away; Cancel asks first.
+        .interactiveDismissDisabled(model.hasChanges)
     }
 }

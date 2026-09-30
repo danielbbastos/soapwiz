@@ -145,13 +145,9 @@ struct BatchLogPhotosField: View {
                 failures += 1
                 continue
             }
-            model.addPhoto(downscaled)
+            model.addPhoto(downscaled, preview: await ImageDownscaler.thumbnailInBackground(from: downscaled))
         }
-        if failures > 0 {
-            problem = failures == items.count
-                ? "Couldn't open that. Try another photo."
-                : "Some photos couldn't be opened."
-        }
+        problem = BatchLogEntryFormViewModel.loadProblem(failures: failures, of: items.count)
     }
 
     private func add(_ captured: UIImage) async {
@@ -162,6 +158,6 @@ struct BatchLogPhotosField: View {
             problem = "Couldn't read that photo. Try another one."
             return
         }
-        model.addPhoto(downscaled)
+        model.addPhoto(downscaled, preview: await ImageDownscaler.thumbnailInBackground(from: downscaled))
     }
 }

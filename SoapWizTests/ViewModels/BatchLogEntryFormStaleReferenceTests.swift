@@ -7,10 +7,61 @@ import UIKit
 /// The edit sheet captures its `BatchLogEntry` when it opens. If another device
 /// deletes that entry and the deletion syncs in while the sheet is still up,
 /// writing to the captured reference would land on a detached model: the edit
-/// gone without a trace, and any new photo linked to nothing.
+/// gone without a trace, and any new photo linked to nothing. If another device
+/// adds a photo to it instead, saving must not delete a photo nobody removed.
 @Suite("Batch log entry form — stale references", .serialized)
 @MainActor
 struct BatchLogEntryFormStaleReferenceTests {
+
+    // MARK: - A photo arrives while the form is open
+
+    @Test func save_PhotoArrivedWhileOpen_IsKeptAfterTheFormsPhotos() async throws {
+        let (container, ctx) = try BatchLogFixture.makeContext()
+        _ = container
+        let batch = BatchLogFixture.insertBatch(ctx)
+        let first = try await BatchLogFixture.photoData()
+        let entry = BatchLogFixture.insertEntry(
+            ctx, batch: batch, date: try BatchLogFixture.date(day: 0), text: "Cut", photos: [first]
+        )
+        try ctx.save()
+        let sut = BatchLogEntryFormViewModel(batch: batch, entry: entry)
+        let arrived = try await BatchLogFixture.photoData(.systemBlue)
+        BatchLogFixture.insertPhoto(ctx, entry: entry, imageData: arrived, position: 1)
+        try ctx.save()
+        sut.text = "Cut into 8 bars"
+
+        sut.save(context: ctx)
+        try ctx.save()
+
+        #expect(entry.sortedPhotos.map(\.imageData) == [first, arrived])
+        #expect(entry.sortedPhotos.map(\.position) == [0, 1])
+    }
+
+    @Test func save_PhotoRemovedWhileAnotherArrived_DeletesOnlyTheRemovedOne() async throws {
+        let (container, ctx) = try BatchLogFixture.makeContext()
+        _ = container
+        let batch = BatchLogFixture.insertBatch(ctx)
+        let removed = try await BatchLogFixture.photoData()
+        let kept = try await BatchLogFixture.photoData(.systemGreen)
+        let entry = BatchLogFixture.insertEntry(
+            ctx, batch: batch, date: try BatchLogFixture.date(day: 0), text: "Cut", photos: [removed, kept]
+        )
+        try ctx.save()
+        let sut = BatchLogEntryFormViewModel(batch: batch, entry: entry)
+        sut.removePhoto(try #require(sut.photos.first))
+        let arrived = try await BatchLogFixture.photoData(.systemBlue)
+        BatchLogFixture.insertPhoto(ctx, entry: entry, imageData: arrived, position: 2)
+        try ctx.save()
+
+        sut.save(context: ctx)
+        try ctx.save()
+
+        #expect(entry.sortedPhotos.map(\.imageData) == [kept, arrived])
+        #expect(entry.sortedPhotos.map(\.position) == [0, 1])
+        #expect(try ctx.fetch(FetchDescriptor<BatchLogPhoto>()).count == 2)
+    }
+
+    // MARK: - The entry is deleted while the form is open
 
     @Test func save_EntryDeletedWhileOpen_SavesAsANewEntryOnTheBatch() async throws {
         let (container, ctx) = try BatchLogFixture.makeContext()
@@ -62,6 +113,25 @@ struct BatchLogEntryFormStaleReferenceTests {
         #expect(photos.count == 1)
         #expect(photos.allSatisfy { $0.entry != nil })
         #expect(try ctx.fetch(FetchDescriptor<BatchLogEntry>()).count == 1)
+    }
+
+    /// The delete confirmation can still be up when another device's delete
+    /// of the same entry syncs in. Confirming then must not touch the detached
+    /// row, or anything else.
+    @Test func delete_EntryAlreadyDeletedElsewhere_LeavesTheRestAlone() throws {
+        let (container, ctx) = try BatchLogFixture.makeContext()
+        _ = container
+        let batch = BatchLogFixture.insertBatch(ctx)
+        let entry = BatchLogFixture.insertEntry(ctx, batch: batch, date: try BatchLogFixture.date(day: 0), text: "Poured")
+        BatchLogFixture.insertEntry(ctx, batch: batch, date: try BatchLogFixture.date(day: 1), text: "Cut")
+        try ctx.save()
+        BatchLogEntryFormViewModel.delete(entry, context: ctx)
+        try ctx.save()
+
+        BatchLogEntryFormViewModel.delete(entry, context: ctx)
+        try ctx.save()
+
+        #expect(batch.logEntries.map(\.text) == ["Cut"])
     }
 
     /// The ordinary path, so the guard above cannot pass by always creating a

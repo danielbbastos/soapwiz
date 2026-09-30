@@ -54,15 +54,9 @@ struct BatchLogSection: View {
     /// Reads the full-size images only now, when they are about to be shown;
     /// the rows draw from thumbnails.
     private func openPhoto(at index: Int, of entry: BatchLogEntry) {
-        let photos = entry.sortedPhotos
-        guard photos.indices.contains(index), photos[index].imageData != nil else { return }
-        // A photo whose file hasn't arrived from iCloud yet has no data, so
-        // the tapped one is counted again among those that do.
-        let startIndex = photos[..<index].count { $0.imageData != nil }
-        presentation.viewerContent = PhotoViewerContent(
-            images: photos.compactMap(\.imageData),
-            startIndex: startIndex
-        )
+        let images = entry.sortedPhotos.map(\.imageData)
+        guard let pages = BatchHistoryViewModel.viewerPages(images, tappedIndex: index) else { return }
+        presentation.viewerContent = PhotoViewerContent(images: pages.images, startIndex: pages.startIndex)
     }
 }
 

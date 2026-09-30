@@ -78,6 +78,15 @@ struct ImageDownscalerTests {
         #expect(ImageDownscaler.thumbnail(from: Data()) == nil)
     }
 
+    @Test func thumbnailInBackground_MatchesTheThumbnailMadeInPlace() async throws {
+        let hero = try #require(await ImageDownscaler.hero(from: makeImage(width: 1200, height: 900)))
+
+        let thumbnail = await ImageDownscaler.thumbnailInBackground(from: hero)
+
+        #expect(thumbnail != nil)
+        #expect(thumbnail == ImageDownscaler.thumbnail(from: hero))
+    }
+
     // MARK: - Helpers
 
     /// Decoded at scale 1 by construction: `UIImage(data:)` never applies a
