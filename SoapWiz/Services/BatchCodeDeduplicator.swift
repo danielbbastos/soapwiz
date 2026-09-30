@@ -80,10 +80,29 @@ enum BatchCodeDeduplicator {
         return renumbered
     }
 
-    /// What decides who keeps a contested code. The date settles it in
-    /// practice; the rest only make the order total, from fields that are the
-    /// same on every device.
-    private static func orderKey(_ batch: Batch) -> (Date, String, Int, Double) {
-        (batch.dateCreated, batch.recipeName, batch.batchCount, batch.totalCost)
+    private static func orderKey(_ batch: Batch) -> BatchCodeClaim {
+        BatchCodeClaim(
+            dateCreated: batch.dateCreated,
+            recipeName: batch.recipeName,
+            batchCount: batch.batchCount,
+            totalCost: batch.totalCost
+        )
+    }
+}
+
+/// What decides who keeps a contested code: the smaller claim wins. The date
+/// settles it in practice; the rest only make the order total, from fields
+/// that are the same on every device. Two equal claims can't be told apart.
+private struct BatchCodeClaim: Comparable {
+    let dateCreated: Date
+    let recipeName: String
+    let batchCount: Int
+    let totalCost: Double
+
+    static func < (lhs: BatchCodeClaim, rhs: BatchCodeClaim) -> Bool {
+        if lhs.dateCreated != rhs.dateCreated { return lhs.dateCreated < rhs.dateCreated }
+        if lhs.recipeName != rhs.recipeName { return lhs.recipeName < rhs.recipeName }
+        if lhs.batchCount != rhs.batchCount { return lhs.batchCount < rhs.batchCount }
+        return lhs.totalCost < rhs.totalCost
     }
 }
