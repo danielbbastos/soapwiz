@@ -51,15 +51,21 @@ enum CureBand: String, Equatable {
         CureBand(rawValue: raw)
     }
 
-    /// The range and why, as the Create Batch footer shows it.
-    var summary: String { "\(rangeText): \(reason)" }
-
-    private var reason: String {
+    /// Why the range is what it is.
+    var reason: String {
         switch self {
-        case .typicalCold: "typical for a cold-process bar."
-        case .typicalHot: "a hot-process bar has less water left to lose."
-        case .highOlive: "soft, high-olive blends take longer to harden."
-        case .castile: "castile-style bars keep improving for up to a year."
+        case .typicalCold: "Typical for a cold-process bar."
+        case .typicalHot: "A hot-process bar has less water left to lose."
+        case .highOlive: "Soft, high-olive blends take longer to harden."
+        case .castile: "Castile-style bars keep improving for up to a year."
+        }
+    }
+
+    /// The soft-oil bands, which cooking doesn't shorten.
+    var isSoft: Bool {
+        switch self {
+        case .highOlive, .castile: true
+        case .typicalCold, .typicalHot: false
         }
     }
 }
@@ -67,9 +73,18 @@ enum CureBand: String, Equatable {
 /// A suggested cure, shown as a range with the longer end as the default.
 struct CureEstimate: Equatable {
     let band: CureBand
+    let process: SoapProcess
 
     var weeks: ClosedRange<Int> { band.weeks }
     var defaultDays: Int { weeks.upperBound * 7 }
+
+    /// The reason under the range, as the Create Batch footer shows it. A soft
+    /// blend made hot says outright that cooking didn't shorten it, since the
+    /// range is otherwise the same as cold.
+    var explanation: String {
+        guard process == .hot, band.isSoft else { return band.reason }
+        return "\(band.reason) Hot process doesn't shorten this: soft-oil soaps keep hardening long after the cook."
+    }
 }
 
 /// Suggests how long a batch should cure, from what its recipe makes and how
@@ -100,14 +115,18 @@ enum CureEstimator {
         process: SoapProcess
     ) -> CureEstimate? {
         guard makesSoap, soapType == .solid else { return nil }
+        return CureEstimate(band: band(for: fattyAcidProfile, process: process), process: process)
+    }
+
+    private static func band(for profile: FattyAcidProfile, process: SoapProcess) -> CureBand {
         // Without any fatty acid data there's no softness to read, and an
         // all-zero hardness would otherwise pass for pure castile.
-        guard !fattyAcidProfile.isEmpty else { return CureEstimate(band: typicalBand(for: process)) }
+        guard !profile.isEmpty else { return typicalBand(for: process) }
 
-        let hardness = fattyAcidProfile.hardness
-        if hardness < castileHardness { return CureEstimate(band: .castile) }
-        if hardness < highOliveHardness { return CureEstimate(band: .highOlive) }
-        return CureEstimate(band: typicalBand(for: process))
+        let hardness = profile.hardness
+        if hardness < castileHardness { return .castile }
+        if hardness < highOliveHardness { return .highOlive }
+        return typicalBand(for: process)
     }
 
     private static func typicalBand(for process: SoapProcess) -> CureBand {

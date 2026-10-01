@@ -41,8 +41,12 @@ final class BatchProductionViewModel {
     let tracksInventory: Bool
 
     /// How the bars are being made. Only asked of a recipe that cures, and
-    /// moves the suggested cure: a hot-process bar is ready sooner.
-    var process: SoapProcess = .cold
+    /// moves the suggested cure: a hot-process bar is ready sooner. Picking a
+    /// process says which suggestion applies, so it also drops a length the
+    /// user set and goes back to the new suggestion.
+    var process: SoapProcess = .cold {
+        didSet { chosenCureDays = nil }
+    }
 
     /// What the cure would be for the current `process`, or `nil` when the
     /// recipe isn't a solid bar — the batch then never mentions a cure.
@@ -56,8 +60,8 @@ final class BatchProductionViewModel {
     }
 
     /// The cure the batch will be made with: the estimate's longer end until
-    /// the user picks a length of their own, which then stays put when the
-    /// process changes. Zero when the recipe doesn't cure.
+    /// the user picks a length of their own, which holds until the process
+    /// changes. Zero when the recipe doesn't cure.
     var cureDays: Int {
         get {
             guard let estimate = cureEstimate else { return 0 }

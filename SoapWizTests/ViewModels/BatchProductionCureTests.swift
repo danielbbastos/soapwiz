@@ -51,7 +51,9 @@ struct BatchProductionCureTests: BatchProductionTestHelpers {
         #expect(model.cureDays == 28)
     }
 
-    @Test func cureDays_ChosenByTheUser_SurvivesAProcessChange() throws {
+    /// Picking a process says which suggestion applies, so a length set for
+    /// the other one gives way to it.
+    @Test func cureDays_ChosenByTheUser_ResetsOnAProcessChange() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let model = BatchProductionViewModel(recipe: seed(ctx, profile: Self.typical), lyeCandidates: [])
@@ -59,7 +61,31 @@ struct BatchProductionCureTests: BatchProductionTestHelpers {
         model.cureDays = 35
         model.process = .hot
 
-        #expect(model.cureDays == 35)
+        #expect(model.cureDays == 28)
+    }
+
+    @Test func cureDays_ChosenAfterAProcessChange_IsKept() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = BatchProductionViewModel(recipe: seed(ctx, profile: Self.typical), lyeCandidates: [])
+
+        model.process = .hot
+        model.cureDays = 21
+
+        #expect(model.cureDays == 21)
+    }
+
+    /// A soft blend's band doesn't move with the process, so switching lands
+    /// back on the same suggestion — but a length the user set still gives way.
+    @Test func cureDays_SoftBlendChosenByTheUser_ResetsToTheSameSuggestion() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = BatchProductionViewModel(recipe: seed(ctx, profile: Self.olive), lyeCandidates: [])
+
+        model.cureDays = 70
+        model.process = .hot
+
+        #expect(model.cureDays == 182)
     }
 
     @Test func create_SolidBar_StoresCureAndProcess() throws {
