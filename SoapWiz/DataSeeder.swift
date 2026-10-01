@@ -4,10 +4,12 @@ import SwiftData
 struct DataSeeder {
     static func seed(into context: ModelContext) {
         #if DEBUG
-        seedTestIngredients(into: context)
-        // Batches only alongside freshly seeded recipes: making one draws
-        // stock, and a store that already had recipes may be real data.
-        if seedTestRecipes(into: context) {
+        let seededStock = seedTestIngredients(into: context)
+        let seededRecipes = seedTestRecipes(into: context)
+        // Batches only into a store this launch has just filled with both: a
+        // batch draws stock, and purchases or recipes already there may be
+        // real data.
+        if seededStock && seededRecipes {
             seedTestBatches(into: context)
         }
         #endif
@@ -181,14 +183,17 @@ extension DataSeeder {
 
     /// Runs once per store. Keyed on purchases rather than ingredients, because
     /// the library has already filled the inventory by the time this runs.
-    static func seedTestIngredients(into context: ModelContext) {
-        guard let count = try? context.fetchCount(FetchDescriptor<IngredientPurchase>()), count == 0 else { return }
+    /// Returns whether it seeded, which it does only into a store without
+    /// purchases.
+    @discardableResult
+    static func seedTestIngredients(into context: ModelContext) -> Bool {
+        guard let count = try? context.fetchCount(FetchDescriptor<IngredientPurchase>()), count == 0 else { return false }
 
         guard
             let url = Bundle.main.url(forResource: "TestIngredients", withExtension: "json"),
             let data = try? Data(contentsOf: url),
             let seed = try? JSONDecoder().decode(TestDataSeed.self, from: data)
-        else { return }
+        else { return false }
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -221,6 +226,7 @@ extension DataSeeder {
             guard let ingredient = librarySlugs[ingredientSeed.slug] else { continue }
             insertPurchases(ingredientSeed.purchases, for: ingredient, into: context, lookups: lookups)
         }
+        return true
     }
 
     /// Resolved lookup tables and date parser shared across purchase inserts.

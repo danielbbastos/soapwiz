@@ -212,17 +212,34 @@ struct NotificationCureSyncActionTests {
     /// cure stepped twice can't leave the first step's reminder behind.
     @Test func serialized_SecondChangeWhileFirstRuns_StartsAfterItEnds() async {
         var log: [String] = []
+        var releaseFirst: CheckedContinuation<Void, Never>?
 
-        async let first: Void = NotificationService.serialized {
-            log.append("first started")
-            try? await Task.sleep(for: .milliseconds(100))
-            log.append("first ended")
+        let first = Task {
+            await NotificationService.serialized {
+                log.append("first started")
+                await withCheckedContinuation { releaseFirst = $0 }
+                log.append("first ended")
+            }
         }
-        try? await Task.sleep(for: .milliseconds(20))
-        async let second: Void = NotificationService.serialized {
-            log.append("second started")
+        // Asked for only once the first is known to be running, so the order
+        // is the queue's doing rather than the scheduler's.
+        while releaseFirst == nil {
+            await Task.yield()
         }
-        _ = await (first, second)
+        let second = Task {
+            await NotificationService.serialized {
+                log.append("second started")
+            }
+        }
+        // Room for the second to run if nothing held it back.
+        for _ in 0..<10 {
+            await Task.yield()
+        }
+        #expect(log == ["first started"])
+
+        releaseFirst?.resume()
+        await first.value
+        await second.value
 
         #expect(log == ["first started", "first ended", "second started"])
     }
