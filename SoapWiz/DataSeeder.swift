@@ -1,17 +1,48 @@
+import CloudKit
 import Foundation
 import SwiftData
 
 struct DataSeeder {
+    /// Whether this launch filled an empty store with test stock and recipes,
+    /// so test batches may follow once `seedTestBatchesIfDue` has checked the
+    /// account. A batch draws stock, and purchases or recipes already there may
+    /// be real data.
+    private static var batchesDue = false
+
     static func seed(into context: ModelContext) {
         #if DEBUG
         let seededStock = seedTestIngredients(into: context)
         let seededRecipes = seedTestRecipes(into: context)
-        // Batches only into a store this launch has just filled with both: a
-        // batch draws stock, and purchases or recipes already there may be
-        // real data.
-        if seededStock && seededRecipes {
-            seedTestBatches(into: context)
+        batchesDue = seededStock && seededRecipes
+        #endif
+    }
+
+    /// The test batches, when `seed(into:)` has just filled the store and the
+    /// store isn't syncing to an iCloud account. A synced store looks empty
+    /// after a reinstall only until the import arrives: seeding it would add
+    /// three more batches to every device on the account each time, and a
+    /// batch can't be deleted. A mirrored store opens without an account too,
+    /// so it's the account that decides, and only a definite "no account"
+    /// lets them through. Runs at most once per launch.
+    ///
+    /// `storeIsMirrored` and `account` default to the store this launch opened
+    /// and the real account, resolved here rather than as default arguments,
+    /// which aren't evaluated on the main actor.
+    static func seedTestBatchesIfDue(
+        into context: ModelContext,
+        storeIsMirrored: Bool? = nil,
+        account: (any SyncAccountStatusProviding)? = nil
+    ) async {
+        #if DEBUG
+        guard batchesDue else { return }
+        batchesDue = false
+        if storeIsMirrored ?? (ModelContainerFactory.activeStore == .mirrored) {
+            let account = account ?? CloudKitAccountStatusProvider(
+                containerIdentifier: ModelContainerFactory.cloudKitContainerIdentifier
+            )
+            guard await account.accountStatus() == .noAccount else { return }
         }
+        seedTestBatches(into: context)
         #endif
     }
 }
@@ -124,11 +155,12 @@ extension DataSeeder {
         BatchSeed(recipeName: "Everyday Kitchen Bar", process: .hot, cureFraction: 1.2)
     ]
 
-    /// Runs only on the launch that seeded the recipes. Each batch goes through
+    /// Called only through `seedTestBatchesIfDue`, on a launch that seeded
+    /// both the test stock and the test recipes. Each batch goes through
     /// `BatchProductionViewModel` like one made in the app — stock is drawn,
     /// the code generated, the cure suggested — then is backdated so its cure
     /// sits at `cureFraction`.
-    static func seedTestBatches(into context: ModelContext) {
+    private static func seedTestBatches(into context: ModelContext) {
         guard let count = try? context.fetchCount(FetchDescriptor<Batch>()), count == 0 else { return }
         let recipes = (try? context.fetch(FetchDescriptor<Recipe>())) ?? []
 

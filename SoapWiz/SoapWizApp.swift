@@ -63,6 +63,10 @@ struct SoapWizApp: App {
                             context: sharedModelContainer.mainContext
                         )
                     }
+                    // After launch rather than with the rest of the seeding:
+                    // whether the store syncs to an account is only known
+                    // asynchronously.
+                    await DataSeeder.seedTestBatchesIfDue(into: sharedModelContainer.mainContext)
                     await NotificationService.syncIfEnabled(
                         modelContext: sharedModelContainer.mainContext
                     )
