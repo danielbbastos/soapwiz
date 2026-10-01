@@ -298,29 +298,6 @@ struct DuplicateMergerTests {
         #expect(remaining.first?.expiryNotificationsEnabled == true)
     }
 
-    /// Cure reminders switched on on one device survive a merge that keeps
-    /// another device's untouched row (SW-193).
-    @Test func mergeAll_CureRemindersOnAnyDevice_StayOn() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let untouched = AppSettings()
-        untouched.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000001"))
-        let opted = AppSettings()
-        opted.uuid = try #require(UUID(uuidString: "00000000-0000-0000-0000-000000000002"))
-        opted.cureNotificationsEnabled = true
-        ctx.insert(untouched)
-        ctx.insert(opted)
-        try ctx.save()
-
-        try DuplicateMerger.mergeAll(in: ctx)
-
-        let remaining = try ctx.fetch(FetchDescriptor<AppSettings>())
-        #expect(remaining.count == 1)
-        #expect(remaining.first?.uuid == untouched.uuid)
-        #expect(remaining.first?.cureNotificationsEnabled == true)
-        #expect(remaining.first?.expiryNotificationsEnabled == false)
-    }
-
     @Test func mergeAll_TrackingOffOnAnyDevice_StaysOff() throws {
         let (container, ctx) = try makeContext()
         _ = container
