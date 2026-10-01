@@ -60,7 +60,30 @@ struct CureEstimatorTests {
     @Test(arguments: [0.8, 1.0])
     func estimate_SoftBlendHotProcessed_KeepsItsBand(_ oliveShare: Double) {
         let profile = Self.blend(olive: oliveShare)
-        #expect(estimate(profile, process: .hot) == estimate(profile, process: .cold))
+        #expect(estimate(profile, process: .hot)?.band == estimate(profile, process: .cold)?.band)
+    }
+
+    // MARK: - Explanation
+
+    /// Made hot, a soft blend says why the range didn't move.
+    @Test(arguments: [0.8, 1.0])
+    func explanation_SoftBlendHotProcessed_SaysCookingDoesNotShortenIt(_ oliveShare: Double) throws {
+        let result = try #require(estimate(Self.blend(olive: oliveShare), process: .hot))
+        #expect(result.explanation.hasPrefix(result.band.reason))
+        #expect(result.explanation.contains("Hot process doesn't shorten this"))
+    }
+
+    @Test(arguments: [0.8, 1.0])
+    func explanation_SoftBlendColdProcessed_IsTheReasonAlone(_ oliveShare: Double) throws {
+        let result = try #require(estimate(Self.blend(olive: oliveShare), process: .cold))
+        #expect(result.explanation == result.band.reason)
+    }
+
+    /// A typical bar's range already moves with the process: no note needed.
+    @Test(arguments: [SoapProcess.cold, .hot])
+    func explanation_TypicalBar_IsTheReasonAlone(_ process: SoapProcess) throws {
+        let result = try #require(estimate(Self.blend(olive: 0.5), process: process))
+        #expect(result.explanation == result.band.reason)
     }
 
     @Test func estimate_HardnessAtBottomOfRecommendedRange_IsTypical() throws {

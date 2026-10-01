@@ -150,6 +150,7 @@ struct CreateBatchSheet: View {
                     Text(process.label).tag(process)
                 }
             }
+            LabeledContent("Recommended", value: estimate.band.rangeText)
             Stepper(value: $model.cureDays, in: BatchCureLimits.days, step: 7) {
                 LabeledContent("Length") {
                     CureLengthText.text(days: model.cureDays)
@@ -159,7 +160,7 @@ struct CreateBatchSheet: View {
         } header: {
             Text("Cure")
         } footer: {
-            Text(estimate.band.summary)
+            Text(estimate.explanation)
         }
         .listRowBackground(Color.cardBackground)
     }

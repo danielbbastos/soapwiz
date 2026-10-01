@@ -51,7 +51,9 @@ struct BatchProductionCureTests: BatchProductionTestHelpers {
         #expect(model.cureDays == 28)
     }
 
-    @Test func cureDays_ChosenByTheUser_SurvivesAProcessChange() throws {
+    /// Picking a process says which suggestion applies, so a length set for
+    /// the other one gives way to it.
+    @Test func cureDays_ChosenByTheUser_ResetsOnAProcessChange() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let model = BatchProductionViewModel(recipe: seed(ctx, profile: Self.typical), lyeCandidates: [])
@@ -59,7 +61,57 @@ struct BatchProductionCureTests: BatchProductionTestHelpers {
         model.cureDays = 35
         model.process = .hot
 
+        #expect(model.cureDays == 28)
+    }
+
+    @Test func cureDays_ChosenAfterAProcessChange_IsKept() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = BatchProductionViewModel(recipe: seed(ctx, profile: Self.typical), lyeCandidates: [])
+
+        model.process = .hot
+        model.cureDays = 21
+
+        #expect(model.cureDays == 21)
+    }
+
+    /// A soft blend's suggestion doesn't move with the process, so there's
+    /// nothing new for the user's length to give way to.
+    @Test func cureDays_SoftBlendChosenByTheUser_SurvivesAProcessChange() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = BatchProductionViewModel(recipe: seed(ctx, profile: Self.olive), lyeCandidates: [])
+
+        model.cureDays = 70
+        model.process = .hot
+
+        #expect(model.cureDays == 70)
+    }
+
+    /// Picking the process that's already selected changes nothing.
+    @Test func cureDays_ChosenByTheUser_SurvivesTheSameProcessPickedAgain() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = BatchProductionViewModel(recipe: seed(ctx, profile: Self.typical), lyeCandidates: [])
+
+        model.cureDays = 35
+        model.process = .cold
+
         #expect(model.cureDays == 35)
+    }
+
+    /// Back and forth: the round trip lands on the original suggestion, not on
+    /// the length set before the first switch.
+    @Test func cureDays_ChosenByTheUser_SwitchedThereAndBack_IsTheSuggestion() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = BatchProductionViewModel(recipe: seed(ctx, profile: Self.typical), lyeCandidates: [])
+
+        model.cureDays = 35
+        model.process = .hot
+        model.process = .cold
+
+        #expect(model.cureDays == 42)
     }
 
     @Test func create_SolidBar_StoresCureAndProcess() throws {
