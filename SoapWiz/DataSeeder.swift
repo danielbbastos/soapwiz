@@ -21,22 +21,27 @@ struct DataSeeder {
     /// store isn't syncing to an iCloud account. A synced store looks empty
     /// after a reinstall only until the import arrives: seeding it would add
     /// three more batches to every device on the account each time, and a
-    /// batch can't be deleted. A mirrored store opens without an account too,
-    /// so it's the account that decides, and only a definite "no account"
-    /// lets them through. Runs at most once per launch.
+    /// batch can't be deleted. Runs at most once per launch.
     ///
-    /// `storeIsMirrored` and `account` default to the store this launch opened
-    /// and the real account, resolved here rather than as default arguments,
-    /// which aren't evaluated on the main actor.
+    /// Only a build that never mirrors skips the account check. A mirrored
+    /// store opens without an account too, and a local fallback is the same
+    /// file, which the next launch may well mirror — so for both, only a
+    /// definite "no account" lets the batches through. Signing that simulator
+    /// into iCloud later would still upload them, as it would the seeded stock
+    /// and recipes; that's a deliberate step, and accepted.
+    ///
+    /// `activeStore` is the store this launch opened. `account` defaults to the
+    /// real account, resolved here rather than as a default argument, which
+    /// isn't evaluated on the main actor.
     static func seedTestBatchesIfDue(
         into context: ModelContext,
-        storeIsMirrored: Bool? = nil,
+        activeStore: ModelContainerFactory.ActiveStore?,
         account: (any SyncAccountStatusProviding)? = nil
     ) async {
         #if DEBUG
         guard batchesDue else { return }
         batchesDue = false
-        if storeIsMirrored ?? (ModelContainerFactory.activeStore == .mirrored) {
+        if activeStore != .notMirrored {
             let account = account ?? CloudKitAccountStatusProvider(
                 containerIdentifier: ModelContainerFactory.cloudKitContainerIdentifier
             )

@@ -23,13 +23,13 @@ struct DataSeederBatchTests {
     /// the batches from its launch task.
     private func launch(
         _ ctx: ModelContext,
-        storeIsMirrored: Bool = false,
+        store: ModelContainerFactory.ActiveStore = .notMirrored,
         account: CKAccountStatus = .noAccount
     ) async {
         DataSeeder.seed(into: ctx)
         await DataSeeder.seedTestBatchesIfDue(
             into: ctx,
-            storeIsMirrored: storeIsMirrored,
+            activeStore: store,
             account: StubSeederAccount(status: account)
         )
     }
@@ -61,12 +61,19 @@ struct DataSeederBatchTests {
         #expect(kitchen.cureStatus == .ready)
     }
 
-    /// A simulator with no account mirrors in name only: nothing uploads.
-    @Test func launch_FreshMirroredStoreWithoutAnAccount_MakesBatches() async throws {
+    /// With no account there's nothing to upload to — until the simulator is
+    /// signed in, which is a deliberate step and accepted.
+    @Test(arguments: [
+        ModelContainerFactory.ActiveStore.mirrored,
+        .localFallback(reason: "Schema not deployed")
+    ])
+    func launch_FreshStoreThatMayMirrorWithoutAnAccount_MakesBatches(
+        _ store: ModelContainerFactory.ActiveStore
+    ) async throws {
         let (container, ctx) = try freshContext()
         _ = container
 
-        await launch(ctx, storeIsMirrored: true, account: .noAccount)
+        await launch(ctx, store: store, account: .noAccount)
 
         #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 3)
     }
@@ -78,7 +85,18 @@ struct DataSeederBatchTests {
         let (container, ctx) = try freshContext()
         _ = container
 
-        await launch(ctx, storeIsMirrored: true, account: status)
+        await launch(ctx, store: .mirrored, account: status)
+
+        #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 0)
+    }
+
+    /// A local fallback is the same file the next launch may mirror, so a
+    /// signed-in account blocks the batches there too.
+    @Test func launch_FreshLocalFallbackWithAnAccount_MakesNoBatches() async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+
+        await launch(ctx, store: .localFallback(reason: "Schema not deployed"), account: .available)
 
         #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 0)
     }
@@ -121,15 +139,26 @@ struct DataSeederBatchTests {
         #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 0)
     }
 
-    /// Once per launch: a second window's launch task finds nothing due.
+    /// Once per launch: a second window's launch task finds nothing due. The
+    /// second call goes to an empty store of its own, which would get batches
+    /// if the first call hadn't used up the launch's turn.
     @Test func seedTestBatchesIfDue_CalledTwice_SeedsOnce() async throws {
-        let (container, ctx) = try freshContext()
-        _ = container
+        let (firstContainer, firstCtx) = try freshContext()
+        _ = firstContainer
+        let (secondContainer, secondCtx) = try freshContext()
+        _ = secondContainer
+        DataSeeder.seedTestIngredients(into: secondCtx)
+        DataSeeder.seedTestRecipes(into: secondCtx)
 
-        await launch(ctx)
-        await DataSeeder.seedTestBatchesIfDue(into: ctx, storeIsMirrored: false, account: StubSeederAccount(status: .noAccount))
+        await launch(firstCtx)
+        await DataSeeder.seedTestBatchesIfDue(
+            into: secondCtx,
+            activeStore: .notMirrored,
+            account: StubSeederAccount(status: .noAccount)
+        )
 
-        #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 3)
+        #expect(try firstCtx.fetchCount(FetchDescriptor<Batch>()) == 3)
+        #expect(try secondCtx.fetchCount(FetchDescriptor<Batch>()) == 0)
     }
 }
 
