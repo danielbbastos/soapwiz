@@ -23,7 +23,7 @@ struct DataSeederBatchTests {
     /// the batches from its launch task.
     private func launch(
         _ ctx: ModelContext,
-        store: ModelContainerFactory.ActiveStore = .notMirrored,
+        store: ModelContainerFactory.ActiveStore = .mirrored,
         account: CKAccountStatus = .noAccount
     ) async {
         DataSeeder.seed(into: ctx)
@@ -40,7 +40,7 @@ struct DataSeederBatchTests {
         return (container, ctx)
     }
 
-    @Test func launch_FreshLocalStore_MakesOneBatchAtEachStageOfACure() async throws {
+    @Test func launch_FreshStoreWithoutAnAccount_MakesOneBatchAtEachStageOfACure() async throws {
         let (container, ctx) = try freshContext()
         _ = container
 
@@ -76,6 +76,20 @@ struct DataSeederBatchTests {
         await launch(ctx, store: store, account: .noAccount)
 
         #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 3)
+    }
+
+    /// A local-only build opens the file an entitled build installed over it
+    /// would mirror, and can't ask about the account — so never, whatever the
+    /// account. "No account" is in the list because it would let any other
+    /// store through.
+    @Test(arguments: [CKAccountStatus.noAccount, .available])
+    func launch_FreshLocalOnlyStore_MakesNoBatches(_ status: CKAccountStatus) async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+
+        await launch(ctx, store: .notMirrored, account: status)
+
+        #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 0)
     }
 
     /// Signed in, or not known to be signed out: the store may sync, so no
@@ -153,7 +167,7 @@ struct DataSeederBatchTests {
         await launch(firstCtx)
         await DataSeeder.seedTestBatchesIfDue(
             into: secondCtx,
-            activeStore: .notMirrored,
+            activeStore: .mirrored,
             account: StubSeederAccount(status: .noAccount)
         )
 

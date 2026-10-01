@@ -23,12 +23,14 @@ struct DataSeeder {
     /// three more batches to every device on the account each time, and a
     /// batch can't be deleted. Runs at most once per launch.
     ///
-    /// Only a build that never mirrors skips the account check. A mirrored
-    /// store opens without an account too, and a local fallback is the same
-    /// file, which the next launch may well mirror — so for both, only a
-    /// definite "no account" lets the batches through. Signing that simulator
-    /// into iCloud later would still upload them, as it would the seeded stock
-    /// and recipes; that's a deliberate step, and accepted.
+    /// Every store a debug build opens is the same file the entitled build
+    /// mirrors: a mirrored store opens without an account too, a local
+    /// fallback may mirror on the next launch, and a local-only build may be
+    /// installed over by an entitled one. So only a definite "no account" lets
+    /// the batches through. A local-only build can't ask — it lacks the
+    /// entitlement CloudKit needs — so it never gets them. Signing a simulator
+    /// with no account into iCloud later would still upload them, as it would
+    /// the seeded stock and recipes; that's a deliberate step, and accepted.
     ///
     /// `activeStore` is the store this launch opened. `account` defaults to the
     /// real account, resolved here rather than as a default argument, which
@@ -41,12 +43,11 @@ struct DataSeeder {
         #if DEBUG
         guard batchesDue else { return }
         batchesDue = false
-        if activeStore != .notMirrored {
-            let account = account ?? CloudKitAccountStatusProvider(
-                containerIdentifier: ModelContainerFactory.cloudKitContainerIdentifier
-            )
-            guard await account.accountStatus() == .noAccount else { return }
-        }
+        guard activeStore != .notMirrored else { return }
+        let account = account ?? CloudKitAccountStatusProvider(
+            containerIdentifier: ModelContainerFactory.cloudKitContainerIdentifier
+        )
+        guard await account.accountStatus() == .noAccount else { return }
         seedTestBatches(into: context)
         #endif
     }
