@@ -1,12 +1,13 @@
 import SwiftUI
 import SwiftData
 
-/// Changes a batch's code — the one thing on a batch that can be edited after
-/// the fact, for makers who number their batches their own way. Everything
-/// else the batch recorded stays as it was made.
+/// Changes a batch's code, for makers who number their batches their own way.
+/// Like the cure length, it can be edited after the fact; everything else the
+/// batch recorded stays as it was made.
 struct BatchCodeEditSheet: View {
     let batch: Batch
 
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Query private var batches: [Batch]
     @State private var code: String
@@ -46,6 +47,10 @@ struct BatchCodeEditSheet: View {
                     Button("Save") {
                         batch.code = BatchCodeGenerator.trimmed(code)
                         dismiss()
+                        // The cure reminders name the batch by its code.
+                        if batch.cureDays > 0 {
+                            Task { await NotificationService.syncIfEnabled(modelContext: modelContext) }
+                        }
                     }
                     .disabled(codeIsTaken || BatchCodeGenerator.trimmed(code).isEmpty)
                 }

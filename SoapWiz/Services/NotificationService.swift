@@ -73,7 +73,7 @@ enum NotificationService {
     /// meanwhile, which would swallow a write to the row captured earlier.
     static func applyToggle(
         _ isOn: Bool,
-        setting: ReferenceWritableKeyPath<AppSettings, Bool> = \.expiryNotificationsEnabled,
+        setting: ReferenceWritableKeyPath<AppSettings, Bool>,
         settings: () -> AppSettings,
         askPermission: () async -> Bool = { await requestAuthorization() }
     ) async -> Bool {
@@ -90,7 +90,32 @@ enum NotificationService {
         await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
 
+    /// The last change to this device's pending reminders that was asked for.
+    /// Each change waits for the one before it: a sync clears the pending
+    /// reminders and then adds the new ones across several awaits, and a
+    /// second sync landing in between — a cure stepped twice, or a stepper
+    /// tap meeting the foreground sync — would otherwise leave the first
+    /// one's outdated reminder pending beside its own.
+    private static var lastChange: Task<Void, Never>?
+
+    /// Runs `change` after every change already asked for, so changes to the
+    /// pending reminders never interleave. Each sync reads the store when its
+    /// turn comes, so the last one always reflects the latest state.
+    static func serialized(_ change: @escaping () async -> Void) async {
+        let previous = lastChange
+        let task = Task {
+            await previous?.value
+            await change()
+        }
+        lastChange = task
+        await task.value
+    }
+
     static func syncIfEnabled(modelContext: ModelContext) async {
+        await serialized { await performSync(modelContext: modelContext) }
+    }
+
+    private static func performSync(modelContext: ModelContext) async {
         let settings = AppSettings.resolve(in: modelContext)
         let status = await authorizationStatus()
 
@@ -120,7 +145,7 @@ enum NotificationService {
     /// Replaces every reminder scheduled here with the ones the store calls
     /// for now. A kind that isn't active contributes none, so its pending
     /// reminders go with the rest.
-    static func syncNotifications(modelContext: ModelContext) async {
+    private static func syncNotifications(modelContext: ModelContext) async {
         let settings = AppSettings.resolve(in: modelContext)
         let expiry: [ScheduledReminder]
         let cure: [ScheduledReminder]
@@ -187,7 +212,7 @@ enum NotificationService {
     }
 
     static func cancelAllExpiryNotifications() async {
-        await cancelPendingReminders(withPrefixes: [ExpiryNotificationScheduler.notificationPrefix])
+        await serialized { await cancelPendingReminders(withPrefixes: [ExpiryNotificationScheduler.notificationPrefix]) }
     }
 
     private static func cancelPendingReminders(withPrefixes prefixes: [String]) async {

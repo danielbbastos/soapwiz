@@ -84,7 +84,7 @@ struct NotificationSyncActionTests {
         settings.expiryNotificationsEnabled = false
 
         let showsDenied = await NotificationService.applyToggle(
-            true, settings: { settings }, askPermission: { true }
+            true, setting: \.expiryNotificationsEnabled, settings: { settings }, askPermission: { true }
         )
 
         #expect(settings.expiryNotificationsEnabled)
@@ -100,6 +100,7 @@ struct NotificationSyncActionTests {
 
         let showsDenied = await NotificationService.applyToggle(
             true,
+            setting: \.expiryNotificationsEnabled,
             settings: { current },
             askPermission: {
                 current = survivor
@@ -119,7 +120,7 @@ struct NotificationSyncActionTests {
         settings.expiryNotificationsEnabled = false
 
         let showsDenied = await NotificationService.applyToggle(
-            true, settings: { settings }, askPermission: { false }
+            true, setting: \.expiryNotificationsEnabled, settings: { settings }, askPermission: { false }
         )
 
         #expect(!settings.expiryNotificationsEnabled)
@@ -133,6 +134,7 @@ struct NotificationSyncActionTests {
 
         let showsDenied = await NotificationService.applyToggle(
             false,
+            setting: \.expiryNotificationsEnabled,
             settings: { settings },
             askPermission: {
                 asked = true
@@ -204,6 +206,25 @@ struct NotificationCureSyncActionTests {
 
         #expect(!NotificationService.expiryRemindersActive(for: settings))
         #expect(NotificationService.cureRemindersActive(for: settings))
+    }
+
+    /// A change asked for while another is still running waits for it, so a
+    /// cure stepped twice can't leave the first step's reminder behind.
+    @Test func serialized_SecondChangeWhileFirstRuns_StartsAfterItEnds() async {
+        var log: [String] = []
+
+        async let first: Void = NotificationService.serialized {
+            log.append("first started")
+            try? await Task.sleep(for: .milliseconds(100))
+            log.append("first ended")
+        }
+        try? await Task.sleep(for: .milliseconds(20))
+        async let second: Void = NotificationService.serialized {
+            log.append("second started")
+        }
+        _ = await (first, second)
+
+        #expect(log == ["first started", "first ended", "second started"])
     }
 
     @Test func deviceMayNotNotify_CureRemindersOnAndRefused_ShowsNote() {

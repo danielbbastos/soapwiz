@@ -5,8 +5,11 @@ struct DataSeeder {
     static func seed(into context: ModelContext) {
         #if DEBUG
         seedTestIngredients(into: context)
-        seedTestRecipes(into: context)
-        seedTestBatches(into: context)
+        // Batches only alongside freshly seeded recipes: making one draws
+        // stock, and a store that already had recipes may be real data.
+        if seedTestRecipes(into: context) {
+            seedTestBatches(into: context)
+        }
         #endif
     }
 }
@@ -93,11 +96,15 @@ extension DataSeeder {
         )
     ]
 
-    static func seedTestRecipes(into context: ModelContext) {
-        guard let count = try? context.fetchCount(FetchDescriptor<Recipe>()), count == 0 else { return }
+    /// Returns whether it seeded, which it does only into a store without
+    /// recipes.
+    @discardableResult
+    static func seedTestRecipes(into context: ModelContext) -> Bool {
+        guard let count = try? context.fetchCount(FetchDescriptor<Recipe>()), count == 0 else { return false }
         for seed in recipeSeeds {
             insertRecipe(seed, into: context)
         }
+        return true
     }
 
     /// A recipe to make, and how far through its cure the batch should be:
@@ -115,7 +122,7 @@ extension DataSeeder {
         BatchSeed(recipeName: "Everyday Kitchen Bar", process: .hot, cureFraction: 1.2)
     ]
 
-    /// Runs once per store, after the recipes. Each batch goes through
+    /// Runs only on the launch that seeded the recipes. Each batch goes through
     /// `BatchProductionViewModel` like one made in the app — stock is drawn,
     /// the code generated, the cure suggested — then is backdated so its cure
     /// sits at `cureFraction`.
