@@ -144,4 +144,72 @@ struct NotificationSyncActionTests {
         #expect(!asked)
         #expect(!showsDenied)
     }
+
+    @Test func applyToggle_CureSetting_WritesOnlyThatSetting() async {
+        let settings = AppSettings()
+
+        let showsDenied = await NotificationService.applyToggle(
+            true, setting: \.cureNotificationsEnabled, settings: { settings }, askPermission: { true }
+        )
+
+        #expect(settings.cureNotificationsEnabled)
+        #expect(!settings.expiryNotificationsEnabled)
+        #expect(!showsDenied)
+    }
+}
+
+/// The cure reminders (SW-193) sit beside the expiry ones: they follow their
+/// own setting alone, so turning stock tracking off quiets only the expiry
+/// reminders, and a sync cancels everything only when neither kind is on.
+@Suite("NotificationService – cure reminders")
+@MainActor
+struct NotificationCureSyncActionTests {
+
+    struct Case: CustomTestStringConvertible, Sendable {
+        let expiryOn: Bool
+        let cureOn: Bool
+        let tracksInventory: Bool
+        let authorization: UNAuthorizationStatus
+        let expected: NotificationService.SyncAction
+        var testDescription: String {
+            "expiry \(expiryOn), cure \(cureOn), tracking \(tracksInventory), authorization \(authorization.rawValue)"
+        }
+    }
+
+    @Test(arguments: [
+        Case(expiryOn: false, cureOn: true, tracksInventory: true, authorization: .authorized, expected: .schedule),
+        Case(expiryOn: false, cureOn: true, tracksInventory: false, authorization: .authorized, expected: .schedule),
+        Case(expiryOn: true, cureOn: true, tracksInventory: false, authorization: .authorized, expected: .schedule),
+        Case(expiryOn: false, cureOn: true, tracksInventory: true, authorization: .notDetermined, expected: .requestPermission),
+        Case(expiryOn: false, cureOn: true, tracksInventory: true, authorization: .denied, expected: .skip),
+        Case(expiryOn: true, cureOn: false, tracksInventory: false, authorization: .authorized, expected: .cancel),
+        Case(expiryOn: false, cureOn: false, tracksInventory: true, authorization: .authorized, expected: .cancel)
+    ])
+    func syncAction_EitherKindActive_Syncs(_ testCase: Case) {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = testCase.expiryOn
+        settings.cureNotificationsEnabled = testCase.cureOn
+        settings.tracksInventory = testCase.tracksInventory
+
+        let action = NotificationService.syncAction(for: settings, authorization: testCase.authorization)
+
+        #expect(action == testCase.expected)
+    }
+
+    @Test func activeKinds_TrackingOff_KeepsCureAndDropsExpiry() {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = true
+        settings.cureNotificationsEnabled = true
+        settings.tracksInventory = false
+
+        #expect(!NotificationService.expiryRemindersActive(for: settings))
+        #expect(NotificationService.cureRemindersActive(for: settings))
+    }
+
+    @Test func deviceMayNotNotify_CureRemindersOnAndRefused_ShowsNote() {
+        let settings = AppSettings()
+        settings.cureNotificationsEnabled = true
+
+        #expect(NotificationService.deviceMayNotNotify(for: settings, authorization: .denied))
+    }
 }

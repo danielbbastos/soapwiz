@@ -86,6 +86,10 @@ struct CreateBatchSheet: View {
                 }
                 .listRowBackground(Color.cardBackground)
 
+                if let estimate = model.cureEstimate {
+                    cureSection(estimate)
+                }
+
                 if requirements.isEmpty {
                     Section {
                         Text("This recipe has no ingredients to consume.")
@@ -127,11 +131,36 @@ struct CreateBatchSheet: View {
                         if let batch = model.create(context: context) {
                             dismiss()
                             onCreated(batch)
+                            if batch.cureDays > 0 {
+                                Task { await NotificationService.syncIfEnabled(modelContext: context) }
+                            }
                         }
                     }
                     .disabled(!model.canCreate || codeIsTaken)
                 }
             }
         }
+    }
+
+    /// Only for a solid bar: a batch of anything else never mentions a cure.
+    private func cureSection(_ estimate: CureEstimate) -> some View {
+        Section {
+            Picker("Process", selection: $model.process) {
+                ForEach(SoapProcess.allCases) { process in
+                    Text(process.label).tag(process)
+                }
+            }
+            Stepper(value: $model.cureDays, in: BatchCureLimits.days, step: 7) {
+                LabeledContent("Length") {
+                    CureLengthText.text(days: model.cureDays)
+                }
+            }
+            .accessibilityValue(CureLengthText.text(days: model.cureDays))
+        } header: {
+            Text("Cure")
+        } footer: {
+            Text(estimate.band.summary)
+        }
+        .listRowBackground(Color.cardBackground)
     }
 }

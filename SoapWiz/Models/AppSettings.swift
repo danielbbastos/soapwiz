@@ -11,6 +11,10 @@ final class AppSettings {
 
     var pvpFactor: Double = AppSettings.defaultPVPFactor
     var expiryNotificationsEnabled: Bool = false
+    /// A reminder on the morning a batch finishes curing. Separate from the
+    /// expiry reminders because those go quiet with stock tracking off, and a
+    /// cure has nothing to do with stock.
+    var cureNotificationsEnabled: Bool = false
     /// Off turns SoapWiz into a formulation tool: batches skip the stock check
     /// and the deduction, stock and expiry warnings go quiet, and cost UI is
     /// hidden. Purchases are left untouched, so switching back on is lossless.

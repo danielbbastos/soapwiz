@@ -49,6 +49,9 @@ extension BackupData {
         /// Optional so a backup written before SW-186 still decodes; `nil`
         /// keeps whatever this device had, since the file says nothing either way.
         var expiryNotificationsEnabled: Bool?
+        /// Optional so a backup written before SW-193 still decodes; `nil`
+        /// keeps whatever this device had, as for the expiry reminders.
+        var cureNotificationsEnabled: Bool?
     }
 
     struct CategoryDTO: Codable {
@@ -216,6 +219,13 @@ extension BackupData {
         /// Optional so a backup written before SW-81 still decodes; `nil`
         /// restores as tracked, the only kind of batch those builds could make.
         var tracksInventory: Bool?
+        /// Optional so a backup written before SW-193 still decodes; `nil`
+        /// restores as a batch that doesn't cure, which is what those were.
+        var cureDays: Int?
+        /// Raw `SoapProcess`; `nil` restores empty, alongside `cureDays`.
+        var process: String?
+        /// Raw `CureBand`; `nil` restores empty, alongside `cureDays`.
+        var cureBand: String?
         var lineItems: [BatchLineItemDTO]
         /// Oldest first, the order the log displays. Optional so a backup
         /// written before SW-192 still decodes; `nil` restores the batch

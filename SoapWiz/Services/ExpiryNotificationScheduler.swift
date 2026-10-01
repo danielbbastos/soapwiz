@@ -40,11 +40,21 @@ struct PurchaseSnapshot {
     let remainingAmount: Double
 }
 
-struct ExpiryNotificationRequest: Equatable {
+/// One local notification to schedule, from either kind of reminder.
+struct ScheduledReminder: Equatable {
     let identifier: String
     let fireDate: Date
     let title: String
     let body: String
+}
+
+extension Calendar {
+    /// `YYYYMMDD` for the day `date` falls on — the part of a reminder's
+    /// identifier that groups everything due that day.
+    func reminderDayKey(for date: Date) -> String {
+        let components = dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d%02d%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
+    }
 }
 
 enum ExpiryNotificationScheduler {
@@ -54,10 +64,10 @@ enum ExpiryNotificationScheduler {
         purchases: [PurchaseSnapshot],
         now: Date = .now,
         calendar: Calendar = .current
-    ) -> [ExpiryNotificationRequest] {
+    ) -> [ScheduledReminder] {
         let eligible = purchases.filter { $0.remainingAmount > 0 && $0.expiryDate > now }
 
-        var requests: [ExpiryNotificationRequest] = []
+        var requests: [ScheduledReminder] = []
 
         for threshold in ExpiryThreshold.allCases {
             var groups: [String: [String]] = [:]
@@ -67,7 +77,7 @@ enum ExpiryNotificationScheduler {
                       let normalizedFireDate = normalizedToMorning(rawFireDate, calendar: calendar),
                       normalizedFireDate > now else { continue }
 
-                let key = dayKey(from: rawFireDate, calendar: calendar)
+                let key = calendar.reminderDayKey(for: rawFireDate)
                 groups[key, default: []].append(purchase.ingredientName)
             }
 
@@ -78,7 +88,7 @@ enum ExpiryNotificationScheduler {
 
                 guard let fireDate = date(fromDayKey: key, hour: 9, calendar: calendar) else { continue }
 
-                requests.append(ExpiryNotificationRequest(
+                requests.append(ScheduledReminder(
                     identifier: identifier,
                     fireDate: fireDate,
                     title: title,
@@ -95,11 +105,6 @@ enum ExpiryNotificationScheduler {
         components.hour = 9
         components.minute = 0
         return calendar.date(from: components)
-    }
-
-    private static func dayKey(from date: Date, calendar: Calendar) -> String {
-        let components = calendar.dateComponents([.year, .month, .day], from: date)
-        return String(format: "%04d%02d%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
     }
 
     private static func date(fromDayKey key: String, hour: Int, calendar: Calendar) -> Date? {

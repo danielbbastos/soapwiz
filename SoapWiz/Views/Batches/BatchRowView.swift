@@ -27,6 +27,8 @@ struct BatchRowView: View {
             }
             .font(.subheadline)
             .foregroundStyle(.secondary)
+            cureLabel
+                .font(.subheadline)
         }
         // Named rather than inherited, as in `IngredientRowView`: a selected row
         // draws its labels white for a tinted fill this list never shows, since
@@ -36,5 +38,25 @@ struct BatchRowView: View {
         // state; the colour is stated so that it stays true if one is ever added.
         .foregroundStyle(Color.primary)
         .padding(.vertical, 2)
+    }
+
+    @ViewBuilder
+    private var cureLabel: some View {
+        switch batch.cureStatus {
+        case .curing(let remaining, _):
+            Label {
+                Text("Curing · \(CureLengthText.remaining(remaining))")
+            } icon: {
+                Image(systemName: "hourglass")
+            }
+            .labelStyle(CompactLabelStyle())
+            .foregroundStyle(.secondary)
+        case .ready:
+            Label("Ready", systemImage: "checkmark.seal.fill")
+                .labelStyle(CompactLabelStyle())
+                .foregroundStyle(.green)
+        case .none:
+            EmptyView()
+        }
     }
 }

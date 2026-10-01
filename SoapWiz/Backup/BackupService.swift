@@ -171,7 +171,8 @@ enum BackupService {
             pvpFactor: settings.pvpFactor,
             tracksInventory: settings.tracksInventory,
             currencyCode: settings.currencyCode,
-            expiryNotificationsEnabled: settings.expiryNotificationsEnabled
+            expiryNotificationsEnabled: settings.expiryNotificationsEnabled,
+            cureNotificationsEnabled: settings.cureNotificationsEnabled
         )
     }
 
@@ -189,6 +190,9 @@ enum BackupService {
             batchCount: batch.batchCount,
             totalCost: batch.totalCost,
             tracksInventory: batch.tracksInventory,
+            cureDays: batch.cureDays,
+            process: batch.process,
+            cureBand: batch.cureBand,
             lineItems: batch.lineItems.map { item in
                 BackupData.BatchLineItemDTO(
                     ingredientIndex: item.ingredient.flatMap { ingredientIndex[$0.persistentModelID] },

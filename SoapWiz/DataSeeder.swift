@@ -6,6 +6,7 @@ struct DataSeeder {
         #if DEBUG
         seedTestIngredients(into: context)
         seedTestRecipes(into: context)
+        seedTestBatches(into: context)
         #endif
     }
 }
@@ -96,6 +97,39 @@ extension DataSeeder {
         guard let count = try? context.fetchCount(FetchDescriptor<Recipe>()), count == 0 else { return }
         for seed in recipeSeeds {
             insertRecipe(seed, into: context)
+        }
+    }
+
+    /// A recipe to make, and how far through its cure the batch should be:
+    /// 0.75 is three quarters of the way, above 1 is already ready.
+    private struct BatchSeed {
+        let recipeName: String
+        let process: SoapProcess
+        let cureFraction: Double
+    }
+
+    /// One batch at each stage of a cure, so the History tab shows them all.
+    private static let batchSeeds: [BatchSeed] = [
+        BatchSeed(recipeName: "Woodland Meadow Bar", process: .cold, cureFraction: 0.75),
+        BatchSeed(recipeName: "Pure Castile", process: .cold, cureFraction: 0.1),
+        BatchSeed(recipeName: "Everyday Kitchen Bar", process: .hot, cureFraction: 1.2)
+    ]
+
+    /// Runs once per store, after the recipes. Each batch goes through
+    /// `BatchProductionViewModel` like one made in the app — stock is drawn,
+    /// the code generated, the cure suggested — then is backdated so its cure
+    /// sits at `cureFraction`.
+    static func seedTestBatches(into context: ModelContext) {
+        guard let count = try? context.fetchCount(FetchDescriptor<Batch>()), count == 0 else { return }
+        let recipes = (try? context.fetch(FetchDescriptor<Recipe>())) ?? []
+
+        for seed in batchSeeds {
+            guard let recipe = recipes.first(where: { $0.name == seed.recipeName }) else { continue }
+            let model = BatchProductionViewModel(recipe: recipe, lyeCandidates: [])
+            model.process = seed.process
+            let daysAgo = Int((Double(model.cureDays) * seed.cureFraction).rounded())
+            let made = Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now) ?? .now
+            model.create(context: context, date: made)
         }
     }
 

@@ -40,6 +40,34 @@ final class BatchProductionViewModel {
 
     let tracksInventory: Bool
 
+    /// How the bars are being made. Only asked of a recipe that cures, and
+    /// moves the suggested cure: a hot-process bar is ready sooner.
+    var process: SoapProcess = .cold
+
+    /// What the cure would be for the current `process`, or `nil` when the
+    /// recipe isn't a solid bar — the batch then never mentions a cure.
+    var cureEstimate: CureEstimate? {
+        CureEstimator.estimate(
+            makesSoap: engine.makesSoap,
+            soapType: engine.soapType,
+            fattyAcidProfile: fattyAcidProfile,
+            process: process
+        )
+    }
+
+    /// The cure the batch will be made with: the estimate's longer end until
+    /// the user picks a length of their own, which then stays put when the
+    /// process changes. Zero when the recipe doesn't cure.
+    var cureDays: Int {
+        get {
+            guard let estimate = cureEstimate else { return 0 }
+            return chosenCureDays ?? estimate.defaultDays
+        }
+        set { chosenCureDays = newValue }
+    }
+
+    private var chosenCureDays: Int?
+
     /// The batch this model made, once it has. The sheet stays on screen while
     /// it closes, by which time the batch is in the store carrying the very
     /// code the field shows — it must not be mistaken for a clash, nor prompt
@@ -48,6 +76,9 @@ final class BatchProductionViewModel {
 
     private let recipe: Recipe
     private let engine: RecipeFormViewModel
+    /// The recipe's blend, read once: the recipe can't change while the sheet
+    /// is up, and the estimate is asked for on every render.
+    private let fattyAcidProfile: FattyAcidProfile
 
     init(
         recipe: Recipe,
@@ -62,6 +93,7 @@ final class BatchProductionViewModel {
         engine.resolveDefaultLyeIngredient(from: lyeCandidates)
         engine.resolveDefaultNeutralizerIngredient(from: neutralizerCandidates)
         self.engine = engine
+        self.fattyAcidProfile = RecipeStats(oilDrafts: engine.oilDrafts, makesSoap: engine.makesSoap).fattyAcidProfile
     }
 
     /// Per-ingredient requirements for the current `batchCount`, in each
@@ -193,7 +225,10 @@ final class BatchProductionViewModel {
             recipeName: recipe.name,
             dateCreated: date,
             batchCount: max(1, batchCount),
-            tracksInventory: tracksInventory
+            tracksInventory: tracksInventory,
+            cureDays: cureDays,
+            process: cureEstimate == nil ? "" : process.rawValue,
+            cureBand: cureEstimate?.band.rawValue ?? ""
         )
         context.insert(batch)
 

@@ -28,6 +28,18 @@ final class Batch {
     /// than read from `AppSettings`, so an untracked batch keeps reading as
     /// uncosted after tracking is switched back on.
     var tracksInventory: Bool = true
+    /// How long the bars cure before they're ready, counted from
+    /// `dateCreated`. Zero means the batch doesn't cure at all: anything but a
+    /// solid bar, and every batch made before cures were tracked — those show
+    /// nothing about curing and never schedule a reminder.
+    var cureDays: Int = 0
+    /// Raw value of `SoapProcess`, how the bars were made. Empty for a batch
+    /// that doesn't cure. Read through `SoapProcess.resolve(_:)`.
+    var process: String = ""
+    /// Raw value of `CureBand`, the recommended range suggested when the batch
+    /// was made. Kept here rather than read from the recipe, which may since
+    /// have changed or gone. Empty for a batch that doesn't cure.
+    var cureBand: String = ""
 
     /// Optional for CloudKit; read and write through `lineItems`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
@@ -60,7 +72,10 @@ final class Batch {
         dateCreated: Date = .now,
         batchCount: Int,
         totalCost: Double = 0,
-        tracksInventory: Bool = true
+        tracksInventory: Bool = true,
+        cureDays: Int = 0,
+        process: String = "",
+        cureBand: String = ""
     ) {
         self.recipe = recipe
         self.code = code
@@ -69,5 +84,8 @@ final class Batch {
         self.batchCount = batchCount
         self.totalCost = totalCost
         self.tracksInventory = tracksInventory
+        self.cureDays = cureDays
+        self.process = process
+        self.cureBand = cureBand
     }
 }
