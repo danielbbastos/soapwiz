@@ -14,10 +14,12 @@ struct BackupSchemaCoverageTests {
     /// Per model: properties the backup carries, possibly under another name
     /// (a relationship becomes an index, owned children are nested).
     private static let backedUp: [String: Set<String>] = [
-        "AppSettings": ["pvpFactor", "expiryNotificationsEnabled", "tracksInventory", "currencyCode"],
+        "AppSettings": [
+            "pvpFactor", "expiryNotificationsEnabled", "cureNotificationsEnabled", "tracksInventory", "currencyCode"
+        ],
         "Batch": [
             "recipe", "code", "recipeName", "dateCreated", "batchCount", "totalCost", "tracksInventory",
-            "lineItemsStorage", "logEntriesStorage"
+            "cureDays", "process", "cureBand", "lineItemsStorage", "logEntriesStorage"
         ],
         "BatchLineItem": ["ingredient", "ingredientName", "amountConsumed", "unit", "cost", "draws"],
         "BatchLogEntry": ["date", "text", "photosStorage"],

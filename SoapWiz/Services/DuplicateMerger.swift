@@ -166,9 +166,10 @@ enum DuplicateMerger {
             if winner.pvpFactor == AppSettings.defaultPVPFactor {
                 winner.pvpFactor = loser.pvpFactor
             }
-            // An opt-in flag joins monotonically: if reminders were switched on
+            // Opt-in flags join monotonically: if reminders were switched on
             // anywhere, they stay on.
             winner.expiryNotificationsEnabled = winner.expiryNotificationsEnabled || loser.expiryNotificationsEnabled
+            winner.cureNotificationsEnabled = winner.cureNotificationsEnabled || loser.cureNotificationsEnabled
             // On is the default, so switching tracking off is the choice to keep.
             winner.tracksInventory = winner.tracksInventory && loser.tracksInventory
             // Empty means never chosen, so any chosen currency beats it.

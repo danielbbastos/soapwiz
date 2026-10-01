@@ -20,15 +20,28 @@ enum NotificationService {
         case skip
     }
 
+    /// Expiry reminders are about stock, so they go quiet with tracking off.
+    static func expiryRemindersActive(for settings: AppSettings) -> Bool {
+        settings.expiryNotificationsEnabled && settings.tracksInventory
+    }
+
+    /// Cure reminders have nothing to do with stock and follow their own
+    /// setting alone.
+    static func cureRemindersActive(for settings: AppSettings) -> Bool {
+        settings.cureNotificationsEnabled
+    }
+
     /// Reminders or tracking can be switched off without the Settings toggle —
-    /// synced from another device, or by a restore — so either being off clears
-    /// the reminders already scheduled here rather than leaving them to fire.
+    /// synced from another device, or by a restore — so with no kind of
+    /// reminder left active, the ones already scheduled here are cleared rather
+    /// than left to fire. With one kind still active, the sync schedules and
+    /// drops the other kind itself.
     ///
     /// A missing permission never turns the setting off: the setting syncs, the
     /// permission is this device's alone, and switching it off here would cancel
     /// the reminders on every other device.
     static func syncAction(for settings: AppSettings, authorization: UNAuthorizationStatus) -> SyncAction {
-        guard settings.expiryNotificationsEnabled, settings.tracksInventory else { return .cancel }
+        guard expiryRemindersActive(for: settings) || cureRemindersActive(for: settings) else { return .cancel }
         switch authorization {
         case .authorized: return .schedule
         case .notDetermined: return .requestPermission
@@ -44,10 +57,11 @@ enum NotificationService {
         syncAction(for: settings, authorization: authorization) == .skip
     }
 
-    /// A tap on the Expiry Reminders toggle. Turning reminders on asks for this
-    /// device's permission first and stores the setting only once it's granted,
-    /// so a refusal never switches a synced setting that is on elsewhere off.
-    /// Returns whether to tell the user notifications are refused here.
+    /// A tap on a reminders toggle, writing `setting`. Turning reminders on asks
+    /// for this device's permission first and stores the setting only once it's
+    /// granted, so a refusal never switches a synced setting that is on
+    /// elsewhere off. Returns whether to tell the user notifications are
+    /// refused here.
     ///
     /// Only a tap comes through here. A change that arrives from another device
     /// or a restore must never ask, and never write the setting back: a device
@@ -59,15 +73,16 @@ enum NotificationService {
     /// meanwhile, which would swallow a write to the row captured earlier.
     static func applyToggle(
         _ isOn: Bool,
+        setting: ReferenceWritableKeyPath<AppSettings, Bool>,
         settings: () -> AppSettings,
         askPermission: () async -> Bool = { await requestAuthorization() }
     ) async -> Bool {
         guard isOn else {
-            settings().expiryNotificationsEnabled = false
+            settings()[keyPath: setting] = false
             return false
         }
         guard await askPermission() else { return true }
-        settings().expiryNotificationsEnabled = true
+        settings()[keyPath: setting] = true
         return false
     }
 
@@ -75,13 +90,38 @@ enum NotificationService {
         await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
     }
 
+    /// The last change to this device's pending reminders that was asked for.
+    /// Each change waits for the one before it: a sync clears the pending
+    /// reminders and then adds the new ones across several awaits, and a
+    /// second sync landing in between — a cure stepped twice, or a stepper
+    /// tap meeting the foreground sync — would otherwise leave the first
+    /// one's outdated reminder pending beside its own.
+    private static var lastChange: Task<Void, Never>?
+
+    /// Runs `change` after every change already asked for, so changes to the
+    /// pending reminders never interleave. Each sync reads the store when its
+    /// turn comes, so the last one always reflects the latest state.
+    static func serialized(_ change: @escaping () async -> Void) async {
+        let previous = lastChange
+        let task = Task {
+            await previous?.value
+            await change()
+        }
+        lastChange = task
+        await task.value
+    }
+
     static func syncIfEnabled(modelContext: ModelContext) async {
+        await serialized { await performSync(modelContext: modelContext) }
+    }
+
+    private static func performSync(modelContext: ModelContext) async {
         let settings = AppSettings.resolve(in: modelContext)
         let status = await authorizationStatus()
 
         switch syncAction(for: settings, authorization: status) {
         case .cancel:
-            await cancelAllExpiryNotifications()
+            await cancelPendingReminders(withPrefixes: allPrefixes)
         case .schedule:
             await syncNotifications(modelContext: modelContext)
         case .requestPermission:
@@ -93,36 +133,32 @@ enum NotificationService {
         }
     }
 
-    static func syncNotifications(modelContext: ModelContext) async {
-        let purchases: [IngredientPurchase]
+    private static let allPrefixes = [
+        ExpiryNotificationScheduler.notificationPrefix,
+        CureNotificationScheduler.notificationPrefix
+    ]
+
+    /// iOS keeps only the 64 soonest pending notifications of an app, so the
+    /// two kinds share that budget, soonest first.
+    private static let pendingLimit = 64
+
+    /// Replaces every reminder scheduled here with the ones the store calls
+    /// for now. A kind that isn't active contributes none, so its pending
+    /// reminders go with the rest.
+    private static func syncNotifications(modelContext: ModelContext) async {
+        let settings = AppSettings.resolve(in: modelContext)
+        let expiry: [ScheduledReminder]
+        let cure: [ScheduledReminder]
         do {
-            purchases = try modelContext.fetch(FetchDescriptor<IngredientPurchase>())
+            expiry = expiryRemindersActive(for: settings) ? try expiryRequests(modelContext) : []
+            cure = cureRemindersActive(for: settings) ? try cureRequests(modelContext) : []
         } catch {
             return
         }
-
-        let snapshots = purchases.compactMap { purchase -> PurchaseSnapshot? in
-            guard let name = purchase.ingredient?.name,
-                  let expiryDate = purchase.expiryDate else { return nil }
-            return PurchaseSnapshot(
-                ingredientName: name,
-                expiryDate: expiryDate,
-                remainingAmount: purchase.remainingAmount
-            )
-        }
-
-        let allRequests = ExpiryNotificationScheduler.computeRequests(purchases: snapshots)
-        let requests = allRequests.prefix(64)
+        let requests = (expiry + cure).sorted { $0.fireDate < $1.fireDate }.prefix(pendingLimit)
 
         let center = UNUserNotificationCenter.current()
-
-        let pending = await center.pendingNotificationRequests()
-        let staleIDs = pending
-            .map(\.identifier)
-            .filter { $0.hasPrefix(ExpiryNotificationScheduler.notificationPrefix) }
-        if !staleIDs.isEmpty {
-            center.removePendingNotificationRequests(withIdentifiers: staleIDs)
-        }
+        await cancelPendingReminders(withPrefixes: allPrefixes)
 
         for request in requests {
             let content = UNMutableNotificationContent()
@@ -146,14 +182,47 @@ enum NotificationService {
         }
     }
 
+    private static func expiryRequests(_ modelContext: ModelContext) throws -> [ScheduledReminder] {
+        let purchases = try modelContext.fetch(FetchDescriptor<IngredientPurchase>())
+        let snapshots = purchases.compactMap { purchase -> PurchaseSnapshot? in
+            guard let name = purchase.ingredient?.name,
+                  let expiryDate = purchase.expiryDate else { return nil }
+            return PurchaseSnapshot(
+                ingredientName: name,
+                expiryDate: expiryDate,
+                remainingAmount: purchase.remainingAmount
+            )
+        }
+        return ExpiryNotificationScheduler.computeRequests(purchases: snapshots)
+    }
+
+    /// Only batches that cure: anything else never schedules a reminder.
+    private static func cureRequests(_ modelContext: ModelContext) throws -> [ScheduledReminder] {
+        let batches = try modelContext.fetch(FetchDescriptor<Batch>(predicate: #Predicate { $0.cureDays > 0 }))
+        let snapshots = batches.compactMap { batch -> CureSnapshot? in
+            guard let readyDate = batch.cureReadyDate else { return nil }
+            return CureSnapshot(
+                recipeName: batch.recipeName,
+                code: batch.code,
+                usableDate: batch.cureUsableDate,
+                readyDate: readyDate
+            )
+        }
+        return CureNotificationScheduler.computeRequests(batches: snapshots)
+    }
+
     static func cancelAllExpiryNotifications() async {
+        await serialized { await cancelPendingReminders(withPrefixes: [ExpiryNotificationScheduler.notificationPrefix]) }
+    }
+
+    private static func cancelPendingReminders(withPrefixes prefixes: [String]) async {
         let center = UNUserNotificationCenter.current()
         let pending = await center.pendingNotificationRequests()
-        let expiryIDs = pending
+        let ids = pending
             .map(\.identifier)
-            .filter { $0.hasPrefix(ExpiryNotificationScheduler.notificationPrefix) }
-        if !expiryIDs.isEmpty {
-            center.removePendingNotificationRequests(withIdentifiers: expiryIDs)
+            .filter { id in prefixes.contains { id.hasPrefix($0) } }
+        if !ids.isEmpty {
+            center.removePendingNotificationRequests(withIdentifiers: ids)
         }
     }
 }

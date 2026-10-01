@@ -17,8 +17,9 @@ extension BackupService {
         do {
             // Read before the wipe deletes the settings row: a file that
             // predates the key leaves the reminders as they were.
-            let remindersWereOn = try context.fetch(FetchDescriptor<AppSettings>())
-                .contains(where: \.expiryNotificationsEnabled)
+            let settingsBefore = try context.fetch(FetchDescriptor<AppSettings>())
+            let remindersWereOn = settingsBefore.contains(where: \.expiryNotificationsEnabled)
+            let cureRemindersWereOn = settingsBefore.contains(where: \.cureNotificationsEnabled)
             try wipe(context)
 
             let categories = backup.categories.map { dto -> IngredientCategory in
@@ -56,6 +57,7 @@ extension BackupService {
             settings.tracksInventory = backup.settings.tracksInventory ?? true
             settings.currencyCode = backup.settings.currencyCode ?? ""
             settings.expiryNotificationsEnabled = backup.settings.expiryNotificationsEnabled ?? remindersWereOn
+            settings.cureNotificationsEnabled = backup.settings.cureNotificationsEnabled ?? cureRemindersWereOn
 
             try context.save()
         } catch {
@@ -195,7 +197,10 @@ extension BackupService {
             dateCreated: dto.dateCreated,
             batchCount: dto.batchCount,
             totalCost: dto.totalCost,
-            tracksInventory: dto.tracksInventory ?? true
+            tracksInventory: dto.tracksInventory ?? true,
+            cureDays: dto.cureDays ?? 0,
+            process: dto.process ?? "",
+            cureBand: dto.cureBand ?? ""
         )
         context.insert(batch)
 

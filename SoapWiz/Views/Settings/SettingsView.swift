@@ -92,26 +92,15 @@ struct SettingsView: View {
         let mayNotNotify = notificationAuthorization.map {
             NotificationService.deviceMayNotNotify(for: settings, authorization: $0)
         } ?? false
-        // A binding of its own rather than the stored value, so the permission
-        // request runs for a tap and only for a tap; see `applyToggle`.
-        let isOn = Binding(
-            get: { settings.expiryNotificationsEnabled },
-            set: { newValue in
-                Task {
-                    showNotificationDenied = await NotificationService.applyToggle(newValue) {
-                        AppSettings.resolve(in: modelContext)
-                    }
-                    await refreshNotificationAuthorization()
-                }
-            }
-        )
         return Section {
-            Toggle("Expiry Reminders", isOn: isOn)
+            Toggle("Expiry Reminders", isOn: reminderToggle(\.expiryNotificationsEnabled, of: settings))
+            Toggle("Cure Reminders", isOn: reminderToggle(\.cureNotificationsEnabled, of: settings))
         } header: {
             Text("Notifications")
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Get notified 1 month and 1 week before ingredients expire.")
+                Text("Get notified 1 month and 1 week before ingredients expire, "
+                     + "and on the mornings a batch becomes usable and finishes curing.")
                 // The setting is shared across devices and the permission isn't,
                 // so this one can show reminders on while none arrive here.
                 if mayNotNotify {
@@ -131,17 +120,43 @@ struct SettingsView: View {
         // this device schedules, cancels or skips its own reminders to match,
         // and never writes the setting back.
         .onChange(of: settings.expiryNotificationsEnabled) {
-            Task {
-                await NotificationService.syncIfEnabled(modelContext: modelContext)
-                await refreshNotificationAuthorization()
-            }
+            syncReminders()
+        }
+        .onChange(of: settings.cureNotificationsEnabled) {
+            syncReminders()
         }
         .alert("Notifications Disabled", isPresented: $showNotificationDenied) {
             Button("Open Settings", action: openAppSettings)
             Button("OK", role: .cancel) {}
         } message: {
-            Text("SoapWiz needs notification permission to send expiry reminders. "
+            Text("SoapWiz needs notification permission to send reminders. "
                  + "You can enable it in Settings.")
+        }
+    }
+
+    /// A binding of its own rather than the stored value, so the permission
+    /// request runs for a tap and only for a tap; see `applyToggle`.
+    private func reminderToggle(
+        _ setting: ReferenceWritableKeyPath<AppSettings, Bool>,
+        of settings: AppSettings
+    ) -> Binding<Bool> {
+        Binding(
+            get: { settings[keyPath: setting] },
+            set: { newValue in
+                Task {
+                    showNotificationDenied = await NotificationService.applyToggle(newValue, setting: setting) {
+                        AppSettings.resolve(in: modelContext)
+                    }
+                    await refreshNotificationAuthorization()
+                }
+            }
+        )
+    }
+
+    private func syncReminders() {
+        Task {
+            await NotificationService.syncIfEnabled(modelContext: modelContext)
+            await refreshNotificationAuthorization()
         }
     }
 

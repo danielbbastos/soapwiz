@@ -1,11 +1,54 @@
+import CloudKit
 import Foundation
 import SwiftData
 
 struct DataSeeder {
+    /// Whether this launch filled an empty store with test stock and recipes,
+    /// so test batches may follow once `seedTestBatchesIfDue` has checked the
+    /// account. A batch draws stock, and purchases or recipes already there may
+    /// be real data.
+    private static var batchesDue = false
+
     static func seed(into context: ModelContext) {
         #if DEBUG
-        seedTestIngredients(into: context)
-        seedTestRecipes(into: context)
+        let seededStock = seedTestIngredients(into: context)
+        let seededRecipes = seedTestRecipes(into: context)
+        batchesDue = seededStock && seededRecipes
+        #endif
+    }
+
+    /// The test batches, when `seed(into:)` has just filled the store and the
+    /// store isn't syncing to an iCloud account. A synced store looks empty
+    /// after a reinstall only until the import arrives: seeding it would add
+    /// three more batches to every device on the account each time, and a
+    /// batch can't be deleted. Runs at most once per launch.
+    ///
+    /// Every store a debug build opens is the same file the entitled build
+    /// mirrors: a mirrored store opens without an account too, a local
+    /// fallback may mirror on the next launch, and a local-only build may be
+    /// installed over by an entitled one. So only a definite "no account" lets
+    /// the batches through. A local-only build can't ask — it lacks the
+    /// entitlement CloudKit needs — so it never gets them. Signing a simulator
+    /// with no account into iCloud later would still upload them, as it would
+    /// the seeded stock and recipes; that's a deliberate step, and accepted.
+    ///
+    /// `activeStore` is the store this launch opened. `account` defaults to the
+    /// real account, resolved here rather than as a default argument, which
+    /// isn't evaluated on the main actor.
+    static func seedTestBatchesIfDue(
+        into context: ModelContext,
+        activeStore: ModelContainerFactory.ActiveStore?,
+        account: (any SyncAccountStatusProviding)? = nil
+    ) async {
+        #if DEBUG
+        guard batchesDue else { return }
+        batchesDue = false
+        guard activeStore != .notMirrored else { return }
+        let account = account ?? CloudKitAccountStatusProvider(
+            containerIdentifier: ModelContainerFactory.cloudKitContainerIdentifier
+        )
+        guard await account.accountStatus() == .noAccount else { return }
+        seedTestBatches(into: context)
         #endif
     }
 }
@@ -92,10 +135,48 @@ extension DataSeeder {
         )
     ]
 
-    static func seedTestRecipes(into context: ModelContext) {
-        guard let count = try? context.fetchCount(FetchDescriptor<Recipe>()), count == 0 else { return }
+    /// Returns whether it seeded, which it does only into a store without
+    /// recipes.
+    @discardableResult
+    static func seedTestRecipes(into context: ModelContext) -> Bool {
+        guard let count = try? context.fetchCount(FetchDescriptor<Recipe>()), count == 0 else { return false }
         for seed in recipeSeeds {
             insertRecipe(seed, into: context)
+        }
+        return true
+    }
+
+    /// A recipe to make, and how far through its cure the batch should be:
+    /// 0.75 is three quarters of the way, above 1 is already ready.
+    private struct BatchSeed {
+        let recipeName: String
+        let process: SoapProcess
+        let cureFraction: Double
+    }
+
+    /// One batch at each stage of a cure, so the History tab shows them all.
+    private static let batchSeeds: [BatchSeed] = [
+        BatchSeed(recipeName: "Woodland Meadow Bar", process: .cold, cureFraction: 0.75),
+        BatchSeed(recipeName: "Pure Castile", process: .cold, cureFraction: 0.1),
+        BatchSeed(recipeName: "Everyday Kitchen Bar", process: .hot, cureFraction: 1.2)
+    ]
+
+    /// Called only through `seedTestBatchesIfDue`, on a launch that seeded
+    /// both the test stock and the test recipes. Each batch goes through
+    /// `BatchProductionViewModel` like one made in the app — stock is drawn,
+    /// the code generated, the cure suggested — then is backdated so its cure
+    /// sits at `cureFraction`.
+    private static func seedTestBatches(into context: ModelContext) {
+        guard let count = try? context.fetchCount(FetchDescriptor<Batch>()), count == 0 else { return }
+        let recipes = (try? context.fetch(FetchDescriptor<Recipe>())) ?? []
+
+        for seed in batchSeeds {
+            guard let recipe = recipes.first(where: { $0.name == seed.recipeName }) else { continue }
+            let model = BatchProductionViewModel(recipe: recipe, lyeCandidates: [])
+            model.process = seed.process
+            let daysAgo = Int((Double(model.cureDays) * seed.cureFraction).rounded())
+            let made = Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now) ?? .now
+            model.create(context: context, date: made)
         }
     }
 
@@ -140,14 +221,17 @@ extension DataSeeder {
 
     /// Runs once per store. Keyed on purchases rather than ingredients, because
     /// the library has already filled the inventory by the time this runs.
-    static func seedTestIngredients(into context: ModelContext) {
-        guard let count = try? context.fetchCount(FetchDescriptor<IngredientPurchase>()), count == 0 else { return }
+    /// Returns whether it seeded, which it does only into a store without
+    /// purchases.
+    @discardableResult
+    static func seedTestIngredients(into context: ModelContext) -> Bool {
+        guard let count = try? context.fetchCount(FetchDescriptor<IngredientPurchase>()), count == 0 else { return false }
 
         guard
             let url = Bundle.main.url(forResource: "TestIngredients", withExtension: "json"),
             let data = try? Data(contentsOf: url),
             let seed = try? JSONDecoder().decode(TestDataSeed.self, from: data)
-        else { return }
+        else { return false }
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -180,6 +264,7 @@ extension DataSeeder {
             guard let ingredient = librarySlugs[ingredientSeed.slug] else { continue }
             insertPurchases(ingredientSeed.purchases, for: ingredient, into: context, lookups: lookups)
         }
+        return true
     }
 
     /// Resolved lookup tables and date parser shared across purchase inserts.

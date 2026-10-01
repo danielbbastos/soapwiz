@@ -45,8 +45,14 @@ struct BatchLogSection: View {
         } header: {
             Text("Log")
         } footer: {
+            // Cure checks only for a batch that cures: anything else never
+            // mentions a cure.
             if batch.logEntries.isEmpty {
-                Text("Keep notes and photos as the batch goes: the pour, unmoulding, the cut, cure checks.")
+                if batch.cureDays > 0 {
+                    Text("Keep notes and photos as the batch goes: the pour, unmoulding, the cut, cure checks.")
+                } else {
+                    Text("Keep notes and photos as the batch goes: the pour, unmoulding, the cut.")
+                }
             }
         }
     }
