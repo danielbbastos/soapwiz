@@ -43,42 +43,40 @@ struct IngredientAmountDraft: Identifiable, Equatable {
 
 struct RecipeProductDraft: Identifiable, Equatable {
     let id = UUID()
-    var size: Double = 0 {
-        didSet { if size != oldValue { isSeededPlaceholder = false } }
-    }
-    var unitSymbol: String = "" {
-        didSet { if unitSymbol != oldValue { isSeededPlaceholder = false } }
-    }
+    var size: Double = 0
+    var unitSymbol: String = ""
     var modelID: PersistentIdentifier?
 
-    /// Marks the unsaved row the form seeds itself with when a recipe has no
-    /// products of its own. It stands for the whole batch, which already has its
-    /// own figures wherever products are listed, so it is never written to the
-    /// store — persisting it would leave behind a product the user never asked
-    /// for and no screen shows. Touching either field hands the row to the user
-    /// and clears the mark, so an edited seed is saved like any other product.
-    ///
-    /// Stamped rather than inferred from the row's shape: a product the user
-    /// added can end up looking exactly like the seed — picking "parts of batch"
-    /// for a fresh row snaps its size to 1 — and that row must still be saved.
-    private(set) var isSeededPlaceholder = false
+    var isWholeBatch: Bool {
+        ProductUnit(rawValue: unitSymbol) == .wholeBatch
+    }
 
     /// Whether this size costs something other than the whole batch. A whole
     /// batch, or a batch split into one part, is the batch total again, which
     /// every cost screen already shows, so those rows are left out of the sizes
-    /// listed and counted.
+    /// listed and counted. Parts of a batch are a whole number of them, two or
+    /// more; anything else is not a size and is never stored.
     var isSeparateFromBatch: Bool {
         switch ProductUnit(rawValue: unitSymbol) {
         case .wholeBatch: false
-        case .partsOfBatch: size > 1
+        case .partsOfBatch: size > 1 && size == size.rounded()
         default: true
         }
     }
 
-    static func seededPlaceholder() -> RecipeProductDraft {
-        var draft = RecipeProductDraft(size: 1, unitSymbol: ProductUnit.partsOfBatch.rawValue)
-        draft.isSeededPlaceholder = true
-        return draft
+    /// Applies a unit picked on the card, giving the size a value that fits it.
+    mutating func selectUnit(_ unit: ProductUnit) {
+        unitSymbol = unit.rawValue
+        if unit == .partsOfBatch {
+            if size < 2 || size != size.rounded() { size = 2 }
+        } else if unit.requiresSize, size == 0 {
+            size = 1
+        }
+    }
+
+    /// The default size every recipe keeps at the front of its drafts.
+    static func wholeBatch() -> RecipeProductDraft {
+        RecipeProductDraft(size: 1, unitSymbol: ProductUnit.wholeBatch.rawValue)
     }
 }
 

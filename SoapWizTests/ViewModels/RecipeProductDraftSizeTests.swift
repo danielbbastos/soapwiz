@@ -14,8 +14,8 @@ struct RecipeProductDraftSizeTests {
         #expect(!RecipeProductDraft(size: 1, unitSymbol: ProductUnit.partsOfBatch.rawValue).isSeparateFromBatch)
     }
 
-    @Test func isSeparateFromBatch_SeededPlaceholder_IsFalse() {
-        #expect(!RecipeProductDraft.seededPlaceholder().isSeparateFromBatch)
+    @Test func isSeparateFromBatch_WholeBatchDefault_IsFalse() {
+        #expect(!RecipeProductDraft.wholeBatch().isSeparateFromBatch)
     }
 
     @Test func isSeparateFromBatch_SeveralPartsOfBatch_IsTrue() {

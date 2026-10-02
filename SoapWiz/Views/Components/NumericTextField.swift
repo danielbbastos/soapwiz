@@ -14,6 +14,7 @@ struct NumericTextField: View {
     var width: CGFloat = 60
     var fillsAvailableWidth = false
     var alignment: TextAlignment = .trailing
+    var allowsDecimals = true
     var focus: FocusState<Bool>.Binding?
 
     @FocusState private var internalFocus: Bool
@@ -21,9 +22,18 @@ struct NumericTextField: View {
     private var isFocused: Bool { focus?.wrappedValue ?? internalFocus }
 
     var body: some View {
-        TextField(prompt, value: $value, format: .number.precision(.fractionLength(fractionLength)))
-            .keyboardType(.decimalPad)
+        TextField(
+            prompt, value: $value,
+            format: .number.precision(.fractionLength(allowsDecimals ? fractionLength : 0...0))
+        )
+            .keyboardType(allowsDecimals ? .decimalPad : .numberPad)
             .multilineTextAlignment(alignment)
+            .onChange(of: value) { _, newValue in
+                // The number pad has no separator, but a pasted "1.5" still parses.
+                if !allowsDecimals, newValue != newValue.rounded(.down) {
+                    value = newValue.rounded(.down)
+                }
+            }
             .frame(minWidth: width, maxWidth: fillsAvailableWidth ? .infinity : width)
             .focused(focus ?? $internalFocus)
             .onChange(of: isFocused) { _, focused in

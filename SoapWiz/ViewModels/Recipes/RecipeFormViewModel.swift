@@ -138,7 +138,7 @@ final class RecipeFormViewModel {
     var hasImported = false
 
     init() {
-        productDrafts = [.seededPlaceholder()]
+        productDrafts = [.wholeBatch()]
     }
 
     var weightUnitIsPercentage: Bool { weightUnit == "%" }
@@ -387,10 +387,6 @@ final class RecipeFormViewModel {
         case 1: selectedCollections[0].name
         default: "\(selectedCollections.count) selected"
         }
-    }
-
-    func addProduct(defaultUnitSymbol: String) {
-        productDrafts.append(RecipeProductDraft(unitSymbol: defaultUnitSymbol))
     }
 
     func formatPercentage(_ value: Double) -> String {

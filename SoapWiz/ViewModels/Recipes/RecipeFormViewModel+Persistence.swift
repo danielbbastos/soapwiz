@@ -54,9 +54,12 @@ extension RecipeFormViewModel {
         productDrafts = recipe.products.map {
             RecipeProductDraft(size: $0.size, unitSymbol: $0.unitSymbol, modelID: $0.persistentModelID)
         }
-        if productDrafts.isEmpty {
-            productDrafts = [.seededPlaceholder()]
-        }
+        // Builds from SW-71 to SW-106 saved the default as "1 part of batch", and
+        // other devices can leave extra whole-batch rows. All of them cost the
+        // same as the whole batch, so one whole-batch row is kept and the next
+        // save deletes the rest.
+        let wholeBatch = productDrafts.first(where: \.isWholeBatch) ?? .wholeBatch()
+        productDrafts = [wholeBatch] + productDrafts.filter(\.isSeparateFromBatch)
 
         // Before the form captures its clean baseline, so a recipe stored under
         // one kind opens coherent under the one it now has.
@@ -175,7 +178,10 @@ extension RecipeFormViewModel {
     /// index, so the caller can stamp the ids back once they are permanent.
     @discardableResult
     private func applyProducts(to recipe: Recipe, context: ModelContext) -> [(index: Int, product: RecipeProduct)] {
-        let draftedIDs = Set(productDrafts.compactMap(\.modelID))
+        // `load` drops drafts that aren't separate from the batch, so writing one
+        // would save a size that vanishes on the next open. Index 0 is the default.
+        let savable = productDrafts.enumerated().filter { $0.offset == 0 || $0.element.isSeparateFromBatch }
+        let draftedIDs = Set(savable.compactMap(\.element.modelID))
         for product in recipe.products where !draftedIDs.contains(product.persistentModelID) {
             context.delete(product)
         }
@@ -185,11 +191,11 @@ extension RecipeFormViewModel {
             uniquingKeysWith: { first, _ in first }
         )
         var inserted: [(index: Int, product: RecipeProduct)] = []
-        for (index, draft) in productDrafts.enumerated() {
+        for (index, draft) in savable {
             if let modelID = draft.modelID, let product = existing[modelID] {
                 product.size = draft.size
                 product.unitSymbol = draft.unitSymbol
-            } else if !draft.isSeededPlaceholder {
+            } else {
                 let product = RecipeProduct(size: draft.size, unitSymbol: draft.unitSymbol)
                 product.recipe = recipe
                 context.insert(product)

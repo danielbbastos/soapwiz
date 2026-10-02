@@ -154,11 +154,13 @@ struct RecipeFormDirtyStateTests: RecipeFormTestHelpers {
         #expect(model.isDirty)
     }
 
-    @Test func isDirty_ProductSizeEdited_IsTrue() {
+    @Test func isDirty_ProductSizeEdited_IsTrue() throws {
         let model = RecipeFormViewModel()
+        model.addProduct(defaultUnitSymbol: ProductUnit.grams.rawValue)
         model.captureSnapshot()
+        try #require(model.productDrafts.count == 2)
 
-        model.productDrafts[0].size = 120
+        model.productDrafts[1].size = 120
 
         #expect(model.isDirty)
     }
