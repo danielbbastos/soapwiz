@@ -52,6 +52,7 @@ struct RecipeIngredientsTabView: View {
     @State private var additivesExpanded = true
     @State private var fragrancesExpanded = true
     @State private var costBreakdownExpanded = false
+    @State private var deletedRows = 0
     @State private var availableHeight: CGFloat = 0
 
     private var tracksInventory: Bool { AppSettings.tracksInventory(from: settingsRecords) }
@@ -84,7 +85,6 @@ struct RecipeIngredientsTabView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if tracksInventory {
                 CostBreakdownBarView(model: model, isExpanded: $costBreakdownExpanded, availableHeight: availableHeight)
-                    .expandingSectionScrollOverlay()
             }
         }
         .expandingSectionScrollContainer()
@@ -142,14 +142,11 @@ struct RecipeIngredientsTabView: View {
                     Spacer()
                     percentageTotal
                 }
-                .expandingSectionEnd(RecipeFormSection.oils, if: model.oilDrafts.isEmpty)
                 ForEach(model.oilDrafts) { draft in
                     baseRow(draft)
-                        .expandingSectionEnd(
-                            RecipeFormSection.oils, if: draft.id == model.oilDrafts.last?.id
-                        )
                 }
-                .onDelete { model.removeOil(at: $0) }
+                .onDelete(perform: deletingRows(model.removeOil))
+                .id(deletedRows)
             }
         }
     }
@@ -172,27 +169,21 @@ struct RecipeIngredientsTabView: View {
                     Spacer()
                     percentageTotal
                 }
-                .expandingSectionEnd(
-                    RecipeFormSection.ingredients,
-                    if: model.oilDrafts.isEmpty && model.additiveDrafts.isEmpty
-                )
                 ForEach(model.oilDrafts) { draft in
                     baseRow(draft)
-                        .expandingSectionEnd(
-                            RecipeFormSection.ingredients,
-                            if: model.additiveDrafts.isEmpty && draft.id == model.oilDrafts.last?.id
-                        )
                 }
-                .onDelete { model.removeOil(at: $0) }
+                .onDelete(perform: deletingRows(model.removeOil))
+                .id(deletedRows)
                 ForEach(model.additiveDrafts) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                            .lineLimit(1)
-                        Spacer()
-                        NumericTextField(prompt: "0", value: Binding(
+                    RecipeAmountRow(
+                        name: draft.ingredient.name,
+                        amount: Binding(
                             get: { draft.amount },
                             set: { model.updateAdditive(id: draft.id, amount: $0) }
-                        ), fractionLength: 0...3, width: 55)
+                        ),
+                        fractionLength: 0...3,
+                        fieldWidth: 55
+                    ) {
                         // Static, not a menu: on a non-soap recipe the unit is
                         // derived from the recipe's measurement unit and the
                         // ingredient's own, so every row reads the same way and
@@ -200,11 +191,9 @@ struct RecipeIngredientsTabView: View {
                         Text(model.unitLabel(for: draft.unit))
                             .foregroundStyle(.secondary)
                     }
-                    .expandingSectionEnd(
-                        RecipeFormSection.ingredients, if: draft.id == model.additiveDrafts.last?.id
-                    )
                 }
-                .onDelete { model.removeAdditive(at: $0) }
+                .onDelete(perform: deletingRows(model.removeAdditive))
+                .id(deletedRows)
             }
         }
     }
@@ -232,17 +221,15 @@ struct RecipeIngredientsTabView: View {
     }
 
     /// A base-ingredient row: the amount redistributes against the other
-    /// unlocked base rows to hold the scale at 100%. The caller tags it for its
-    /// own section.
+    /// unlocked base rows to hold the scale at 100%.
     private func baseRow(_ draft: OilIngredientDraft) -> some View {
-        HStack {
-            Text(draft.ingredient.name)
-                .lineLimit(1)
-            Spacer()
-            NumericTextField(prompt: "0", value: Binding(
+        RecipeAmountRow(
+            name: draft.ingredient.name,
+            amount: Binding(
                 get: { draft.amount },
                 set: { model.userEdited(id: draft.id, amount: $0) }
-            ))
+            )
+        ) {
             Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
                 .foregroundStyle(.secondary)
         }
@@ -255,16 +242,16 @@ struct RecipeIngredientsTabView: View {
             .expandingSectionHeader(RecipeFormSection.additives, expanded: additivesExpanded)) {
             if additivesExpanded {
                 addButton("Add additive") { activePicker = .additives }
-                    .expandingSectionEnd(RecipeFormSection.additives, if: model.additiveDrafts.isEmpty)
                 ForEach(model.additiveDrafts) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                            .lineLimit(1)
-                        Spacer()
-                        NumericTextField(prompt: "0", value: Binding(
+                    RecipeAmountRow(
+                        name: draft.ingredient.name,
+                        amount: Binding(
                             get: { draft.amount },
                             set: { model.updateAdditive(id: draft.id, amount: $0) }
-                        ), fractionLength: 0...3, width: 55)
+                        ),
+                        fractionLength: 0...3,
+                        fieldWidth: 55
+                    ) {
                         Picker("Unit", selection: Binding(
                             get: { draft.unit },
                             set: { model.updateAdditive(id: draft.id, unit: $0) }
@@ -274,11 +261,9 @@ struct RecipeIngredientsTabView: View {
                         .labelsHidden()
                         .pickerStyle(.menu)
                     }
-                    .expandingSectionEnd(
-                        RecipeFormSection.additives, if: draft.id == model.additiveDrafts.last?.id
-                    )
                 }
-                .onDelete { model.removeAdditive(at: $0) }
+                .onDelete(perform: deletingRows(model.removeAdditive))
+                .id(deletedRows)
             }
         }
     }
@@ -313,28 +298,22 @@ struct RecipeIngredientsTabView: View {
                     .labelsHidden()
                     .pickerStyle(.menu)
                 }
-                .expandingSectionEnd(RecipeFormSection.fragrances, if: model.fragranceDrafts.isEmpty)
                 ForEach(model.fragranceDrafts) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                            .lineLimit(1)
-                        Spacer()
-                        NumericTextField(prompt: "0", value: Binding(
+                    RecipeAmountRow(
+                        name: draft.ingredient.name,
+                        amount: Binding(
                             get: { draft.amount },
                             set: { model.userEditedFragrance(id: draft.id, amount: $0) }
-                        ), fractionLength: 0...3, width: 55)
+                        ),
+                        fractionLength: 0...3,
+                        fieldWidth: 55
+                    ) {
                         Text(model.fragranceUnit.rawValue)
                             .foregroundStyle(.secondary)
                     }
-                    // Tagged unconditionally: the tag applies an `.id`, and a
-                    // condition that flips as the blend total is typed would
-                    // rebuild the very field being edited and drop its focus.
-                    // The warning below is left out of the measured section.
-                    .expandingSectionEnd(
-                        RecipeFormSection.fragrances, if: draft.id == model.fragranceDrafts.last?.id
-                    )
                 }
-                .onDelete { model.removeFragrance(at: $0) }
+                .onDelete(perform: deletingRows(model.removeFragrance))
+                .id(deletedRows)
                 blendTotalWarning
             }
         }
@@ -367,6 +346,17 @@ struct RecipeIngredientsTabView: View {
     }
 
     // MARK: - Helpers
+
+    /// A swipe delete that also rebuilds the ingredient rows, which each
+    /// `ForEach` keys on `deletedRows`. A row deleted after an amount field was
+    /// being edited can leave the list drawing the wrong ingredient in the row
+    /// below it, which then ignores swipes until the rows are rebuilt (SW-204).
+    private func deletingRows(_ remove: @escaping (IndexSet) -> Void) -> (IndexSet) -> Void {
+        { offsets in
+            remove(offsets)
+            deletedRows += 1
+        }
+    }
 
     private func addedIDs(for section: PickerSection) -> Set<PersistentIdentifier> {
         switch section {

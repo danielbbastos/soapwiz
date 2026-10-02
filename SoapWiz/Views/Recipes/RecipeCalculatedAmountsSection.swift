@@ -24,7 +24,6 @@ struct RecipeCalculatedAmountsSection: View {
                         }
                     }
                     .listRowInsets(EdgeInsets())
-                    .expandingSectionEnd(RecipeFormSection.calculatedAmounts)
                 }
             }
         }

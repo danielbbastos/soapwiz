@@ -19,7 +19,6 @@ struct RecipeExtraIngredientsSection: View {
                 if expanded {
                     extraSectionA(rows: data.sectionA)
                     extraSectionB(rows: data.sectionB)
-                        .expandingSectionEnd(RecipeFormSection.extraIngredients)
                 }
             }
         }
