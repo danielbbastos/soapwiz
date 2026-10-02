@@ -5,9 +5,11 @@ import SwiftUI
 ///
 /// They share one line when they fit, as on an iPad. Otherwise the target and
 /// the menu move to a second line, and at the accessibility text sizes each
-/// takes its own. Every layout is measured at its natural width, so the menu
-/// never gets squeezed into wrapping, including in the middle of a rotation
-/// (SW-203).
+/// takes its own. The first two layouts keep the target and the menu at their
+/// natural width, so the menu never gets squeezed into wrapping, including in
+/// the middle of a rotation (SW-203). The stacked one is used even when it
+/// doesn't fit, and at the largest text sizes the menu alone can be wider than
+/// the row, so there both may wrap rather than run past its edge.
 struct RecipeFragrancesHeaderRow<AddButton: View>: View {
     let model: RecipeFormViewModel
     @ViewBuilder let addButton: AddButton
@@ -17,38 +19,38 @@ struct RecipeFragrancesHeaderRow<AddButton: View>: View {
             HStack {
                 addButton
                 Spacer()
-                targetLabel
-                unitPicker
+                targetLabel(keepsNaturalWidth: true)
+                unitPicker(keepsNaturalWidth: true)
             }
             VStack(alignment: .leading) {
                 addButton
                 HStack {
-                    targetLabel
+                    targetLabel(keepsNaturalWidth: true)
                     Spacer()
-                    unitPicker
+                    unitPicker(keepsNaturalWidth: true)
                 }
             }
             VStack(alignment: .leading) {
                 addButton
-                targetLabel
-                unitPicker
+                targetLabel(keepsNaturalWidth: false)
+                unitPicker(keepsNaturalWidth: false)
             }
         }
     }
 
     @ViewBuilder
-    private var targetLabel: some View {
+    private func targetLabel(keepsNaturalWidth: Bool) -> some View {
         if let target = model.fragranceTarget {
             HStack(spacing: 4) {
                 Text(target.text)
-                    .lineLimit(1)
+                    .lineLimit(keepsNaturalWidth ? 1 : nil)
                     .foregroundStyle(target.isOverTarget ? Color.red : Color.secondary)
                 InfoPopoverIcon(text: targetInfoText(for: target))
             }
         }
     }
 
-    private var unitPicker: some View {
+    private func unitPicker(keepsNaturalWidth: Bool) -> some View {
         Picker("Unit", selection: Binding(
             get: { model.fragranceUnit },
             set: { model.setFragranceUnit($0) }
@@ -57,7 +59,7 @@ struct RecipeFragrancesHeaderRow<AddButton: View>: View {
         }
         .labelsHidden()
         .pickerStyle(.menu)
-        .fixedSize()
+        .fixedSize(horizontal: keepsNaturalWidth, vertical: keepsNaturalWidth)
     }
 
     private func targetInfoText(for target: FragranceTarget) -> String {
