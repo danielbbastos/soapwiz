@@ -49,7 +49,7 @@ struct ExpandingSectionScrollContextTests {
     }
 
     @Test func headerMoved_WhilePending_DelaysTheRequest() async throws {
-        let sut = ExpandingSectionScrollContext(settleDelay: .milliseconds(200))
+        let sut = ExpandingSectionScrollContext(settleDelay: .seconds(1))
 
         sut.expansionBegan("additives")
         for _ in 0..<6 {

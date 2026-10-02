@@ -39,15 +39,16 @@ final class ExpandingSectionScrollContext {
         self.settleDelay = settleDelay
     }
 
-    /// A section has started expanding. Its rows animate in, so the scroll
-    /// waits for the header to stop moving rather than happening now.
+    /// A section has started expanding. The scroll waits a moment so its rows
+    /// are in the list first, and longer while the page itself is moving, such
+    /// as during a scroll, since the header moves with it.
     func expansionBegan(_ section: AnyHashable) {
         pending = section
         scheduleSettle(section)
     }
 
-    /// A pending section's header moved: the page is still settling, so the
-    /// wait starts over.
+    /// A pending section's header moved: the page is still moving, so the wait
+    /// starts over. A section's own rows appearing below it don't move it.
     func headerMoved(_ section: AnyHashable) {
         guard pending == section else { return }
         scheduleSettle(section)

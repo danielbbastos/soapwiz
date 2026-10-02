@@ -52,7 +52,7 @@ struct RecipeIngredientsTabView: View {
     @State private var additivesExpanded = true
     @State private var fragrancesExpanded = true
     @State private var costBreakdownExpanded = false
-    @State private var deletedRows = 0
+    @State private var deletedRows: [PickerSection: Int] = [:]
     @State private var availableHeight: CGFloat = 0
 
     private var tracksInventory: Bool { AppSettings.tracksInventory(from: settingsRecords) }
@@ -145,8 +145,8 @@ struct RecipeIngredientsTabView: View {
                 ForEach(model.oilDrafts) { draft in
                     baseRow(draft)
                 }
-                .onDelete(perform: deletingRows(model.removeOil))
-                .id(deletedRows)
+                .onDelete(perform: deletingRows(in: .oils, model.removeOil))
+                .id(deletedRows[.oils, default: 0])
             }
         }
     }
@@ -172,8 +172,8 @@ struct RecipeIngredientsTabView: View {
                 ForEach(model.oilDrafts) { draft in
                     baseRow(draft)
                 }
-                .onDelete(perform: deletingRows(model.removeOil))
-                .id(deletedRows)
+                .onDelete(perform: deletingRows(in: .ingredients, model.removeOil))
+                .id(deletedRows[.ingredients, default: 0])
                 ForEach(model.additiveDrafts) { draft in
                     RecipeAmountRow(
                         name: draft.ingredient.name,
@@ -192,8 +192,8 @@ struct RecipeIngredientsTabView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .onDelete(perform: deletingRows(model.removeAdditive))
-                .id(deletedRows)
+                .onDelete(perform: deletingRows(in: .ingredients, model.removeAdditive))
+                .id(deletedRows[.ingredients, default: 0])
             }
         }
     }
@@ -262,8 +262,8 @@ struct RecipeIngredientsTabView: View {
                         .pickerStyle(.menu)
                     }
                 }
-                .onDelete(perform: deletingRows(model.removeAdditive))
-                .id(deletedRows)
+                .onDelete(perform: deletingRows(in: .additives, model.removeAdditive))
+                .id(deletedRows[.additives, default: 0])
             }
         }
     }
@@ -312,8 +312,8 @@ struct RecipeIngredientsTabView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .onDelete(perform: deletingRows(model.removeFragrance))
-                .id(deletedRows)
+                .onDelete(perform: deletingRows(in: .fragrances, model.removeFragrance))
+                .id(deletedRows[.fragrances, default: 0])
                 blendTotalWarning
             }
         }
@@ -347,14 +347,17 @@ struct RecipeIngredientsTabView: View {
 
     // MARK: - Helpers
 
-    /// A swipe delete that also rebuilds the ingredient rows, which each
-    /// `ForEach` keys on `deletedRows`. A row deleted after an amount field was
+    /// A swipe delete that also rebuilds `section`'s rows, which its `ForEach`
+    /// keys on `deletedRows[section]`. A row deleted after an amount field was
     /// being edited can leave the list drawing the wrong ingredient in the row
     /// below it, which then ignores swipes until the rows are rebuilt (SW-204).
-    private func deletingRows(_ remove: @escaping (IndexSet) -> Void) -> (IndexSet) -> Void {
+    /// Only the section the delete happened in is rebuilt.
+    private func deletingRows(
+        in section: PickerSection, _ remove: @escaping (IndexSet) -> Void
+    ) -> (IndexSet) -> Void {
         { offsets in
             remove(offsets)
-            deletedRows += 1
+            deletedRows[section, default: 0] += 1
         }
     }
 

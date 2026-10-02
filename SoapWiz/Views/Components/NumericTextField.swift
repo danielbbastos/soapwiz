@@ -3,11 +3,16 @@ import SwiftUI
 /// A decimal-pad field for a `Double`, which selects its whole value whenever it
 /// gains focus so the next keystroke replaces the number instead of appending to
 /// it. Pass `focus` to drive the field programmatically from the caller.
+///
+/// `width` is the field's width, or its minimum when `fillsAvailableWidth` is
+/// set: the field then grows into whatever room its row leaves, so a tap
+/// anywhere in that room lands on it.
 struct NumericTextField: View {
     let prompt: String
     @Binding var value: Double
     var fractionLength: ClosedRange<Int> = 0...1
     var width: CGFloat = 60
+    var fillsAvailableWidth = false
     var alignment: TextAlignment = .trailing
     var focus: FocusState<Bool>.Binding?
 
@@ -19,7 +24,7 @@ struct NumericTextField: View {
         TextField(prompt, value: $value, format: .number.precision(.fractionLength(fractionLength)))
             .keyboardType(.decimalPad)
             .multilineTextAlignment(alignment)
-            .frame(width: width)
+            .frame(minWidth: width, maxWidth: fillsAvailableWidth ? .infinity : width)
             .focused(focus ?? $internalFocus)
             .onChange(of: isFocused) { _, focused in
                 guard focused else { return }
