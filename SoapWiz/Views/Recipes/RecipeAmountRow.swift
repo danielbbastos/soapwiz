@@ -11,13 +11,13 @@ import SwiftUI
 /// sizes the name, the amount and the unit each take their own line, since
 /// the unit alone can be about as wide as the row.
 struct RecipeAmountRow<Trailing: View>: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let name: String
     @Binding var amount: Double
     var fractionLength: ClosedRange<Int> = 0...1
     var fieldWidth: CGFloat = 60
     @ViewBuilder let trailing: Trailing
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         if dynamicTypeSize.isAccessibilitySize {
