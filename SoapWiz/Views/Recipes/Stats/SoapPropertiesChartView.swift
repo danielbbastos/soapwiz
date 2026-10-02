@@ -13,14 +13,21 @@ struct SoapPropertiesChartView: View {
     @State private var plotWidth: CGFloat = 0
     @State private var fullNameWidth: CGFloat = 0
 
-    private let labelGap: CGFloat = 8
-
-    private static let longestDisplayName = SoapQuality.allCases.map(\.displayName).max { $0.count < $1.count } ?? ""
+    private static let labelGap: CGFloat = 8
 
     // Measured from the plot itself so narrow sheets and split views fall back to short names.
+    static func showsFullNames(plotWidth: CGFloat, fullNameWidth: CGFloat, count: Int, gap: CGFloat) -> Bool {
+        guard plotWidth > 0, fullNameWidth > 0, count > 0 else { return false }
+        return plotWidth / CGFloat(count) >= fullNameWidth + gap
+    }
+
     private var showsFullNames: Bool {
-        guard plotWidth > 0, fullNameWidth > 0 else { return false }
-        return plotWidth / CGFloat(SoapQuality.allCases.count) >= fullNameWidth + labelGap
+        Self.showsFullNames(
+            plotWidth: plotWidth,
+            fullNameWidth: fullNameWidth,
+            count: SoapQuality.allCases.count,
+            gap: Self.labelGap
+        )
     }
 
     var body: some View {
@@ -65,7 +72,7 @@ struct SoapPropertiesChartView: View {
                        let quality = SoapQuality.allCases.first(where: { $0.displayName == name }) {
                         Text(showsFullNames ? quality.displayName : quality.shortName)
                             .font(.caption2)
-                            .fixedSize()
+                            .fixedSize(horizontal: showsFullNames, vertical: false)
                     }
                 }
             }
@@ -93,12 +100,16 @@ struct SoapPropertiesChartView: View {
         }
         .frame(height: 260)
         .background {
-            Text(Self.longestDisplayName)
-                .font(.caption2)
-                .fixedSize()
-                .hidden()
-                .accessibilityHidden(true)
-                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { fullNameWidth = $0 }
+            VStack {
+                ForEach(SoapQuality.allCases) { quality in
+                    Text(quality.displayName)
+                        .font(.caption2)
+                        .fixedSize()
+                }
+            }
+            .hidden()
+            .accessibilityHidden(true)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { fullNameWidth = $0 }
         }
     }
 }
