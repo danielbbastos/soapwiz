@@ -1,9 +1,8 @@
 import Testing
 @testable import SoapWiz
 
-/// Expanding a collapsible section scrolls its header to the top of the form.
-/// Nothing marks a section's last row any more, so the request only ever names
-/// a header.
+/// Expanding a collapsible section scrolls its header to the top of the form,
+/// once the page has stopped moving.
 @Suite("ExpandingSectionScrollContext")
 @MainActor
 struct ExpandingSectionScrollContextTests {
@@ -48,11 +47,13 @@ struct ExpandingSectionScrollContextTests {
         #expect(request.token == 1)
     }
 
+    /// The moves run twice as long as the settle delay, so the request can only
+    /// still be missing because each move restarted the wait.
     @Test func headerMoved_WhilePending_DelaysTheRequest() async throws {
-        let sut = ExpandingSectionScrollContext(settleDelay: .seconds(1))
+        let sut = ExpandingSectionScrollContext(settleDelay: .milliseconds(300))
 
         sut.expansionBegan("additives")
-        for _ in 0..<6 {
+        for _ in 0..<15 {
             try await Task.sleep(for: .milliseconds(40))
             sut.headerMoved("additives")
         }
