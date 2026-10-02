@@ -16,9 +16,10 @@ struct RecipeFormProductRemovalTests: RecipeFormTestHelpers {
         return model
     }
 
-    @Test func removeProduct_MiddleCard_ReturnsPreviousID() {
+    @Test func removeProduct_MiddleCard_ReturnsPreviousID() throws {
         let model = makeModel(sizes: [100, 200, 300])
         let ids = model.productDrafts.map(\.id)
+        try #require(ids.count == 4)
 
         let result = model.removeProduct(id: ids[2])
 
@@ -26,9 +27,10 @@ struct RecipeFormProductRemovalTests: RecipeFormTestHelpers {
         #expect(model.productDrafts.map(\.id) == [ids[0], ids[1], ids[3]])
     }
 
-    @Test func removeProduct_LastCard_ReturnsPreviousID() {
+    @Test func removeProduct_LastCard_ReturnsPreviousID() throws {
         let model = makeModel(sizes: [100, 200, 300])
         let ids = model.productDrafts.map(\.id)
+        try #require(ids.count == 4)
 
         let result = model.removeProduct(id: ids[3])
 
@@ -36,9 +38,10 @@ struct RecipeFormProductRemovalTests: RecipeFormTestHelpers {
         #expect(model.productDrafts.count == 3)
     }
 
-    @Test func removeProduct_OnlyNonDefaultCard_ReturnsDefaultID() {
+    @Test func removeProduct_OnlyNonDefaultCard_ReturnsDefaultID() throws {
         let model = makeModel(sizes: [100])
         let ids = model.productDrafts.map(\.id)
+        try #require(ids.count == 2)
 
         let result = model.removeProduct(id: ids[1])
 
@@ -46,9 +49,10 @@ struct RecipeFormProductRemovalTests: RecipeFormTestHelpers {
         #expect(model.productDrafts.map(\.id) == [ids[0]])
     }
 
-    @Test func removeProduct_DefaultCard_IsRefused() {
+    @Test func removeProduct_DefaultCard_IsRefused() throws {
         let model = makeModel(sizes: [100])
         let before = model.productDrafts.map(\.id)
+        try #require(before.count == 2)
 
         let result = model.removeProduct(id: before[0])
 

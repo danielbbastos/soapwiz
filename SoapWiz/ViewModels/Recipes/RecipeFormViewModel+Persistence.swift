@@ -178,7 +178,10 @@ extension RecipeFormViewModel {
     /// index, so the caller can stamp the ids back once they are permanent.
     @discardableResult
     private func applyProducts(to recipe: Recipe, context: ModelContext) -> [(index: Int, product: RecipeProduct)] {
-        let draftedIDs = Set(productDrafts.compactMap(\.modelID))
+        // `load` drops drafts that aren't separate from the batch, so writing one
+        // would save a size that vanishes on the next open. Index 0 is the default.
+        let savable = productDrafts.enumerated().filter { $0.offset == 0 || $0.element.isSeparateFromBatch }
+        let draftedIDs = Set(savable.compactMap(\.element.modelID))
         for product in recipe.products where !draftedIDs.contains(product.persistentModelID) {
             context.delete(product)
         }
@@ -188,7 +191,7 @@ extension RecipeFormViewModel {
             uniquingKeysWith: { first, _ in first }
         )
         var inserted: [(index: Int, product: RecipeProduct)] = []
-        for (index, draft) in productDrafts.enumerated() {
+        for (index, draft) in savable {
             if let modelID = draft.modelID, let product = existing[modelID] {
                 product.size = draft.size
                 product.unitSymbol = draft.unitSymbol

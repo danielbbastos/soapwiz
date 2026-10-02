@@ -88,6 +88,13 @@ struct RecipeProductCardView: View {
                     .labelStyle(.titleAndIcon)
             }
 
+            if selectedUnit == .partsOfBatch, draft.size <= 1 {
+                Label("More than 1 part", systemImage: "exclamationmark.triangle.fill")
+                    .font(badgeFont.weight(.semibold))
+                    .foregroundStyle(.orange)
+                    .labelStyle(.titleAndIcon)
+            }
+
             Spacer()
 
             if let onDelete {
@@ -125,7 +132,9 @@ struct RecipeProductCardView: View {
                 ForEach(availableUnits, id: \.rawValue) { unit in
                     Button {
                         draft.unitSymbol = unit.rawValue
-                        if unit.requiresSize, draft.size == 0 {
+                        if unit == .partsOfBatch {
+                            if draft.size <= 1 { draft.size = 2 }
+                        } else if unit.requiresSize, draft.size == 0 {
                             draft.size = 1
                         }
                         isUnitPickerPresented = false

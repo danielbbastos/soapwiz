@@ -145,8 +145,9 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
 
         model.save(context: ctx)
 
-        #expect(recipe.products.count { $0.unitSymbol == ProductUnit.wholeBatch.rawValue } == 1)
-        #expect(model.productDrafts.first?.modelID == before)
+        let wholeBatchRows = recipe.products.filter { $0.unitSymbol == ProductUnit.wholeBatch.rawValue }
+        #expect(wholeBatchRows.count == 1)
+        #expect(wholeBatchRows.first?.persistentModelID == before)
     }
 
     @Test func saveProducts_RepeatedSaves_KeepProductIdentityStable() throws {
@@ -228,7 +229,6 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         let model = RecipeFormViewModel()
         model.load(from: recipe)
 
-        #expect(model.productDrafts.count == 3)
         try #require(model.productDrafts.count == 3)
         #expect(model.productDrafts[0].isWholeBatch)
         #expect(model.productDrafts[0].modelID != nil)
