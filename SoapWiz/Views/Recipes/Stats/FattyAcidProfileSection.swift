@@ -67,11 +67,8 @@ struct FattyAcidTotalsRows: View {
 /// Shown for both kinds. A non-soap recipe carries the iodine value here,
 /// since it has no Soap properties section to host it.
 ///
-/// The explanation stands in whenever there are ingredients but no profile
-/// among them — on a soap recipe too, where oils entered without one would
-/// otherwise make the whole section disappear rather than say why. A recipe
-/// with no ingredients at all still shows nothing, since there is nothing
-/// yet to explain.
+/// When the explanation stands in for the profile is decided by
+/// `RecipeStats.showsMissingFattyAcidExplanation`.
 struct FattyAcidProfileSections: View {
     let stats: RecipeStats
 

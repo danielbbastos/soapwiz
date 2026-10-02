@@ -36,8 +36,8 @@ struct RecipeStats {
 
     /// Whether the "no fatty acid data" explanation should stand in for the
     /// profile. It does when there are ingredients but none has a profile, and
-    /// always for a non-soap recipe. A soap recipe with no oils shows nothing,
-    /// since there is nothing yet to explain.
+    /// for a non-soap recipe also when it has no ingredients yet. A soap recipe
+    /// with no oils shows nothing, since there is nothing yet to explain.
     var showsMissingFattyAcidExplanation: Bool {
         !hasFattyAcidData && (hasOils || !makesSoap)
     }

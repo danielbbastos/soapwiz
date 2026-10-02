@@ -161,6 +161,14 @@ struct RecipeStatsTests {
         #expect(RecipeStats(oilDrafts: [draft], makesSoap: true).showsMissingFattyAcidExplanation)
     }
 
+    @Test func showsMissingFattyAcidExplanation_NonSoapWithProfilelessIngredients_IsTrue() {
+        let beeswax = Ingredient(name: "Beeswax", unit: "g")
+        beeswax.fattyAcidProfile = .zero
+        var draft = OilIngredientDraft(ingredient: beeswax); draft.amount = 100
+
+        #expect(RecipeStats(oilDrafts: [draft], makesSoap: false).showsMissingFattyAcidExplanation)
+    }
+
     @Test func showsMissingFattyAcidExplanation_SoapWithProfiledOils_IsFalse() {
         let shea = Ingredient.mockOil(name: "Shea", naohSap: 0.128, stearic: 38, oleic: 50)
         var draft = OilIngredientDraft(ingredient: shea); draft.amount = 100
