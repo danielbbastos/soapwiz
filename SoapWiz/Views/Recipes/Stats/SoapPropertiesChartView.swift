@@ -10,6 +10,19 @@ struct SoapPropertiesChartView: View {
     /// bars can't be selected. See `SoapPropertiesSection.interactive`.
     var interactive: Bool = true
 
+    @State private var plotWidth: CGFloat = 0
+    @State private var fullNameWidth: CGFloat = 0
+
+    private let labelGap: CGFloat = 8
+
+    private static let longestDisplayName = SoapQuality.allCases.map(\.displayName).max { $0.count < $1.count } ?? ""
+
+    // Measured from the plot itself so narrow sheets and split views fall back to short names.
+    private var showsFullNames: Bool {
+        guard plotWidth > 0, fullNameWidth > 0 else { return false }
+        return plotWidth / CGFloat(SoapQuality.allCases.count) >= fullNameWidth + labelGap
+    }
+
     var body: some View {
         Chart {
             ForEach(SoapQuality.allCases) { quality in
@@ -50,7 +63,9 @@ struct SoapPropertiesChartView: View {
                 AxisValueLabel {
                     if let name = value.as(String.self),
                        let quality = SoapQuality.allCases.first(where: { $0.displayName == name }) {
-                        Text(quality.shortName)
+                        Text(showsFullNames ? quality.displayName : quality.shortName)
+                            .font(.caption2)
+                            .fixedSize()
                     }
                 }
             }
@@ -60,6 +75,9 @@ struct SoapPropertiesChartView: View {
                 Rectangle()
                     .fill(.clear)
                     .contentShape(Rectangle())
+                    .onChange(of: proxy.plotFrame.map { geo[$0].width } ?? 0, initial: true) { _, width in
+                        plotWidth = width
+                    }
                     .onTapGesture { location in
                         guard interactive else { return }
                         guard let plotFrame = proxy.plotFrame else { return }
@@ -74,6 +92,14 @@ struct SoapPropertiesChartView: View {
             }
         }
         .frame(height: 260)
+        .background {
+            Text(Self.longestDisplayName)
+                .font(.caption2)
+                .fixedSize()
+                .hidden()
+                .accessibilityHidden(true)
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { fullNameWidth = $0 }
+        }
     }
 }
 

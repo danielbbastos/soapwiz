@@ -10,7 +10,7 @@ enum SoapQuality: String, CaseIterable, Identifiable {
         switch self {
         case .hardness: "Hardness"
         case .cleansing: "Cleansing"
-        case .conditioning: "Condition"
+        case .conditioning: "Conditioning"
         case .bubbly: "Bubbly"
         case .creamy: "Creamy"
         case .longevity: "Longevity"
