@@ -4,8 +4,8 @@ import SwiftUI
 /// fragrance target and the unit menu.
 ///
 /// They share one line when they fit, as on an iPad. Otherwise the target and
-/// the menu move to a second line, and at the accessibility text sizes each
-/// takes its own. The first two layouts keep the target and the menu at their
+/// the menu share a line above the add button, and at the accessibility text
+/// sizes each takes its own. The first two layouts keep the target and the menu at their
 /// natural width, so the menu never gets squeezed into wrapping, including in
 /// the middle of a rotation (SW-203). The stacked one is used even when it
 /// doesn't fit, and at the largest text sizes the menu alone can be wider than
@@ -23,12 +23,12 @@ struct RecipeFragrancesHeaderRow<AddButton: View>: View {
                 unitPicker(keepsNaturalWidth: true)
             }
             VStack(alignment: .leading) {
-                addButton
                 HStack {
                     targetLabel(keepsNaturalWidth: true)
                     Spacer()
                     unitPicker(keepsNaturalWidth: true)
                 }
+                addButton
             }
             VStack(alignment: .leading) {
                 addButton
