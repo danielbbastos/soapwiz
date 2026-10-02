@@ -6,9 +6,19 @@ struct RecipeProductCardView: View {
     let breakdown: ProductCostBreakdown
     let availableUnits: [ProductUnit]
     let model: RecipeFormViewModel
+    var isDefault = false
+    var onDelete: (() -> Void)? = nil
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var collapsedGroups: Set<BreakdownGroupKey> = []
     @State private var isUnitPickerPresented = false
+
+    private var isRegular: Bool { horizontalSizeClass == .regular }
+    private var headerFont: Font { isRegular ? .body : .subheadline }
+    private var rowFont: Font { isRegular ? .subheadline : .caption }
+    private var badgeFont: Font { isRegular ? .caption : .caption2 }
+    private var sizeFieldWidth: CGFloat { isRegular ? 70 : 56 }
+    private var priceColumnWidth: CGFloat { isRegular ? 80 : 64 }
 
     private static let amountFormatter: NumberFormatter = {
         let formatter = NumberFormatter()
@@ -57,69 +67,93 @@ struct RecipeProductCardView: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            if selectedUnit?.requiresSize ?? true {
-                NumericTextField(prompt: "Size", value: $draft.size, width: 56, alignment: .center)
-                    .font(.subheadline)
+            if !isDefault, selectedUnit?.requiresSize ?? true {
+                NumericTextField(prompt: "Size", value: $draft.size, width: sizeFieldWidth, alignment: .center)
+                    .font(headerFont)
                     .padding(.vertical, 4)
                     .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 6))
             }
 
-            Button {
-                isUnitPickerPresented = true
-            } label: {
-                HStack(spacing: 4) {
-                    Text(displayedUnitLabel)
-                        .font(.subheadline)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2)
-                }
-                .foregroundStyle(.primary)
-            }
-            .buttonStyle(.plain)
-            .popover(isPresented: $isUnitPickerPresented) {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(availableUnits, id: \.rawValue) { unit in
-                        Button {
-                            draft.unitSymbol = unit.rawValue
-                            if unit.requiresSize, draft.size == 0 {
-                                draft.size = 1
-                            }
-                            isUnitPickerPresented = false
-                        } label: {
-                            HStack {
-                                Text(unit.rawValue)
-                                    .font(.subheadline)
-                                Spacer()
-                                if draft.unitSymbol == unit.rawValue {
-                                    Image(systemName: "checkmark")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.tint)
-                                }
-                            }
-                            .foregroundStyle(.primary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.vertical, 4)
-                .frame(minWidth: 160)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .shadow(color: .black.opacity(0.15), radius: 4, y: 1)
-                .presentationBackground(.clear)
-                .presentationCompactAdaptation(.popover)
+            if isDefault {
+                Text("Whole batch")
+                    .font(headerFont)
+            } else {
+                unitMenu
             }
 
             if breakdown.exceedsBatchWeight {
                 Label("over batch", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption2.weight(.semibold))
+                    .font(badgeFont.weight(.semibold))
                     .foregroundStyle(.orange)
                     .labelStyle(.titleAndIcon)
             }
 
             Spacer()
+
+            if let onDelete {
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .font(headerFont)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, -8)
+                .padding(.vertical, -6)
+                .accessibilityLabel("Delete size")
+            }
+        }
+    }
+
+    private var unitMenu: some View {
+        Button {
+            isUnitPickerPresented = true
+        } label: {
+            HStack(spacing: 4) {
+                Text(displayedUnitLabel)
+                    .font(headerFont)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2)
+            }
+            .foregroundStyle(.primary)
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $isUnitPickerPresented) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(availableUnits, id: \.rawValue) { unit in
+                    Button {
+                        draft.unitSymbol = unit.rawValue
+                        if unit.requiresSize, draft.size == 0 {
+                            draft.size = 1
+                        }
+                        isUnitPickerPresented = false
+                    } label: {
+                        HStack {
+                            Text(unit.rawValue)
+                                .font(headerFont)
+                            Spacer()
+                            if draft.unitSymbol == unit.rawValue {
+                                Image(systemName: "checkmark")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tint)
+                            }
+                        }
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 4)
+            .frame(minWidth: 160)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(color: .black.opacity(0.15), radius: 4, y: 1)
+            .presentationBackground(.clear)
+            .presentationCompactAdaptation(.popover)
         }
     }
 
@@ -169,7 +203,7 @@ struct RecipeProductCardView: View {
         let weight: Font.Weight = emphasized ? .semibold : .regular
         HStack {
             Text(name)
-                .font(.caption)
+                .font(rowFont)
                 .foregroundStyle(style)
                 .fontWeight(weight)
             Spacer()
@@ -178,23 +212,23 @@ struct RecipeProductCardView: View {
                     InfoPopoverIcon(text: note)
                 }
                 Text("\(amountStr) \(unit)")
-                    .font(.caption)
+                    .font(rowFont)
                     .foregroundStyle(Color.secondary)
             }
             if cost > 0 {
                 Text(cost.formatted(.currency(code: currencyCode)))
-                    .font(.caption)
+                    .font(rowFont)
                     .foregroundStyle(style)
                     .fontWeight(weight)
-                    .frame(width: 64, alignment: .trailing)
+                    .frame(width: priceColumnWidth, alignment: .trailing)
             } else if !emphasized {
                 // A price-less ingredient row keeps its amount in the amount
                 // column and shows a dash where its price would be. Collapsed
                 // group summaries (emphasized) keep their current look.
                 Text("—")
-                    .font(.caption)
+                    .font(rowFont)
                     .foregroundStyle(Color.secondary)
-                    .frame(width: 64, alignment: .trailing)
+                    .frame(width: priceColumnWidth, alignment: .trailing)
             }
         }
     }

@@ -54,8 +54,10 @@ extension RecipeFormViewModel {
         productDrafts = recipe.products.map {
             RecipeProductDraft(size: $0.size, unitSymbol: $0.unitSymbol, modelID: $0.persistentModelID)
         }
-        if productDrafts.isEmpty {
-            productDrafts = [.seededPlaceholder()]
+        if let wholeBatchIndex = productDrafts.firstIndex(where: \.isWholeBatch) {
+            productDrafts.insert(productDrafts.remove(at: wholeBatchIndex), at: 0)
+        } else {
+            productDrafts.insert(.wholeBatch(), at: 0)
         }
 
         // Before the form captures its clean baseline, so a recipe stored under
@@ -189,7 +191,7 @@ extension RecipeFormViewModel {
             if let modelID = draft.modelID, let product = existing[modelID] {
                 product.size = draft.size
                 product.unitSymbol = draft.unitSymbol
-            } else if !draft.isSeededPlaceholder {
+            } else {
                 let product = RecipeProduct(size: draft.size, unitSymbol: draft.unitSymbol)
                 product.recipe = recipe
                 context.insert(product)

@@ -219,11 +219,11 @@ struct RecipeCostBreakdownTests: RecipeFormTestHelpers {
         #expect(smallCost < largeCost)
         #expect(abs(summed - model.batchTotalCost) < 1e-6)
     }
-    @Test func init_AddsDefaultProductOnePartOfBatch() {
+    @Test func init_AddsDefaultWholeBatchProduct() {
         let model = RecipeFormViewModel()
         #expect(model.productDrafts.count == 1)
         #expect(model.productDrafts[0].size == 1)
-        #expect(model.productDrafts[0].unitSymbol == ProductUnit.partsOfBatch.rawValue)
+        #expect(model.productDrafts[0].unitSymbol == ProductUnit.wholeBatch.rawValue)
     }
     @Test func batchTotalCost_IncludesAllCategories() throws {
         let (container, ctx) = try makeContext()

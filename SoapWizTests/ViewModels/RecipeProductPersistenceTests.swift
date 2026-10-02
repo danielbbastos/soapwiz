@@ -19,7 +19,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         let recipe = try #require(model.editingRecipe)
         let added = try #require(recipe.products.first { $0.unitSymbol == ProductUnit.grams.rawValue })
         #expect(added.size == 100)
-        #expect(recipe.products.count == 2)
+        #expect(recipe.products.count == 3)
     }
 
     @Test func saveProducts_AddedDraft_StampsPermanentModelID() throws {
@@ -47,9 +47,9 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
-        #expect(recipe.products.count == 1)
-        #expect(recipe.products.allSatisfy { $0.unitSymbol == ProductUnit.partsOfBatch.rawValue })
-        #expect(try ctx.fetch(FetchDescriptor<RecipeProduct>()).count == 1)
+        #expect(recipe.products.count == 2)
+        #expect(recipe.products.allSatisfy { $0.unitSymbol != ProductUnit.grams.rawValue })
+        #expect(try ctx.fetch(FetchDescriptor<RecipeProduct>()).count == 2)
     }
 
     @Test func saveProducts_RemovedLastDraft_LeavesRecipeWithNoProducts() throws {
@@ -62,8 +62,6 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
 
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.isEmpty)
-        // No placeholder draft is reinstated — one would be persisted by the
-        // next save as a product the user never asked for.
         #expect(model.productDrafts.isEmpty)
     }
 
@@ -95,7 +93,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
 
         let updated = try #require(recipe.products.first { $0.persistentModelID == originalID })
         #expect(updated.size == 250)
-        #expect(recipe.products.count == 2)
+        #expect(recipe.products.count == 3)
     }
 
     @Test func saveProducts_NoEditingRecipe_DoesNothing() throws {
@@ -109,25 +107,63 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         #expect(try ctx.fetch(FetchDescriptor<RecipeProduct>()).isEmpty)
     }
 
-    // MARK: - The seeded placeholder is never persisted
+    // MARK: - The whole-batch default
 
-    @Test func saveProducts_ProductlessRecipe_PersistsOnlyTheAddedProduct() throws {
+    @Test func load_ProductlessRecipe_StartsWithWholeBatchDefault() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let model = try makeProductlessModel(ctx: ctx)
-        // `load` seeds a placeholder row so the form has something to show.
+
         #expect(model.productDrafts.count == 1)
-        #expect(try #require(model.productDrafts.first).isSeededPlaceholder)
-
-        model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
-        try model.saveProducts(context: ctx)
-
-        let recipe = try #require(model.editingRecipe)
-        #expect(recipe.products.count == 1)
-        #expect(recipe.products.first?.unitSymbol == ProductUnit.grams.rawValue)
+        #expect(try #require(model.productDrafts.first).isWholeBatch)
+        #expect(try #require(model.productDrafts.first).modelID == nil)
     }
 
-    @Test func save_ProductlessRecipe_DoesNotPersistPlaceholder() throws {
+    @Test func load_ProductlessRecipe_IsNotDirty() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = try makeProductlessModel(ctx: ctx)
+
+        model.captureSnapshot()
+
+        #expect(!model.isDirty)
+    }
+
+    @Test func load_WholeBatchStoredAfterAnotherSize_MovesToFront() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Sized", desc: "")
+        ctx.insert(recipe)
+        for (size, unit) in [(100.0, ProductUnit.grams), (1.0, ProductUnit.wholeBatch), (200.0, ProductUnit.grams)] {
+            let product = RecipeProduct(size: size, unitSymbol: unit.rawValue)
+            product.recipe = recipe
+            ctx.insert(product)
+        }
+        try ctx.save()
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+
+        #expect(model.productDrafts.count == 3)
+        #expect(model.productDrafts[0].isWholeBatch)
+        #expect(model.productDrafts[0].modelID != nil)
+        #expect(model.productDrafts.dropFirst().map(\.size).sorted() == [100, 200])
+    }
+
+    @Test func save_NewRecipe_WritesWholeBatchProduct() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = RecipeFormViewModel()
+        model.name = "Fresh"
+
+        let recipe = model.save(context: ctx)
+
+        #expect(recipe.products.count == 1)
+        #expect(recipe.products.first?.unitSymbol == ProductUnit.wholeBatch.rawValue)
+        #expect(recipe.products.first?.size == 1)
+    }
+
+    @Test func save_LoadedRecipeWithoutWholeBatch_WritesIt() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let model = try makeProductlessModel(ctx: ctx)
@@ -135,103 +171,26 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         model.save(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
-        #expect(recipe.products.isEmpty)
+        #expect(recipe.products.count == 1)
+        #expect(recipe.products.first?.unitSymbol == ProductUnit.wholeBatch.rawValue)
     }
 
-    @Test func saveProducts_UserAuthoredPartsOfBatch_IsPersisted() throws {
+    @Test func saveProducts_ProductlessRecipe_PersistsDefaultAndAddedProduct() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let model = try makeProductlessModel(ctx: ctx)
 
-        // Same unit as the placeholder, but a size the user chose.
-        model.productDrafts.append(RecipeProductDraft(size: 4, unitSymbol: ProductUnit.partsOfBatch.rawValue))
+        model.productDrafts.append(RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue))
         try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
-        #expect(recipe.products.count == 1)
-        #expect(recipe.products.first?.size == 4)
+        #expect(recipe.products.count == 2)
+        #expect(recipe.products.contains { $0.unitSymbol == ProductUnit.wholeBatch.rawValue })
+        #expect(recipe.products.contains { $0.unitSymbol == ProductUnit.grams.rawValue })
     }
 
-    @Test func isSeededPlaceholder_SavedSinglePartBatchRow_IsNotAPlaceholder() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let model = try makeProductlessModel(ctx: ctx)
-        model.productDrafts = [RecipeProductDraft(size: 4, unitSymbol: ProductUnit.partsOfBatch.rawValue)]
-        try model.saveProducts(context: ctx)
-
-        // Shrinking a real product back to a single part must not make it
-        // vanish on the next save — the row was never the seeded one.
-        model.productDrafts[0].size = 1
-        #expect(model.productDrafts[0].isSeededPlaceholder == false)
-        try model.saveProducts(context: ctx)
-
-        let recipe = try #require(model.editingRecipe)
-        #expect(recipe.products.count == 1)
-        #expect(recipe.products.first?.size == 1)
-    }
-
-    @Test func saveProducts_AddedRowSnappedToASinglePart_IsPersisted() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let model = try makeProductlessModel(ctx: ctx)
-
-        // What the card's unit popover does to a freshly added row: picking a
-        // unit that needs a size snaps an unset size to 1, which leaves the row
-        // shaped exactly like the seeded placeholder. It is still the user's
-        // product and has to be saved.
-        model.addProduct(defaultUnitSymbol: ProductUnit.grams.rawValue)
-        let index = model.productDrafts.count - 1
-        model.productDrafts[index].unitSymbol = ProductUnit.partsOfBatch.rawValue
-        model.productDrafts[index].size = 1
-        #expect(model.productDrafts[index].isSeededPlaceholder == false)
-        try model.saveProducts(context: ctx)
-
-        let recipe = try #require(model.editingRecipe)
-        #expect(recipe.products.count == 1)
-        #expect(recipe.products.first?.unitSymbol == ProductUnit.partsOfBatch.rawValue)
-        #expect(recipe.products.first?.size == 1)
-    }
-
-    @Test func saveProducts_ResizedPlaceholder_IsPersisted() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let model = try makeProductlessModel(ctx: ctx)
-
-        model.productDrafts[0].size = 4
-        #expect(model.productDrafts[0].isSeededPlaceholder == false)
-        try model.saveProducts(context: ctx)
-
-        let recipe = try #require(model.editingRecipe)
-        #expect(recipe.products.count == 1)
-        #expect(recipe.products.first?.size == 4)
-    }
-
-    @Test func saveProducts_PlaceholderGivenAnotherUnit_IsPersisted() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let model = try makeProductlessModel(ctx: ctx)
-
-        model.productDrafts[0].unitSymbol = ProductUnit.grams.rawValue
-        #expect(model.productDrafts[0].isSeededPlaceholder == false)
-        try model.saveProducts(context: ctx)
-
-        let recipe = try #require(model.editingRecipe)
-        #expect(recipe.products.count == 1)
-        #expect(recipe.products.first?.unitSymbol == ProductUnit.grams.rawValue)
-    }
-
-    @Test func isSeededPlaceholder_RewrittenWithTheSameValues_StaysMarked() {
-        // A SwiftUI binding writes on every pass, same value or not; only a real
-        // change hands the row to the user.
-        var draft = RecipeProductDraft.seededPlaceholder()
-        draft.size = 1
-        draft.unitSymbol = ProductUnit.partsOfBatch.rawValue
-
-        #expect(draft.isSeededPlaceholder)
-    }
-
-    @Test func isSeededPlaceholder_DraftBuiltByHand_IsFalse() {
-        #expect(RecipeProductDraft(size: 1, unitSymbol: ProductUnit.partsOfBatch.rawValue).isSeededPlaceholder == false)
+    @Test func isWholeBatch_OtherUnit_IsFalse() {
+        #expect(!RecipeProductDraft(size: 1, unitSymbol: ProductUnit.partsOfBatch.rawValue).isWholeBatch)
     }
 
     // MARK: - Ingredients are untouched
@@ -296,14 +255,14 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
 
         model.save(context: ctx)
 
-        #expect(recipe.products.count == 1)
-        #expect(recipe.products.first?.persistentModelID == before)
+        #expect(recipe.products.count == 2)
+        #expect(recipe.products.contains { $0.persistentModelID == before })
     }
 
     // MARK: - Helpers
 
-    /// A saved recipe with one oil, one additive and one real product (a
-    /// quarter-batch, not the seeded placeholder), loaded into a view model the
+    /// A saved recipe with one oil, one additive, the whole-batch default and one
+    /// real product (a quarter-batch), loaded into a view model the
     /// way the detail screen loads it.
     private func makeLoadedModel(ctx: ModelContext) throws -> RecipeFormViewModel {
         let oil = Ingredient(name: "Coconut Oil")
@@ -319,7 +278,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         model.addOil(oil)
         model.oilDrafts[0].amount = 100
         model.additiveDrafts.append(IngredientAmountDraft(ingredient: additive, amount: 30, unit: "g"))
-        model.productDrafts = [RecipeProductDraft(size: 4, unitSymbol: ProductUnit.partsOfBatch.rawValue)]
+        model.productDrafts = [.wholeBatch(), RecipeProductDraft(size: 4, unitSymbol: ProductUnit.partsOfBatch.rawValue)]
 
         let recipe = model.save(context: ctx)
         try ctx.save()
@@ -330,7 +289,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
     }
 
     /// A saved recipe with an oil but no products at all, loaded into a view
-    /// model — so `load` seeds its placeholder draft.
+    /// model — so `load` inserts the whole-batch default.
     private func makeProductlessModel(ctx: ModelContext) throws -> RecipeFormViewModel {
         let oil = Ingredient(name: "Coconut Oil")
         oil.sapValue = 0.2

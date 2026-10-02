@@ -3,6 +3,7 @@ import SwiftData
 
 struct CostBreakdownBarView: View {
     @Environment(\.currencyCode) private var currencyCode
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Bindable var model: RecipeFormViewModel
     @Binding var isExpanded: Bool
     var availableHeight: CGFloat = 0
@@ -10,6 +11,10 @@ struct CostBreakdownBarView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var visibleCardID: AnyHashable?
     @State private var keyboardVisible = false
+
+    private var headlineFont: Font { horizontalSizeClass == .regular ? .body : .subheadline }
+    private var captionFont: Font { horizontalSizeClass == .regular ? .footnote : .caption }
+    private var totalsFont: Font { horizontalSizeClass == .regular ? .body : .caption }
 
     private var pvpFactor: Double { AppSettings.canonical(from: settingsRecords)?.pvpFactor ?? 4.0 }
 
@@ -29,6 +34,7 @@ struct CostBreakdownBarView: View {
         }
         .glassEffectIOS26(in: shape)
         .shadow(color: .black.opacity(0.15), radius: 4, y: 1)
+        .frame(maxWidth: ReadableWidth.maximum)
         .padding(.horizontal, 12)
         .padding(.bottom, 4)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
@@ -42,13 +48,13 @@ struct CostBreakdownBarView: View {
             VStack(alignment: .leading, spacing: 1) {
                 if !expanded {
                     Text("Cost breakdown")
-                        .font(.caption)
+                        .font(captionFont)
                         .foregroundStyle(.secondary)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
                 HStack(spacing: 6) {
                     Text(summaryText(canExpand: canExpand, batchTotal: batchTotal))
-                        .font(.subheadline.weight(.semibold))
+                        .font(headlineFont.weight(.semibold))
                         .monospacedDigit()
                     if expanded {
                         swipeHintButton
@@ -79,43 +85,62 @@ struct CostBreakdownBarView: View {
     private func carousel(batch: ProductCostBreakdown) -> some View {
         let fraction: CGFloat = keyboardVisible ? 0.3 : 0.4
         let maxHeight: CGFloat = availableHeight > 0 ? availableHeight * fraction : 350
-        return ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 0) {
-                ForEach($model.productDrafts) { $draft in
-                    productColumn(draft: $draft, batch: batch)
-                        .containerRelativeFrame(.horizontal)
-                        .id(AnyHashable(draft.id))
+        return ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    ForEach($model.productDrafts) { $draft in
+                        productColumn(draft: $draft, batch: batch)
+                            .containerRelativeFrame(.horizontal)
+                            .id(AnyHashable(draft.id))
+                    }
+                    AddProductCardView {
+                        model.addProduct(defaultUnitSymbol: ProductUnit.grams.rawValue)
+                        if let newID = model.productDrafts.last?.id {
+                            withAnimation { visibleCardID = AnyHashable(newID) }
+                        }
+                    }
+                    .containerRelativeFrame(.horizontal)
+                    .id(AnyHashable("addButton"))
                 }
-                AddProductCardView {
-                    model.addProduct(defaultUnitSymbol: ProductUnit.grams.rawValue)
-                    if let newID = model.productDrafts.last?.id {
-                        withAnimation { visibleCardID = AnyHashable(newID) }
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $visibleCardID)
+            .frame(maxHeight: maxHeight)
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { _ in
+                // The cards resize with the width but the offset keeps its old
+                // point value, leaving two half pages after a rotation.
+                guard let id = visibleCardID else { return }
+                Task {
+                    var transaction = Transaction()
+                    transaction.disablesAnimations = true
+                    withTransaction(transaction) {
+                        proxy.scrollTo(id, anchor: .leading)
                     }
                 }
-                .containerRelativeFrame(.horizontal)
-                .id(AnyHashable("addButton"))
             }
-            .scrollTargetLayout()
-        }
-        .scrollTargetBehavior(.paging)
-        .scrollPosition(id: $visibleCardID)
-        .frame(maxHeight: maxHeight)
-        .onAppear {
-            if visibleCardID == nil, let firstID = model.productDrafts.first?.id {
-                visibleCardID = AnyHashable(firstID)
+            .onAppear {
+                if visibleCardID == nil, let firstID = model.productDrafts.first?.id {
+                    visibleCardID = AnyHashable(firstID)
+                }
             }
         }
     }
 
     private func productColumn(draft: Binding<RecipeProductDraft>, batch: ProductCostBreakdown) -> some View {
         let breakdown = model.breakdownAndCost(for: draft.wrappedValue, batch: batch)
+        let draftID = draft.wrappedValue.id
+        let isDefault = model.productDrafts.first?.id == draftID
+        let onDelete: (() -> Void)? = isDefault ? nil : { deleteProduct(id: draftID) }
         return VStack(spacing: 0) {
             ScrollView(.vertical, showsIndicators: false) {
                 RecipeProductCardView(
                     draft: draft,
                     breakdown: breakdown,
-                    availableUnits: ProductUnit.allCases,
-                    model: model
+                    availableUnits: ProductUnit.allCases.filter { $0 != .wholeBatch },
+                    model: model,
+                    isDefault: isDefault,
+                    onDelete: onDelete
                 )
             }
             if breakdown.total > 0 {
@@ -125,25 +150,43 @@ struct CostBreakdownBarView: View {
         }
     }
 
+    /// The next card slides into the deleted card's slot at once, since the
+    /// offset stays put; the carousel then glides back to the previous card.
+    private func deleteProduct(id: UUID) {
+        guard let index = model.productDrafts.firstIndex(where: { $0.id == id }) else { return }
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        let previousID = withTransaction(transaction) { model.removeProduct(id: id) }
+        guard let previousID else { return }
+        let slotID: AnyHashable = model.productDrafts.indices.contains(index)
+            ? AnyHashable(model.productDrafts[index].id)
+            : AnyHashable("addButton")
+        withTransaction(transaction) { visibleCardID = slotID }
+        Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            withAnimation { visibleCardID = AnyHashable(previousID) }
+        }
+    }
+
     @ViewBuilder
     private func productTotals(_ breakdown: ProductCostBreakdown) -> some View {
         HStack {
             Text("Total")
-                .font(.caption.weight(.semibold))
+                .font(totalsFont.weight(.semibold))
             Spacer()
             Text(breakdown.total.formatted(.currency(code: currencyCode)))
-                .font(.caption.weight(.semibold))
+                .font(totalsFont.weight(.semibold))
         }
         .padding(.horizontal, 14)
         .padding(.top, 8)
         .padding(.bottom, 4)
         HStack {
             Text("RRP")
-                .font(.caption.weight(.semibold))
+                .font(totalsFont.weight(.semibold))
                 .foregroundStyle(.tint)
             Spacer()
             Text((breakdown.total * pvpFactor).formatted(.currency(code: currencyCode)))
-                .font(.caption.weight(.semibold))
+                .font(totalsFont.weight(.semibold))
                 .foregroundStyle(.tint)
         }
         .padding(.horizontal, 14)
