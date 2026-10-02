@@ -68,7 +68,10 @@ struct RecipeProductCardView: View {
     private var header: some View {
         HStack(spacing: 8) {
             if !isDefault, selectedUnit?.requiresSize ?? true {
-                NumericTextField(prompt: "Size", value: $draft.size, width: sizeFieldWidth, alignment: .center)
+                NumericTextField(
+                    prompt: "Size", value: $draft.size, width: sizeFieldWidth, alignment: .center,
+                    allowsDecimals: selectedUnit != .partsOfBatch
+                )
                     .font(headerFont)
                     .padding(.vertical, 4)
                     .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 6))
@@ -88,7 +91,7 @@ struct RecipeProductCardView: View {
                     .labelStyle(.titleAndIcon)
             }
 
-            if selectedUnit == .partsOfBatch, draft.size <= 1 {
+            if selectedUnit == .partsOfBatch, !draft.isSeparateFromBatch {
                 Label("More than 1 part", systemImage: "exclamationmark.triangle.fill")
                     .font(badgeFont.weight(.semibold))
                     .foregroundStyle(.orange)
@@ -131,12 +134,7 @@ struct RecipeProductCardView: View {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(availableUnits, id: \.rawValue) { unit in
                     Button {
-                        draft.unitSymbol = unit.rawValue
-                        if unit == .partsOfBatch {
-                            if draft.size <= 1 { draft.size = 2 }
-                        } else if unit.requiresSize, draft.size == 0 {
-                            draft.size = 1
-                        }
+                        draft.selectUnit(unit)
                         isUnitPickerPresented = false
                     } label: {
                         HStack {

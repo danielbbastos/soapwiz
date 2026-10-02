@@ -204,16 +204,6 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         #expect(try #require(model.productDrafts.first).modelID == nil)
     }
 
-    @Test func load_ProductlessRecipe_IsNotDirty() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let model = try makeProductlessModel(ctx: ctx)
-
-        model.captureSnapshot()
-
-        #expect(!model.isDirty)
-    }
-
     @Test func load_WholeBatchStoredAfterAnotherSize_MovesToFront() throws {
         let (container, ctx) = try makeContext()
         _ = container

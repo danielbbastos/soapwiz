@@ -54,12 +54,23 @@ struct RecipeProductDraft: Identifiable, Equatable {
     /// Whether this size costs something other than the whole batch. A whole
     /// batch, or a batch split into one part, is the batch total again, which
     /// every cost screen already shows, so those rows are left out of the sizes
-    /// listed and counted.
+    /// listed and counted. Parts of a batch are a whole number of them, two or
+    /// more; anything else is not a size and is never stored.
     var isSeparateFromBatch: Bool {
         switch ProductUnit(rawValue: unitSymbol) {
         case .wholeBatch: false
-        case .partsOfBatch: size > 1
+        case .partsOfBatch: size > 1 && size == size.rounded()
         default: true
+        }
+    }
+
+    /// Applies a unit picked on the card, giving the size a value that fits it.
+    mutating func selectUnit(_ unit: ProductUnit) {
+        unitSymbol = unit.rawValue
+        if unit == .partsOfBatch {
+            if size < 2 || size != size.rounded() { size = 2 }
+        } else if unit.requiresSize, size == 0 {
+            size = 1
         }
     }
 

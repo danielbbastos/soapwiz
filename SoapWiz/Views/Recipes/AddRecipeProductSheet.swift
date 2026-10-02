@@ -15,9 +15,9 @@ struct AddRecipeProductSheet: View {
     private static let availableUnits = ProductUnit.allCases.filter { $0 != .wholeBatch }
 
     /// A single part is the whole batch under another name, and is filtered out
-    /// of the breakdown for that reason.
+    /// of the breakdown for that reason. Parts come in whole numbers.
     private var isValid: Bool {
-        unit == .partsOfBatch ? size > 1 : size > 0
+        RecipeProductDraft(size: size, unitSymbol: unit.rawValue).isSeparateFromBatch && size > 0
     }
 
     private var footerText: String {
@@ -32,7 +32,7 @@ struct AddRecipeProductSheet: View {
             Form {
                 Section {
                     LabeledContent("Size") {
-                        NumericTextField(prompt: "Size", value: $size, width: 80)
+                        NumericTextField(prompt: "Size", value: $size, width: 80, allowsDecimals: unit != .partsOfBatch)
                     }
                     Picker("Unit", selection: $unit) {
                         ForEach(Self.availableUnits, id: \.self) { unit in
