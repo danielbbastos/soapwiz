@@ -1,9 +1,13 @@
 import SwiftUI
 
 /// An ingredient row in the recipe form: its name, its amount field and
-/// whatever follows the amount, a unit label or menu. The name keeps the room
-/// it needs and the amount field takes the rest, so the field can be tapped
-/// anywhere between the name and the unit, not only on the number itself.
+/// whatever follows the amount, a unit label or menu.
+///
+/// The unit always shows in full and the name keeps the room it needs; the
+/// amount field takes the rest, so it can be tapped anywhere between the name
+/// and the unit, not only on the number itself. On a row too narrow for a long
+/// name beside the field's minimum width, as on an iPhone, the name wraps onto
+/// a second line rather than squeezing the unit.
 struct RecipeAmountRow<Trailing: View>: View {
     let name: String
     @Binding var amount: Double
@@ -14,7 +18,6 @@ struct RecipeAmountRow<Trailing: View>: View {
     var body: some View {
         HStack {
             Text(name)
-                .lineLimit(1)
                 .layoutPriority(1)
             NumericTextField(
                 prompt: "0",
@@ -24,6 +27,7 @@ struct RecipeAmountRow<Trailing: View>: View {
                 fillsAvailableWidth: true
             )
             trailing
+                .fixedSize()
         }
     }
 }
