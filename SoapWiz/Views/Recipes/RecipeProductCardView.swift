@@ -7,7 +7,7 @@ struct RecipeProductCardView: View {
     let availableUnits: [ProductUnit]
     let model: RecipeFormViewModel
     var isDefault = false
-    var onDelete: (() -> Void)? = nil
+    var onDelete: (() -> Void)?
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var collapsedGroups: Set<BreakdownGroupKey> = []
@@ -75,7 +75,7 @@ struct RecipeProductCardView: View {
             }
 
             if isDefault {
-                Text("Whole batch")
+                Text(displayedUnitLabel)
                     .font(headerFont)
             } else {
                 unitMenu

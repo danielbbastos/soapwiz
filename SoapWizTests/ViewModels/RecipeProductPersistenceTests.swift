@@ -49,20 +49,62 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         let recipe = try #require(model.editingRecipe)
         #expect(recipe.products.count == 2)
         #expect(recipe.products.allSatisfy { $0.unitSymbol != ProductUnit.grams.rawValue })
+        #expect(recipe.products.contains { $0.unitSymbol == ProductUnit.wholeBatch.rawValue })
         #expect(try ctx.fetch(FetchDescriptor<RecipeProduct>()).count == 2)
     }
 
-    @Test func saveProducts_RemovedLastDraft_LeavesRecipeWithNoProducts() throws {
+    @Test func saveProducts_RemovedAllNonDefaultDrafts_LeavesOnlyWholeBatch() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let model = try makeLoadedModel(ctx: ctx)
 
-        model.productDrafts.removeAll()
+        model.productDrafts.removeAll { !$0.isWholeBatch }
         try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
-        #expect(recipe.products.isEmpty)
-        #expect(model.productDrafts.isEmpty)
+        #expect(recipe.products.count == 1)
+        #expect(recipe.products.first?.unitSymbol == ProductUnit.wholeBatch.rawValue)
+        #expect(model.productDrafts.count == 1)
+        #expect(model.productDrafts[0].isWholeBatch)
+    }
+
+    @Test func load_TwoStoredWholeBatchRows_KeepsOneAndSaveDeletesTheOther() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Duplicated", desc: "")
+        ctx.insert(recipe)
+        for (size, unit) in [(1.0, ProductUnit.wholeBatch), (100.0, ProductUnit.grams), (1.0, ProductUnit.wholeBatch)] {
+            let product = RecipeProduct(size: size, unitSymbol: unit.rawValue)
+            product.recipe = recipe
+            ctx.insert(product)
+        }
+        try ctx.save()
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+
+        #expect(model.productDrafts.count == 2)
+        #expect(model.productDrafts[0].isWholeBatch)
+        #expect(model.productDrafts[1].unitSymbol == ProductUnit.grams.rawValue)
+
+        try model.saveProducts(context: ctx)
+
+        let stored = try ctx.fetch(FetchDescriptor<RecipeProduct>())
+        #expect(stored.count == 2)
+        #expect(stored.count { $0.unitSymbol == ProductUnit.wholeBatch.rawValue } == 1)
+    }
+
+    @Test func save_LoadedRecipeWithWholeBatch_DoesNotAddASecond() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = try makeLoadedModel(ctx: ctx)
+        let recipe = try #require(model.editingRecipe)
+        let before = try #require(model.productDrafts[0].modelID)
+
+        model.save(context: ctx)
+
+        #expect(recipe.products.count { $0.unitSymbol == ProductUnit.wholeBatch.rawValue } == 1)
+        #expect(model.productDrafts[0].modelID == before)
     }
 
     @Test func saveProducts_RepeatedSaves_KeepProductIdentityStable() throws {

@@ -110,8 +110,8 @@ struct CostBreakdownBarView: View {
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { _ in
                 // The cards resize with the width but the offset keeps its old
                 // point value, leaving two half pages after a rotation.
-                guard let id = visibleCardID else { return }
                 Task {
+                    guard let id = visibleCardID else { return }
                     var transaction = Transaction()
                     transaction.disablesAnimations = true
                     withTransaction(transaction) {
@@ -164,6 +164,7 @@ struct CostBreakdownBarView: View {
         withTransaction(transaction) { visibleCardID = slotID }
         Task {
             try? await Task.sleep(for: .milliseconds(300))
+            guard visibleCardID == slotID else { return }
             withAnimation { visibleCardID = AnyHashable(previousID) }
         }
     }

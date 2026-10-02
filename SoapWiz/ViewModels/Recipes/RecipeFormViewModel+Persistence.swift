@@ -54,11 +54,10 @@ extension RecipeFormViewModel {
         productDrafts = recipe.products.map {
             RecipeProductDraft(size: $0.size, unitSymbol: $0.unitSymbol, modelID: $0.persistentModelID)
         }
-        if let wholeBatchIndex = productDrafts.firstIndex(where: \.isWholeBatch) {
-            productDrafts.insert(productDrafts.remove(at: wholeBatchIndex), at: 0)
-        } else {
-            productDrafts.insert(.wholeBatch(), at: 0)
-        }
+        // Other devices or older builds can leave several whole-batch rows; they
+        // all cost the same, so one is kept and the next save deletes the rest.
+        let wholeBatch = productDrafts.first(where: \.isWholeBatch) ?? .wholeBatch()
+        productDrafts = [wholeBatch] + productDrafts.filter { !$0.isWholeBatch }
 
         // Before the form captures its clean baseline, so a recipe stored under
         // one kind opens coherent under the one it now has.
