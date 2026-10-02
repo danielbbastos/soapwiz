@@ -22,7 +22,7 @@ struct RecipeFragrancesHeaderRow<AddButton: View>: View {
                 targetLabel(keepsNaturalWidth: true)
                 unitPicker(keepsNaturalWidth: true)
             }
-            VStack(alignment: .leading) {
+            VStack(alignment: .leading, spacing: 14) {
                 HStack {
                     targetLabel(keepsNaturalWidth: true)
                     Spacer()
