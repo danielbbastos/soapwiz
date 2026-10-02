@@ -73,7 +73,7 @@ struct FattyAcidProfileSections: View {
     let stats: RecipeStats
 
     /// Applied to every section's rows; `nil` keeps the container's default.
-    var rowBackground: Color? = nil
+    var rowBackground: Color?
 
     @ViewBuilder
     var body: some View {
