@@ -150,6 +150,35 @@ struct RecipeStatsTests {
         #expect(empty.hasFattyAcidData == false)
     }
 
+    @Test func showsMissingFattyAcidExplanation_SoapWithNoOils_IsFalse() {
+        #expect(RecipeStats(oilDrafts: [], makesSoap: true).showsMissingFattyAcidExplanation == false)
+    }
+
+    @Test func showsMissingFattyAcidExplanation_SoapWithProfilelessOils_IsTrue() {
+        let unknown = Ingredient(name: "Unknown", unit: "g")
+        var draft = OilIngredientDraft(ingredient: unknown); draft.amount = 100
+
+        #expect(RecipeStats(oilDrafts: [draft], makesSoap: true).showsMissingFattyAcidExplanation)
+    }
+
+    @Test func showsMissingFattyAcidExplanation_SoapWithProfiledOils_IsFalse() {
+        let shea = Ingredient.mockOil(name: "Shea", naohSap: 0.128, stearic: 38, oleic: 50)
+        var draft = OilIngredientDraft(ingredient: shea); draft.amount = 100
+
+        #expect(RecipeStats(oilDrafts: [draft], makesSoap: true).showsMissingFattyAcidExplanation == false)
+    }
+
+    @Test func showsMissingFattyAcidExplanation_NonSoapWithNoIngredients_IsTrue() {
+        #expect(RecipeStats(oilDrafts: [], makesSoap: false).showsMissingFattyAcidExplanation)
+    }
+
+    @Test func showsMissingFattyAcidExplanation_NonSoapWithProfiledIngredients_IsFalse() {
+        let shea = Ingredient.mockOil(name: "Shea", naohSap: 0.128, stearic: 38, oleic: 50)
+        var draft = OilIngredientDraft(ingredient: shea); draft.amount = 100
+
+        #expect(RecipeStats(oilDrafts: [draft], makesSoap: false).showsMissingFattyAcidExplanation == false)
+    }
+
     @Test func stats_MakesSoapDefaultsToTrue() {
         #expect(RecipeStats(oilDrafts: []).makesSoap)
     }

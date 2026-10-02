@@ -61,6 +61,44 @@ struct FattyAcidTotalsRows: View {
         + "set firmer. 41–70 is the usual target for a blend of soft and hard fats."
 }
 
+/// The fatty acid sections shared by the Stats tab and the recipe detail.
+/// Emits `Section`s, so it must sit directly inside a `List` or `Form`.
+///
+/// Shown for both kinds. A non-soap recipe carries the iodine value here,
+/// since it has no Soap properties section to host it.
+///
+/// The explanation stands in whenever there are ingredients but no profile
+/// among them — on a soap recipe too, where oils entered without one would
+/// otherwise make the whole section disappear rather than say why. A recipe
+/// with no ingredients at all still shows nothing, since there is nothing
+/// yet to explain.
+struct FattyAcidProfileSections: View {
+    let stats: RecipeStats
+
+    /// Applied to every section's rows; `nil` keeps the container's default.
+    var rowBackground: Color? = nil
+
+    @ViewBuilder
+    var body: some View {
+        if stats.hasFattyAcidData {
+            Section("Fatty acid profile") {
+                FattyAcidBreakdownRows(stats: stats)
+            }
+            .listRowBackground(rowBackground)
+            Section(RecipeStatsCopy.totalsHeader) {
+                FattyAcidTotalsRows(stats: stats, showsIodine: !stats.makesSoap)
+            }
+            .listRowBackground(rowBackground)
+        } else if stats.showsMissingFattyAcidExplanation {
+            Section("Fatty acid profile") {
+                Text(RecipeStatsCopy.noFattyAcidData)
+                    .foregroundStyle(.secondary)
+            }
+            .listRowBackground(rowBackground)
+        }
+    }
+}
+
 private struct FattyAcidRow: View {
     let label: String
     let value: Double

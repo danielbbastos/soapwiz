@@ -361,9 +361,10 @@ struct RecipeDetailView: View {
 
     // MARK: - Soap properties
 
-    /// A soap recipe gets the qualities chart and its INS/iodine indicators; a
-    /// non-soap one gets the blend's fatty acid composition instead, which is
-    /// the part of this that still means something without saponification.
+    /// A soap recipe gets the qualities chart and its INS/iodine indicators,
+    /// followed by the blend's fatty acid profile and saturation totals. A
+    /// non-soap recipe gets only the fatty acid composition, which is the part
+    /// that still means something without saponification.
     @ViewBuilder
     private var soapPropertiesSection: some View {
         let stats = RecipeStats(oilDrafts: model.oilDrafts, makesSoap: model.makesSoap)
@@ -377,23 +378,7 @@ struct RecipeDetailView: View {
                 }
             }
             .listRowBackground(Color.cardBackground)
-        } else {
-            if stats.hasFattyAcidData {
-                Section("Fatty acid profile") {
-                    FattyAcidBreakdownRows(stats: stats)
-                }
-                .listRowBackground(Color.cardBackground)
-                Section(RecipeStatsCopy.totalsHeader) {
-                    FattyAcidTotalsRows(stats: stats, showsIodine: true)
-                }
-                .listRowBackground(Color.cardBackground)
-            } else {
-                Section("Fatty acid profile") {
-                    Text(RecipeStatsCopy.noFattyAcidData)
-                        .foregroundStyle(.secondary)
-                }
-                .listRowBackground(Color.cardBackground)
-            }
         }
+        FattyAcidProfileSections(stats: stats, rowBackground: Color.cardBackground)
     }
 }
