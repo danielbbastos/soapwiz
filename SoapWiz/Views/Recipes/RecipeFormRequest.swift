@@ -21,12 +21,18 @@ enum RecipeFormRequest: Identifiable {
 
     /// The value pushed for this request where the form is a push. Unchanged
     /// from before SW-89, so the existing destinations still route it.
-    var route: AnyHashable {
+    ///
+    /// An existential, not `AnyHashable`: `NavigationPath.append` records the
+    /// static type of what it's given, and destinations match on that type. An
+    /// `AnyHashable` was recorded as `AnyHashable`, matched no destination, and
+    /// left a blank screen on iPhone (SW-206). Passing `any Hashable` opens it,
+    /// so the path records `Bool`, `RecipeSeed` and so on.
+    var route: any Hashable {
         switch self {
-        case .new: AnyHashable(true)
-        case .seeded(let seed): AnyHashable(seed)
-        case .imported(let prepared): AnyHashable(prepared)
-        case .edit(let recipe, _): AnyHashable(RecipeEditRoute(recipe: recipe))
+        case .new: true
+        case .seeded(let seed): seed
+        case .imported(let prepared): prepared
+        case .edit(let recipe, _): RecipeEditRoute(recipe: recipe)
         }
     }
 
