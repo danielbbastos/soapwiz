@@ -60,11 +60,7 @@ struct RecipeCostSection: View {
                         }
                     }
                 }
-                .expandingSectionHeader(
-                    RecipeFormSection.batchTotal,
-                    expanded: batchTotalExpanded,
-                    spansWholeSection: true
-                )
+                .expandingSectionHeader(RecipeFormSection.batchTotal, expanded: batchTotalExpanded)
             } else {
                 Text("No cost data — add purchase prices in Inventory")
                     .foregroundStyle(.secondary)
@@ -82,8 +78,7 @@ struct RecipeCostSection: View {
                     }
                     .expandingSectionHeader(
                         RecipeFormSection.product(draft.id),
-                        expanded: expandedProducts[draft.id] ?? false,
-                        spansWholeSection: true
+                        expanded: expandedProducts[draft.id] ?? false
                     )
                 } else {
                     productDisclosureLabel(draft, breakdown: breakdown)

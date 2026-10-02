@@ -2,33 +2,45 @@ import Testing
 import Foundation
 @testable import SoapWiz
 
-/// The recipe form's open requests (SW-89). On iPhone each is still pushed as
-/// the value the list's destinations routed before, so the push is unchanged;
-/// on iPad each drives a full-screen cover by its identity.
+/// The recipe form's open requests (SW-89). On iPhone each is pushed as the
+/// value the list's destinations route; on iPad each drives a full-screen cover
+/// by its identity.
 @Suite("RecipeFormRequest")
 @MainActor
 struct RecipeFormRequestTests {
 
-    @Test func route_New_IsThePushedFlag() {
-        #expect(RecipeFormRequest.new().route == AnyHashable(true))
+    /// Each route is checked by its type as well as its value: a destination
+    /// matches on the pushed value's type, and a route wrapped in `AnyHashable`
+    /// compares equal yet matches nothing, leaving a blank screen (SW-206).
+    @Test func route_New_IsThePushedFlag() throws {
+        let route = RecipeFormRequest.new().route
+
+        #expect(type(of: route) == Bool.self)
+        #expect(try #require(route as? Bool))
     }
 
-    @Test func route_Seeded_IsTheSeed() {
+    @Test func route_Seeded_IsTheSeed() throws {
         let seed = RecipeSeed(ingredients: [])
+        let route = RecipeFormRequest.seeded(seed).route
 
-        #expect(RecipeFormRequest.seeded(seed).route == AnyHashable(seed))
+        #expect(type(of: route) == RecipeSeed.self)
+        #expect(try #require(route as? RecipeSeed) == seed)
     }
 
-    @Test func route_Imported_IsThePreparedImport() {
+    @Test func route_Imported_IsThePreparedImport() throws {
         let prepared = PreparedRecipeImport(draft: RecipeImportDraft(), rows: [])
+        let route = RecipeFormRequest.imported(prepared).route
 
-        #expect(RecipeFormRequest.imported(prepared).route == AnyHashable(prepared))
+        #expect(type(of: route) == PreparedRecipeImport.self)
+        #expect(try #require(route as? PreparedRecipeImport) == prepared)
     }
 
-    @Test func route_Edit_IsTheEditRouteForTheRecipe() {
+    @Test func route_Edit_IsTheEditRouteForTheRecipe() throws {
         let recipe = Recipe(name: "Castile", desc: "")
+        let route = RecipeFormRequest.edit(recipe).route
 
-        #expect(RecipeFormRequest.edit(recipe).route == AnyHashable(RecipeEditRoute(recipe: recipe)))
+        #expect(type(of: route) == RecipeEditRoute.self)
+        #expect(try #require(route as? RecipeEditRoute) == RecipeEditRoute(recipe: recipe))
     }
 
     /// A second New Recipe, or a second Edit of the same recipe, must be a new
