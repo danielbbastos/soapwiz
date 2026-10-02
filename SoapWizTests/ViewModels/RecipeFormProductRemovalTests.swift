@@ -16,13 +16,6 @@ struct RecipeFormProductRemovalTests: RecipeFormTestHelpers {
         return model
     }
 
-    @Test func newForm_StartsWithOneWholeBatchDraft() {
-        let model = RecipeFormViewModel()
-
-        #expect(model.productDrafts.count == 1)
-        #expect(model.productDrafts[0].isWholeBatch)
-    }
-
     @Test func removeProduct_MiddleCard_ReturnsPreviousID() {
         let model = makeModel(sizes: [100, 200, 300])
         let ids = model.productDrafts.map(\.id)

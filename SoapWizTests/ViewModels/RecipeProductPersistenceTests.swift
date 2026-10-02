@@ -62,10 +62,12 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         try model.saveProducts(context: ctx)
 
         let recipe = try #require(model.editingRecipe)
+        let onlyProduct = try #require(recipe.products.first)
         #expect(recipe.products.count == 1)
-        #expect(recipe.products.first?.unitSymbol == ProductUnit.wholeBatch.rawValue)
+        #expect(onlyProduct.unitSymbol == ProductUnit.wholeBatch.rawValue)
+        let onlyDraft = try #require(model.productDrafts.first)
         #expect(model.productDrafts.count == 1)
-        #expect(model.productDrafts[0].isWholeBatch)
+        #expect(onlyDraft.isWholeBatch)
     }
 
     @Test func load_TwoStoredWholeBatchRows_KeepsOneAndSaveDeletesTheOther() throws {
@@ -83,7 +85,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         let model = RecipeFormViewModel()
         model.load(from: recipe)
 
-        #expect(model.productDrafts.count == 2)
+        try #require(model.productDrafts.count == 2)
         #expect(model.productDrafts[0].isWholeBatch)
         #expect(model.productDrafts[1].unitSymbol == ProductUnit.grams.rawValue)
 
@@ -94,17 +96,57 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         #expect(stored.count { $0.unitSymbol == ProductUnit.wholeBatch.rawValue } == 1)
     }
 
+    @Test func load_LegacyOnePartOfBatchRow_IsReplacedByWholeBatch() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Legacy", desc: "")
+        ctx.insert(recipe)
+        for (size, unit) in [(1.0, ProductUnit.partsOfBatch), (100.0, ProductUnit.grams)] {
+            let product = RecipeProduct(size: size, unitSymbol: unit.rawValue)
+            product.recipe = recipe
+            ctx.insert(product)
+        }
+        try ctx.save()
+
+        let model = RecipeFormViewModel()
+        model.load(from: recipe)
+
+        try #require(model.productDrafts.count == 2)
+        #expect(model.productDrafts[0].isWholeBatch)
+        #expect(model.productDrafts[0].modelID == nil)
+        #expect(model.productDrafts[1].unitSymbol == ProductUnit.grams.rawValue)
+
+        try model.saveProducts(context: ctx)
+
+        let stored = try ctx.fetch(FetchDescriptor<RecipeProduct>())
+        #expect(stored.count == 2)
+        #expect(stored.count { $0.unitSymbol == ProductUnit.wholeBatch.rawValue } == 1)
+        #expect(stored.count { $0.unitSymbol == ProductUnit.grams.rawValue } == 1)
+        #expect(!stored.contains { $0.unitSymbol == ProductUnit.partsOfBatch.rawValue })
+    }
+
+    @Test func load_FourPartsOfBatchRow_IsKept() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = try makeLoadedModel(ctx: ctx)
+
+        try #require(model.productDrafts.count == 2)
+        #expect(model.productDrafts[0].isWholeBatch)
+        #expect(model.productDrafts[1].unitSymbol == ProductUnit.partsOfBatch.rawValue)
+        #expect(model.productDrafts[1].size == 4)
+    }
+
     @Test func save_LoadedRecipeWithWholeBatch_DoesNotAddASecond() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let model = try makeLoadedModel(ctx: ctx)
         let recipe = try #require(model.editingRecipe)
-        let before = try #require(model.productDrafts[0].modelID)
+        let before = try #require(model.productDrafts.first?.modelID)
 
         model.save(context: ctx)
 
         #expect(recipe.products.count { $0.unitSymbol == ProductUnit.wholeBatch.rawValue } == 1)
-        #expect(model.productDrafts[0].modelID == before)
+        #expect(model.productDrafts.first?.modelID == before)
     }
 
     @Test func saveProducts_RepeatedSaves_KeepProductIdentityStable() throws {
@@ -187,6 +229,7 @@ struct RecipeProductPersistenceTests: RecipeFormTestHelpers {
         model.load(from: recipe)
 
         #expect(model.productDrafts.count == 3)
+        try #require(model.productDrafts.count == 3)
         #expect(model.productDrafts[0].isWholeBatch)
         #expect(model.productDrafts[0].modelID != nil)
         #expect(model.productDrafts.dropFirst().map(\.size).sorted() == [100, 200])

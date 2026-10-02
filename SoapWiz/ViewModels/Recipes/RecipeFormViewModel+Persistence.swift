@@ -54,10 +54,12 @@ extension RecipeFormViewModel {
         productDrafts = recipe.products.map {
             RecipeProductDraft(size: $0.size, unitSymbol: $0.unitSymbol, modelID: $0.persistentModelID)
         }
-        // Other devices or older builds can leave several whole-batch rows; they
-        // all cost the same, so one is kept and the next save deletes the rest.
+        // Builds from SW-71 to SW-106 saved the default as "1 part of batch", and
+        // other devices can leave extra whole-batch rows. All of them cost the
+        // same as the whole batch, so one whole-batch row is kept and the next
+        // save deletes the rest.
         let wholeBatch = productDrafts.first(where: \.isWholeBatch) ?? .wholeBatch()
-        productDrafts = [wholeBatch] + productDrafts.filter { !$0.isWholeBatch }
+        productDrafts = [wholeBatch] + productDrafts.filter(\.isSeparateFromBatch)
 
         // Before the form captures its clean baseline, so a recipe stored under
         // one kind opens coherent under the one it now has.
