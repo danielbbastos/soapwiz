@@ -34,6 +34,14 @@ struct RecipeStats {
     /// as a bug rather than as an absence.
     var hasFattyAcidData: Bool { fattyAcidProfile != .zero }
 
+    /// Whether the "no fatty acid data" explanation should stand in for the
+    /// profile. It does when there are ingredients but none has a profile, and
+    /// for a non-soap recipe also when it has no ingredients yet. A soap recipe
+    /// with no oils shows nothing, since there is nothing yet to explain.
+    var showsMissingFattyAcidExplanation: Bool {
+        !hasFattyAcidData && (hasOils || !makesSoap)
+    }
+
     /// Whether the soap qualities (hardness, cleansing, bubbly…) mean anything
     /// here. They map fatty acids onto how the *soap* behaves, so the numbers
     /// are computable for any blend but only interpretable for soap.

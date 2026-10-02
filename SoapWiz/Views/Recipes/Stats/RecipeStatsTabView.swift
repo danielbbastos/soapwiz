@@ -9,7 +9,7 @@ struct RecipeStatsTabView: View {
             if stats.makesSoap {
                 propertiesSection(stats)
             }
-            fattyAcidSection(stats)
+            FattyAcidProfileSections(stats: stats)
             if stats.makesSoap {
                 calculatedValuesSection(stats)
             }
@@ -23,31 +23,6 @@ struct RecipeStatsTabView: View {
             SoapPropertiesSection(stats: stats)
         } header: {
             Text("Soap properties")
-        }
-    }
-
-    /// Shown for both kinds. A non-soap recipe carries the iodine value here,
-    /// since it has no Soap properties section to host it.
-    ///
-    /// The explanation stands in whenever there are ingredients but no profile
-    /// among them — on a soap recipe too, where oils entered without one would
-    /// otherwise make the whole section disappear rather than say why. A recipe
-    /// with no ingredients at all still shows nothing, since there is nothing
-    /// yet to explain.
-    @ViewBuilder
-    private func fattyAcidSection(_ stats: RecipeStats) -> some View {
-        if stats.hasFattyAcidData {
-            Section("Fatty acid profile") {
-                FattyAcidBreakdownRows(stats: stats)
-            }
-            Section(RecipeStatsCopy.totalsHeader) {
-                FattyAcidTotalsRows(stats: stats, showsIodine: !stats.makesSoap)
-            }
-        } else if stats.hasOils || !stats.makesSoap {
-            Section("Fatty acid profile") {
-                Text(RecipeStatsCopy.noFattyAcidData)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 
