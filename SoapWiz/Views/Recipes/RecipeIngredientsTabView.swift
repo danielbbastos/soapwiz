@@ -274,29 +274,8 @@ struct RecipeIngredientsTabView: View {
         Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.fragrances, expanded: $fragrancesExpanded)
             .expandingSectionHeader(RecipeFormSection.fragrances, expanded: fragrancesExpanded)) {
             if fragrancesExpanded {
-                HStack {
-                    Button {
-                        activePicker = .fragrances
-                    } label: {
-                        Label("Add fragrance", systemImage: "plus")
-                            .labelStyle(TightLabelStyle())
-                    }
-                    Spacer()
-                    if let target = model.fragranceTarget {
-                        HStack(spacing: 4) {
-                            Text(target.text)
-                                .foregroundStyle(target.isOverTarget ? Color.red : Color.secondary)
-                            InfoPopoverIcon(text: fragranceTargetInfoText(for: target))
-                        }
-                    }
-                    Picker("Unit", selection: Binding(
-                        get: { model.fragranceUnit },
-                        set: { model.setFragranceUnit($0) }
-                    )) {
-                        ForEach(model.availableFragranceUnits, id: \.self) { Text($0.rawValue) }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
+                RecipeFragrancesHeaderRow(model: model) {
+                    addButton("Add fragrance") { activePicker = .fragrances }
                 }
                 ForEach(model.fragranceDrafts) { draft in
                     RecipeAmountRow(
@@ -335,14 +314,6 @@ struct RecipeIngredientsTabView: View {
                     .foregroundStyle(.orange)
             }
         }
-    }
-
-    private func fragranceTargetInfoText(for target: FragranceTarget) -> String {
-        let load = "Recommended fragrance load: "
-            + "\(model.formatPercentage(target.percentage))% of total oils, "
-            + "set on the Config tab."
-        guard model.fragranceUnit == .percentOfFragrances else { return load }
-        return load + " Each row is its share of that load; the shares should total 100%."
     }
 
     // MARK: - Helpers
