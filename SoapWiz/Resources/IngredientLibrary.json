@@ -3746,6 +3746,19 @@
       "density": 0.9
     },
     {
+      "slug": "petitgrain-essential-oil",
+      "name": "Petitgrain Essential Oil",
+      "code": "PGEO",
+      "aliases": [
+        "Petit Grain Essential Oil",
+        "Petitgrain Bigarade Essential Oil",
+        "Petitgrain Oil"
+      ],
+      "category": "Fragrances",
+      "unit": "ml",
+      "density": 0.888
+    },
+    {
       "slug": "pine-needle-essential-oil",
       "name": "Pine Needle Essential Oil",
       "code": "PNEO",
