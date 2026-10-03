@@ -24,7 +24,8 @@ struct IngredientListRow: View {
         let content = IngredientRowView(ingredient: ingredient, model: model)
         if model.editMode == .active {
             content
-                .listRowBackground(Color.cardBackground)
+                .listRowBackground(Color.paperRaised)
+                .listRowSeparatorTint(Color.rule)
         } else {
             Button {
                 navigation.show(ingredient)
@@ -54,7 +55,7 @@ struct IngredientListRow: View {
                     }
                 }
             }
-            .listDetailRow(isSelected: navigation.isOpenBeside(ingredient))
+            .ledgerListDetailRow(isSelected: navigation.isOpenBeside(ingredient))
         }
     }
 }

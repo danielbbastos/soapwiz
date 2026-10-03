@@ -1,0 +1,213 @@
+import Testing
+import Foundation
+import SwiftData
+@testable import SoapWiz
+
+@Suite("Inventory counts")
+@MainActor
+struct IngredientListCountsTests {
+
+    private let container: ModelContainer
+    private let context: ModelContext
+    private let model = IngredientListViewModel()
+
+    init() throws {
+        let schema = ModelContainerFactory.schema
+        container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
+        context = container.mainContext
+    }
+
+    private func makeIngredient(
+        _ name: String,
+        category: IngredientCategory? = nil,
+        remaining: Double? = 500,
+        threshold: Double? = nil,
+        hidden: Bool = false
+    ) -> Ingredient {
+        let ingredient = Ingredient(name: name, category: category, unit: "g")
+        ingredient.lowStockThreshold = threshold
+        ingredient.isHidden = hidden
+        context.insert(ingredient)
+        if let remaining {
+            let purchase = IngredientPurchase(
+                dateOfPurchase: .now,
+                quantity: 1000,
+                totalPrice: 10,
+                badge: "",
+                journalCode: "",
+                expiryDate: nil,
+                openingDate: nil
+            )
+            purchase.remainingAmount = remaining
+            ingredient.purchases.append(purchase)
+        }
+        return ingredient
+    }
+
+    private func makeCategory(_ name: String) -> IngredientCategory {
+        let category = IngredientCategory(name: name)
+        context.insert(category)
+        return category
+    }
+
+    // MARK: - Count line
+
+    @Test func countSummary_NoIngredients_HasNoLine() {
+        let summary = model.countSummary([])
+
+        #expect(summary == InventoryCountSummary(total: 0, low: 0, out: 0))
+        #expect(summary.line == nil)
+    }
+
+    @Test func countSummary_AllInStock_HasNeitherPart() {
+        let summary = model.countSummary([makeIngredient("A"), makeIngredient("B")])
+
+        #expect(summary == InventoryCountSummary(total: 2, low: 0, out: 0))
+        #expect(summary.line?.contains("low") == false)
+        #expect(summary.line?.contains("out") == false)
+    }
+
+    @Test func countSummary_LowOnly_CountsLowNotOut() {
+        let ingredients = [makeIngredient("Fine"), makeIngredient("Low", remaining: 50, threshold: 100)]
+
+        #expect(model.countSummary(ingredients) == InventoryCountSummary(total: 2, low: 1, out: 0))
+    }
+
+    @Test func countSummary_OutOnly_CountsOutNotLow() {
+        let ingredients = [makeIngredient("Fine"), makeIngredient("Out", remaining: 0, threshold: 100)]
+
+        #expect(model.countSummary(ingredients) == InventoryCountSummary(total: 2, low: 0, out: 1))
+    }
+
+    @Test func countSummary_LowAndOut_CountedSeparately() {
+        let ingredients = [
+            makeIngredient("Fine"),
+            makeIngredient("Low", remaining: 50, threshold: 100),
+            makeIngredient("Out", remaining: 0)
+        ]
+
+        #expect(model.countSummary(ingredients) == InventoryCountSummary(total: 3, low: 1, out: 1))
+    }
+
+    @Test func line_OmitsZeroPartsAndSingularises() {
+        #expect(InventoryCountSummary(total: 1, low: 0, out: 0).line == "1 ingredient")
+        #expect(InventoryCountSummary(total: 5, low: 2, out: 0).line == "5 ingredients · 2 low")
+        #expect(InventoryCountSummary(total: 5, low: 0, out: 1).line == "5 ingredients · 1 out")
+        #expect(InventoryCountSummary(total: 5, low: 2, out: 1).line == "5 ingredients · 2 low · 1 out")
+    }
+
+    @Test func countSummary_HiddenIngredients_Excluded() {
+        let ingredients = [
+            makeIngredient("Shown"),
+            makeIngredient("Hidden low", remaining: 0, hidden: true)
+        ]
+
+        #expect(model.countSummary(ingredients) == InventoryCountSummary(total: 1, low: 0, out: 0))
+    }
+
+    @Test func countSummary_NeverBought_NotCountedAsLowOrOut() {
+        let ingredients = [makeIngredient("Unbought", remaining: nil, threshold: 100)]
+
+        #expect(model.countSummary(ingredients) == InventoryCountSummary(total: 1, low: 0, out: 0))
+    }
+
+    @Test func countSummary_InventoryNotTracked_NothingLowOrOut() {
+        model.tracksInventory = false
+        let ingredients = [makeIngredient("Out", remaining: 0), makeIngredient("Low", remaining: 50, threshold: 100)]
+
+        #expect(model.countSummary(ingredients) == InventoryCountSummary(total: 2, low: 0, out: 0))
+    }
+
+    // MARK: - Category counts
+
+    @Test func categoryCounts_CountsPerCategoryAndAll() {
+        let oils = makeCategory("Oils")
+        let lyes = makeCategory("Lyes")
+        let ingredients = [
+            makeIngredient("Olive", category: oils),
+            makeIngredient("Coconut", category: oils),
+            makeIngredient("Lye", category: lyes),
+            makeIngredient("Loose")
+        ]
+
+        let counts = model.categoryCounts(ingredients)
+
+        #expect(counts.all == 4)
+        #expect(counts.byCategory[oils.persistentModelID] == 2)
+        #expect(counts.byCategory[lyes.persistentModelID] == 1)
+    }
+
+    @Test func categoryCounts_IgnoreTheCategorySelection() {
+        let oils = makeCategory("Oils")
+        let lyes = makeCategory("Lyes")
+        let ingredients = [
+            makeIngredient("Olive", category: oils),
+            makeIngredient("Lye", category: lyes)
+        ]
+        model.toggleCategory(oils)
+
+        let counts = model.categoryCounts(ingredients)
+
+        #expect(counts.all == 2)
+        #expect(counts.byCategory[lyes.persistentModelID] == 1)
+    }
+
+    @Test func categoryCounts_RespectSearch() {
+        let oils = makeCategory("Oils")
+        let ingredients = [
+            makeIngredient("Olive Oil", category: oils),
+            makeIngredient("Coconut Oil", category: oils)
+        ]
+        model.searchText = "olive"
+
+        let counts = model.categoryCounts(ingredients)
+
+        #expect(counts.all == 1)
+        #expect(counts.byCategory[oils.persistentModelID] == 1)
+    }
+
+    @Test func categoryCounts_RespectStockFilter() {
+        let oils = makeCategory("Oils")
+        let ingredients = [
+            makeIngredient("Olive", category: oils),
+            makeIngredient("Coconut", category: oils, remaining: 0)
+        ]
+        model.stockStatus = .outOfStock
+
+        let counts = model.categoryCounts(ingredients)
+
+        #expect(counts.all == 1)
+        #expect(counts.byCategory[oils.persistentModelID] == 1)
+    }
+
+    @Test func categoryCounts_HiddenExcluded() {
+        let oils = makeCategory("Oils")
+        let ingredients = [
+            makeIngredient("Olive", category: oils),
+            makeIngredient("Coconut", category: oils, hidden: true)
+        ]
+
+        let counts = model.categoryCounts(ingredients)
+
+        #expect(counts.all == 1)
+        #expect(counts.byCategory[oils.persistentModelID] == 1)
+    }
+
+    @Test func categoryCounts_EmptyCategory_HasNoEntry() {
+        let oils = makeCategory("Oils")
+
+        let counts = model.categoryCounts([makeIngredient("Loose")])
+
+        #expect(counts.byCategory[oils.persistentModelID] == nil)
+    }
+
+    @Test func filtered_StillAppliesCategorySelection() {
+        let oils = makeCategory("Oils")
+        let lyes = makeCategory("Lyes")
+        let olive = makeIngredient("Olive", category: oils)
+        let ingredients = [olive, makeIngredient("Lye", category: lyes)]
+        model.toggleCategory(oils)
+
+        #expect(model.filtered(ingredients).map(\.name) == [olive.name])
+    }
+}

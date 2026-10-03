@@ -21,6 +21,11 @@ struct ExpandableFloatingActionButton: View {
     /// Beside the tab bar rather than above it: centred on the tab bar, measured
     /// from the bottom of the screen instead of the safe area the tab bar adds.
     var besideTabBar = false
+    /// The glass tint, and the solid fill before iOS 26 (where `Color.amber`
+    /// stands in for it). Nil keeps the app's yellow `FABTint` and accent.
+    var tint: Color?
+    /// The `+` and the secondary labels. Nil keeps `FABInk`, and white before iOS 26.
+    var ink: Color?
 
     @State private var isExpanded = false
     /// Natural width of the labelled secondary buttons, measured so the capsule can
@@ -74,7 +79,7 @@ struct ExpandableFloatingActionButton: View {
             // buttons. Collapsed, it is simply the icon sitting on the background.
             plusButton
                 .frame(width: diameter, height: diameter)
-                .modifier(RaisedPlus(raised: isExpanded))
+                .modifier(RaisedPlus(raised: isExpanded, tint: tint))
                 .shadow(color: .black.opacity(isExpanded ? 0.10 : 0), radius: 3, x: -2, y: 1)
         }
         .frame(width: width, height: diameter, alignment: .trailing)
@@ -84,10 +89,19 @@ struct ExpandableFloatingActionButton: View {
 
     @ViewBuilder private var background: some View {
         if #available(iOS 26, *) {
-            Color.clear.glassEffect(.floatingActionButton, in: .capsule)
+            Color.clear.glassEffect(glass, in: .capsule)
         } else {
-            Capsule().fill(Color.accentColor)
+            Capsule().fill(fallbackFill)
         }
+    }
+
+    @available(iOS 26, *)
+    private var glass: Glass {
+        FABStyle.glass(tint: tint)
+    }
+
+    private var fallbackFill: Color {
+        FABStyle.fallbackFill(tint: tint)
     }
 
     private var secondaryGroup: some View {
@@ -176,7 +190,8 @@ struct ExpandableFloatingActionButton: View {
     }
 
     private var iconColor: Color {
-        if #available(iOS 26, *) { Color.fabInk } else { .white }
+        if let ink { return ink }
+        if #available(iOS 26, *) { return Color.fabInk } else { return .white }
     }
 
     private func expand() {
@@ -189,6 +204,19 @@ struct ExpandableFloatingActionButton: View {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             isExpanded = false
         }
+    }
+}
+
+/// The button's look for a given tint, shared by the capsule and the raised `+`.
+private enum FABStyle {
+    @available(iOS 26, *)
+    static func glass(tint: Color?) -> Glass {
+        guard let tint else { return .floatingActionButton }
+        return .clear.tint(tint).interactive()
+    }
+
+    static func fallbackFill(tint: Color?) -> Color {
+        tint == nil ? Color.accentColor : Color.amber
     }
 }
 
@@ -205,13 +233,14 @@ private struct FABWidthKey: PreferenceKey {
 /// its own — it sits directly on the shared background.
 private struct RaisedPlus: ViewModifier {
     let raised: Bool
+    let tint: Color?
 
     func body(content: Content) -> some View {
         if raised {
             if #available(iOS 26, *) {
-                content.glassEffect(.floatingActionButton, in: .circle)
+                content.glassEffect(FABStyle.glass(tint: tint), in: .circle)
             } else {
-                content.background(Color.accentColor, in: .circle)
+                content.background(FABStyle.fallbackFill(tint: tint), in: .circle)
             }
         } else {
             content

@@ -49,6 +49,13 @@ struct AvatarColorTests {
         #expect(ingredient.avatarColor == AvatarColor.derived(from: "Olive Oil"))
     }
 
+    // MARK: - Tint
+
+    @Test func tint_AllNineColours_MapToDistinctTints() {
+        #expect(AvatarColor.allCases.count == 9)
+        #expect(Set(AvatarColor.allCases.map(\.tint)).count == AvatarColor.allCases.count)
+    }
+
     // MARK: - Derivation
 
     @Test func derived_SameName_IsStable() {

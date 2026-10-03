@@ -14,6 +14,13 @@ When context reaches 70%, run `/compact` preserving: current task, modified file
 - **No AI signatures** in code, comments, or commit messages.
 - **Always write tests** for non-trivial production code (computed properties, business logic, edge cases). Use Swift Testing (`@Suite`, `@Test`, `#expect`). Use an in-memory `ModelContainer` for SwiftData tests.
 
+## Model Roles
+
+- **Opus (main session) orchestrates:** reads code, plans, gets approval, reviews results, talks to the user. It does not edit `.swift` files or tests itself.
+- **Sonnet does the coding:** every code change, test, and fix goes to the `coder` agent (`.claude/agents/coder.md`). Give it a self-contained brief: files, exact changes, acceptance criteria. It starts with no conversation context.
+- Opus reviews the diff Sonnet returns and runs the build/tests before reporting done. If something's wrong, send it back to `coder` rather than patching it directly.
+- Planning, commit, and PR rules are unchanged: approval still comes from the user, never from the agent.
+
 ## Project Overview
 
 **SoapWiz** is an iOS app for soap makers. Swift, SwiftUI, SwiftData, iOS 18+, no external dependencies. iOS 26 Liquid Glass features are gated with `#available(iOS 26, *)`. Features built incrementally:

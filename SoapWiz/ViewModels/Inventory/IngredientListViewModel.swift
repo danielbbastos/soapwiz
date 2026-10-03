@@ -20,6 +20,23 @@ enum ExpiryFilter: String, CaseIterable, Identifiable {
     var id: Self { self }
 }
 
+/// The "N ingredients · L low · O out" line under the Inventory title.
+struct InventoryCountSummary: Equatable {
+    let total: Int
+    /// Low, and not yet out.
+    let low: Int
+    let out: Int
+
+    /// Nil when there is nothing to count, so the line is left out.
+    var line: String? {
+        guard total > 0 else { return nil }
+        var parts = ["\(total) \(total == 1 ? "ingredient" : "ingredients")"]
+        if low > 0 { parts.append("\(low) low") }
+        if out > 0 { parts.append("\(out) out") }
+        return parts.joined(separator: " · ")
+    }
+}
+
 @MainActor
 @Observable
 final class IngredientListViewModel {
@@ -128,36 +145,65 @@ final class IngredientListViewModel {
     }
 
     func filtered(_ ingredients: [Ingredient]) -> [Ingredient] {
-        ingredients.filter { ingredient in
-            guard !ingredient.isHidden else { return false }
+        ingredients.filter { matches($0, checkingCategory: true) }
+    }
 
-            let matchesSearch = searchText.isEmpty ||
-                ingredient.name.localizedCaseInsensitiveContains(searchText)
-
-            let matchesCategory = selectedCategories.isEmpty ||
-                (ingredient.category.map { selectedCategories.contains($0.persistentModelID) } ?? false)
-
-            let matchesStock: Bool
-            switch effectiveStockStatus {
-            case .all:        matchesStock = true
-            case .inStock:    matchesStock = ingredient.totalRemaining > 0 && !ingredient.isLowStock
-            case .lowStock:   matchesStock = ingredient.isLowStock && ingredient.totalRemaining > 0
-            case .outOfStock: matchesStock = ingredient.totalRemaining == 0
+    /// How many ingredients each category chip would show if tapped: the list as
+    /// filtered by everything except the category selection, so a chip's number
+    /// doesn't change as the chips are toggled. `all` is the "All" chip's total.
+    func categoryCounts(_ ingredients: [Ingredient]) -> (all: Int, byCategory: [PersistentIdentifier: Int]) {
+        var all = 0
+        var byCategory: [PersistentIdentifier: Int] = [:]
+        for ingredient in ingredients where matches(ingredient, checkingCategory: false) {
+            all += 1
+            if let id = ingredient.category?.persistentModelID {
+                byCategory[id, default: 0] += 1
             }
-
-            let matchesUnit = selectedUnits.isEmpty ||
-                selectedUnits.contains(where: { $0.rawValue == ingredient.unit })
-
-            let matchesExpiry: Bool
-            switch effectiveExpiryFilter {
-            case .all:           matchesExpiry = true
-            case .expiringSoon:  matchesExpiry = ingredient.nearestUpcomingExpiry != nil
-            case .expired:       matchesExpiry = ingredient.hasExpiredPurchase
-            case .noExpiry:      matchesExpiry = ingredient.purchases.allSatisfy { $0.expiryDate == nil }
-            }
-
-            return matchesSearch && matchesCategory && matchesStock && matchesUnit && matchesExpiry
         }
+        return (all, byCategory)
+    }
+
+    /// The figures under the screen title: every listed (non-hidden) ingredient,
+    /// regardless of the filters, and how many of them are low and how many out.
+    func countSummary(_ ingredients: [Ingredient]) -> InventoryCountSummary {
+        let listed = ingredients.filter { !$0.isHidden }
+        let stamps = listed.map { IngredientStockStamp.stamps(for: $0, tracksInventory: tracksInventory) }
+        return InventoryCountSummary(
+            total: listed.count,
+            low: stamps.filter { $0.contains(.low) }.count,
+            out: stamps.filter { $0.contains(.out) }.count
+        )
+    }
+
+    private func matches(_ ingredient: Ingredient, checkingCategory: Bool) -> Bool {
+        guard !ingredient.isHidden else { return false }
+
+        let matchesSearch = searchText.isEmpty ||
+            ingredient.name.localizedCaseInsensitiveContains(searchText)
+
+        let matchesCategory = !checkingCategory || selectedCategories.isEmpty ||
+            (ingredient.category.map { selectedCategories.contains($0.persistentModelID) } ?? false)
+
+        let matchesStock: Bool
+        switch effectiveStockStatus {
+        case .all:        matchesStock = true
+        case .inStock:    matchesStock = ingredient.totalRemaining > 0 && !ingredient.isLowStock
+        case .lowStock:   matchesStock = ingredient.isLowStock && ingredient.totalRemaining > 0
+        case .outOfStock: matchesStock = ingredient.totalRemaining == 0
+        }
+
+        let matchesUnit = selectedUnits.isEmpty ||
+            selectedUnits.contains(where: { $0.rawValue == ingredient.unit })
+
+        let matchesExpiry: Bool
+        switch effectiveExpiryFilter {
+        case .all:           matchesExpiry = true
+        case .expiringSoon:  matchesExpiry = ingredient.nearestUpcomingExpiry != nil
+        case .expired:       matchesExpiry = ingredient.hasExpiredPurchase
+        case .noExpiry:      matchesExpiry = ingredient.purchases.allSatisfy { $0.expiryDate == nil }
+        }
+
+        return matchesSearch && matchesCategory && matchesStock && matchesUnit && matchesExpiry
     }
 
     /// Animated so the row's move to or from the pinned group reads as a move

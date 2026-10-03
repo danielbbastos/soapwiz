@@ -9,111 +9,136 @@ struct IngredientRowView: View {
     let model: IngredientListViewModel
 
     @Environment(\.editMode) private var editMode
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    @State private var showingExpiryPopover = false
-    @State private var showingLowStockPopover = false
+    /// Off, the row drops its stamps and the quantity: with no purchases
+    /// recorded, all of them would warn about stock never entered.
+    private var tracksInventory: Bool {
+        model.tracksInventory
+    }
+
+    private var stamps: [IngredientStockStamp] {
+        IngredientStockStamp.stamps(for: ingredient, tracksInventory: tracksInventory)
+    }
 
     var body: some View {
-        HStack(alignment: .center) {
-            IngredientAvatar(
-                imageData: ingredient.thumbnailData,
-                letter: ingredient.avatarLetter,
-                color: ingredient.avatarColor
-            )
-            VStack(alignment: .leading, spacing: 4) {
-                Text(ingredient.name)
-                    .font(.body.weight(.medium))
-                if let categoryName = ingredient.category?.name {
-                    Text(categoryName)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer()
-            // Off, the row drops its expiry and low-stock badges and the quantity:
-            // with no purchases recorded, all of them would warn about stock never
-            // entered.
-            if model.tracksInventory {
-                stockColumn
-            }
-            // Beside the warnings-and-quantity column rather than stacked above it.
-            // Inside it, the star adds a line to every row — including the many
-            // rows with no warning icon, whose icon row is otherwise empty and
-            // zero-height — and makes the whole list taller.
-            //
-            // Hidden while selecting, the same way the FAB is: the star would
-            // otherwise consume the tap meant to select the row for a bulk delete.
-            if editMode?.wrappedValue != .active {
-                FavoriteStarButton(isFavorite: ingredient.isFavorite) {
-                    model.toggleFavorite(ingredient)
-                }
-                    // Set apart from the quantity rather than sitting against
-                    // it: the two carry unrelated things — how much is left,
-                    // and whether this is a favourite — and at the star's size
-                    // a default gap reads as one clump at the row's end.
-                    .padding(.leading, 12)
+        let stamps = stamps
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                accessibilityLayout(stamps: stamps)
+            } else {
+                standardLayout(stamps: stamps)
             }
         }
-        // A selected row draws its labels white, for the tinted fill the system
-        // would put behind them — which this list never shows, because every row
-        // carries `Color.cardBackground` of its own. The text would be white on
-        // white, and the row would read as empty. Naming the base here covers
-        // both columns, including the `.secondary` styles inside them: those are
-        // hierarchical, so they are muted versions of whatever the row's
-        // foreground happens to be. The avatar and the star are untouched —
-        // both name their own colours.
-        .foregroundStyle(Color.primary)
         .padding(.vertical, 2)
     }
 
-    private var stockColumn: some View {
-        VStack(alignment: .trailing, spacing: 4) {
-            HStack(spacing: 6) {
-                if ingredient.hasExpiredPurchase {
-                    Button {
-                        showingExpiryPopover = true
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.red)
-                    }
-                    .buttonStyle(.borderless)
-                    .popover(isPresented: $showingExpiryPopover) {
-                        Text("This ingredient has an expired purchase.")
-                            .padding()
-                            .presentationCompactAdaptation(.popover)
-                    }
-                } else if let expiry = ingredient.nearestUpcomingExpiry {
-                    Button {
-                        showingExpiryPopover = true
-                    } label: {
-                        Image(systemName: "calendar.badge.exclamationmark")
-                            .foregroundStyle(.red)
-                    }
-                    .buttonStyle(.borderless)
-                    .popover(isPresented: $showingExpiryPopover) {
-                        Text("Expires on \(expiry.formatted(.dateTime.day().month(.wide)))")
-                            .padding()
-                            .presentationCompactAdaptation(.popover)
-                    }
-                }
-                if ingredient.isLowStock {
-                    Button {
-                        showingLowStockPopover = true
-                    } label: {
-                        Image(systemName: "gauge.low")
-                            .foregroundStyle(.orange)
-                    }
-                    .buttonStyle(.borderless)
-                    .popover(isPresented: $showingLowStockPopover) {
-                        Text("Low stock")
-                            .padding()
-                            .presentationCompactAdaptation(.popover)
-                    }
+    private var avatar: some View {
+        IngredientAvatar(
+            imageData: ingredient.thumbnailData,
+            letter: ingredient.avatarLetter,
+            color: ingredient.avatarColor
+        )
+    }
+
+    /// Hidden while selecting, the same way the FAB is: the star would
+    /// otherwise consume the tap meant to select the row for a bulk delete.
+    @ViewBuilder
+    private var favoriteStar: some View {
+        if editMode?.wrappedValue != .active {
+            FavoriteStarButton(isFavorite: ingredient.isFavorite) {
+                model.toggleFavorite(ingredient)
+            }
+        }
+    }
+
+    /// One column at the accessibility sizes: beside the avatar, the quantity
+    /// column would squeeze the name until it broke mid-word. The avatar keeps
+    /// its size and the row simply grows taller.
+    private func accessibilityLayout(stamps: [IngredientStockStamp]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                avatar
+                Spacer()
+                favoriteStar
+            }
+            Text(ingredient.name)
+                .font(.headline)
+                .foregroundStyle(Color.ink)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            categoryText
+            if !stamps.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    stampViews(stamps)
                 }
             }
-            Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
-                .font(.subheadline.monospacedDigit())
-                .foregroundStyle(ingredient.totalRemaining > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+            if tracksInventory {
+                quantity(stamps: stamps)
+            }
         }
+    }
+
+    private func standardLayout(stamps: [IngredientStockStamp]) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            avatar
+            VStack(alignment: .leading, spacing: 4) {
+                Text(ingredient.name)
+                    .font(.headline)
+                    .foregroundStyle(Color.ink)
+                secondLine(stamps: stamps)
+            }
+            Spacer()
+            if tracksInventory {
+                quantity(stamps: stamps)
+            }
+            // Beside the quantity rather than stacked above it: stacked, the
+            // star adds a line to every row and makes the whole list taller.
+            favoriteStar
+                // Set apart from the quantity rather than sitting against
+                // it: the two carry unrelated things — how much is left,
+                // and whether this is a favourite.
+                .padding(.leading, editMode?.wrappedValue != .active ? 12 : 0)
+        }
+    }
+
+    /// The category, then the stamps on a line of their own, stacking when they
+    /// don't fit side by side. A row without stamps keeps its two lines.
+    @ViewBuilder
+    private func secondLine(stamps: [IngredientStockStamp]) -> some View {
+        categoryText
+        if !stamps.isEmpty {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { stampViews(stamps) }
+                VStack(alignment: .leading, spacing: 4) { stampViews(stamps) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var categoryText: some View {
+        if let categoryName = ingredient.category?.name {
+            Text(categoryName)
+                .font(.subheadline)
+                .foregroundStyle(Color.inkSoft)
+        }
+    }
+
+    private func stampViews(_ stamps: [IngredientStockStamp]) -> some View {
+        ForEach(stamps, id: \.word) { stamp in
+            StatusStamp(word: stamp.word, tone: stamp.tone, glyph: stamp.glyph)
+        }
+    }
+
+    private func quantity(stamps: [IngredientStockStamp]) -> some View {
+        Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
+            .font(.body.weight(.medium).monospacedDigit())
+            .foregroundStyle(quantityColor(stamps: stamps))
+    }
+
+    private func quantityColor(stamps: [IngredientStockStamp]) -> Color {
+        if stamps.contains(.out) { return Color.danger }
+        if stamps.contains(.low) { return Color.warning }
+        if ingredient.purchases.isEmpty { return Color.inkFaint }
+        return Color.inkSoft
     }
 }

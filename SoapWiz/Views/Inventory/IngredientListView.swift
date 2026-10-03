@@ -76,20 +76,28 @@ struct IngredientListView: View {
             ZStack(alignment: .bottomTrailing) {
                 Group {
                     if ingredients.isEmpty {
-                        ContentUnavailableView(
-                            "No Ingredients",
-                            systemImage: "flask",
-                            description: Text("Tap + to add your first ingredient.")
-                        )
+                        ContentUnavailableView {
+                            Label {
+                                Text("No ingredients yet").fontDesign(.serif)
+                            } icon: {
+                                Image(systemName: "flask")
+                            }
+                        } description: {
+                            Text("Tap + to add one.")
+                        }
                     } else if displayed.isEmpty {
                         if !model.searchText.isEmpty {
                             ContentUnavailableView.search(text: model.searchText)
                         } else {
-                            ContentUnavailableView(
-                                "No Results",
-                                systemImage: "line.3.horizontal.decrease.circle",
-                                description: Text("Try adjusting your filters.")
-                            )
+                            ContentUnavailableView {
+                                Label {
+                                    Text("No ingredients match").fontDesign(.serif)
+                                } icon: {
+                                    Image(systemName: "line.3.horizontal.decrease.circle")
+                                }
+                            } description: {
+                                Text("Change or clear the filters.")
+                            }
                         }
                     } else if model.editMode == .active {
                         // The selection binding is attached only while selecting,
@@ -121,9 +129,9 @@ struct IngredientListView: View {
                 }
                 .readableWidth()
                 .navigationTitle("Inventory")
-                .navigationBarTitleDisplayMode(.inline)
-                .warmNavigationTitle("Inventory")
-                .warmBackground()
+                .navigationBarTitleDisplayMode(.large)
+                .ledgerLargeTitle(subtitle: model.editMode == .inactive ? model.countSummary(ingredients).line : nil)
+                .ledgerBackground()
                 .navigationDestination(for: Ingredient.self) { IngredientDetailView(ingredient: $0) }
                 // The chips are hidden while selecting: they would compete with
                 // the selection the toolbar is there to act on.
@@ -132,7 +140,11 @@ struct IngredientListView: View {
                         SearchField("Search ingredients", text: $model.searchText)
                             .padding(.bottom, 12)
                         if !visibleCategories.isEmpty && model.editMode == .inactive {
-                            InventoryCategoryFilterBar(categories: visibleCategories, model: model)
+                            InventoryCategoryFilterBar(
+                                categories: visibleCategories,
+                                model: model,
+                                counts: model.categoryCounts(ingredients)
+                            )
                         }
                     }
                 }
@@ -175,7 +187,9 @@ struct IngredientListView: View {
                                 model.showingBulkImport = true
                             }
                         ],
-                        besideTabBar: navigation.fabBesideTabBar
+                        besideTabBar: navigation.fabBesideTabBar,
+                        tint: Color.glassAmber,
+                        ink: Color.onAmber
                     )
                 } else if !model.selection.isEmpty {
                     createRecipeButton
@@ -259,10 +273,10 @@ struct IngredientListView: View {
         } label: {
             Text("Create recipe with… (\(model.selection.count))")
                 .font(.headline)
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.amberText)
                 .padding(.vertical, 14)
                 .frame(maxWidth: .infinity)
-                .background(Color.cardBackground, in: .capsule)
+                .background(Color.paperRaised, in: .capsule)
                 .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
@@ -281,13 +295,13 @@ struct IngredientListView: View {
                 if model.hasActiveFilters {
                     Text("\(model.activeFilterCount)")
                         .font(.caption2.bold())
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onAmber)
                         .padding(2)
-                        .background(Color.accentColor, in: Circle())
+                        .background(Color.amber, in: Circle())
                         .offset(x: 6, y: -6)
                 }
             }
         }
-        .foregroundStyle(model.hasActiveFilters ? Color.accentColor : .primary)
+        .foregroundStyle(model.hasActiveFilters ? Color.amberText : .primary)
     }
 }
