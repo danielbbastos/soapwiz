@@ -146,10 +146,11 @@ struct BatchDetailView: View {
             }
             ForEach(item.draws.indices, id: \.self) { index in
                 let draw = item.draws[index]
+                let unitPrice = draw.pricePerUnit.unitPriceFormatted(currencyCode: currencyCode)
                 HStack {
                     Text(draw.purchaseBadge.isEmpty ? "No lot" : "Lot \(draw.purchaseBadge)")
                     Spacer()
-                    Text("\(amountText(draw.amountDrawn, unit: item.unit)) @ \(draw.pricePerUnit.unitPriceFormatted(currencyCode: currencyCode))/\(item.unit)")
+                    Text("\(amountText(draw.amountDrawn, unit: item.unit)) @ \(unitPrice)/\(item.unit)")
                         .monospacedDigit()
                     Text(formatCurrency(draw.cost))
                         .monospacedDigit()
