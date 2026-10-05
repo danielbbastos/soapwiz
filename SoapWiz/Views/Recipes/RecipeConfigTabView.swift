@@ -174,7 +174,7 @@ struct RecipeConfigTabView: View {
             }
 
             waterRatioRow
-            superFatRow
+            percentRow("Super Fat", value: $model.superFat, prompt: "5")
         }
         .animation(.default, value: model.useHybrid)
     }
@@ -250,31 +250,20 @@ struct RecipeConfigTabView: View {
             "Lye ingredient",
             selected: model.lyeType == "KOH" ? $model.kohLyeIngredient : $model.lyeIngredient
         )
-        purityRow("Lye purity", value: $model.lyePurity, prompt: "99")
+        percentRow("Lye purity", value: $model.lyePurity, prompt: "99")
     }
 
     @ViewBuilder
     private var hybridLyeRows: some View {
-        percentageRow("KOH", value: model.kohPercentage, set: model.setKOHPercentage)
-        percentageRow("NaOH", value: model.naohPercentage, set: model.setNaOHPercentage)
-        purityRow("KOH purity", value: $model.kohPurity, prompt: "90")
-        purityRow("NaOH purity", value: $model.naohPurity, prompt: "99")
+        percentRow("KOH", value: Binding(get: { model.kohPercentage }, set: model.setKOHPercentage), prompt: "0")
+        percentRow("NaOH", value: Binding(get: { model.naohPercentage }, set: model.setNaOHPercentage), prompt: "0")
+        percentRow("KOH purity", value: $model.kohPurity, prompt: "90")
+        percentRow("NaOH purity", value: $model.naohPurity, prompt: "99")
         lyeIngredientRow("KOH ingredient", selected: $model.kohLyeIngredient)
         lyeIngredientRow("NaOH ingredient", selected: $model.lyeIngredient)
     }
 
-    private func percentageRow(_ label: String, value: Double, set: @escaping (Double) -> Void) -> some View {
-        HStack {
-            Text(label)
-                .layoutPriority(1)
-            NumericTextField(prompt: "0", value: Binding(get: { value }, set: set), fillsAvailableWidth: true)
-            Text("%")
-                .foregroundStyle(.secondary)
-                .fixedSize()
-        }
-    }
-
-    private func purityRow(_ label: String, value: Binding<Double>, prompt: String) -> some View {
+    private func percentRow(_ label: String, value: Binding<Double>, prompt: String) -> some View {
         HStack {
             Text(label)
                 .layoutPriority(1)
@@ -325,17 +314,6 @@ struct RecipeConfigTabView: View {
                 .padding(.horizontal, 4)
                 .fixedSize()
             Text("1")
-                .foregroundStyle(.secondary)
-                .fixedSize()
-        }
-    }
-
-    private var superFatRow: some View {
-        HStack {
-            Text("Super Fat")
-                .layoutPriority(1)
-            NumericTextField(prompt: "5", value: $model.superFat, fillsAvailableWidth: true)
-            Text("%")
                 .foregroundStyle(.secondary)
                 .fixedSize()
         }
