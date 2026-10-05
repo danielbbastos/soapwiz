@@ -223,10 +223,15 @@ final class RecipeImportViewModel {
 
     // MARK: - Extraction
 
+    /// `context`, when given, is where the inventory is fetched again once the
+    /// model has answered: see `runExtraction`. The app always passes it; only
+    /// tests that hold no store leave it out, and are matched against
+    /// `inventory` as it was handed in.
     func extract(
         inventory: [Ingredient],
         collections: [RecipeCollection] = [],
-        recipes: [Recipe] = []
+        recipes: [Recipe] = [],
+        context: ModelContext? = nil
     ) async {
         // Looked at before the model is consulted, and before availability is
         // even checked: an exact payload needs neither.
@@ -258,7 +263,7 @@ final class RecipeImportViewModel {
         }
 
         do {
-            try await runExtraction(extractor, on: text, inventory: inventory)
+            try await runExtraction(extractor, on: text, inventory: inventory, context: context)
         } catch RecipeImportError.inputTooLong {
             // The character budget is an estimate — the model is the authority
             // on what fits. When it says no, halve the budget and try the
@@ -268,7 +273,7 @@ final class RecipeImportViewModel {
             sanitized = text
             streamingDraft = nil
             do {
-                try await runExtraction(extractor, on: text, inventory: inventory)
+                try await runExtraction(extractor, on: text, inventory: inventory, context: context)
             } catch {
                 streamingDraft = nil
                 phase = .failed(importError(from: error))
@@ -290,16 +295,24 @@ final class RecipeImportViewModel {
         return true
     }
 
+    /// Matches against the inventory fetched after the model answers, not the
+    /// array captured before it was asked. The model takes seconds, and a sync
+    /// in that time can run the duplicate merge: the captured array would then
+    /// hold the copy it deleted, which traps when read (SW-209), and would lack
+    /// the copy it kept when that one arrived during the wait — leaving the
+    /// row unmatched and inviting a duplicate.
     private func runExtraction(
         _ extractor: RecipeDraftExtracting,
         on text: SanitizedRecipeText,
-        inventory: [Ingredient]
+        inventory: [Ingredient],
+        context: ModelContext?
     ) async throws {
         let extracted = try await extractor.extract(from: text) { [weak self] partial in
             self?.streamingDraft = partial
         }
         extractedDraft = extracted
-        rows = RecipeIngredientReconciler.reconcile(extracted, against: inventory)
+        let current = context.map { (try? $0.fetch(FetchDescriptor<Ingredient>())) ?? [] } ?? inventory
+        rows = RecipeIngredientReconciler.reconcile(extracted, against: current)
         streamingDraft = nil
         phase = .review
     }
@@ -336,6 +349,28 @@ final class RecipeImportViewModel {
     func returnToInput() {
         phase = .input
         transferPlan = nil
+    }
+
+    /// Moves both review screens off rows the duplicate merge deleted. Each
+    /// reads its matches on every render, and an import confirmed from them
+    /// would write links to rows that no longer exist.
+    ///
+    /// The exact-copy plan is rebuilt rather than patched: it is worked out from
+    /// the payload and the store alone, holds nothing the user decided, and
+    /// matches collections and recipes as well as ingredients. The known
+    /// collections are re-read for the same reason: `prepared` reads every
+    /// name, and the merge collapses collections too.
+    func resolveMergedRows(in context: ModelContext) {
+        rows = rows.map { $0.resolvedAfterMerge(in: context) }
+        let collections = (try? context.fetch(FetchDescriptor<RecipeCollection>())) ?? []
+        knownCollections = collections
+        guard let plan = transferPlan else { return }
+        transferPlan = RecipeTransferPlan(
+            payload: plan.payload,
+            inventory: (try? context.fetch(FetchDescriptor<Ingredient>())) ?? [],
+            collections: collections,
+            recipes: (try? context.fetch(FetchDescriptor<Recipe>())) ?? []
+        )
     }
 
     /// Writes the reviewed payload into the library.

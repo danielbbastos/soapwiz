@@ -229,26 +229,7 @@ extension Ingredient: MergeableLookup {
     var mergeKey: String? { librarySlug.isEmpty ? nil : librarySlug }
 
     static func adopt(_ loser: Ingredient, into winner: Ingredient) {
-        let purchases = loser.purchases
-        for purchase in purchases {
-            purchase.ingredient = winner
-        }
-        let recipeIngredients = loser.recipeIngredients
-        for recipeIngredient in recipeIngredients {
-            recipeIngredient.ingredient = winner
-        }
-        let lineItems = loser.batchLineItems
-        for lineItem in lineItems {
-            lineItem.ingredient = winner
-        }
-        let lyeRecipes = loser.recipesUsingAsLye
-        for recipe in lyeRecipes {
-            recipe.lyeIngredient = winner
-        }
-        let kohLyeRecipes = loser.recipesUsingAsKOHLye
-        for recipe in kohLyeRecipes {
-            recipe.kohLyeIngredient = winner
-        }
+        repointLinks(from: loser, to: winner)
 
         // A rename is the user's, and it must not be handed back to the catalog's
         // name just because the renamed copy happened to draw the higher `uuid`.
@@ -292,6 +273,36 @@ extension Ingredient: MergeableLookup {
         }
         if winner.code.isEmpty { winner.code = loser.code }
         if winner.lowStockThreshold == nil { winner.lowStockThreshold = loser.lowStockThreshold }
+    }
+
+    /// Everything that can point at an ingredient. A link missed here is lost
+    /// when the loser is deleted: a purchase, a recipe line or a batch line
+    /// without its ingredient, or a recipe without its lye or neutraliser.
+    private static func repointLinks(from loser: Ingredient, to winner: Ingredient) {
+        let purchases = loser.purchases
+        for purchase in purchases {
+            purchase.ingredient = winner
+        }
+        let recipeIngredients = loser.recipeIngredients
+        for recipeIngredient in recipeIngredients {
+            recipeIngredient.ingredient = winner
+        }
+        let lineItems = loser.batchLineItems
+        for lineItem in lineItems {
+            lineItem.ingredient = winner
+        }
+        let lyeRecipes = loser.recipesUsingAsLye
+        for recipe in lyeRecipes {
+            recipe.lyeIngredient = winner
+        }
+        let kohLyeRecipes = loser.recipesUsingAsKOHLye
+        for recipe in kohLyeRecipes {
+            recipe.kohLyeIngredient = winner
+        }
+        let neutralizerRecipes = loser.recipesUsingAsNeutralizer
+        for recipe in neutralizerRecipes {
+            recipe.neutralizerIngredient = winner
+        }
     }
 }
 

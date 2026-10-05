@@ -22,12 +22,16 @@ extension RecipeDetailView {
         }
     }
 
-    /// Reloads once this screen's own full-screen edit has fully closed. Skipped
-    /// for a recipe deleted meanwhile, which a screen left in another tab can
-    /// still hold: reading one traps.
+    /// Reloads once this screen's own full-screen edit has fully closed.
     func reloadAfterOwnEdit() {
         guard isAwaitingEditClose, !navigation.isRecipeFormOnScreen else { return }
         isAwaitingEditClose = false
+        reloadIfRecipeStillStored()
+    }
+
+    /// Skipped for a recipe deleted meanwhile, which a screen left in another
+    /// tab can still hold: reading one traps.
+    func reloadIfRecipeStillStored() {
         guard recipe.modelContext != nil, !recipe.isDeleted else { return }
         reload()
     }

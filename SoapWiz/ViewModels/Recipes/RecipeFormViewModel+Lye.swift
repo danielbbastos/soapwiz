@@ -84,9 +84,17 @@ extension RecipeFormViewModel {
     /// The Additives row installed from the library for `neutralizer`, matched
     /// by its slug, or `nil` when the inventory holds none.
     private static func libraryAdditive(for neutralizer: CFMNeutralizer, in inventory: [Ingredient]) -> Ingredient? {
-        inventory.first {
+        storedRows(in: inventory).first {
             $0.category?.name == IngredientCategory.Name.additives && $0.librarySlug == neutralizer.librarySlug
         }
+    }
+
+    /// `inventory` without rows the store no longer has. A screen answering
+    /// `.duplicatesMerged` passes its `@Query` results before the query has
+    /// caught up with the merge, so they can still hold the copy it deleted,
+    /// and reading any attribute off that traps. See `LiveIngredient`.
+    private static func storedRows(in inventory: [Ingredient]) -> [Ingredient] {
+        inventory.filter { $0.modelContext != nil }
     }
 
     /// The neutraliser rows a batch may draw from: the visible additives plus the
@@ -98,7 +106,7 @@ extension RecipeFormViewModel {
     }
 
     func resolveDefaultLyeIngredient(from inventory: [Ingredient]) {
-        let candidates = inventory.filter { $0.category?.name == IngredientCategory.Name.lyes }
+        let candidates = Self.storedRows(in: inventory).filter { $0.category?.name == IngredientCategory.Name.lyes }
         guard !candidates.isEmpty else { return }
 
         func match(_ name: String) -> Ingredient? {

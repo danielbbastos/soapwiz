@@ -5,6 +5,7 @@ struct IngredientPickerView: View {
     @Query(sort: \Ingredient.name) private var allIngredients: [Ingredient]
     @Query(sort: \IngredientCategory.name) private var allCategories: [IngredientCategory]
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     let addedIDs: Set<PersistentIdentifier>
 
@@ -21,7 +22,7 @@ struct IngredientPickerView: View {
 
     @State private var searchText = ""
     @State private var selectedCategory: IngredientCategory?
-    @State private var pendingSelections: Set<PersistentIdentifier> = []
+    @State private var pendingSelections = PendingIngredientSelection()
     @State private var showingNewIngredient = false
 
     /// Whether an ingredient or category with the given role is offered by a
@@ -105,9 +106,19 @@ struct IngredientPickerView: View {
             .warmNavigationTitle("Choose Ingredient")
             .warmBackground()
             .searchable(text: $searchText, prompt: "Search ingredients")
+            // Every device installs its own categories, so the first sync on a
+            // joining device merges the chip's copy away. Kept, it would empty
+            // the list and reach "Add new ingredient" as a row that traps when
+            // read. Its name is gone with it, so the chip falls back to All.
+            .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
+                if selectedCategory?.modelContext == nil {
+                    selectedCategory = nil
+                }
+                pendingSelections.followMerge(in: modelContext)
+            }
             .sheet(isPresented: $showingNewIngredient) {
                 IngredientFormView(defaultCategory: defaultCategory) { newIngredient in
-                    pendingSelections.insert(newIngredient.persistentModelID)
+                    pendingSelections.insert(newIngredient)
                 }
             }
             .toolbar {
@@ -132,11 +143,7 @@ struct IngredientPickerView: View {
         let isPending = pendingSelections.contains(ingredient.persistentModelID)
         Button {
             guard !isAdded else { return }
-            if isPending {
-                pendingSelections.remove(ingredient.persistentModelID)
-            } else {
-                pendingSelections.insert(ingredient.persistentModelID)
-            }
+            pendingSelections.toggle(ingredient)
         } label: {
             HStack {
                 // Leading, so the state stays visible under a right hand — and

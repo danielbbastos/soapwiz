@@ -122,6 +122,9 @@ struct CreateBatchSheet: View {
             .task(id: existingCodes) {
                 model.suggestCode(existingCodes: existingCodes)
             }
+            .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
+                model.resolveMergedRows(in: context)
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

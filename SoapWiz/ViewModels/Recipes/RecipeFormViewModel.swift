@@ -117,7 +117,26 @@ final class RecipeFormViewModel {
 
     /// Themes this recipe is filed under. Kept in `sortedByName` order so the
     /// dirty check compares two stable lists rather than two arbitrary ones.
-    var selectedCollections: [RecipeCollection] = []
+    ///
+    /// The merge collapses collections by name, and a merged-away one can't be
+    /// read any more, so each collection's key is taken here while it is still
+    /// in the store, as the lye rows' slugs are.
+    var selectedCollections: [RecipeCollection] {
+        get { storedSelectedCollections }
+        set {
+            storedSelectedCollections = newValue
+            for collection in newValue where collection.modelContext != nil {
+                collectionMergeKeys[ObjectIdentifier(collection)] = collection.name.lookupKey
+            }
+        }
+    }
+
+    private var storedSelectedCollections: [RecipeCollection] = []
+
+    /// The merge key of every collection the form has held, so the baseline's
+    /// can be resolved too. Never pruned: it holds a few short strings at most.
+    @ObservationIgnored
+    private(set) var collectionMergeKeys: [ObjectIdentifier: String] = [:]
 
     /// Line items whose ingredient could not be resolved. With CloudKit
     /// mirroring on, a `RecipeIngredient` can arrive before the `Ingredient` it
@@ -361,31 +380,6 @@ final class RecipeFormViewModel {
             case .fragrance: addFragrance(ingredient)
             case nil: continue
             }
-        }
-    }
-
-    // MARK: - Collections
-
-    func isSelected(_ collection: RecipeCollection) -> Bool {
-        selectedCollections.contains { $0 === collection }
-    }
-
-    func toggleCollection(_ collection: RecipeCollection) {
-        if let index = selectedCollections.firstIndex(where: { $0 === collection }) {
-            selectedCollections.remove(at: index)
-        } else {
-            selectedCollections = (selectedCollections + [collection]).sortedByName
-        }
-    }
-
-    /// What the picker row shows on the right. Spelled out for a single
-    /// collection, counted beyond that — a row of names would overflow the
-    /// narrow side of the form long before it stayed readable.
-    var collectionsLabel: String {
-        switch selectedCollections.count {
-        case 0: "None"
-        case 1: selectedCollections[0].name
-        default: "\(selectedCollections.count) selected"
         }
     }
 

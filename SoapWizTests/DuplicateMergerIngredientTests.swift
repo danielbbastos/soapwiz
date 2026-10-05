@@ -34,6 +34,7 @@ struct DuplicateMergerIngredientTests: DuplicateMergerIngredientHelpers {
         ctx.insert(recipeIngredient)
         recipe.lyeIngredient = drop
         recipe.kohLyeIngredient = drop
+        recipe.neutralizerIngredient = drop
 
         let lineItem = BatchLineItem(
             ingredient: drop,
@@ -56,6 +57,7 @@ struct DuplicateMergerIngredientTests: DuplicateMergerIngredientHelpers {
         #expect(lineItem.ingredient?.uuid == keep.uuid)
         #expect(recipe.lyeIngredient?.uuid == keep.uuid)
         #expect(recipe.kohLyeIngredient?.uuid == keep.uuid)
+        #expect(recipe.neutralizerIngredient?.uuid == keep.uuid)
         #expect(keep.purchases.count == 1)
     }
 
