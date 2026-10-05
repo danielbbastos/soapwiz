@@ -83,7 +83,7 @@ struct CategoryIngredientPickerView: View {
             }
         }
         .readableWidth()
-        .searchable(text: $searchText)
+        .searchHeader("Search", text: $searchText, showsList: true)
         .navigationTitle(config.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .warmNavigationTitle(config.navigationTitle)

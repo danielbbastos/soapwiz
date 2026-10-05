@@ -63,11 +63,7 @@ struct BatchListView: View {
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("History")
             .warmBackground()
-            .searchable(
-                text: $searchText,
-                placement: .navigationBarDrawer(displayMode: .always),
-                prompt: "Search batches"
-            )
+            .searchHeader("Search batches", text: $searchText, showsList: !displayed.isEmpty)
             .navigationDestination(for: Batch.self) { batch in
                 BatchDetailView(batch: batch)
             }

@@ -179,12 +179,15 @@ struct IngredientListView: View {
                 .warmNavigationTitle("Inventory")
                 .warmBackground()
                 .navigationDestination(for: Ingredient.self) { detail($0) }
-                .searchable(text: $model.searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ingredients")
-                // Hidden while selecting: the chips would compete with the
-                // selection the toolbar is there to act on.
+                // The chips are hidden while selecting: they would compete with
+                // the selection the toolbar is there to act on.
                 .headerStrip(showsList: !displayed.isEmpty) {
-                    if !visibleCategories.isEmpty && model.editMode == .inactive {
-                        InventoryCategoryFilterBar(categories: visibleCategories, model: model)
+                    VStack(spacing: 0) {
+                        SearchField("Search ingredients", text: $model.searchText)
+                            .padding(.bottom, 12)
+                        if !visibleCategories.isEmpty && model.editMode == .inactive {
+                            InventoryCategoryFilterBar(categories: visibleCategories, model: model)
+                        }
                     }
                 }
                 .onChange(of: categories) { _, updated in
