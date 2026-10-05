@@ -45,14 +45,9 @@ Commits the current changes, reviews them with three reviewers (this session plu
 - Commit staged changes with a descriptive message following CLAUDE.md guidelines.
 
 ### 5. Code Review
-Each review round has three reviewers of the diff `git diff origin/main...HEAD`: this session, running `/codeReview` with `CODE_REVIEW_GUIDE.md` standards, and **two freshly spawned agents** (Agent tool, `general-purpose`), started in one message so they run in parallel. The user has explicitly asked for these agents, so spawning them is authorised here.
+Each review round has three reviewers of the diff `git diff origin/main...HEAD`: this session, running `/codeReview` with `CODE_REVIEW_GUIDE.md` standards, and **two freshly spawned agents** (Agent tool, `subagent_type: "reviewer"`, defined in `.claude/agents/reviewer.md`), started in one message so they run in parallel. The user has explicitly asked for these agents, so spawning them is authorised here.
 
-**Agent brief** (the same for both):
-- Read-only: review the diff, never edit, stage, commit or push.
-- Load the `code-review-developer` skill and follow `.claude/CODE_REVIEW_GUIDE.md` and `CLAUDE.md`.
-- Look for bugs, CLAUDE.md violations, performance and security issues, missing tests and simplifications; read the surrounding code rather than judging the diff alone.
-- Report each finding as `file:line`, the problem, and a concrete failure scenario. When there is nothing, the skill's `✅ **Approved** - No issues found` and a plain `No issues found` both count as a clean reply.
-- From round 2 on, the brief also lists the findings the developer has already decided (fixed, skipped or flagged as false positives). Don't report those again.
+**Agent prompt** (the same for both): the diff range, a one-line summary of what the change does, and, from round 2 on, the findings the developer has already decided (fixed, skipped or flagged as false positives). The review rules and report format live in the agent definition. `✅ **Approved** - No issues found` and a plain `No issues found` both count as a clean reply.
 
 **Each round:**
 1. Run your own review while the two agents run theirs. The agents are done once they report; don't keep or reuse them.
