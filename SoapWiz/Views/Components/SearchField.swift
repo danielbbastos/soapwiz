@@ -29,6 +29,13 @@ struct SearchField: View {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .accessibilityAddTraits(.isSearchField)
+                // Escape on a hardware keyboard ends the search, as it does
+                // on the system field.
+                .onKeyPress(.escape) {
+                    text = ""
+                    isFocused = false
+                    return .handled
+                }
             if !text.isEmpty {
                 Button {
                     text = ""
