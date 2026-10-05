@@ -1,11 +1,13 @@
 import SwiftUI
 import SwiftData
 
-/// The "Cost breakdown" section of a recipe's detail screen: the whole-batch
-/// total with RRP, plus an expandable cost breakdown for each product size the
-/// user tries out. Reads its figures from the view model and the app's RRP
-/// factor from settings, and writes back only the recipe's products, which can
-/// be added and deleted here.
+/// The "Cost breakdown" section of a recipe's detail screen: the whole batch's
+/// cost with RRP, expandable to its per-ingredient breakdown and flagged when
+/// some ingredients have no price (a "No cost data" note when none has one),
+/// plus an expandable cost breakdown for each product size the user tries out.
+/// Reads its figures from the view model and the app's RRP factor from
+/// settings, and writes back only the recipe's products, which can be added
+/// and deleted here.
 ///
 /// Hidden with inventory tracking off: without prices there is nothing to
 /// calculate. The sizes stay stored and come back when tracking is switched on.
