@@ -92,6 +92,31 @@ struct RecipeImportDuplicateMergeTests {
         #expect(resolved.ingredient === oil)
     }
 
+    /// A row matched after the first read — the user created its ingredient on
+    /// the review screen, or another row's creation matched it — takes its slug
+    /// on assignment, not in `init`, and must still follow the merge.
+    @Test func resolvedAfterMerge_RowMatchedAfterTheRead_MovesOntoTheSurvivor() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let keep = try olive(1, in: ctx)
+        let captured = try olive(2, in: ctx)
+        try ctx.save()
+        let unmatched = RecipeImportRow(
+            imported: ImportedIngredient(name: "Olive Oil", amount: 100, unit: nil),
+            role: .oil,
+            resolution: .unmatched
+        )
+        let matched = try #require(
+            RecipeIngredientReconciler.resolveUnmatched(in: [unmatched], against: [captured]).first
+        )
+        #expect(matched.ingredient === captured)
+
+        try DuplicateMerger.mergeAll(in: ctx)
+        let resolved = matched.resolvedAfterMerge(in: ctx)
+
+        #expect(resolved.ingredient === keep)
+    }
+
     @Test func resolvedAfterMerge_SkippedRow_StaysSkipped() throws {
         let (container, ctx) = try makeContext()
         _ = container

@@ -34,6 +34,19 @@ enum LiveIngredient {
         return survivor(slug: slug, excluding: captured, in: context)
     }
 
+    /// The row stored under `id`, otherwise the survivor carrying `slug`, or
+    /// `nil` when neither exists. For a caller that kept only an id: one taken
+    /// from a row the merge has since deleted no longer fetches, and the slug
+    /// recorded beside it finds the row that was kept instead.
+    static func storedRow(id: PersistentIdentifier, slug: String, in context: ModelContext) -> Ingredient? {
+        let byID = FetchDescriptor<Ingredient>(predicate: #Predicate { $0.persistentModelID == id })
+        if let row = try? context.fetch(byID).first { return row }
+        guard !slug.isEmpty else { return nil }
+
+        let bySlug = FetchDescriptor<Ingredient>(predicate: #Predicate { $0.librarySlug == slug })
+        return ((try? context.fetch(bySlug)) ?? []).min { $0.uuid.uuidString < $1.uuid.uuidString }
+    }
+
     /// The row carrying `slug` other than `gone`, for a caller that already
     /// knows `gone` has left the store, however SwiftData reports it: a delete
     /// synced from another device isn't certain to detach the instance, and
