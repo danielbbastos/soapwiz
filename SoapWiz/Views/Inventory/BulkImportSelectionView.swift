@@ -63,7 +63,7 @@ struct BulkImportSelectionView: View {
                             ContentUnavailableView.search(text: searchText)
                         }
                     }
-                    .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search ingredients")
+                    .searchHeader("Search ingredients", text: $searchText, showsList: true)
                 }
             }
             .navigationTitle("Bulk Import")

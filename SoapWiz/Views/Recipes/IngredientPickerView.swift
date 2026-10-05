@@ -69,6 +69,8 @@ struct IngredientPickerView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                SearchField("Search ingredients", text: $searchText)
+                    .padding(.top, 8)
                 if !categories.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -105,7 +107,6 @@ struct IngredientPickerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .warmNavigationTitle("Choose Ingredient")
             .warmBackground()
-            .searchable(text: $searchText, prompt: "Search ingredients")
             // Every device installs its own categories, so the first sync on a
             // joining device merges the chip's copy away. Kept, it would empty
             // the list and reach "Add new ingredient" as a row that traps when

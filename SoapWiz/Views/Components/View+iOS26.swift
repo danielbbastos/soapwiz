@@ -60,7 +60,8 @@ extension View {
         }
     }
 
-    /// Puts `strip` (a list's filter chips) under the navigation bar.
+    /// Puts `strip` (a list's search field and filter chips) under the
+    /// navigation bar.
     /// `showsList` is false while an empty state stands in for the list.
     func headerStrip<Strip: View>(showsList: Bool, @ViewBuilder _ strip: () -> Strip) -> some View {
         modifier(HeaderStrip(showsList: showsList, strip: strip()))
