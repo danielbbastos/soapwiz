@@ -61,7 +61,7 @@ extension RecipeFormViewModel {
     // MARK: - Collections
 
     private func storedCollections(in context: ModelContext) -> [RecipeCollection] {
-        ((try? context.fetch(FetchDescriptor<RecipeCollection>())) ?? []).filter { $0.modelContext != nil }
+        (try? context.fetch(FetchDescriptor<RecipeCollection>())) ?? []
     }
 
     /// `selection` with each merged-away collection replaced by the one the

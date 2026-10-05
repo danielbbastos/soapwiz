@@ -268,10 +268,14 @@ struct RecipeCostBreakdownTests: RecipeFormTestHelpers {
 
         #expect(model.lyeIngredient?.name == "Sodium Hydroxide (Lye)")
     }
-    @Test func resolveDefaultLyeIngredient_DoesNotOverrideExisting() {
+    @Test func resolveDefaultLyeIngredient_DoesNotOverrideExisting() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
         let lyeCategory = IngredientCategory(name: IngredientCategory.Name.lyes)
         let naoh = Ingredient(name: "Sodium Hydroxide", category: lyeCategory, unit: "g")
         let custom = Ingredient(name: "Custom Lye", category: lyeCategory, unit: "g")
+        ctx.insert(naoh)
+        ctx.insert(custom)
 
         let model = RecipeFormViewModel()
         model.lyeIngredient = custom

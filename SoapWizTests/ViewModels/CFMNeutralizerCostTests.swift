@@ -150,7 +150,9 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         #expect(model.neutralizerIngredient?.librarySlug == "boric-acid")
     }
 
-    @Test func resolveDefault_DoesNotOverrideExistingChoice() {
+    @Test func resolveDefault_DoesNotOverrideExistingChoice() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
         let model = makeLiquidModel()
         let chosen = boricAcid(pricePerUnit: 0.05)
         model.neutralizerIngredient = chosen
@@ -158,6 +160,7 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         let borax = Ingredient(name: "Borax", unit: "g")
         borax.librarySlug = "borax"
         borax.category = additivesCategory()
+        ctx.insert(borax)
         model.cfmNeutralizer = .borax
         model.resolveDefaultNeutralizerIngredient(from: [borax])
         #expect(model.neutralizerIngredient?.persistentModelID == chosen.persistentModelID)
@@ -182,13 +185,17 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         #expect(model.neutralizerIngredient?.librarySlug == "borax")
     }
 
-    @Test func setNeutralizer_KeepsManualOverride() {
+    @Test func setNeutralizer_KeepsManualOverride() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
         let model = makeLiquidModel()
         let custom = Ingredient(name: "My Neutraliser", unit: "g") // no library slug
         custom.category = additivesCategory()
         let borax = Ingredient(name: "Borax", unit: "g")
         borax.librarySlug = "borax"
         borax.category = additivesCategory()
+        ctx.insert(custom)
+        ctx.insert(borax)
         model.neutralizerIngredient = custom
 
         model.setCFMNeutralizer(.borax, from: [custom, borax])
