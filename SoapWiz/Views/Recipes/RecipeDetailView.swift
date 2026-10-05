@@ -8,16 +8,13 @@ struct RecipeDetailView: View {
     // Non-private so `RecipeDetailView+Edit` can open the full-screen form.
     @Environment(AppNavigation.self) var navigation
 
-    // Non-private so `RecipeDetailView+BatchCandidates` can read them.
     @Query(filter: RecipeDetailView.lyesPredicate)
-    var lyeIngredients: [Ingredient]
+    private var lyeIngredients: [Ingredient]
     @Query(filter: RecipeDetailView.additivesPredicate)
-    var additiveIngredients: [Ingredient]
-    @Query private var settingsRecords: [AppSettings]
+    private var additiveIngredients: [Ingredient]
 
     @State private var model = RecipeFormViewModel()
     @State private var showInGrams = false
-    @State private var showCreateBatch = false
     /// Set while this screen's recipe is open in the full-screen form (iPad).
     /// Non-private so `RecipeDetailView+Edit` can set it.
     @State var isAwaitingEditClose = false
@@ -86,7 +83,7 @@ struct RecipeDetailView: View {
         .warmBackground()
         .safeAreaInset(edge: .bottom) {
             Button {
-                showCreateBatch = true
+                navigation.detailSheetRequest = .createBatch(recipe)
             } label: {
                 Label("Create Batch", systemImage: "bubbles.and.sparkles.fill")
                     .fontWeight(.semibold)
@@ -101,16 +98,6 @@ struct RecipeDetailView: View {
             editToolbarItem
         }
         .modifier(sharingPresentation)
-        .sheet(isPresented: $showCreateBatch) {
-            CreateBatchSheet(
-                recipe: recipe,
-                lyeCandidates: lyeCandidates,
-                neutralizerCandidates: neutralizerCandidates,
-                tracksInventory: AppSettings.tracksInventory(from: settingsRecords)
-            ) { batch in
-                navigation.showBatch(batch)
-            }
-        }
         // Declared here rather than on the list views because this screen is
         // pushed from two different stacks (Recipes and History), and both
         // already route a bare `Recipe` to the detail itself.

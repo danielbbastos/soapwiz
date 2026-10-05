@@ -7,15 +7,17 @@ final class CategoryFormViewModel {
     var name: String = ""
 
     let category: IngredientCategory?
+    private let initialName: String
 
     init(category: IngredientCategory? = nil) {
         self.category = category
-        if let category {
-            name = category.name
-        }
+        initialName = category?.name ?? ""
+        name = initialName
     }
 
     var isEditing: Bool { category != nil }
+    /// Whether anything was typed, which stops a swipe from closing the sheet.
+    var isDirty: Bool { name != initialName }
     var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
 
     func isDuplicate(among categories: [IngredientCategory]) -> Bool {

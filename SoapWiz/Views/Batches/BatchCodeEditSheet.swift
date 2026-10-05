@@ -11,10 +11,12 @@ struct BatchCodeEditSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Query private var batches: [Batch]
     @State private var code: String
+    private let initialCode: String
 
     init(batch: Batch) {
         self.batch = batch
         _code = State(initialValue: batch.code)
+        initialCode = batch.code
     }
 
     var body: some View {
@@ -55,6 +57,7 @@ struct BatchCodeEditSheet: View {
                     .disabled(codeIsTaken || BatchCodeGenerator.trimmed(code).isEmpty)
                 }
             }
+            .interactiveDismissDisabled(code != initialCode)
         }
         .presentationDetents([.medium, .large])
     }

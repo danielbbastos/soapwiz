@@ -107,6 +107,12 @@ struct ContentView: View {
         .fullScreenCover(item: $navigation.recipeFormRequest, onDismiss: navigation.recipeFormDidClose) { request in
             RecipeFormCover(request: request)
         }
+        // Up here for the same reason as the cover: a sheet the detail screen
+        // presented closed when a width change moved the detail to the other
+        // stack (SW-218).
+        .sheet(item: $navigation.detailSheetRequest, onDismiss: navigation.detailSheetDidClose) { request in
+            DetailSheetHost(request: request)
+        }
         .fontDesign(.rounded)
         .environment(\.horizontalSizeClass, .compact)
     }

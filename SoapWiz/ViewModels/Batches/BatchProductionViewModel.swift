@@ -71,6 +71,13 @@ final class BatchProductionViewModel {
 
     private var chosenCureDays: Int?
 
+    /// Whether the user changed anything from what the sheet opened with, which
+    /// stops a swipe from closing it.
+    var hasChanges: Bool {
+        batchCount != 1 || code != suggestedCode || process != .cold
+            || cureDays != (cureEstimate?.defaultDays ?? 0)
+    }
+
     private func estimate(for process: SoapProcess) -> CureEstimate? {
         CureEstimator.estimate(
             makesSoap: engine.makesSoap,

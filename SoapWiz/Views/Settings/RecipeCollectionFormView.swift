@@ -50,6 +50,7 @@ struct RecipeCollectionFormView: View {
                     .disabled(!model.isValid(among: allCollections))
                 }
             }
+            .interactiveDismissDisabled(model.isDirty)
         }
     }
 

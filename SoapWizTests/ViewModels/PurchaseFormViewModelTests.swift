@@ -116,13 +116,50 @@ struct PurchaseFormViewModelTests {
 
     // MARK: - Dirty tracking
 
-    @Test func isDirty_NewPurchase_AlwaysTrue() throws {
+    /// Untouched, a new purchase can still be swiped away (SW-218).
+    @Test func isDirty_NewPurchaseUntouched_False() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let ingredient = Ingredient(name: "Olive Oil")
         ctx.insert(ingredient)
         let model = PurchaseFormViewModel(ingredient: ingredient)
+        #expect(model.isDirty == false)
+        #expect(model.isValid == false)
+    }
+
+    /// The suggested journal code is the form's own, not something typed.
+    @Test func isDirty_NewPurchaseWithSuggestedJournalCode_False() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let ingredient = Ingredient(name: "Olive Oil")
+        ingredient.code = "OO"
+        ctx.insert(ingredient)
+        let model = PurchaseFormViewModel(ingredient: ingredient)
+        #expect(model.journalCode.isEmpty == false)
+        #expect(model.isDirty == false)
+    }
+
+    @Test func isDirty_NewPurchaseQuantityTyped_True() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let ingredient = Ingredient(name: "Olive Oil")
+        ctx.insert(ingredient)
+        let model = PurchaseFormViewModel(ingredient: ingredient)
+        model.quantityText = "500"
         #expect(model.isDirty)
+    }
+
+    /// Entering what makes a new purchase valid already marks it changed, so
+    /// Add enables exactly as before the snapshot existed.
+    @Test func isValid_NewPurchaseQuantityAndPrice_True() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let ingredient = Ingredient(name: "Olive Oil")
+        ctx.insert(ingredient)
+        let model = PurchaseFormViewModel(ingredient: ingredient)
+        model.quantityText = "500"
+        model.totalPriceText = "10"
+        #expect(model.isValid)
     }
 
     @Test func isDirty_EditingNoChanges_False() throws {

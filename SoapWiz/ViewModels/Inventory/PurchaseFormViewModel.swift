@@ -41,55 +41,65 @@ final class PurchaseFormViewModel {
         let location: StorageLocation?
     }
 
-    private let initialSnapshot: Snapshot?
+    private let initialSnapshot: Snapshot
 
     init(ingredient: Ingredient, purchase: IngredientPurchase? = nil, locale: Locale = .autoupdatingCurrent) {
         self.ingredient = ingredient
         self.ingredientSlug = ingredient.librarySlug
         self.purchase = purchase
         self.locale = locale
-        if let purchase {
-            let fieldFormat = FloatingPointFormatStyle<Double>(locale: locale)
-                .precision(.fractionLength(0...2))
-                .grouping(.never)
-            let qtyText = purchase.quantity.formatted(fieldFormat)
-            let priceText = purchase.totalPrice.formatted(fieldFormat)
-            let hasExpiry = purchase.expiryDate != nil
-            let expiry = purchase.expiryDate ?? Calendar.current.date(
-                byAdding: .year, value: 1, to: Date()
-            ) ?? Date()
-            let hasOpening = purchase.openingDate != nil
-            let opening = purchase.openingDate ?? Date()
+        let snapshot = purchase.map { Self.snapshot(of: $0, locale: locale) } ?? Self.newPurchaseSnapshot(for: ingredient)
+        initialSnapshot = snapshot
 
-            selectedProvider = purchase.provider
-            dateOfPurchase = purchase.dateOfPurchase
-            quantityText = qtyText
-            totalPriceText = priceText
-            badge = purchase.badge
-            journalCode = purchase.journalCode
-            hasExpiryDate = hasExpiry
-            expiryDate = expiry
-            hasOpeningDate = hasOpening
-            openingDate = opening
-            selectedLocation = purchase.storageLocation
+        selectedProvider = snapshot.provider
+        dateOfPurchase = snapshot.dateOfPurchase
+        quantityText = snapshot.quantityText
+        totalPriceText = snapshot.totalPriceText
+        badge = snapshot.badge
+        journalCode = snapshot.journalCode
+        hasExpiryDate = snapshot.hasExpiryDate
+        expiryDate = snapshot.expiryDate
+        hasOpeningDate = snapshot.hasOpeningDate
+        openingDate = snapshot.openingDate
+        selectedLocation = snapshot.location
+    }
 
-            initialSnapshot = Snapshot(
-                provider: purchase.provider,
-                dateOfPurchase: purchase.dateOfPurchase,
-                quantityText: qtyText,
-                totalPriceText: priceText,
-                badge: purchase.badge,
-                journalCode: purchase.journalCode,
-                hasExpiryDate: hasExpiry,
-                expiryDate: expiry,
-                hasOpeningDate: hasOpening,
-                openingDate: opening,
-                location: purchase.storageLocation
-            )
-        } else {
-            journalCode = Self.suggestedJournalCode(for: ingredient)
-            initialSnapshot = nil
-        }
+    private static func snapshot(of purchase: IngredientPurchase, locale: Locale) -> Snapshot {
+        let fieldFormat = FloatingPointFormatStyle<Double>(locale: locale)
+            .precision(.fractionLength(0...2))
+            .grouping(.never)
+        return Snapshot(
+            provider: purchase.provider,
+            dateOfPurchase: purchase.dateOfPurchase,
+            quantityText: purchase.quantity.formatted(fieldFormat),
+            totalPriceText: purchase.totalPrice.formatted(fieldFormat),
+            badge: purchase.badge,
+            journalCode: purchase.journalCode,
+            hasExpiryDate: purchase.expiryDate != nil,
+            expiryDate: purchase.expiryDate ?? Calendar.current.date(byAdding: .year, value: 1, to: Date()) ?? Date(),
+            hasOpeningDate: purchase.openingDate != nil,
+            openingDate: purchase.openingDate ?? Date(),
+            location: purchase.storageLocation
+        )
+    }
+
+    /// A new purchase's starting values, so it only counts as changed once the
+    /// user has entered something, and a swipe can still close it until then.
+    private static func newPurchaseSnapshot(for ingredient: Ingredient) -> Snapshot {
+        let now = Date()
+        return Snapshot(
+            provider: nil,
+            dateOfPurchase: now,
+            quantityText: "",
+            totalPriceText: "",
+            badge: "",
+            journalCode: suggestedJournalCode(for: ingredient),
+            hasExpiryDate: false,
+            expiryDate: Calendar.current.date(byAdding: .year, value: 1, to: now) ?? now,
+            hasOpeningDate: false,
+            openingDate: now,
+            location: nil
+        )
     }
 
     /// Numbers below this are zero-padded out to three digits, so a fresh
@@ -134,7 +144,7 @@ final class PurchaseFormViewModel {
     }
 
     var isDirty: Bool {
-        guard let snap = initialSnapshot else { return true }
+        let snap = initialSnapshot
         return selectedProvider !== snap.provider
             || dateOfPurchase != snap.dateOfPurchase
             || quantityText != snap.quantityText

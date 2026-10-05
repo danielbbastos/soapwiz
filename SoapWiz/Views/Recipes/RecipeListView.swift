@@ -137,9 +137,9 @@ struct RecipeListView: View {
     }
 
     /// Opens the import review for a file handed in from another app. A sheet
-    /// can't go up over the full-screen form, so while one is open the file
-    /// stays pending and this runs again once the form has closed; either way
-    /// the form's unsaved edits are left alone. Transient sheets are cleared
+    /// can't go up over the full-screen form or a detail sheet, so while one is
+    /// open the file stays pending and this runs again once it has closed;
+    /// either way its unsaved edits are left alone. Transient sheets are cleared
     /// first so the import isn't blocked by one already up.
     private func startPendingFileImport() {
         guard let request = nav.takePendingRecipeFileImport() else { return }
@@ -368,6 +368,9 @@ struct RecipeListView: View {
             startPendingFileImport()
         }
         .onChange(of: nav.recipeFormClosings) {
+            startPendingFileImport()
+        }
+        .onChange(of: nav.detailSheetClosings) {
             startPendingFileImport()
         }
         // A collection deleted here or merged away by `DuplicateMerger` would

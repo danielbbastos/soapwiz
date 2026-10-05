@@ -8,16 +8,20 @@ final class StorageLocationFormViewModel {
     var locationDescription: String = ""
 
     let location: StorageLocation?
+    private let initialName: String
+    private let initialDescription: String
 
     init(location: StorageLocation? = nil) {
         self.location = location
-        if let location {
-            name = location.name
-            locationDescription = location.locationDescription
-        }
+        initialName = location?.name ?? ""
+        initialDescription = location?.locationDescription ?? ""
+        name = initialName
+        locationDescription = initialDescription
     }
 
     var isEditing: Bool { location != nil }
+    /// Whether anything was typed, which stops a swipe from closing the sheet.
+    var isDirty: Bool { name != initialName || locationDescription != initialDescription }
     var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
     var trimmedDescription: String { locationDescription.trimmingCharacters(in: .whitespaces) }
 

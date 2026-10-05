@@ -142,6 +142,7 @@ struct CreateBatchSheet: View {
                     .disabled(!model.canCreate || codeIsTaken)
                 }
             }
+            .interactiveDismissDisabled(model.hasChanges)
         }
     }
 

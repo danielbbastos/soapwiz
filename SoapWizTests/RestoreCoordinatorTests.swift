@@ -32,6 +32,7 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         navigation.history.show(batch)
         navigation.pendingRecipeSeed = RecipeSeed(ingredients: [ingredient])
         navigation.recipeFormRequest = .edit(recipe)
+        navigation.detailSheetRequest = .createBatch(recipe)
 
         let coordinator = makeCoordinator()
         coordinator.stage(try BackupService.makeBackup(from: ctx))
@@ -42,6 +43,8 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         #expect(navigation.pendingRecipeSeed == nil)
         #expect(navigation.recipeFormRequest == nil)
         #expect(navigation.isRecipeFormOnScreen == false)
+        #expect(navigation.detailSheetRequest == nil)
+        #expect(navigation.isDetailSheetOnScreen == false)
     }
 
     @Test func begin_MovesToTheRestoringPhase() throws {

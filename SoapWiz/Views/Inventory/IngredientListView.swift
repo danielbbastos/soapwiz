@@ -108,15 +108,6 @@ struct IngredientListView: View {
         }
     }
 
-    private func detail(_ ingredient: Ingredient) -> some View {
-        IngredientDetailView(
-            ingredient: ingredient,
-            autoAddPurchase: model.tracksInventory
-                && model.pendingIngredient?.persistentModelID == ingredient.persistentModelID
-        )
-        .onAppear { model.pendingIngredient = nil }
-    }
-
     var body: some View {
         // Filtered once per pass: filtering sums each row's stock and sorts,
         // and several places below need the result.
@@ -178,7 +169,7 @@ struct IngredientListView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .warmNavigationTitle("Inventory")
                 .warmBackground()
-                .navigationDestination(for: Ingredient.self) { detail($0) }
+                .navigationDestination(for: Ingredient.self) { IngredientDetailView(ingredient: $0) }
                 // The chips are hidden while selecting: they would compete with
                 // the selection the toolbar is there to act on.
                 .headerStrip(showsList: !displayed.isEmpty) {
@@ -235,7 +226,7 @@ struct IngredientListView: View {
                     createRecipeButton
                 }
             }
-        } detail: { detail($0) }
+        } detail: { IngredientDetailView(ingredient: $0) }
         // A hidden row has left the list, and its detail staying open beside
         // the list would outlive it.
         .onChange(of: ingredients.filter(\.isHidden)) { _, hidden in
@@ -280,9 +271,14 @@ struct IngredientListView: View {
         } message: {
             Text(model.deleteBlockedMessage)
         }
+        // A new ingredient opens on its detail, with Add Purchase up over it
+        // when stock is tracked.
         .sheet(isPresented: $model.showingAddIngredient, onDismiss: {
-            if let ingredient = model.pendingIngredient {
-                navigation.show(ingredient)
+            guard let ingredient = model.pendingIngredient else { return }
+            model.pendingIngredient = nil
+            navigation.show(ingredient)
+            if model.tracksInventory {
+                nav.detailSheetRequest = .addPurchase(ingredient)
             }
         }, content: {
             IngredientFormView(onSave: { ingredient in

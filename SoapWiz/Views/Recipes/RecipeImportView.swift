@@ -67,6 +67,7 @@ struct RecipeImportView: View {
                     }
                 }
             }
+            .interactiveDismissDisabled(model.hasChanges)
         }
         // A page-sized sheet on iPad. The default form sheet is shorter than
         // this screen, which pushed the action button and its note below the
