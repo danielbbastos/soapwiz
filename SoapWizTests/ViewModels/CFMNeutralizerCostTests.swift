@@ -131,7 +131,11 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
 
     // MARK: - Default resolution & switching
 
-    @Test func resolveDefault_FillsBlank_MatchingBySlug() {
+    /// The rows are inserted, as `@Query` results always are: resolving skips
+    /// one with no context as a row the store no longer has.
+    @Test func resolveDefault_FillsBlank_MatchingBySlug() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
         let model = makeLiquidModel()
         let boric = Ingredient(name: "Boric Acid", unit: "g")
         boric.librarySlug = "boric-acid"
@@ -139,6 +143,8 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         let borax = Ingredient(name: "Borax", unit: "g")
         borax.librarySlug = "borax"
         borax.category = additivesCategory()
+        ctx.insert(boric)
+        ctx.insert(borax)
 
         model.resolveDefaultNeutralizerIngredient(from: [borax, boric])
         #expect(model.neutralizerIngredient?.librarySlug == "boric-acid")
@@ -157,7 +163,9 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         #expect(model.neutralizerIngredient?.persistentModelID == chosen.persistentModelID)
     }
 
-    @Test func setNeutralizer_MovesToNewDefault_WhenStillDefault() {
+    @Test func setNeutralizer_MovesToNewDefault_WhenStillDefault() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
         let model = makeLiquidModel()
         let boric = Ingredient(name: "Boric Acid", unit: "g")
         boric.librarySlug = "boric-acid"
@@ -165,6 +173,8 @@ struct CFMNeutralizerCostTests: BatchProductionTestHelpers {
         let borax = Ingredient(name: "Borax", unit: "g")
         borax.librarySlug = "borax"
         borax.category = additivesCategory()
+        ctx.insert(boric)
+        ctx.insert(borax)
         model.neutralizerIngredient = boric
 
         model.setCFMNeutralizer(.borax, from: [boric, borax])

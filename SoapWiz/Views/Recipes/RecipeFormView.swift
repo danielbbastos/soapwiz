@@ -91,7 +91,7 @@ struct RecipeFormView: View {
             // Resolved in place rather than reloaded, which would discard every
             // unsaved edit.
             .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
-                model.resolveMergedIngredients(in: modelContext)
+                model.resolveMergedRows(in: modelContext)
             }
             // Cancel is the only way out, so a swipe can't discard the form by
             // accident — the feedback behind SW-106.

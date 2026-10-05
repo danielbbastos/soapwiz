@@ -252,10 +252,16 @@ struct RecipeCostBreakdownTests: RecipeFormTestHelpers {
         // Lye: 1000 × 0.2 × 1 / 1 = 200g × €0.008 = €1.60
         #expect(abs(model.batchTotalCost - 11.60) < 0.001)
     }
-    @Test func resolveDefaultLyeIngredient_PicksSodiumHydroxide() {
+    /// The rows are inserted, as `@Query` results always are: resolving skips
+    /// one with no context as a row the store no longer has.
+    @Test func resolveDefaultLyeIngredient_PicksSodiumHydroxide() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
         let lyeCategory = IngredientCategory(name: IngredientCategory.Name.lyes)
         let naoh = Ingredient(name: "Sodium Hydroxide (Lye)", category: lyeCategory, unit: "g")
         let other = Ingredient(name: "Other Lye", category: lyeCategory, unit: "g")
+        ctx.insert(naoh)
+        ctx.insert(other)
 
         let model = RecipeFormViewModel()
         model.resolveDefaultLyeIngredient(from: [other, naoh])

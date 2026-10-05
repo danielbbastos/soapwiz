@@ -88,9 +88,10 @@ final class BatchProductionViewModel {
 
     private let recipe: Recipe
     private let engine: RecipeFormViewModel
-    /// The recipe's blend, read once: the recipe can't change while the sheet
-    /// is up, and the estimate is asked for on every render.
-    private let fattyAcidProfile: FattyAcidProfile
+    /// The recipe's blend, read once rather than on every render the estimate
+    /// is asked for. Only a duplicate merge changes it while the sheet is up,
+    /// and `resolveMergedRows(in:)` re-reads it then.
+    private var fattyAcidProfile: FattyAcidProfile
 
     init(
         recipe: Recipe,
@@ -106,6 +107,16 @@ final class BatchProductionViewModel {
         engine.resolveDefaultNeutralizerIngredient(from: neutralizerCandidates)
         self.engine = engine
         self.fattyAcidProfile = RecipeStats(oilDrafts: engine.oilDrafts, makesSoap: engine.makesSoap).fattyAcidProfile
+    }
+
+    /// Moves the recipe's working copy onto the rows a duplicate merge kept.
+    /// Every amount below is read through it, so one left on a merged-away row
+    /// traps on the next render, and a batch created from it would be recorded
+    /// and deducted against a row that no longer exists. Resolved in place
+    /// rather than rebuilt from `recipe`, so nothing the user set here is lost.
+    func resolveMergedRows(in context: ModelContext) {
+        engine.resolveMergedRows(in: context)
+        fattyAcidProfile = RecipeStats(oilDrafts: engine.oilDrafts, makesSoap: engine.makesSoap).fattyAcidProfile
     }
 
     /// Per-ingredient requirements for the current `batchCount`, in each
