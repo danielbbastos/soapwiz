@@ -5,7 +5,7 @@ import SwiftData
 
 struct OilIngredientDraft: Identifiable, Equatable {
     let id = UUID()
-    let ingredient: Ingredient
+    private(set) var ingredient: Ingredient
     var amount: Double = 0
     var isLocked: Bool = false
 
@@ -20,11 +20,20 @@ struct OilIngredientDraft: Identifiable, Equatable {
         self.isLocked = isLocked
         self.ingredientSlug = ingredient.librarySlug
     }
+
+    /// This row moved onto the ingredient actually in the store, keeping its
+    /// identity and amount, or `nil` when nothing is left to move onto.
+    func resolved(in context: ModelContext) -> OilIngredientDraft? {
+        guard let live = LiveIngredient.resolve(ingredient, slug: ingredientSlug, in: context) else { return nil }
+        var draft = self
+        draft.ingredient = live
+        return draft
+    }
 }
 
 struct IngredientAmountDraft: Identifiable, Equatable {
     let id = UUID()
-    let ingredient: Ingredient
+    private(set) var ingredient: Ingredient
     var amount: Double = 0
     var unit: String
     var isLocked: Bool = false
@@ -38,6 +47,14 @@ struct IngredientAmountDraft: Identifiable, Equatable {
         self.unit = unit
         self.isLocked = isLocked
         self.ingredientSlug = ingredient.librarySlug
+    }
+
+    /// See `OilIngredientDraft.resolved(in:)`.
+    func resolved(in context: ModelContext) -> IngredientAmountDraft? {
+        guard let live = LiveIngredient.resolve(ingredient, slug: ingredientSlug, in: context) else { return nil }
+        var draft = self
+        draft.ingredient = live
+        return draft
     }
 }
 

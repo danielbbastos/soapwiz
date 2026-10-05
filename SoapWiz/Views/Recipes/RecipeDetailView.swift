@@ -125,6 +125,12 @@ struct RecipeDetailView: View {
         .task(id: recipe.persistentModelID) {
             reload()
         }
+        // The merge moves the recipe's own links onto the surviving copy, but
+        // the drafts loaded from them still hold the one it deleted, and the
+        // next redraw reads it — the SW-209 crash.
+        .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
+            reloadIfRecipeStillStored()
+        }
         // The stored kind, not `model.makesSoap`: the model hasn't loaded on the
         // first pass, and its default would ask on a recipe with no lye.
         .lyeSafetyAcknowledgment(isRequired: RecipeKind.resolve(recipe.recipeKind) == .soap)
