@@ -338,6 +338,28 @@ final class RecipeImportViewModel {
         transferPlan = nil
     }
 
+    /// Moves both review screens off rows the duplicate merge deleted. Each
+    /// reads its matches on every render, and an import confirmed from them
+    /// would write links to rows that no longer exist.
+    ///
+    /// The exact-copy plan is rebuilt rather than patched: it is worked out from
+    /// the payload and the store alone, holds nothing the user decided, and
+    /// matches collections and recipes as well as ingredients. The known
+    /// collections are re-read for the same reason: `prepared` reads every
+    /// name, and the merge collapses collections too.
+    func resolveMergedRows(in context: ModelContext) {
+        rows = rows.map { $0.resolvedAfterMerge(in: context) }
+        let collections = (try? context.fetch(FetchDescriptor<RecipeCollection>())) ?? []
+        knownCollections = collections
+        guard let plan = transferPlan else { return }
+        transferPlan = RecipeTransferPlan(
+            payload: plan.payload,
+            inventory: (try? context.fetch(FetchDescriptor<Ingredient>())) ?? [],
+            collections: collections,
+            recipes: (try? context.fetch(FetchDescriptor<Recipe>())) ?? []
+        )
+    }
+
     /// Writes the reviewed payload into the library.
     ///
     /// Returns the recipes created, or `nil` if the save failed. The context is

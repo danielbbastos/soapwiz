@@ -74,6 +74,9 @@ struct RecipeImportView: View {
         // content is a Form, which has no finite intrinsic height, so fitting
         // to it collapses the sheet to almost nothing.
         .presentationSizing(.page)
+        .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
+            model.resolveMergedRows(in: modelContext)
+        }
         // A handed-in file opens itself, once, skipping the input screen. The
         // guard survives the re-runs SwiftUI may make of this task; `openFile`
         // always leaves `.input` behind, so it can't fire twice.

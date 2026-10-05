@@ -105,6 +105,15 @@ struct IngredientPickerView: View {
             .warmNavigationTitle("Choose Ingredient")
             .warmBackground()
             .searchable(text: $searchText, prompt: "Search ingredients")
+            // Every device installs its own categories, so the first sync on a
+            // joining device merges the chip's copy away. Kept, it would empty
+            // the list and reach "Add new ingredient" as a row that traps when
+            // read. Its name is gone with it, so the chip falls back to All.
+            .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
+                if selectedCategory?.modelContext == nil {
+                    selectedCategory = nil
+                }
+            }
             .sheet(isPresented: $showingNewIngredient) {
                 IngredientFormView(defaultCategory: defaultCategory) { newIngredient in
                     pendingSelections.insert(newIngredient.persistentModelID)

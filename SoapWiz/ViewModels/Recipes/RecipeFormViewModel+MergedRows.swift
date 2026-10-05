@@ -8,10 +8,11 @@ import SwiftData
 /// attribute off a detached model traps. See `LiveIngredient`.
 extension RecipeFormViewModel {
     /// Puts every draft, the lye and neutraliser rows and the selected
-    /// collections on the row the merge kept. An ingredient row with nothing
-    /// left to move onto is dropped: the line item it came from lost its
-    /// ingredient too, and `load(from:)` counts those into
-    /// `unresolvedLineItemCount`.
+    /// collections on the row the merge kept. A merge always keeps one, so an
+    /// ingredient row with nothing left to move onto means the ingredient was
+    /// deleted outright (SW-210). That row leaves the form without notice; the
+    /// stored line item it came from, if any, is kept by `save` and counted
+    /// into `unresolvedLineItemCount` the next time the recipe loads.
     ///
     /// The baseline moves the same way, so a merge isn't mistaken for an edit.
     func resolveMergedRows(in context: ModelContext) {
