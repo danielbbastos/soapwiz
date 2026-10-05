@@ -51,6 +51,7 @@ struct StorageLocationFormView: View {
                     .disabled(!model.isValid(among: allLocations))
                 }
             }
+            .interactiveDismissDisabled(model.isDirty)
         }
     }
 }

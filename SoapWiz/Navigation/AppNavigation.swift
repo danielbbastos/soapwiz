@@ -55,6 +55,17 @@ final class AppNavigation {
         }
     }
 
+    /// The sheet a detail screen has open (Create batch, Add purchase, Edit
+    /// ingredient), held here so it survives the detail moving between stacks
+    /// when the window width changes. See `DetailSheetRequest`.
+    var detailSheetRequest: DetailSheetRequest?
+
+    /// Closes the detail sheet for `id`, unless another request replaced it.
+    func closeDetailSheet(_ id: UUID) {
+        guard detailSheetRequest?.id == id else { return }
+        detailSheetRequest = nil
+    }
+
     /// True from the moment the full-screen form is requested until it has
     /// finished closing. `recipeFormRequest` turns nil as the cover starts to
     /// leave, and nothing else can be presented until it has gone.

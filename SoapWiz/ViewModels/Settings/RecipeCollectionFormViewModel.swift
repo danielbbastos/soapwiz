@@ -8,16 +8,20 @@ final class RecipeCollectionFormViewModel {
     var color: CollectionColor = .neutral
 
     let collection: RecipeCollection?
+    private let initialName: String
+    private let initialColor: CollectionColor
 
     init(collection: RecipeCollection? = nil) {
         self.collection = collection
-        if let collection {
-            name = collection.name
-            color = collection.color
-        }
+        initialName = collection?.name ?? ""
+        initialColor = collection?.color ?? .neutral
+        name = initialName
+        color = initialColor
     }
 
     var isEditing: Bool { collection != nil }
+    /// Whether anything was changed, which stops a swipe from closing the sheet.
+    var isDirty: Bool { name != initialName || color != initialColor }
     var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
 
     func isDuplicate(among collections: [RecipeCollection]) -> Bool {

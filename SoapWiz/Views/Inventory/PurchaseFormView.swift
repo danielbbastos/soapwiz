@@ -40,6 +40,7 @@ struct PurchaseFormView: View {
                     .disabled(!model.isValid)
                 }
             }
+            .interactiveDismissDisabled(model.isDirty)
             .alert(
                 "Couldn’t Save Purchase",
                 isPresented: Binding(

@@ -9,17 +9,23 @@ final class ProviderFormViewModel {
     var notes: String = ""
 
     let provider: Provider?
+    private let initialName: String
+    private let initialWebsite: String
+    private let initialNotes: String
 
     init(provider: Provider? = nil) {
         self.provider = provider
-        if let provider {
-            name = provider.name
-            website = provider.website
-            notes = provider.notes
-        }
+        initialName = provider?.name ?? ""
+        initialWebsite = provider?.website ?? ""
+        initialNotes = provider?.notes ?? ""
+        name = initialName
+        website = initialWebsite
+        notes = initialNotes
     }
 
     var isEditing: Bool { provider != nil }
+    /// Whether anything was typed, which stops a swipe from closing the sheet.
+    var isDirty: Bool { name != initialName || website != initialWebsite || notes != initialNotes }
     var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
     var trimmedWebsite: String { website.trimmingCharacters(in: .whitespaces) }
     var trimmedNotes: String { notes.trimmingCharacters(in: .whitespaces) }

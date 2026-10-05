@@ -48,6 +48,8 @@ final class RecipeImportViewModel {
     /// The draft the review screen renders, empty before anything is extracted
     /// so the view has no optional to unwrap on every row.
     var reviewedDraft: RecipeImportDraft { extractedDraft ?? RecipeImportDraft() }
+    /// Pasted text or a read under way: what a swipe mustn't close the sheet on.
+    var hasChanges: Bool { !rawText.isEmpty || phase != .input }
 
     @ObservationIgnored
     private let extractor: RecipeDraftExtracting?

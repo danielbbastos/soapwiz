@@ -59,6 +59,7 @@ struct ProviderFormView: View {
                     .disabled(!model.isValid(among: allProviders))
                 }
             }
+            .interactiveDismissDisabled(model.isDirty)
         }
     }
 }

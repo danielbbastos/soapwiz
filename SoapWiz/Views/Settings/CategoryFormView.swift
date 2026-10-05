@@ -45,6 +45,7 @@ struct CategoryFormView: View {
                     .disabled(!model.isValid(among: allCategories))
                 }
             }
+            .interactiveDismissDisabled(model.isDirty)
         }
     }
 }

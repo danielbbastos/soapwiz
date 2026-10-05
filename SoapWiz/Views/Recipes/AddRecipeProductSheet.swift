@@ -7,7 +7,16 @@ struct AddRecipeProductSheet: View {
     let onAdd: (RecipeProductDraft) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var draft = RecipeProductDraft(size: 100, unitSymbol: ProductUnit.grams.rawValue)
+    @State private var draft = RecipeProductDraft(size: Self.initialSize, unitSymbol: Self.initialUnit)
+
+    private static let initialSize: Double = 100
+    private static let initialUnit = ProductUnit.grams.rawValue
+
+    /// Whether the size or unit was changed, which stops a swipe from closing
+    /// the sheet.
+    private var hasChanges: Bool {
+        draft.size != Self.initialSize || draft.unitSymbol != Self.initialUnit
+    }
 
     private var unit: ProductUnit { ProductUnit(rawValue: draft.unitSymbol) ?? .grams }
 
@@ -70,6 +79,7 @@ struct AddRecipeProductSheet: View {
                     .disabled(!isValid)
                 }
             }
+            .interactiveDismissDisabled(hasChanges)
         }
     }
 }

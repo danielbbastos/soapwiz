@@ -4,6 +4,7 @@ import UIKit
 
 struct IngredientDetailView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(AppNavigation.self) private var navigation
     @Query private var settingsRecords: [AppSettings]
 
     @State private var model: IngredientDetailViewModel
@@ -56,8 +57,8 @@ struct IngredientDetailView: View {
         .buttonStyle(.plain)
     }
 
-    init(ingredient: Ingredient, autoAddPurchase: Bool = false) {
-        _model = State(initialValue: IngredientDetailViewModel(ingredient: ingredient, showingAddPurchase: autoAddPurchase))
+    init(ingredient: Ingredient) {
+        _model = State(initialValue: IngredientDetailViewModel(ingredient: ingredient))
     }
 
     /// Taller than the recipe screen's crop. A photographed bar is laid flat and
@@ -174,24 +175,17 @@ struct IngredientDetailView: View {
             .warmBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Edit") { model.showingEditIngredient = true }
+                    Button("Edit") { navigation.detailSheetRequest = .editIngredient(model.ingredient) }
                 }
             }
 
             if tracksInventory {
-                FloatingActionButton { model.showingAddPurchase = true }
+                FloatingActionButton { navigation.detailSheetRequest = .addPurchase(model.ingredient) }
             }
-        }
-        .sheet(isPresented: $model.showingAddPurchase) {
-            PurchaseFormView(ingredient: model.ingredient)
-        }
-        .sheet(isPresented: $model.showingEditIngredient) {
-            IngredientFormView(ingredient: model.ingredient)
         }
         // On appear for a merge that landed while this screen was pushed but not
         // on top, and on the notification for one that lands while the user is
-        // looking at it — which is how a sheet opened from here ends up holding
-        // a row that no longer exists.
+        // looking at it.
         .onAppear { model.resolve(in: modelContext) }
         .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
             model.resolve(in: modelContext)

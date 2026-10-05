@@ -4,9 +4,6 @@ import SwiftData
 @MainActor
 @Observable
 final class IngredientDetailViewModel {
-    var showingAddPurchase: Bool = false
-    var showingEditIngredient: Bool = false
-
     /// Swapped onto the surviving row when the duplicate merge deletes the one
     /// this screen was opened with. Every field the screen draws is read off it,
     /// so a detached reference here empties the whole page — no purchases, no
@@ -18,10 +15,9 @@ final class IngredientDetailViewModel {
     /// be recovered later. See `LiveIngredient`.
     private let ingredientSlug: String
 
-    init(ingredient: Ingredient, showingAddPurchase: Bool = false) {
+    init(ingredient: Ingredient) {
         self.ingredient = ingredient
         self.ingredientSlug = ingredient.librarySlug
-        self.showingAddPurchase = showingAddPurchase
     }
 
     /// Follows the merge onto the row that survived it.

@@ -15,6 +15,15 @@ struct MoldCalculatorView: View {
     @State private var fillMode: MoldFillMode = .standard
     @State private var lengthUnit: MoldLengthUnit
     @State private var dimensions: MoldDimensions
+    private let initialLengthUnit: MoldLengthUnit
+    private let initialDimensions: MoldDimensions
+
+    /// Whether anything was changed from the starting cube, which stops a swipe
+    /// from closing the sheet.
+    private var hasChanges: Bool {
+        shape != .rectangular || fillMode != .standard
+            || lengthUnit != initialLengthUnit || dimensions != initialDimensions
+    }
 
     /// cm in one inch — the only constant needed to convert dimensions when the
     /// length unit is switched.
@@ -26,10 +35,13 @@ struct MoldCalculatorView: View {
         // Inches pair naturally with ounces; everything else defaults to cm.
         let unit: MoldLengthUnit = oilWeightUnit == "oz" ? .inches : .centimeters
         _lengthUnit = State(initialValue: unit)
+        initialLengthUnit = unit
         // Start from a 10 cm cube (or its inch equivalent) so the result is
         // populated the moment the sheet opens.
         let base = unit == .inches ? Self.round1(10 / Self.cmPerInch) : 10
-        _dimensions = State(initialValue: MoldDimensions(length: base, width: base, diameter: base, depth: base))
+        let cube = MoldDimensions(length: base, width: base, diameter: base, depth: base)
+        _dimensions = State(initialValue: cube)
+        initialDimensions = cube
     }
 
     private static func round1(_ value: Double) -> Double { (value * 10).rounded() / 10 }
@@ -66,6 +78,7 @@ struct MoldCalculatorView: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+            .interactiveDismissDisabled(hasChanges)
             .safeAreaInset(edge: .bottom) {
                 useWeightButton
             }
