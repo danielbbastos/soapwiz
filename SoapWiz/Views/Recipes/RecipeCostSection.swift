@@ -1,11 +1,13 @@
 import SwiftUI
 import SwiftData
 
-/// The "Cost breakdown" section of a recipe's detail screen: the whole-batch
-/// total with RRP, plus an expandable cost breakdown for each product size the
-/// user tries out. Reads its figures from the view model and the app's RRP
-/// factor from settings, and writes back only the recipe's products, which can
-/// be added and deleted here.
+/// The "Cost breakdown" section of a recipe's detail screen: the whole batch's
+/// cost with RRP, expandable to its per-ingredient breakdown and flagged when
+/// some ingredients have no price (a "No cost data" note when none has one),
+/// plus an expandable cost breakdown for each product size the user tries out.
+/// Reads its figures from the view model and the app's RRP factor from
+/// settings, and writes back only the recipe's products, which can be added
+/// and deleted here.
 ///
 /// Hidden with inventory tracking off: without prices there is nothing to
 /// calculate. The sizes stay stored and come back when tracking is switched on.
@@ -40,27 +42,12 @@ struct RecipeCostSection: View {
 
     private var calculatorSection: some View {
         Section {
-            let batchTotal = batch.total
-            if batchTotal > 0 {
+            if batch.total > 0 {
                 DisclosureGroup(isExpanded: $batchTotalExpanded) {
                     productBreakdownRows(batch)
                 } label: {
-                    HStack {
-                        Text("Batch total")
-                            .fontWeight(.semibold)
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 1) {
-                            Text(formatCurrency(batchTotal))
-                                .fontWeight(.semibold)
-                                .monospacedDigit()
-                            Text("RRP \(formatCurrency(batchTotal * pvpFactor))")
-                                .font(.caption)
-                                .foregroundStyle(.tint)
-                                .monospacedDigit()
-                        }
-                    }
+                    wholeBatchLabel
                 }
-                .expandingSectionHeader(RecipeFormSection.batchTotal, expanded: batchTotalExpanded)
             } else {
                 Text("No cost data — add purchase prices in Inventory")
                     .foregroundStyle(.secondary)
@@ -76,10 +63,6 @@ struct RecipeCostSection: View {
                     } label: {
                         productDisclosureLabel(draft, breakdown: breakdown)
                     }
-                    .expandingSectionHeader(
-                        RecipeFormSection.product(draft.id),
-                        expanded: expandedProducts[draft.id] ?? false
-                    )
                 } else {
                     productDisclosureLabel(draft, breakdown: breakdown)
                 }
@@ -108,8 +91,13 @@ struct RecipeCostSection: View {
         } header: {
             Text("Cost breakdown")
         } footer: {
-            Text("Try product sizes, like one bar or a quarter of the batch, to see what each would cost. "
-                + "They don't affect batches or inventory.")
+            VStack(alignment: .leading, spacing: 8) {
+                if batch.total > 0, batch.unpricedIngredientCount > 0 {
+                    Text("Add purchase prices in Inventory to include every ingredient.")
+                }
+                Text("Try product sizes, like one bar or a quarter of the batch, to see what each would cost. "
+                    + "They don't affect batches or inventory.")
+            }
         }
         .listRowBackground(Color.cardBackground)
     }
@@ -175,6 +163,34 @@ struct RecipeCostSection: View {
     private func amountText(_ amount: Double, unit: String) -> String {
         let formatted = amount.formatted(.number.precision(.fractionLength(0...2)))
         return "\(formatted) \(unit)"
+    }
+
+    private var wholeBatchLabel: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(ProductUnit.wholeBatch.label)
+                    .fontWeight(.semibold)
+                let unpriced = batch.unpricedIngredientCount
+                if unpriced > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text(unpriced == 1 ? "1 ingredient has no price" : "\(unpriced) ingredients have no price")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                }
+            }
+            Spacer()
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(formatCurrency(batch.total))
+                    .fontWeight(.semibold)
+                    .monospacedDigit()
+                Text("RRP \(formatCurrency(batch.total * pvpFactor))")
+                    .font(.caption)
+                    .foregroundStyle(.tint)
+                    .monospacedDigit()
+            }
+        }
     }
 
     private func productDisclosureLabel(_ draft: RecipeProductDraft, breakdown: ProductCostBreakdown) -> some View {
