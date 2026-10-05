@@ -4,6 +4,7 @@ import SwiftData
 struct IngredientPickerView: View {
     @Query(sort: \Ingredient.name) private var allIngredients: [Ingredient]
     @Query(sort: \IngredientCategory.name) private var allCategories: [IngredientCategory]
+    @Query private var settingsRecords: [AppSettings]
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
@@ -22,6 +23,7 @@ struct IngredientPickerView: View {
 
     @State private var searchText = ""
     @State private var selectedCategory: IngredientCategory?
+    @State private var showsInStockOnly = false
     @State private var pendingSelections = PendingIngredientSelection()
     @State private var showingNewIngredient = false
 
@@ -33,6 +35,8 @@ struct IngredientPickerView: View {
         guard let role else { return includesUnroled }
         return allowedRoles.contains(role)
     }
+
+    private var tracksInventory: Bool { AppSettings.tracksInventory(from: settingsRecords) }
 
     private var categories: [IngredientCategory] {
         allCategories.filter { category in
@@ -47,23 +51,12 @@ struct IngredientPickerView: View {
     }
 
     private var filtered: [Ingredient] {
-        allIngredients.filter { ingredient in
-            // Hiding an ingredient is the user saying they don't use it, so it
-            // leaves the choices here too, not just Inventory. Unhiding from
-            // Filters is the way back.
-            guard !ingredient.isHidden else { return false }
-
-            let matchesAllowed = Self.accepts(
-                role: ingredient.category?.ingredientRole,
-                allowedRoles: allowedRoles,
-                includesUnroled: includesUnroled
-            )
-            let matchesSearch = searchText.isEmpty ||
-                ingredient.name.localizedCaseInsensitiveContains(searchText)
-            let matchesCategory = selectedCategory == nil ||
-                ingredient.category?.persistentModelID == selectedCategory?.persistentModelID
-            return matchesAllowed && matchesSearch && matchesCategory
-        }
+        IngredientPickerFilter(
+            searchText: searchText,
+            category: selectedCategory,
+            inStockOnly: showsInStockOnly && tracksInventory
+        )
+        .choices(from: allIngredients, allowedRoles: allowedRoles, includesUnroled: includesUnroled)
     }
 
     var body: some View {
@@ -76,6 +69,11 @@ struct IngredientPickerView: View {
                         HStack(spacing: 8) {
                             FilterChip("All", isSelected: selectedCategory == nil) {
                                 selectedCategory = nil
+                            }
+                            if tracksInventory {
+                                FilterChip("In stock", isSelected: showsInStockOnly) {
+                                    showsInStockOnly.toggle()
+                                }
                             }
                             ForEach(categories) { category in
                                 FilterChip(
