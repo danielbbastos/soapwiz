@@ -267,6 +267,11 @@ struct ProductCostBreakdown {
     var lye: [IngredientProductBreakdown] = []
     var total: Double = 0
     var exceedsBatchWeight: Bool = false
+
+    /// Ingredients used whose stock has no price, so `total` understates the cost.
+    var unpricedIngredientCount: Int {
+        (oils + additives + fragrances + lye).count { $0.ingredientAmount > 0 && $0.cost <= 0 }
+    }
 }
 
 struct OilAmountCalculation: Identifiable {

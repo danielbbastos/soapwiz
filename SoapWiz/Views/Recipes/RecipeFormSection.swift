@@ -6,6 +6,4 @@ enum RecipeFormSection: Hashable {
     case oils, additives, fragrances, calculatedAmounts, extraIngredients
     /// The merged oils + additives section a non-soap recipe shows instead.
     case ingredients
-    case batchTotal
-    case product(UUID)
 }
