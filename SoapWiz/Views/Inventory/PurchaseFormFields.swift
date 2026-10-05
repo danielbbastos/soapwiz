@@ -57,7 +57,7 @@ struct PurchaseFormFields: View {
             }
             if model.quantity > 0 && model.totalPrice > 0 {
                 LabeledContent("Price\(model.ingredient.unit.isEmpty ? "" : " / \(model.ingredient.unit)")") {
-                    Text(model.pricePerUnit.formatted(.currency(code: currencyCode)))
+                    Text(model.pricePerUnit.unitPriceFormatted(currencyCode: currencyCode))
                         .foregroundStyle(.secondary)
                 }
             }

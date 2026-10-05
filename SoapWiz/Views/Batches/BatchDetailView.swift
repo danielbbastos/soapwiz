@@ -149,7 +149,7 @@ struct BatchDetailView: View {
                 HStack {
                     Text(draw.purchaseBadge.isEmpty ? "No lot" : "Lot \(draw.purchaseBadge)")
                     Spacer()
-                    Text("\(amountText(draw.amountDrawn, unit: item.unit)) @ \(formatCurrency(draw.pricePerUnit))/\(item.unit)")
+                    Text("\(amountText(draw.amountDrawn, unit: item.unit)) @ \(draw.pricePerUnit.unitPriceFormatted(currencyCode: currencyCode))/\(item.unit)")
                         .monospacedDigit()
                     Text(formatCurrency(draw.cost))
                         .monospacedDigit()

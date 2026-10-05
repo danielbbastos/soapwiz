@@ -30,7 +30,7 @@ struct PurchaseDetailView: View {
                 )
                 LabeledContent(
                     "Price / \(unit.isEmpty ? "unit" : unit)",
-                    value: purchase.pricePerUnit.formatted(.currency(code: currencyCode))
+                    value: purchase.pricePerUnit.unitPriceFormatted(currencyCode: currencyCode)
                 )
             }
             .listRowBackground(Color.cardBackground)
