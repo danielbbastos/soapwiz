@@ -78,9 +78,10 @@ final class AppNavigation {
         detailSheetRequest = nil
     }
 
-    /// Called by the sheet's `onDismiss`, once it is fully off screen.
+    /// Called by the sheet's `onDismiss`, once it is fully off screen. A request
+    /// made while it was closing goes up next, so the flag stays set for it.
     func detailSheetDidClose() {
-        isDetailSheetOnScreen = false
+        isDetailSheetOnScreen = detailSheetRequest != nil
         detailSheetClosings += 1
     }
 

@@ -274,6 +274,25 @@ struct DetailSheetRequestTests {
         #expect(sut.takePendingRecipeFileImport() == opened)
     }
 
+    /// Reopened during the closing animation: the first sheet's dismissal
+    /// lands while the second is waiting to go up, and the file must keep
+    /// waiting for that one too.
+    @Test func detailSheetDidClose_NewRequestWhileClosing_StaysOnScreen() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredient = try makeIngredient(ctx)
+        let sut = AppNavigation()
+        sut.detailSheetRequest = .addPurchase(ingredient)
+        sut.detailSheetRequest = nil
+        sut.detailSheetRequest = .addPurchase(ingredient)
+        sut.openRecipeFile(URL(fileURLWithPath: "/tmp/shared.soapwizrecipe"))
+
+        sut.detailSheetDidClose()
+
+        #expect(sut.isDetailSheetOnScreen)
+        #expect(sut.takePendingRecipeFileImport() == nil)
+    }
+
     @Test func discardDetailSheet_ClearsTheSheetAtOnce() throws {
         let (container, ctx) = try makeContext()
         _ = container
