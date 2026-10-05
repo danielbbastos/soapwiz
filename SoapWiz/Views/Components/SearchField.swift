@@ -38,7 +38,7 @@ struct SearchField: View {
                         .foregroundStyle(.secondary)
                         // The glyph alone is a 17 pt target; a near miss
                         // would land on the capsule and only focus it.
-                        .frame(width: 44, height: 44)
+                        .frame(minWidth: 44, minHeight: 44)
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
