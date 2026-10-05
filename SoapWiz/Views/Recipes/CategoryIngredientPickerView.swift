@@ -41,11 +41,17 @@ struct CategoryIngredientPickerView: View {
     @Query private var ingredients: [Ingredient]
     @State private var searchText: String = ""
 
-    private var candidates: [Ingredient] {
+    /// The rows offered from `category`, favourites first and each group by name.
+    static func candidates(from ingredients: [Ingredient], category: String, selected: Ingredient?) -> [Ingredient] {
         ingredients
-            .filter { $0.category?.name == config.category }
+            .filter { $0.category?.name == category }
             .filter { !$0.isHidden || $0.persistentModelID == selected?.persistentModelID }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+            .favoritesFirst
+    }
+
+    private var candidates: [Ingredient] {
+        Self.candidates(from: ingredients, category: config.category, selected: selected)
     }
 
     private var filtered: [Ingredient] {
