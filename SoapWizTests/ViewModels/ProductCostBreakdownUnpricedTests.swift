@@ -33,6 +33,16 @@ struct ProductCostBreakdownUnpricedTests: RecipeFormTestHelpers {
         #expect(breakdown.unpricedIngredientCount == 4)
     }
 
+    @Test func unpricedIngredientCount_SameIngredientInTwoGroups_CountsItOnce() {
+        let shea = Ingredient(name: "Shea Butter")
+        let breakdown = ProductCostBreakdown(
+            oils: [.mock(ingredient: shea, cost: 0)],
+            additives: [.mock(ingredient: shea, cost: 0)]
+        )
+
+        #expect(breakdown.unpricedIngredientCount == 1)
+    }
+
     @Test func unpricedIngredientCount_UnpricedRowWithNoAmount_IsNotCounted() {
         let breakdown = ProductCostBreakdown(oils: [.mock(amount: 0, cost: 0)])
 
@@ -62,7 +72,11 @@ struct ProductCostBreakdownUnpricedTests: RecipeFormTestHelpers {
 }
 
 extension IngredientProductBreakdown {
-    static func mock(amount: Double = 100, cost: Double) -> IngredientProductBreakdown {
-        IngredientProductBreakdown(ingredient: Ingredient(name: "Ingredient"), ingredientAmount: amount, cost: cost)
+    static func mock(
+        ingredient: Ingredient = Ingredient(name: "Ingredient"),
+        amount: Double = 100,
+        cost: Double
+    ) -> IngredientProductBreakdown {
+        IngredientProductBreakdown(ingredient: ingredient, ingredientAmount: amount, cost: cost)
     }
 }
