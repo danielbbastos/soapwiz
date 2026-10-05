@@ -28,6 +28,7 @@ struct SearchField: View {
                 .submitLabel(.search)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
+                .accessibilityAddTraits(.isSearchField)
             if !text.isEmpty {
                 Button {
                     text = ""
@@ -35,12 +36,18 @@ struct SearchField: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
+                        // The glyph alone is a 17 pt target; a near miss
+                        // would land on the capsule and only focus it.
+                        .frame(width: 44, height: 44)
+                        .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Clear text")
             }
         }
-        .padding(.horizontal, 14)
+        .padding(.leading, 14)
+        // The clear button's own tap area provides the trailing inset.
+        .padding(.trailing, text.isEmpty ? 14 : 0)
         .frame(minHeight: 44)
         .contentShape(.capsule)
         // A tap anywhere on the capsule, not only on the text, starts typing,
