@@ -40,9 +40,6 @@ struct RecipeCostSection: View {
 
     private var calculatorSection: some View {
         Section {
-            // Always shown, even with nothing to cost: it is the recipe's
-            // permanent first size, and hiding it at zero read as the size
-            // having gone missing (SW-214).
             if batch.total > 0 {
                 DisclosureGroup(isExpanded: $batchTotalExpanded) {
                     productBreakdownRows(batch)
@@ -50,7 +47,8 @@ struct RecipeCostSection: View {
                     wholeBatchLabel
                 }
             } else {
-                wholeBatchLabel
+                Text("No cost data — add purchase prices in Inventory")
+                    .foregroundStyle(.secondary)
             }
 
             let products = nonWholeBatchProducts
@@ -92,7 +90,7 @@ struct RecipeCostSection: View {
             Text("Cost breakdown")
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
-                if batch.unpricedIngredientCount > 0 {
+                if batch.total > 0, batch.unpricedIngredientCount > 0 {
                     Text("Add purchase prices in Inventory to include every ingredient.")
                 }
                 Text("Try product sizes, like one bar or a quarter of the batch, to see what each would cost. "
@@ -166,8 +164,7 @@ struct RecipeCostSection: View {
     }
 
     private var wholeBatchLabel: some View {
-        let total = batch.total
-        return HStack {
+        HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text(ProductUnit.wholeBatch.label)
                     .fontWeight(.semibold)
@@ -183,16 +180,13 @@ struct RecipeCostSection: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 1) {
-                Text(total > 0 ? formatCurrency(total) : "—")
+                Text(formatCurrency(batch.total))
                     .fontWeight(.semibold)
-                    .foregroundStyle(total > 0 ? .primary : .secondary)
                     .monospacedDigit()
-                if total > 0 {
-                    Text("RRP \(formatCurrency(total * pvpFactor))")
-                        .font(.caption)
-                        .foregroundStyle(.tint)
-                        .monospacedDigit()
-                }
+                Text("RRP \(formatCurrency(batch.total * pvpFactor))")
+                    .font(.caption)
+                    .foregroundStyle(.tint)
+                    .monospacedDigit()
             }
         }
     }
