@@ -157,6 +157,33 @@ struct RecipeImportDuplicateMergeTests {
         #expect(prepared.collections == [keepGifts])
     }
 
+    /// The model takes seconds, and a joining device's first sync can land in
+    /// that wait: it brings in the copy the merge keeps, and the merge deletes
+    /// the one the screen handed in. Matching against what was handed in would
+    /// read the deleted copy and miss the kept one.
+    @Test func extract_MergeDuringTheModelsWait_MatchesTheSurvivor() async throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let captured = try olive(2, in: ctx)
+        try ctx.save()
+        let draft = RecipeImportDraft.mock(oils: [ImportedIngredient(name: "Olive Oil", amount: 100, unit: nil)])
+        let stub = StreamingStubExtractor(partials: [draft], final: draft)
+        var kept: Ingredient?
+        stub.beforeFirstPartial = { @MainActor in
+            kept = try? self.olive(1, in: ctx)
+            try? ctx.save()
+            try? DuplicateMerger.mergeAll(in: ctx)
+        }
+        let model = RecipeImportViewModel(extractor: stub)
+        model.rawText = "Olive Oil 100%"
+
+        await model.extract(inventory: [captured], context: ctx)
+
+        let survivor = try #require(kept)
+        #expect(captured.modelContext == nil)
+        #expect(model.rows.compactMap(\.ingredient) == [survivor])
+    }
+
     // MARK: - Exact-copy review
 
     /// The exact-copy plan holds the inventory row each incoming ingredient

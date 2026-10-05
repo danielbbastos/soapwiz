@@ -154,7 +154,14 @@ struct RecipeImportView: View {
 
             Section {
                 Button {
-                    Task { await model.extract(inventory: inventory, collections: collections, recipes: recipes) }
+                    Task {
+                        await model.extract(
+                            inventory: inventory,
+                            collections: collections,
+                            recipes: recipes,
+                            context: modelContext
+                        )
+                    }
                 } label: {
                     Text(model.textCarriesExactPayload || model.textIsSoapWizCopy ? "Read Copied Recipe" : "Read Recipe")
                 }
