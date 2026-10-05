@@ -31,10 +31,14 @@ struct FattyAcidProfileEditor: View {
         ForEach(acids, id: \.name) { acid in
             HStack {
                 Text(acid.name)
-                Spacer()
-                NumericTextField(prompt: "0", value: binding(for: acid.keyPath), fractionLength: 0...2, width: 80)
+                    .layoutPriority(1)
+                NumericTextField(
+                    prompt: "0", value: binding(for: acid.keyPath), fractionLength: 0...2,
+                    width: 80, fillsAvailableWidth: true
+                )
                 Text("%")
                     .foregroundStyle(.secondary)
+                    .fixedSize()
             }
         }
         HStack {

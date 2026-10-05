@@ -120,15 +120,16 @@ struct RecipeConfigTabView: View {
             if model.weightUnitIsPercentage {
                 HStack {
                     Text(model.baseWeightLabel)
-                    Spacer()
+                        .layoutPriority(1)
                     NumericTextField(prompt: "0", value: $model.totalOilWeight,
-                                     width: 80, focus: $oilWeightFocused)
+                                     width: 80, fillsAvailableWidth: true, focus: $oilWeightFocused)
                     Picker(model.baseWeightLabel, selection: $model.oilWeightUnit) {
                         ForEach(absoluteWeightUnits, id: \.self) { Text($0) }
                     }
                     .pickerStyle(.menu)
                     .labelsHidden()
                     .tint(.primary)
+                    .fixedSize()
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
 
@@ -137,6 +138,8 @@ struct RecipeConfigTabView: View {
                 } label: {
                     Text("Calculate from mold…")
                         .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -171,7 +174,7 @@ struct RecipeConfigTabView: View {
             }
 
             waterRatioRow
-            superFatRow
+            percentRow("Super Fat", value: $model.superFat, prompt: "5")
         }
         .animation(.default, value: model.useHybrid)
     }
@@ -247,36 +250,27 @@ struct RecipeConfigTabView: View {
             "Lye ingredient",
             selected: model.lyeType == "KOH" ? $model.kohLyeIngredient : $model.lyeIngredient
         )
-        purityRow("Lye purity", value: $model.lyePurity, prompt: "99")
+        percentRow("Lye purity", value: $model.lyePurity, prompt: "99")
     }
 
     @ViewBuilder
     private var hybridLyeRows: some View {
-        percentageRow("KOH", value: model.kohPercentage, set: model.setKOHPercentage)
-        percentageRow("NaOH", value: model.naohPercentage, set: model.setNaOHPercentage)
-        purityRow("KOH purity", value: $model.kohPurity, prompt: "90")
-        purityRow("NaOH purity", value: $model.naohPurity, prompt: "99")
+        percentRow("KOH", value: Binding(get: { model.kohPercentage }, set: model.setKOHPercentage), prompt: "0")
+        percentRow("NaOH", value: Binding(get: { model.naohPercentage }, set: model.setNaOHPercentage), prompt: "0")
+        percentRow("KOH purity", value: $model.kohPurity, prompt: "90")
+        percentRow("NaOH purity", value: $model.naohPurity, prompt: "99")
         lyeIngredientRow("KOH ingredient", selected: $model.kohLyeIngredient)
         lyeIngredientRow("NaOH ingredient", selected: $model.lyeIngredient)
     }
 
-    private func percentageRow(_ label: String, value: Double, set: @escaping (Double) -> Void) -> some View {
+    private func percentRow(_ label: String, value: Binding<Double>, prompt: String) -> some View {
         HStack {
             Text(label)
-            Spacer()
-            NumericTextField(prompt: "0", value: Binding(get: { value }, set: set))
+                .layoutPriority(1)
+            NumericTextField(prompt: prompt, value: value, fillsAvailableWidth: true)
             Text("%")
                 .foregroundStyle(.secondary)
-        }
-    }
-
-    private func purityRow(_ label: String, value: Binding<Double>, prompt: String) -> some View {
-        HStack {
-            Text(label)
-            Spacer()
-            NumericTextField(prompt: prompt, value: value)
-            Text("%")
-                .foregroundStyle(.secondary)
+                .fixedSize()
         }
     }
 
@@ -313,24 +307,15 @@ struct RecipeConfigTabView: View {
     private var waterRatioRow: some View {
         HStack {
             Text("Water to lye ratio")
-            Spacer()
-            NumericTextField(prompt: 1.5.formatted(), value: $model.waterParts, width: 30, alignment: .center)
+                .layoutPriority(1)
+            NumericTextField(prompt: 1.5.formatted(), value: $model.waterParts, width: 30, fillsAvailableWidth: true)
             Text(":")
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
+                .fixedSize()
             Text("1")
                 .foregroundStyle(.secondary)
-                .frame(width: 30, alignment: .center)
-        }
-    }
-
-    private var superFatRow: some View {
-        HStack {
-            Text("Super Fat")
-            Spacer()
-            NumericTextField(prompt: "5", value: $model.superFat)
-            Text("%")
-                .foregroundStyle(.secondary)
+                .fixedSize()
         }
     }
 
@@ -381,16 +366,17 @@ struct RecipeConfigTabView: View {
         Section("Fragrance configuration") {
             HStack {
                 Text("EO / Fragrances")
+                    .layoutPriority(1)
                 InfoPopoverIcon(
                     title: "EO / Fragrances %",
                     text: "The target percentage of \(model.makesSoap ? "total oil weight" : "total weight") "
                         + "reserved for essential oils and fragrance oils. Used to calculate the "
                         + "recommended amount and to track usage in the Ingredients tab."
                 )
-                Spacer()
-                NumericTextField(prompt: "3", value: $model.fragrancePercentage)
+                NumericTextField(prompt: "3", value: $model.fragrancePercentage, fillsAvailableWidth: true)
                 Text("%")
                     .foregroundStyle(.secondary)
+                    .fixedSize()
             }
         }
     }

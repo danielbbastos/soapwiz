@@ -41,19 +41,19 @@ struct PurchaseFormFields: View {
             DatePicker("Date of Purchase", selection: $model.dateOfPurchase, displayedComponents: .date)
             HStack {
                 Text("Quantity\(model.ingredient.unit.isEmpty ? "" : " (\(model.ingredient.unit))")")
-                Spacer()
+                    .layoutPriority(1)
                 TextField("0", text: $model.quantityText.decimalOnly())
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
-                    .frame(width: 100)
+                    .frame(minWidth: 100, maxWidth: .infinity)
             }
             HStack {
                 Text("Total Price")
-                Spacer()
+                    .layoutPriority(1)
                 TextField(0.0.formatted(.number.precision(.fractionLength(2))), text: $model.totalPriceText.decimalOnly())
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
-                    .frame(width: 100)
+                    .frame(minWidth: 100, maxWidth: .infinity)
             }
             if model.quantity > 0 && model.totalPrice > 0 {
                 LabeledContent("Price\(model.ingredient.unit.isEmpty ? "" : " / \(model.ingredient.unit)")") {
