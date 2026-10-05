@@ -44,6 +44,7 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         #expect(navigation.recipeFormRequest == nil)
         #expect(navigation.isRecipeFormOnScreen == false)
         #expect(navigation.detailSheetRequest == nil)
+        #expect(navigation.isDetailSheetOnScreen == false)
     }
 
     @Test func begin_MovesToTheRestoringPhase() throws {

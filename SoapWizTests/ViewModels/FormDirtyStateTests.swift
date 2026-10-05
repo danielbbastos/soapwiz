@@ -157,14 +157,51 @@ struct FormDirtyStateTests: BatchProductionTestHelpers {
         #expect(model.hasChanges)
     }
 
+    /// A solid NaOH bar, so the batch suggests a cure.
+    private func makeCuringBatchModel(_ ctx: ModelContext) -> BatchProductionViewModel {
+        let oil = Ingredient(name: "Test Oil", unit: "g")
+        oil.sapValue = 0.135
+        oil.fattyAcidProfile = FattyAcidProfile.mock(lauric: 20, myristic: 8, palmitic: 15, stearic: 5, oleic: 40)
+        ctx.insert(oil)
+        let recipe = makeRecipe(ctx, oil: oil, oilWeight: 1000)
+        recipe.recipeKind = RecipeKind.soap.rawValue
+        recipe.lyeType = "NaOH"
+        return BatchProductionViewModel(recipe: recipe, lyeCandidates: [], tracksInventory: false)
+    }
+
     @Test func createBatch_CureLengthChosen_HasChanges() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeCuringBatchModel(ctx)
+        let suggested = try #require(model.cureEstimate?.defaultDays)
+
+        model.cureDays = suggested + 7
+
+        #expect(model.hasChanges)
+    }
+
+    /// Stepped away and back again, like a count changed and changed back.
+    @Test func createBatch_CureLengthBackToSuggestion_HasNoChanges() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let model = makeCuringBatchModel(ctx)
+        let suggested = try #require(model.cureEstimate?.defaultDays)
+
+        model.cureDays = suggested + 7
+        model.cureDays = suggested
+
+        #expect(model.hasChanges == false)
+    }
+
+    @Test func createBatch_CountChangedAndBack_HasNoChanges() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let model = makeBatchModel(ctx)
 
-        model.cureDays = 10
+        model.batchCount = 3
+        model.batchCount = 1
 
-        #expect(model.hasChanges)
+        #expect(model.hasChanges == false)
     }
 
     // MARK: - Recipe import

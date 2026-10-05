@@ -58,12 +58,37 @@ final class AppNavigation {
     /// The sheet a detail screen has open (Create batch, Add purchase, Edit
     /// ingredient), held here so it survives the detail moving between stacks
     /// when the window width changes. See `DetailSheetRequest`.
-    var detailSheetRequest: DetailSheetRequest?
+    var detailSheetRequest: DetailSheetRequest? {
+        didSet {
+            if detailSheetRequest != nil { isDetailSheetOnScreen = true }
+        }
+    }
+
+    /// True from the moment a detail sheet is requested until it has finished
+    /// closing, for the same reason as `isRecipeFormOnScreen`.
+    private(set) var isDetailSheetOnScreen = false
+
+    /// Counts the detail sheet's finished dismissals, for screens that act once
+    /// it has gone.
+    private(set) var detailSheetClosings = 0
 
     /// Closes the detail sheet for `id`, unless another request replaced it.
     func closeDetailSheet(_ id: UUID) {
         guard detailSheetRequest?.id == id else { return }
         detailSheetRequest = nil
+    }
+
+    /// Called by the sheet's `onDismiss`, once it is fully off screen.
+    func detailSheetDidClose() {
+        isDetailSheetOnScreen = false
+        detailSheetClosings += 1
+    }
+
+    /// Drops the detail sheet without waiting for its dismissal, for a restore,
+    /// as `discardRecipeForm()` does for the form.
+    func discardDetailSheet() {
+        detailSheetRequest = nil
+        isDetailSheetOnScreen = false
     }
 
     /// True from the moment the full-screen form is requested until it has
@@ -91,10 +116,12 @@ final class AppNavigation {
     }
 
     /// Hands out the recipe file waiting to open, once: nil while the recipe
-    /// form is on screen, closing included, since the import review can't go up
-    /// over it, and nil again after the file has been taken.
+    /// form or a detail sheet is on screen, closing included, since the import
+    /// review can't go up over either, and nil again after the file has been
+    /// taken.
     func takePendingRecipeFileImport() -> RecipeFileImport? {
-        guard !isRecipeFormOnScreen, let request = pendingRecipeFileImport else { return nil }
+        guard !isRecipeFormOnScreen, !isDetailSheetOnScreen,
+              let request = pendingRecipeFileImport else { return nil }
         pendingRecipeFileImport = nil
         return request
     }

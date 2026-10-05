@@ -123,15 +123,26 @@ struct DetailSheetRequestTests {
 
     // MARK: - Model left the store
 
-    @Test func isTargetStored_RecipeStillStored_ReturnsTrue() throws {
+    /// What `DetailSheetHost`'s query sees through the request's predicate: the
+    /// sheet stays up while this is true and closes once it isn't.
+    private func gateMatches(_ request: DetailSheetRequest, in ctx: ModelContext) throws -> Bool {
+        switch request.kind {
+        case .createBatch:
+            try ctx.fetchCount(FetchDescriptor(predicate: DetailSheetRequest.recipe(id: request.targetID))) > 0
+        case .addPurchase, .editIngredient:
+            try ctx.fetchCount(FetchDescriptor(predicate: DetailSheetRequest.ingredient(id: request.targetID))) > 0
+        }
+    }
+
+    @Test func gate_RecipeStillStored_Matches() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let request = DetailSheetRequest.createBatch(try makeRecipe(ctx))
 
-        #expect(request.isTargetStored(in: ctx))
+        #expect(try gateMatches(request, in: ctx))
     }
 
-    @Test func isTargetStored_RecipeDeleted_ReturnsFalse() throws {
+    @Test func gate_RecipeDeleted_StopsMatching() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let recipe = try makeRecipe(ctx)
@@ -140,19 +151,19 @@ struct DetailSheetRequestTests {
         ctx.delete(recipe)
         try ctx.save()
 
-        #expect(request.isTargetStored(in: ctx) == false)
+        #expect(try gateMatches(request, in: ctx) == false)
     }
 
-    @Test func isTargetStored_IngredientStillStored_ReturnsTrue() throws {
+    @Test func gate_IngredientStillStored_Matches() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let ingredient = try makeIngredient(ctx)
 
-        #expect(DetailSheetRequest.addPurchase(ingredient).isTargetStored(in: ctx))
-        #expect(DetailSheetRequest.editIngredient(ingredient).isTargetStored(in: ctx))
+        #expect(try gateMatches(.addPurchase(ingredient), in: ctx))
+        #expect(try gateMatches(.editIngredient(ingredient), in: ctx))
     }
 
-    @Test func isTargetStored_IngredientDeleted_ReturnsFalse() throws {
+    @Test func gate_IngredientDeleted_StopsMatching() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let ingredient = try makeIngredient(ctx)
@@ -162,13 +173,13 @@ struct DetailSheetRequestTests {
         ctx.delete(ingredient)
         try ctx.save()
 
-        #expect(addPurchase.isTargetStored(in: ctx) == false)
-        #expect(edit.isTargetStored(in: ctx) == false)
+        #expect(try gateMatches(addPurchase, in: ctx) == false)
+        #expect(try gateMatches(edit, in: ctx) == false)
     }
 
     /// Merged away counts as gone even with a surviving copy: the forms read the
     /// captured row, so the sheet closes rather than follow the survivor.
-    @Test func isTargetStored_IngredientMergedAwayWithSurvivor_ReturnsFalse() throws {
+    @Test func gate_IngredientMergedAwayWithSurvivor_StopsMatching() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let survivor = try makeIngredient(ctx, slug: "olive-butter")
@@ -178,12 +189,12 @@ struct DetailSheetRequestTests {
         ctx.delete(merged)
         try ctx.save()
 
-        #expect(request.isTargetStored(in: ctx) == false)
-        #expect(DetailSheetRequest.addPurchase(survivor).isTargetStored(in: ctx))
+        #expect(try gateMatches(request, in: ctx) == false)
+        #expect(try gateMatches(.addPurchase(survivor), in: ctx))
     }
 
     /// Another model's deletion leaves the request alone.
-    @Test func isTargetStored_OtherIngredientDeleted_ReturnsTrue() throws {
+    @Test func gate_OtherIngredientDeleted_StillMatches() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let kept = try makeIngredient(ctx)
@@ -193,6 +204,85 @@ struct DetailSheetRequestTests {
         ctx.delete(other)
         try ctx.save()
 
-        #expect(request.isTargetStored(in: ctx))
+        #expect(try gateMatches(request, in: ctx))
+    }
+
+    // MARK: - A model not saved yet
+
+    /// An ingredient added a moment ago carries a temporary id until it is
+    /// saved. The request saves first, so the id it holds is the lasting one
+    /// and the sheet isn't closed under the user when autosave runs.
+    @Test func addPurchase_UnsavedIngredient_StillMatchesAfterTheNextSave() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredient = Ingredient(name: "Kaolin", unit: IngredientUnit.grams.rawValue)
+        ctx.insert(ingredient)
+
+        let request = DetailSheetRequest.addPurchase(ingredient)
+        try ctx.save()
+
+        #expect(request.targetID == ingredient.persistentModelID)
+        #expect(try gateMatches(request, in: ctx))
+    }
+
+    @Test func editIngredient_UnsavedIngredient_SavesTheContext() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredient = Ingredient(name: "Kaolin", unit: IngredientUnit.grams.rawValue)
+        ctx.insert(ingredient)
+
+        _ = DetailSheetRequest.editIngredient(ingredient)
+
+        #expect(ctx.hasChanges == false)
+    }
+
+    @Test func createBatch_UnsavedRecipe_StillMatchesAfterTheNextSave() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Castile")
+        ctx.insert(recipe)
+
+        let request = DetailSheetRequest.createBatch(recipe)
+        try ctx.save()
+
+        #expect(try gateMatches(request, in: ctx))
+    }
+
+    // MARK: - Waiting for a file to open
+
+    /// A recipe file opened from another app waits for a detail sheet, since
+    /// the import review can't go up over it, and is handed out once the sheet
+    /// has finished closing.
+    @Test func takePendingRecipeFileImport_DetailSheetUp_HoldsTheFileUntilItCloses() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.detailSheetRequest = .createBatch(try makeRecipe(ctx))
+        sut.openRecipeFile(URL(fileURLWithPath: "/tmp/shared.soapwizrecipe"))
+        let opened = try #require(sut.pendingRecipeFileImport)
+
+        #expect(sut.takePendingRecipeFileImport() == nil)
+
+        sut.detailSheetRequest = nil
+        #expect(sut.isDetailSheetOnScreen)
+        #expect(sut.takePendingRecipeFileImport() == nil)
+
+        sut.detailSheetDidClose()
+
+        #expect(sut.isDetailSheetOnScreen == false)
+        #expect(sut.detailSheetClosings == 1)
+        #expect(sut.takePendingRecipeFileImport() == opened)
+    }
+
+    @Test func discardDetailSheet_ClearsTheSheetAtOnce() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.detailSheetRequest = .createBatch(try makeRecipe(ctx))
+
+        sut.discardDetailSheet()
+
+        #expect(sut.detailSheetRequest == nil)
+        #expect(sut.isDetailSheetOnScreen == false)
     }
 }

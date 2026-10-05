@@ -110,7 +110,7 @@ struct ContentView: View {
         // Up here for the same reason as the cover: a sheet the detail screen
         // presented closed when a width change moved the detail to the other
         // stack (SW-218).
-        .sheet(item: $navigation.detailSheetRequest) { request in
+        .sheet(item: $navigation.detailSheetRequest, onDismiss: navigation.detailSheetDidClose) { request in
             DetailSheetHost(request: request)
         }
         .fontDesign(.rounded)
