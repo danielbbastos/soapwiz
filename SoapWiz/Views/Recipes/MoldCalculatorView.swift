@@ -112,10 +112,11 @@ struct MoldCalculatorView: View {
     private func dimensionField(_ label: String, value: Binding<Double>) -> some View {
         HStack {
             Text(label)
-            Spacer()
-            NumericTextField(prompt: "0", value: value, fractionLength: 0...2, width: 80)
+                .layoutPriority(1)
+            NumericTextField(prompt: "0", value: value, fractionLength: 0...2, width: 80, fillsAvailableWidth: true)
             Text(lengthUnit.rawValue)
                 .foregroundStyle(.secondary)
+                .fixedSize()
         }
     }
 

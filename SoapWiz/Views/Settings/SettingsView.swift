@@ -217,6 +217,7 @@ struct SettingsView: View {
                 .listRowBackground(Color.cardBackground)
             HStack {
                 Text("RRP factor")
+                    .layoutPriority(1)
                 InfoPopoverIcon(
                     title: "RRP Factor",
                     text: "A multiplier applied to the total ingredient cost of a product to "
@@ -225,8 +226,9 @@ struct SettingsView: View {
                         + "\(2.5.formatted(.currency(code: currencyCode))) to make "
                         + "would be priced at \(10.0.formatted(.currency(code: currencyCode)))."
                 )
-                Spacer()
-                NumericTextField(prompt: "4", value: Bindable(settings).pvpFactor, fractionLength: 0...2)
+                NumericTextField(
+                    prompt: "4", value: Bindable(settings).pvpFactor, fractionLength: 0...2, fillsAvailableWidth: true
+                )
             }
             .listRowBackground(Color.cardBackground)
         } header: {

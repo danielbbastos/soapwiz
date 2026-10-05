@@ -39,7 +39,10 @@ struct AddRecipeProductSheet: View {
             Form {
                 Section {
                     LabeledContent("Size") {
-                        NumericTextField(prompt: "Size", value: $draft.size, width: 80, allowsDecimals: unit != .partsOfBatch)
+                        NumericTextField(
+                            prompt: "Size", value: $draft.size, width: 80, fillsAvailableWidth: true,
+                            allowsDecimals: unit != .partsOfBatch
+                        )
                     }
                     Picker("Unit", selection: unitSelection) {
                         ForEach(Self.availableUnits, id: \.self) { unit in

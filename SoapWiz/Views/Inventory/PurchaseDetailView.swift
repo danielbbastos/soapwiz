@@ -39,19 +39,20 @@ struct PurchaseDetailView: View {
                 HStack {
                     Text("Remaining")
                         .foregroundStyle(.primary)
-                    Spacer()
+                        .layoutPriority(1)
                     if model.isEditingAmount {
                         HStack(spacing: 8) {
                             TextField("Amount", text: $model.editingValue.decimalOnly())
                                 .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.center)
-                                .frame(width: 80)
+                                .multilineTextAlignment(.trailing)
+                                .frame(minWidth: 80, maxWidth: .infinity)
                                 .focused($amountFocused)
                                 .onSubmit { model.commitEdit() }
                             Button("Done") { model.commitEdit() }
                                 .font(.subheadline.bold())
                         }
                     } else {
+                        Spacer()
                         HStack(spacing: 8) {
                             if model.isDirty {
                                 Button { model.undo() } label: {

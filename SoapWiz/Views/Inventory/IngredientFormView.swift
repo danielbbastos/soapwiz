@@ -186,13 +186,14 @@ struct IngredientFormView: View {
     private func decimalRow(title: String, placeholder: Double, text: Binding<String>, unit: String) -> some View {
         HStack {
             Text(title)
-            Spacer()
+                .layoutPriority(1)
             TextField(placeholder.formatted(), text: text.decimalOnly())
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
-                .frame(width: 80)
+                .frame(minWidth: 80, maxWidth: .infinity)
             Text(unit)
                 .foregroundStyle(.secondary)
+                .fixedSize()
         }
     }
 
