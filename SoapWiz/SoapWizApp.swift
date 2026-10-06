@@ -53,7 +53,9 @@ struct SoapWizApp: App {
                 Text(storeHost.errorMessage ?? "")
             }
             .onChange(of: scenePhase) { _, newPhase in
-                guard newPhase == .active else { return }
+                // Not while a reset is under way: the placeholder is up and the
+                // store is the reset's until it finishes.
+                guard newPhase == .active, storeHost.phase == .ready else { return }
                 storeHost.appDidBecomeActive()
                 Task {
                     await NotificationService.syncIfEnabled(
