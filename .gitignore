@@ -16,3 +16,6 @@ plans/
 
 # Local xcodebuild derived data
 build/
+
+# Scratch output from Claude sessions
+Claude outputs/

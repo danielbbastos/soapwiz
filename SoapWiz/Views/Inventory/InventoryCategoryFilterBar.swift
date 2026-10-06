@@ -10,17 +10,21 @@ import SwiftData
 struct InventoryCategoryFilterBar: View {
     let categories: [IngredientCategory]
     @Bindable var model: IngredientListViewModel
+    /// From `IngredientListContent.categoryCounts`.
+    let counts: (all: Int, byCategory: [PersistentIdentifier: Int])
 
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                FilterChip("All", isSelected: model.isShowingAllCategories) {
+                FilterChip("All", isSelected: model.isShowingAllCategories, style: .ledger, count: counts.all) {
                     model.selectAllCategories()
                 }
                 ForEach(categories) { category in
                     FilterChip(
                         category.name,
-                        isSelected: model.selectedCategories.contains(category.persistentModelID)
+                        isSelected: model.selectedCategories.contains(category.persistentModelID),
+                        style: .ledger,
+                        count: counts.byCategory[category.persistentModelID] ?? 0
                     ) {
                         model.toggleCategory(category)
                     }

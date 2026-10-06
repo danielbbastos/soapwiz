@@ -14,24 +14,23 @@ struct IngredientListView: View {
     /// deleted the row it can't be read off it. See `LiveIngredient`.
     @State private var selectedSlug = ""
 
-    // Favourites can't be part of the `@Query` sort: `SortDescriptor` has no `Bool`
-    // overload, so the pinning is applied here, after filtering.
-    private var displayedIngredients: [Ingredient] {
-        model.filtered(ingredients).favoritesFirst
-    }
-
     private var selectedIngredients: [Ingredient] {
         ingredients.filter { model.selection.contains($0.persistentModelID) }
     }
 
-    /// Chips are drawn from the unfiltered inventory, not `displayedIngredients`:
+    /// Chips are drawn from the unfiltered inventory, not the displayed list:
     /// narrowing to one category must not make every other chip disappear.
     private var visibleCategories: [IngredientCategory] {
         model.visibleCategories(categories, in: ingredients)
     }
 
-    private func row(_ ingredient: Ingredient) -> IngredientListRow {
-        IngredientListRow(ingredient: ingredient, model: model, navigation: navigation)
+    private func row(_ ingredient: Ingredient, index: Int, count: Int) -> IngredientListRow {
+        IngredientListRow(
+            ingredient: ingredient,
+            model: model,
+            navigation: navigation,
+            position: .position(index: index, count: count)
+        )
     }
 
     /// Handles the open ingredient's row leaving the store without passing
@@ -64,9 +63,12 @@ struct IngredientListView: View {
     }
 
     var body: some View {
-        // Filtered once per pass: filtering sums each row's stock and sorts,
-        // and several places below need the result.
-        let displayed = displayedIngredients
+        // Worked out once per pass, in one walk over the inventory: it sums each
+        // row's stock, and several places below need the result. Favourites can't
+        // be part of the `@Query` sort (`SortDescriptor` has no `Bool` overload),
+        // so the pinning is applied there, after filtering.
+        let content = model.content(for: ingredients)
+        let displayed = content.displayed
         ListDetailContainer(
             navigation: navigation,
             placeholder: "Select an Ingredient",
@@ -76,20 +78,28 @@ struct IngredientListView: View {
             ZStack(alignment: .bottomTrailing) {
                 Group {
                     if ingredients.isEmpty {
-                        ContentUnavailableView(
-                            "No Ingredients",
-                            systemImage: "flask",
-                            description: Text("Tap + to add your first ingredient.")
-                        )
+                        ContentUnavailableView {
+                            Label {
+                                Text("No ingredients yet").fontDesign(.serif)
+                            } icon: {
+                                Image(systemName: "flask")
+                            }
+                        } description: {
+                            Text("Tap + to add one.")
+                        }
                     } else if displayed.isEmpty {
                         if !model.searchText.isEmpty {
                             ContentUnavailableView.search(text: model.searchText)
                         } else {
-                            ContentUnavailableView(
-                                "No Results",
-                                systemImage: "line.3.horizontal.decrease.circle",
-                                description: Text("Try adjusting your filters.")
-                            )
+                            ContentUnavailableView {
+                                Label {
+                                    Text("No ingredients match").fontDesign(.serif)
+                                } icon: {
+                                    Image(systemName: "line.3.horizontal.decrease.circle")
+                                }
+                            } description: {
+                                Text("Change or clear the filters.")
+                            }
                         }
                     } else if model.editMode == .active {
                         // The selection binding is attached only while selecting,
@@ -105,12 +115,16 @@ struct IngredientListView: View {
                         // Nothing outside edit mode reads `selection`: it exists
                         // for the bulk delete, which only Select mode offers.
                         List(selection: $model.selection) {
-                            ForEach(displayed) { row($0) }
+                            ForEach(Array(displayed.enumerated()), id: \.element.id) { index, ingredient in
+                                row(ingredient, index: index, count: displayed.count)
+                            }
                         }
                         .environment(\.editMode, $model.editMode)
                     } else {
                         List {
-                            ForEach(displayed) { row($0) }
+                            ForEach(Array(displayed.enumerated()), id: \.element.id) { index, ingredient in
+                                row(ingredient, index: index, count: displayed.count)
+                            }
                         }
                         .environment(\.editMode, $model.editMode)
                         // The chips already stand off the list on their own; the
@@ -121,9 +135,9 @@ struct IngredientListView: View {
                 }
                 .readableWidth()
                 .navigationTitle("Inventory")
-                .navigationBarTitleDisplayMode(.inline)
-                .warmNavigationTitle("Inventory")
-                .warmBackground()
+                .navigationBarTitleDisplayMode(.large)
+                .ledgerLargeTitle(subtitle: model.editMode == .inactive ? content.summary.line : nil)
+                .ledgerBackground()
                 .navigationDestination(for: Ingredient.self) { IngredientDetailView(ingredient: $0) }
                 // The chips are hidden while selecting: they would compete with
                 // the selection the toolbar is there to act on.
@@ -132,7 +146,11 @@ struct IngredientListView: View {
                         SearchField("Search ingredients", text: $model.searchText)
                             .padding(.bottom, 12)
                         if !visibleCategories.isEmpty && model.editMode == .inactive {
-                            InventoryCategoryFilterBar(categories: visibleCategories, model: model)
+                            InventoryCategoryFilterBar(
+                                categories: visibleCategories,
+                                model: model,
+                                counts: content.categoryCounts
+                            )
                         }
                     }
                 }
@@ -175,7 +193,9 @@ struct IngredientListView: View {
                                 model.showingBulkImport = true
                             }
                         ],
-                        besideTabBar: navigation.fabBesideTabBar
+                        besideTabBar: navigation.fabBesideTabBar,
+                        tint: Color.glassAmber,
+                        ink: Color.onAmber
                     )
                 } else if !model.selection.isEmpty {
                     createRecipeButton
@@ -259,11 +279,12 @@ struct IngredientListView: View {
         } label: {
             Text("Create recipe with… (\(model.selection.count))")
                 .font(.headline)
-                .foregroundStyle(Color.accentColor)
-                .padding(.vertical, 14)
-                .frame(maxWidth: .infinity)
-                .background(Color.cardBackground, in: .capsule)
-                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+                .foregroundStyle(Color.ink)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, minHeight: 52)
+                .background(Color.paperRaised, in: .capsule)
+                .overlay(Capsule().strokeBorder(Color.ruleStrong, lineWidth: 1))
+                .shadow(color: Color.shadow.opacity(0.18), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 20)
@@ -281,13 +302,13 @@ struct IngredientListView: View {
                 if model.hasActiveFilters {
                     Text("\(model.activeFilterCount)")
                         .font(.caption2.bold())
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onAmber)
                         .padding(2)
-                        .background(Color.accentColor, in: Circle())
+                        .background(Color.amber, in: Circle())
                         .offset(x: 6, y: -6)
                 }
             }
         }
-        .foregroundStyle(model.hasActiveFilters ? Color.accentColor : .primary)
+        .foregroundStyle(model.hasActiveFilters ? Color.amberText : Color.ink)
     }
 }
