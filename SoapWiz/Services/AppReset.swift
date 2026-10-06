@@ -13,6 +13,22 @@ import SwiftData
 enum AppReset {
     static let confirmationWord = "DELETE"
 
+    /// What the confirmation tells the user will be erased.
+    ///
+    /// With sync off the reset still reaches iCloud, only later: the store keeps
+    /// a history of every change made while sync is off and uploads it when
+    /// sync comes back on, the deletions included. Seen on two devices for
+    /// SW-220, so the message says so rather than promising "this device only".
+    static func confirmationMessage(syncIsOff: Bool) -> String {
+        let scope = syncIsOff
+            ? "iCloud sync is off, so this erases everything on this device now, and in iCloud "
+                + "and on your other devices once you turn sync back on."
+            : "This erases everything on this device, in iCloud and on your other devices."
+        return "\(scope) Your ingredients, purchases, recipes and history are deleted, and "
+            + "settings go back to their defaults. This can’t be undone. "
+            + "Type \(confirmationWord) to confirm."
+    }
+
     /// Whether `text` is the word the user has to type to confirm. Spaces
     /// around it and its case don't matter; the keyboard may add either.
     static func isConfirmed(by text: String) -> Bool {

@@ -58,7 +58,8 @@ struct ICloudSettingsSection: View {
             .disabled(!AppReset.isConfirmed(by: resetConfirmationText))
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text(resetMessage)
+            // About the store open now, not a choice waiting for a relaunch.
+            Text(AppReset.confirmationMessage(syncIsOff: storeHost.isOffline))
         }
     }
 
@@ -73,16 +74,6 @@ struct ICloudSettingsSection: View {
     private var relaunchNotice: String {
         let change = storeHost.prefersOffline ? "turn off iCloud sync" : "turn iCloud sync back on"
         return "Close SoapWiz from the app switcher and open it again to \(change)."
-    }
-
-    /// About the store open now, not the choice waiting for a relaunch.
-    private var resetMessage: String {
-        let scope = storeHost.isOffline
-            ? "iCloud sync is off, so this erases this device only."
-            : "This erases everything on this device and in iCloud, including your other devices."
-        return "\(scope) Your ingredients, purchases, recipes and history are deleted, and "
-            + "settings go back to their defaults. This can’t be undone. "
-            + "Type \(AppReset.confirmationWord) to confirm."
     }
 
     private var syncFooter: String {

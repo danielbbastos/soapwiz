@@ -48,7 +48,7 @@ final class StoreHost {
 
     /// How long the placeholder waits before touching the store; see
     /// `RestoreCoordinator.settleDelay`.
-    @ObservationIgnored var settleDelay: Duration = .milliseconds(50)
+    @ObservationIgnored private let settleDelay: Duration = .milliseconds(50)
 
     init(preference: SyncPreference = SyncPreference()) {
         self.preference = preference
@@ -112,9 +112,7 @@ final class StoreHost {
     /// the runloop turn ends, and only sleeping ends it.
     private func settle() async {
         await Task.yield()
-        if settleDelay > .zero {
-            try? await Task.sleep(for: settleDelay)
-        }
+        try? await Task.sleep(for: settleDelay)
     }
 
     /// Brings a freshly opened store to the state every screen expects.

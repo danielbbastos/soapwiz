@@ -139,6 +139,27 @@ struct AppResetTests: BackupTestHelpers {
 
     // MARK: - Confirmation
 
+    /// A reset with sync off reaches iCloud once sync is back on, so the
+    /// message must not promise "this device only".
+    @Test func confirmationMessage_SyncOff_SaysICloudIsErasedLater() {
+        let message = AppReset.confirmationMessage(syncIsOff: true)
+
+        #expect(message.contains("once you turn sync back on"))
+        #expect(!message.contains("only"))
+    }
+
+    @Test func confirmationMessage_SyncOn_SaysICloudIsErasedNow() {
+        let message = AppReset.confirmationMessage(syncIsOff: false)
+
+        #expect(message.contains("in iCloud and on your other devices"))
+        #expect(!message.contains("turn sync back on"))
+    }
+
+    @Test(arguments: [true, false])
+    func confirmationMessage_EitherState_AsksForTheWord(_ syncIsOff: Bool) {
+        #expect(AppReset.confirmationMessage(syncIsOff: syncIsOff).contains(AppReset.confirmationWord))
+    }
+
     @Test(arguments: ["DELETE", "delete", " Delete\n"])
     func isConfirmed_TheWordInAnyCaseOrSpacing_IsTrue(_ text: String) {
         #expect(AppReset.isConfirmed(by: text))

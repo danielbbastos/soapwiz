@@ -83,7 +83,7 @@ enum ModelContainerFactory {
     ///
     /// `offline` skips the mirrored attempt. Both attempts open the same file,
     /// so turning sync off or back on keeps everything already on the device.
-    static func makeProduction(offline: Bool = SyncPreference().usesOffline) -> ModelContainer {
+    static func makeProduction(offline: Bool) -> ModelContainer {
         // `LOCAL_ONLY_STORE` is for builds signed without the iCloud
         // entitlement — a free personal team cannot carry that capability, and
         // asking for mirroring anyway is fatal rather than recoverable:
