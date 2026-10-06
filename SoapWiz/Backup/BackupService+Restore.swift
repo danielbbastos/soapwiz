@@ -251,7 +251,9 @@ extension BackupService {
     /// photo added on one device to an entry another device deleted — and no
     /// cascade reaches a row that has lost its parent, so a restore that
     /// promises to replace everything would otherwise keep it.
-    private static func wipe(_ context: ModelContext) throws {
+    ///
+    /// Also the first step of `AppReset`, which promises the same.
+    static func wipe(_ context: ModelContext) throws {
         try deleteAll(Batch.self, in: context)
         try deleteAll(BatchLogEntry.self, in: context)
         try deleteAll(BatchLogPhoto.self, in: context)

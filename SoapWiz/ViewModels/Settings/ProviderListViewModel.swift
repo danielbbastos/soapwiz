@@ -17,5 +17,6 @@ final class ProviderListViewModel {
                 deleteBlockedProvider = provider
             }
         }
+        context.saveLoggingFailure()
     }
 }

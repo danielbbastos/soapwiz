@@ -36,6 +36,11 @@ final class SyncHealthMonitorTests {
         #expect(monitor.health == .notMirrored)
     }
 
+    @Test func health_SyncTurnedOff_ReportsTurnedOff() {
+        let monitor = makeMonitor(activeStore: .offlineByChoice)
+        #expect(monitor.health == .turnedOff)
+    }
+
     @Test func health_NoStoreRecorded_ReportsNotMirrored() {
         let monitor = makeMonitor(activeStore: nil)
         #expect(monitor.health == .notMirrored)
@@ -125,6 +130,16 @@ final class SyncHealthMonitorTests {
         store().recordLocalFallback(reason: "no container")
 
         let monitor = makeMonitor(activeStore: .localFallback(reason: "no container"))
+
+        #expect(monitor.unresolvedFallback == nil)
+    }
+
+    /// With sync turned off the footer already says everything stays on this
+    /// device, and nothing can sync until it's back on to clear the warning.
+    @Test func unresolvedFallback_SyncTurnedOff_IsNotShown() {
+        store().recordLocalFallback(reason: "no container")
+
+        let monitor = makeMonitor(activeStore: .offlineByChoice)
 
         #expect(monitor.unresolvedFallback == nil)
     }

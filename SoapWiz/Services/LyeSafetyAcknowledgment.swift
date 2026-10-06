@@ -28,6 +28,11 @@ nonisolated struct LyeSafetyAcknowledgment {
         defaults.set(true, forKey: Key.acknowledged)
     }
 
+    /// Asks again, as on a fresh install.
+    func reset() {
+        defaults.removeObject(forKey: Key.acknowledged)
+    }
+
     /// Only a soap recipe shows lye amounts, so only a soap recipe asks.
     func shouldPresent(makesSoap: Bool) -> Bool {
         makesSoap && !isAcknowledged

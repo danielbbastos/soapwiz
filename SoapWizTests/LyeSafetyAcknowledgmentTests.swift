@@ -49,6 +49,15 @@ final class LyeSafetyAcknowledgmentTests {
         #expect(!relaunched.shouldPresent(makesSoap: true))
     }
 
+    @Test func reset_AfterAcknowledging_AsksAgain() {
+        sut.acknowledge()
+
+        sut.reset()
+
+        #expect(!sut.isAcknowledged)
+        #expect(sut.shouldPresent(makesSoap: true))
+    }
+
     @Test func acknowledge_OtherDefaults_AreUnaffected() throws {
         sut.acknowledge()
 

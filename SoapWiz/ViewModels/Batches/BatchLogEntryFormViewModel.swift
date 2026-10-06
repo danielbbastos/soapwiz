@@ -174,6 +174,7 @@ final class BatchLogEntryFormViewModel {
         for (offset, photo) in arrived.enumerated() {
             photo.position = kept.count + offset
         }
+        context.saveLoggingFailure()
         return target
     }
 
@@ -188,5 +189,6 @@ final class BatchLogEntryFormViewModel {
         guard entry.modelContext != nil else { return }
         entry.batch = nil
         context.delete(entry)
+        context.saveLoggingFailure()
     }
 }

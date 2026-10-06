@@ -41,6 +41,7 @@ final class ProviderFormViewModel {
 
     @discardableResult
     func save(context: ModelContext) -> Provider {
+        defer { context.saveLoggingFailure() }
         if let provider {
             provider.name = trimmedName
             provider.website = trimmedWebsite

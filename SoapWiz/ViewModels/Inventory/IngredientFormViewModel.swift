@@ -257,6 +257,7 @@ final class IngredientFormViewModel {
 
     @discardableResult
     func save(context: ModelContext) -> Ingredient? {
+        defer { context.saveLoggingFailure() }
         let parsedThreshold = LocaleDecimal.parse(lowStockThreshold, locale: locale)
         let savedSap = sapValueToSave
         let savedKohSap = kohSapValueToSave

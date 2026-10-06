@@ -29,9 +29,11 @@ final class SyncHealthMonitor {
     /// export is a separate question, tracked in SW-100 — the persisted record
     /// outlives this property precisely so that work has something to act on.
     var unresolvedFallback: Date? {
-        // A fallback happening right now is already the headline state; saying
-        // it twice in the same row is noise.
-        if case .localFallback = health { return nil }
+        // Only a store that is mirroring has anything to catch up on. A fallback
+        // happening right now is already the headline state, and with sync
+        // turned off the footer already says everything stays on this device;
+        // saying it twice in the same row is noise.
+        guard health.isMirroring else { return nil }
         guard let fallback = store.lastLocalFallback,
               fallback.date > (lastSuccessfulSync ?? .distantPast) else { return nil }
         return fallback.date
@@ -67,6 +69,8 @@ final class SyncHealthMonitor {
             self.health = .starting
         case .localFallback(let reason):
             self.health = .localFallback(reason: reason)
+        case .offlineByChoice:
+            self.health = .turnedOff
         case .notMirrored, nil:
             self.health = .notMirrored
         }

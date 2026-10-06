@@ -132,7 +132,7 @@ struct SyncHealthReducerTests {
 
     /// Nothing is mirroring in either state, so nothing an event says about
     /// mirroring can be about this store.
-    @Test(arguments: [SyncHealth.notMirrored, .localFallback(reason: "no container")])
+    @Test(arguments: [SyncHealth.notMirrored, .turnedOff, .localFallback(reason: "no container")])
     func reduce_WhenNotMirroring_IgnoresEvents(current: SyncHealth) {
         #expect(SyncHealth.reduce(current, with: .succeeded(.import)) == current)
         #expect(
@@ -153,6 +153,12 @@ struct SyncHealthPresentationTests {
         #expect(SyncHealth.signedOut.statusText != SyncHealth.failed(.badContainer).statusText)
     }
 
+    /// The user chose it, so it's a fact to state, not a problem to flag.
+    @Test func severity_TurnedOff_IsInformational() {
+        #expect(SyncHealth.turnedOff.severity == .info)
+        #expect(!SyncHealth.turnedOff.isMirroring)
+    }
+
     @Test func severity_Healthy_IsNotAlarming() {
         #expect(SyncHealth.healthy.severity == .good)
     }
@@ -166,6 +172,7 @@ struct SyncHealthPresentationTests {
     @Test func settingsFooter_EveryState_ExplainsItself() {
         let states: [SyncHealth] = [
             .notMirrored,
+            .turnedOff,
             .localFallback(reason: "container unavailable"),
             .starting,
             .syncing,

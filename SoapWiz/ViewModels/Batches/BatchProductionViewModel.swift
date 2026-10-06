@@ -268,6 +268,7 @@ final class BatchProductionViewModel {
             total += lineItem.cost
         }
         batch.totalCost = total
+        context.saveLoggingFailure()
         createdBatch = batch
         return batch
     }

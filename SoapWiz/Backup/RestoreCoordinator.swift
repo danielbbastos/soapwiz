@@ -228,7 +228,7 @@ final class RestoreCoordinator {
         }
     }
 
-    private static func isRollbackFile(_ url: URL) -> Bool {
+    static func isRollbackFile(_ url: URL) -> Bool {
         url.lastPathComponent.hasPrefix(rollbackPrefix) && url.pathExtension == "json"
     }
 

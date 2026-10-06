@@ -43,5 +43,6 @@ final class RecipeCollectionListViewModel {
     func confirmDelete(context: ModelContext) {
         confirmingDelete.forEach { context.delete($0) }
         confirmingDelete = []
+        context.saveLoggingFailure()
     }
 }

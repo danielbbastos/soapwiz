@@ -1,13 +1,16 @@
 import SwiftUI
 
-/// Stands in for the whole interface while a restore rebuilds the store. It exists
-/// so that nothing holding a soon-to-be-deleted model is on screen during the wipe.
+/// Stands in for the whole interface while a restore or a reset rebuilds the
+/// store. It exists so that nothing holding a soon-to-be-deleted model is on
+/// screen during the wipe.
 struct RestoreProgressView: View {
+    var title = "Restoring your backup…"
+
     var body: some View {
         VStack(spacing: 16) {
             ProgressView()
                 .controlSize(.large)
-            Text("Restoring your backup…")
+            Text(title)
                 .font(.headline)
             Text("This only takes a moment.")
                 .font(.subheadline)

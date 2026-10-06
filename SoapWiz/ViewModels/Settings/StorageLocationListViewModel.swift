@@ -17,5 +17,6 @@ final class StorageLocationListViewModel {
                 deleteBlockedLocation = location
             }
         }
+        context.saveLoggingFailure()
     }
 }
