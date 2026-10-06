@@ -66,7 +66,13 @@ No "Generated with Claude Code", no "Co-Authored-By: Claude", no mention of AI t
 
 ## Posting the review
 
-Analysis alone is not enough — you must post. Post **once**, in a single call.
+Analysis alone is not enough — you must post, including when the review is clean. Your final message only reaches the action log, never the PR. Post **once**, in a single call.
+
+**No findings** — still post the one-line approval, as a single top-level comment:
+
+```bash
+gh pr comment ${PR_NUMBER} --repo ${REPO} --body "✅ **Approved** - No issues found"
+```
 
 **Findings with file/line anchors** — one batched review, all comments in one `comments[]` array:
 
