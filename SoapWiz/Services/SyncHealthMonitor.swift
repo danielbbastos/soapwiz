@@ -67,6 +67,8 @@ final class SyncHealthMonitor {
             self.health = .starting
         case .localFallback(let reason):
             self.health = .localFallback(reason: reason)
+        case .offlineByChoice:
+            self.health = .turnedOff
         case .notMirrored, nil:
             self.health = .notMirrored
         }

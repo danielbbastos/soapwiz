@@ -35,6 +35,7 @@ final class RecipeCollectionFormViewModel {
 
     @discardableResult
     func save(context: ModelContext) -> RecipeCollection {
+        defer { context.saveLoggingFailure() }
         if let collection {
             collection.name = trimmedName
             collection.colorName = color.rawValue

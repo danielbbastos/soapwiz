@@ -92,5 +92,6 @@ final class IngredientDetailViewModel {
         for index in offsets {
             context.delete(purchases[index])
         }
+        context.saveLoggingFailure()
     }
 }

@@ -24,6 +24,8 @@ enum ModelContainerFactory {
         case localFallback(reason: String)
         /// Mirroring was never asked for — a build without the iCloud entitlement.
         case notMirrored
+        /// The user turned iCloud sync off on this device; see `SyncPreference`.
+        case offlineByChoice
     }
 
     /// `nil` until `makeProduction()` runs. In-memory test containers never set it.
@@ -78,13 +80,16 @@ enum ModelContainerFactory {
     /// development leaves an incompatible file behind. That wipe never runs in
     /// release builds — the store may hold the user's only copy of data that
     /// has not finished syncing.
-    static func makeProduction() -> ModelContainer {
+    ///
+    /// `offline` skips the mirrored attempt. Both attempts open the same file,
+    /// so turning sync off or back on keeps everything already on the device.
+    static func makeProduction(offline: Bool = SyncPreference().usesOffline) -> ModelContainer {
         // `LOCAL_ONLY_STORE` is for builds signed without the iCloud
         // entitlement — a free personal team cannot carry that capability, and
         // asking for mirroring anyway is fatal rather than recoverable:
         // `ModelContainer(_:configurations:)` returns successfully, then
         // CloudKit traps on its own queue during asynchronous setup, long after
-        // the `do`/`catch` below has been left. The only way to survive an
+        // the `do`/`catch` in `makeMirrored()` has been left. The only way to survive an
         // unentitled build is not to ask, and only the build knows.
         //
         // Deliberately set nowhere in `project.pbxproj`: every normal build
@@ -105,6 +110,20 @@ enum ModelContainerFactory {
         log.notice("Built without CloudKit; using a local store.")
         activeStore = .notMirrored
         #else
+        if offline {
+            log.notice("iCloud sync is turned off; using a local store.")
+            activeStore = .offlineByChoice
+        } else if let container = makeMirrored() {
+            return container
+        }
+        #endif
+        return makeLocal()
+    }
+
+    #if !LOCAL_ONLY_STORE
+    /// The CloudKit-mirrored store, or `nil` once a refusal has been recorded
+    /// and the caller should fall back to a local one.
+    private static func makeMirrored() -> ModelContainer? {
         let mirrored = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
@@ -133,9 +152,12 @@ enum ModelContainerFactory {
             let reason = error.localizedDescription
             activeStore = .localFallback(reason: reason)
             SyncStatusStore().recordLocalFallback(reason: reason)
+            return nil
         }
-        #endif
+    }
+    #endif
 
+    private static func makeLocal() -> ModelContainer {
         // `.none` is required, not merely explicit: the default is `.automatic`,
         // which turns mirroring back on whenever the iCloud entitlement is
         // present — so the fallback would fail for the same reason as the

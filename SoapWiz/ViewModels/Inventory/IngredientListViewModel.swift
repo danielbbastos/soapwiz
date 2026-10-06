@@ -300,6 +300,7 @@ final class IngredientListViewModel {
     func confirmDelete(context: ModelContext) {
         confirmingHide.forEach { $0.isHidden = true }
         confirmingDelete.forEach { $0.deleteWithOwnedRows(in: context) }
+        context.saveLoggingFailure()
         confirmingHide = []
         confirmingDelete = []
         selection.removeAll()

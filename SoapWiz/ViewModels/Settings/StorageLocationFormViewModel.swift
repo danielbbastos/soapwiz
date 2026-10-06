@@ -36,6 +36,7 @@ final class StorageLocationFormViewModel {
 
     @discardableResult
     func save(context: ModelContext) -> StorageLocation {
+        defer { context.saveLoggingFailure() }
         if let location {
             location.name = trimmedName
             location.locationDescription = trimmedDescription

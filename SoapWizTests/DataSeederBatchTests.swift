@@ -92,6 +92,18 @@ struct DataSeederBatchTests {
         #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 0)
     }
 
+    /// A store the user took offline mirrors again once sync is back on, and
+    /// with no account check to go on, it gets none.
+    @Test(arguments: [CKAccountStatus.noAccount, .available])
+    func launch_FreshStoreWithSyncTurnedOff_MakesNoBatches(_ status: CKAccountStatus) async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+
+        await launch(ctx, store: .offlineByChoice, account: status)
+
+        #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 0)
+    }
+
     /// Signed in, or not known to be signed out: the store may sync, so no
     /// batches.
     @Test(arguments: [CKAccountStatus.available, .couldNotDetermine, .temporarilyUnavailable, .restricted])

@@ -15,6 +15,8 @@ import Foundation
 enum SyncHealth: Equatable {
     /// Built without the iCloud entitlement, so mirroring was never requested.
     case notMirrored
+    /// The user turned iCloud sync off on this device.
+    case turnedOff
     /// Mirroring was requested and refused before the store opened.
     case localFallback(reason: String)
     /// Mirrored, but no event has arrived yet to say how it is going.
@@ -27,7 +29,7 @@ enum SyncHealth: Equatable {
     /// Short status for the Settings row.
     var statusText: String {
         switch self {
-        case .notMirrored: "Off"
+        case .notMirrored, .turnedOff: "Off"
         case .localFallback: "Not Syncing"
         case .starting: "Checking…"
         case .syncing: "Syncing…"
@@ -39,7 +41,7 @@ enum SyncHealth: Equatable {
 
     var statusSymbol: String {
         switch self {
-        case .notMirrored: "icloud.slash"
+        case .notMirrored, .turnedOff: "icloud.slash"
         case .localFallback: "exclamationmark.icloud.fill"
         case .starting, .syncing: "arrow.triangle.2.circlepath.icloud"
         case .signedOut: "person.crop.circle.badge.questionmark"
@@ -54,7 +56,7 @@ enum SyncHealth: Equatable {
     var severity: SyncSeverity {
         switch self {
         case .healthy: .good
-        case .notMirrored, .starting, .syncing: .info
+        case .notMirrored, .turnedOff, .starting, .syncing: .info
         case .signedOut: .actionable
         case .localFallback: .fault
         case .failed(let failure): failure.severity
@@ -65,7 +67,7 @@ enum SyncHealth: Equatable {
     /// that were decided before the store opened and no event can change.
     var isMirroring: Bool {
         switch self {
-        case .notMirrored, .localFallback: false
+        case .notMirrored, .turnedOff, .localFallback: false
         case .starting, .syncing, .signedOut, .healthy, .failed: true
         }
     }
@@ -76,6 +78,9 @@ enum SyncHealth: Equatable {
         switch self {
         case .notMirrored:
             "This build stores everything on this device only."
+        case .turnedOff:
+            "iCloud sync is off, so everything is saved on this device only. Your other "
+                + "devices won't see changes made here until you turn it back on."
         case .localFallback(let reason):
             "SoapWiz could not reach iCloud when it started, so it is saving to this device only. "
                 + "Your data is safe, but it is not being copied to your other devices. "

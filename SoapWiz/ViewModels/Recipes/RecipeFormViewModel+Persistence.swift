@@ -124,6 +124,7 @@ extension RecipeFormViewModel {
         // processes them, so a caller that re-reads the recipe the moment this
         // returns would see every row twice.
         context.processPendingChanges()
+        context.saveLoggingFailure()
         return recipe
     }
 

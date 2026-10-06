@@ -18,5 +18,6 @@ final class CategoryListViewModel {
                 deleteBlockedCategory = category
             }
         }
+        context.saveLoggingFailure()
     }
 }

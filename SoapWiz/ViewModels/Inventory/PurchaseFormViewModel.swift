@@ -194,6 +194,7 @@ final class PurchaseFormViewModel {
             context.insert(newPurchase)
             newPurchase.attach(to: live)
         }
+        try context.save()
     }
 }
 

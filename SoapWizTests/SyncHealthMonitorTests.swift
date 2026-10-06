@@ -36,6 +36,11 @@ final class SyncHealthMonitorTests {
         #expect(monitor.health == .notMirrored)
     }
 
+    @Test func health_SyncTurnedOff_ReportsTurnedOff() {
+        let monitor = makeMonitor(activeStore: .offlineByChoice)
+        #expect(monitor.health == .turnedOff)
+    }
+
     @Test func health_NoStoreRecorded_ReportsNotMirrored() {
         let monitor = makeMonitor(activeStore: nil)
         #expect(monitor.health == .notMirrored)

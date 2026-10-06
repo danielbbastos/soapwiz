@@ -247,6 +247,7 @@ final class RecipeListViewModel {
             confirmingDelete = []
             endSelecting()
         }
+        context.saveLoggingFailure()
     }
 
     // MARK: - Row actions
@@ -265,9 +266,11 @@ final class RecipeListViewModel {
 
     @discardableResult
     func duplicate(_ recipe: Recipe, among recipes: [Recipe], context: ModelContext) -> Recipe {
-        withAnimation {
+        let copy = withAnimation {
             RecipeDuplicator.duplicate(recipe, among: recipes, into: context)
         }
+        context.saveLoggingFailure()
+        return copy
     }
 
     /// Readable text, which pasting into Import reads straight back — see
@@ -286,5 +289,6 @@ final class RecipeListViewModel {
 
     func delete(_ recipe: Recipe, context: ModelContext) {
         context.delete(recipe)
+        context.saveLoggingFailure()
     }
 }

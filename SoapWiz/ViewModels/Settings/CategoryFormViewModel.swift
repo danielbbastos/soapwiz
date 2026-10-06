@@ -31,6 +31,7 @@ final class CategoryFormViewModel {
 
     @discardableResult
     func save(context: ModelContext) -> IngredientCategory {
+        defer { context.saveLoggingFailure() }
         if let category {
             if category.isRenamable {
                 category.name = trimmedName

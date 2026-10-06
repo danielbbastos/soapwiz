@@ -211,6 +211,10 @@ enum NotificationService {
         return CureNotificationScheduler.computeRequests(batches: snapshots)
     }
 
+    static func cancelAllReminders() async {
+        await serialized { await cancelPendingReminders(withPrefixes: allPrefixes) }
+    }
+
     static func cancelAllExpiryNotifications() async {
         await serialized { await cancelPendingReminders(withPrefixes: [ExpiryNotificationScheduler.notificationPrefix]) }
     }
