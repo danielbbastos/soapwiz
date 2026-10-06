@@ -25,14 +25,15 @@ extension View {
         return self
             .background(Color.paperRaised, in: shape)
             .overlay(shape.strokeBorder(Color.rule, lineWidth: 1))
-            .shadow(color: .black.opacity(0.10), radius: 12, y: 8)
-            .shadow(color: .black.opacity(0.12), radius: 1, y: 1)
+            .shadow(color: Color.shadow.opacity(0.10), radius: 12, y: 8)
+            .shadow(color: Color.shadow.opacity(0.12), radius: 1, y: 1)
     }
 
     /// `listDetailRow` on the ledger's paper: a selected row is honey, the rest
-    /// sit on the raised sheet with a rule between them.
-    func ledgerListDetailRow(isSelected: Bool) -> some View {
-        listRowBackground(isSelected ? Color.honey : Color.paperRaised)
+    /// sit on the raised sheet with a rule between them. Each row draws its own
+    /// piece of the sheet's edge, so it needs to know where in the list it is.
+    func ledgerListDetailRow(isSelected: Bool, position: LedgerSheetPosition) -> some View {
+        listRowBackground(LedgerSheetRowBackground(position: position, isSelected: isSelected))
             .listRowSeparatorTint(Color.rule)
             .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
@@ -99,10 +100,88 @@ private enum PaperGrain {
 
     private static func splitMix64(_ state: inout UInt64) -> UInt64 {
         state &+= 0x9E37_79B9_7F4A_7C15
-        var z = state
-        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
-        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
-        return z ^ (z >> 31)
+        var mixed = state
+        mixed = (mixed ^ (mixed >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        mixed = (mixed ^ (mixed >> 27)) &* 0x94D0_49BB_1331_11EB
+        return mixed ^ (mixed >> 31)
+    }
+}
+
+/// What sits under the large title: a count line, and under it an amber
+/// diamond with a hairline running off to the trailing edge. Only the label's
+/// text changes after it is built; the label's font follows Dynamic Type itself.
+private final class LedgerSubtitleView: UIView {
+    var text: String? {
+        get { label.text }
+        set { if label.text != newValue { label.text = newValue } }
+    }
+
+    private let label = UILabel()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+
+        let base = UIFont.monospacedDigitSystemFont(
+            ofSize: UIFont.preferredFont(forTextStyle: .footnote).pointSize,
+            weight: .regular
+        )
+        label.font = UIFontMetrics(forTextStyle: .footnote).scaledFont(for: base)
+        label.adjustsFontForContentSizeCategory = true
+        label.textColor = UIColor(named: "InkSoft") ?? .secondaryLabel
+
+        let stack = UIStackView(arrangedSubviews: [label, Self.makeOrnament()])
+        stack.axis = .vertical
+        stack.alignment = .fill
+        stack.spacing = 8
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stack.topAnchor.constraint(equalTo: topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    /// The diamond is a square turned 45 degrees, so its side is 8 over root two
+    /// to make it 8pt across.
+    private static func makeOrnament() -> UIView {
+        let row = UIView()
+        let diamondSide = 8 / 2.0.squareRoot()
+
+        let diamondSlot = UIView()
+        let diamond = UIView()
+        diamond.backgroundColor = UIColor(named: "Amber")
+        diamond.transform = CGAffineTransform(rotationAngle: .pi / 4)
+        diamond.translatesAutoresizingMaskIntoConstraints = false
+        diamondSlot.addSubview(diamond)
+
+        let line = UIView()
+        line.backgroundColor = UIColor(named: "Rule")
+
+        for view in [diamondSlot, line] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            row.addSubview(view)
+        }
+        NSLayoutConstraint.activate([
+            row.heightAnchor.constraint(equalToConstant: 8),
+            diamondSlot.leadingAnchor.constraint(equalTo: row.leadingAnchor),
+            diamondSlot.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            diamondSlot.widthAnchor.constraint(equalToConstant: 8),
+            diamondSlot.heightAnchor.constraint(equalToConstant: 8),
+            diamond.centerXAnchor.constraint(equalTo: diamondSlot.centerXAnchor),
+            diamond.centerYAnchor.constraint(equalTo: diamondSlot.centerYAnchor),
+            diamond.widthAnchor.constraint(equalToConstant: diamondSide),
+            diamond.heightAnchor.constraint(equalToConstant: diamondSide),
+            line.leadingAnchor.constraint(equalTo: diamondSlot.trailingAnchor, constant: 8),
+            line.trailingAnchor.constraint(equalTo: row.trailingAnchor),
+            line.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            line.heightAnchor.constraint(equalToConstant: 1)
+        ])
+        return row
     }
 }
 
@@ -123,6 +202,7 @@ private struct LedgerLargeTitleConfigurator: UIViewControllerRepresentable {
     final class Controller: UIViewController {
         var subtitle: String?
 
+        private var subtitleView: LedgerSubtitleView?
         private var appliedKey: String?
         /// Nil until a subtitle has been applied, so a first nil still clears.
         private var appliedSubtitle: String??
@@ -170,14 +250,15 @@ private struct LedgerLargeTitleConfigurator: UIViewControllerRepresentable {
             appliedSubtitle = .some(subtitle)
 
             guard let subtitle else {
-                host.navigationItem.largeAttributedSubtitle = nil
+                host.navigationItem.largeSubtitleView = nil
                 return
             }
-            let base = UIFont.preferredFont(forTextStyle: .footnote)
-            var text = AttributedString(subtitle)
-            text.uiKit.font = UIFont.monospacedDigitSystemFont(ofSize: base.pointSize, weight: .regular)
-            text.uiKit.foregroundColor = UIColor(named: "InkSoft") ?? UIColor.secondaryLabel
-            host.navigationItem.largeAttributedSubtitle = text
+            let view = subtitleView ?? LedgerSubtitleView()
+            subtitleView = view
+            view.text = subtitle
+            if host.navigationItem.largeSubtitleView !== view {
+                host.navigationItem.largeSubtitleView = view
+            }
         }
 
         private func applyTitleAppearances(to host: UIViewController, in navigationController: UINavigationController) {

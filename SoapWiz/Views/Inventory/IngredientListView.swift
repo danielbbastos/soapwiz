@@ -30,8 +30,13 @@ struct IngredientListView: View {
         model.visibleCategories(categories, in: ingredients)
     }
 
-    private func row(_ ingredient: Ingredient) -> IngredientListRow {
-        IngredientListRow(ingredient: ingredient, model: model, navigation: navigation)
+    private func row(_ ingredient: Ingredient, index: Int, count: Int) -> IngredientListRow {
+        IngredientListRow(
+            ingredient: ingredient,
+            model: model,
+            navigation: navigation,
+            position: .position(index: index, count: count)
+        )
     }
 
     /// Handles the open ingredient's row leaving the store without passing
@@ -113,12 +118,16 @@ struct IngredientListView: View {
                         // Nothing outside edit mode reads `selection`: it exists
                         // for the bulk delete, which only Select mode offers.
                         List(selection: $model.selection) {
-                            ForEach(displayed) { row($0) }
+                            ForEach(Array(displayed.enumerated()), id: \.element.id) { index, ingredient in
+                                row(ingredient, index: index, count: displayed.count)
+                            }
                         }
                         .environment(\.editMode, $model.editMode)
                     } else {
                         List {
-                            ForEach(displayed) { row($0) }
+                            ForEach(Array(displayed.enumerated()), id: \.element.id) { index, ingredient in
+                                row(ingredient, index: index, count: displayed.count)
+                            }
                         }
                         .environment(\.editMode, $model.editMode)
                         // The chips already stand off the list on their own; the
@@ -273,11 +282,12 @@ struct IngredientListView: View {
         } label: {
             Text("Create recipe with… (\(model.selection.count))")
                 .font(.headline)
-                .foregroundStyle(Color.amberText)
-                .padding(.vertical, 14)
-                .frame(maxWidth: .infinity)
+                .foregroundStyle(Color.ink)
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, minHeight: 52)
                 .background(Color.paperRaised, in: .capsule)
-                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+                .overlay(Capsule().strokeBorder(Color.ruleStrong, lineWidth: 1))
+                .shadow(color: Color.shadow.opacity(0.18), radius: 10, y: 4)
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 20)
@@ -302,6 +312,6 @@ struct IngredientListView: View {
                 }
             }
         }
-        .foregroundStyle(model.hasActiveFilters ? Color.amberText : .primary)
+        .foregroundStyle(model.hasActiveFilters ? Color.amberText : Color.ink)
     }
 }

@@ -3,7 +3,7 @@ import SwiftUI
 /// One Inventory row with its tap, swipe and selection handling.
 ///
 /// A view of its own rather than a function of the list, so that a refresh of
-/// the list only compares three references per row: the list refreshes on every
+/// the list only compares three references and a position per row: the list refreshes on every
 /// save to the store, and an iCloud import saves many times a second (SW-219).
 /// Each row then redraws only when something it reads has changed.
 ///
@@ -19,12 +19,13 @@ struct IngredientListRow: View {
     let ingredient: Ingredient
     let model: IngredientListViewModel
     let navigation: ListDetailNavigation<Ingredient>
+    let position: LedgerSheetPosition
 
     var body: some View {
         let content = IngredientRowView(ingredient: ingredient, model: model)
         if model.editMode == .active {
             content
-                .listRowBackground(Color.paperRaised)
+                .listRowBackground(LedgerSheetRowBackground(position: position, isSelected: false))
                 .listRowSeparatorTint(Color.rule)
         } else {
             Button {
@@ -48,14 +49,14 @@ struct IngredientListRow: View {
                     Button("Hide") {
                         model.hide(ingredient)
                     }
-                    .tint(.orange)
+                    .tint(Color.warning)
                 } else {
                     Button("Delete", role: .destructive) {
                         model.delete(ingredient)
                     }
                 }
             }
-            .ledgerListDetailRow(isSelected: navigation.isOpenBeside(ingredient))
+            .ledgerListDetailRow(isSelected: navigation.isOpenBeside(ingredient), position: position)
         }
     }
 }
