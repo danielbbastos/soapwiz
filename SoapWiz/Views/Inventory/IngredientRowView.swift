@@ -130,7 +130,7 @@ struct IngredientRowView: View {
 
     private func quantity(stamps: [IngredientStockStamp]) -> some View {
         Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
-            .font(.headline.monospacedDigit())
+            .font(.body.weight(.medium).monospacedDigit())
             .foregroundStyle(quantityColor(stamps: stamps))
     }
 
