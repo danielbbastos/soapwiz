@@ -2,10 +2,11 @@ import SwiftUI
 
 struct IngredientRowView: View {
     let ingredient: Ingredient
-    /// Off, the row drops its expiry and low-stock badges and the quantity: with
-    /// no purchases recorded, all of them would warn about stock never entered.
-    var tracksInventory: Bool = true
-    let onToggleFavorite: () -> Void
+    /// The list's model rather than a toggle closure. A closure differs on every
+    /// pass of the list, so SwiftUI could never skip a row's body; with only
+    /// comparable inputs, a row is redrawn only when its own ingredient changes.
+    /// An iCloud import saves many times a second (SW-219).
+    let model: IngredientListViewModel
 
     @Environment(\.editMode) private var editMode
 
@@ -29,7 +30,10 @@ struct IngredientRowView: View {
                 }
             }
             Spacer()
-            if tracksInventory {
+            // Off, the row drops its expiry and low-stock badges and the quantity:
+            // with no purchases recorded, all of them would warn about stock never
+            // entered.
+            if model.tracksInventory {
                 stockColumn
             }
             // Beside the warnings-and-quantity column rather than stacked above it.
@@ -40,7 +44,9 @@ struct IngredientRowView: View {
             // Hidden while selecting, the same way the FAB is: the star would
             // otherwise consume the tap meant to select the row for a bulk delete.
             if editMode?.wrappedValue != .active {
-                FavoriteStarButton(isFavorite: ingredient.isFavorite, action: onToggleFavorite)
+                FavoriteStarButton(isFavorite: ingredient.isFavorite) {
+                    model.toggleFavorite(ingredient)
+                }
                     // Set apart from the quantity rather than sitting against
                     // it: the two carry unrelated things — how much is left,
                     // and whether this is a favourite — and at the star's size

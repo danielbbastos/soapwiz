@@ -45,9 +45,16 @@ struct SoapWizApp: App {
         _syncHealth = State(
             initialValue: SyncHealthMonitor(activeStore: ModelContainerFactory.activeStore)
         )
+        // Built here so it exists before the scene's first activation, which it
+        // has to see in order to skip it. Held for the app's lifetime so its
+        // import observer stays registered; CloudKit imports duplicates long
+        // after launch.
+        _mergeCoordinator = State(
+            initialValue: DuplicateMergeCoordinator(context: container.mainContext)
+        )
     }
 
-    @State private var mergeCoordinator: DuplicateMergeCoordinator?
+    @State private var mergeCoordinator: DuplicateMergeCoordinator
 
     @Environment(\.scenePhase) private var scenePhase
 
@@ -56,13 +63,6 @@ struct SoapWizApp: App {
             ContentView()
                 .environment(syncHealth)
                 .task {
-                    // Held for the app's lifetime so its remote-change observer
-                    // stays registered; CloudKit imports duplicates long after launch.
-                    if mergeCoordinator == nil {
-                        mergeCoordinator = DuplicateMergeCoordinator(
-                            context: sharedModelContainer.mainContext
-                        )
-                    }
                     // After launch rather than with the rest of the seeding:
                     // whether the store syncs to an account is only known
                     // asynchronously.
@@ -76,7 +76,7 @@ struct SoapWizApp: App {
                 }
                 .onChange(of: scenePhase) { _, newPhase in
                     guard newPhase == .active else { return }
-                    mergeCoordinator?.mergeNow()
+                    mergeCoordinator.appDidBecomeActive()
                     Task {
                         await NotificationService.syncIfEnabled(
                             modelContext: sharedModelContainer.mainContext
