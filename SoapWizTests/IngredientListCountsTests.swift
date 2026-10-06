@@ -97,11 +97,59 @@ struct IngredientListCountsTests {
         #expect(countSummary(ingredients) == InventoryCountSummary(total: 3, low: 1, out: 1))
     }
 
-    @Test func line_OmitsZeroPartsAndSingularises() {
-        #expect(InventoryCountSummary(total: 1, low: 0, out: 0).line == "1 ingredient")
-        #expect(InventoryCountSummary(total: 5, low: 2, out: 0).line == "5 ingredients · 2 low")
-        #expect(InventoryCountSummary(total: 5, low: 0, out: 1).line == "5 ingredients · 1 out")
-        #expect(InventoryCountSummary(total: 5, low: 2, out: 1).line == "5 ingredients · 2 low · 1 out")
+    private func expectedLine(total: Int, low: Int, out: Int) -> String {
+        var parts = [String(AttributedString(localized: "^[\(total) ingredient](inflect: true)").characters)]
+        if low > 0 { parts.append(String(localized: "\(low) low")) }
+        if out > 0 { parts.append(String(localized: "\(out) out")) }
+        return parts.joined(separator: " · ")
+    }
+
+    private func parts(of line: String?) -> [String] {
+        (line ?? "").components(separatedBy: " · ")
+    }
+
+    @Test func line_NothingToCount_IsNil() {
+        #expect(InventoryCountSummary(total: 0, low: 0, out: 0).line == nil)
+    }
+
+    @Test func line_OnlyTotal_HasOnePart() {
+        let line = InventoryCountSummary(total: 1, low: 0, out: 0).line
+
+        #expect(line != nil)
+        #expect(parts(of: line).count == 1)
+    }
+
+    @Test func line_LowOnly_HasTwoParts() {
+        let line = InventoryCountSummary(total: 5, low: 2, out: 0).line
+
+        #expect(parts(of: line).count == 2)
+        #expect(line == expectedLine(total: 5, low: 2, out: 0))
+    }
+
+    @Test func line_OutOnly_HasTwoParts() {
+        let line = InventoryCountSummary(total: 5, low: 0, out: 1).line
+
+        #expect(parts(of: line).count == 2)
+        #expect(line == expectedLine(total: 5, low: 0, out: 1))
+    }
+
+    @Test func line_LowAndOut_HasThreePartsWithTheirFigures() throws {
+        let line = try #require(InventoryCountSummary(total: 5, low: 2, out: 1).line)
+        let split = parts(of: line)
+
+        #expect(split.count == 3)
+        #expect(split[0].contains(5.formatted()))
+        #expect(split[1].contains(2.formatted()))
+        #expect(split[2].contains(1.formatted()))
+        #expect(line == expectedLine(total: 5, low: 2, out: 1))
+    }
+
+    @Test func line_SingleAndMultiple_InflectDifferently() {
+        let one = InventoryCountSummary(total: 1, low: 0, out: 0).line
+        let many = InventoryCountSummary(total: 5, low: 0, out: 0).line
+
+        #expect(one == expectedLine(total: 1, low: 0, out: 0))
+        #expect(many == expectedLine(total: 5, low: 0, out: 0))
     }
 
     @Test func countSummary_HiddenIngredients_Excluded() {

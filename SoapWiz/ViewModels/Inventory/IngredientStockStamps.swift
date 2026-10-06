@@ -13,9 +13,11 @@ enum IngredientStockStamp: Equatable {
         case .expired: String(localized: "Expired")
         case .low: String(localized: "Low")
         case .expiresIn(let days):
-            days == 0
-                ? String(localized: "Expires today")
-                : String(localized: "Expires in \(days) d")
+            if days == 0 {
+                String(localized: "Expires today")
+            } else {
+                String(localized: "Expires in \(days) d")
+            }
         }
     }
 
