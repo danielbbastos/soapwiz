@@ -194,7 +194,9 @@ final class PurchaseFormViewModel {
             context.insert(newPurchase)
             newPurchase.attach(to: live)
         }
-        try context.save()
+        // Not thrown: the sheet stays open on a throw, and tapping Add again
+        // would insert a second purchase beside the one still in the context.
+        context.saveLoggingFailure()
     }
 }
 
