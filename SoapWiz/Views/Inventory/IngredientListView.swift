@@ -4,7 +4,7 @@ import SwiftData
 struct IngredientListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
-    @Query(sort: \Ingredient.name) private var ingredients: [Ingredient]
+    @Query(Ingredient.listDescriptor) private var ingredients: [Ingredient]
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
     @Query private var settingsRecords: [AppSettings]
 
@@ -30,53 +30,8 @@ struct IngredientListView: View {
         model.visibleCategories(categories, in: ingredients)
     }
 
-    /// A `Button` rather than a `NavigationLink`, purely to drop the disclosure
-    /// chevron: a link used as a row's root always draws one and there is no
-    /// modifier to suppress it. The push is the same, just issued by hand. This
-    /// is what the recipe list already does.
-    ///
-    /// While selecting, the row is its bare content instead: the list is then
-    /// handling taps itself to build the selection, and a button in the way
-    /// would take them.
-    @ViewBuilder
-    private func row(_ ingredient: Ingredient) -> some View {
-        let content = IngredientRowView(ingredient: ingredient, tracksInventory: model.tracksInventory) {
-            model.toggleFavorite(ingredient)
-        }
-        if model.editMode == .active {
-            content
-                .listRowBackground(Color.cardBackground)
-        } else {
-            Button {
-                navigation.show(ingredient)
-            } label: {
-                // A `Button` is hit-tested over its drawn content only, so
-                // without this the row's padding and the gap left of the star
-                // are dead to touch — a `NavigationLink` row was tappable
-                // across the whole cell.
-                content
-                    .contentShape(Rectangle())
-            }
-            // Keeps the row from taking on button tinting; the star inside stays
-            // tappable because it is `.borderless`.
-            .buttonStyle(.plain)
-            // A library row offers Hide instead: deleting it would only bring a
-            // pristine copy back on the next launch, so the destructive styling
-            // would be promising something the installer immediately undoes.
-            .swipeActions(edge: .trailing) {
-                if ingredient.isLibraryInstalled {
-                    Button("Hide") {
-                        model.hide(ingredient)
-                    }
-                    .tint(.orange)
-                } else {
-                    Button("Delete", role: .destructive) {
-                        model.delete(ingredient)
-                    }
-                }
-            }
-            .listDetailRow(isSelected: navigation.isOpenBeside(ingredient))
-        }
+    private func row(_ ingredient: Ingredient) -> IngredientListRow {
+        IngredientListRow(ingredient: ingredient, model: model, navigation: navigation)
     }
 
     /// Handles the open ingredient's row leaving the store without passing

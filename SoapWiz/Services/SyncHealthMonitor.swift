@@ -151,7 +151,9 @@ final class SyncHealthMonitor {
     }
 }
 
-private extension Notification {
+extension Notification {
+    /// The event an `eventChangedNotification` carries, or `nil` for any other
+    /// notification.
     var cloudKitMirroringEvent: SyncEvent? {
         let key = NSPersistentCloudKitContainer.eventNotificationUserInfoKey
         guard let event = userInfo?[key] as? NSPersistentCloudKitContainer.Event else { return nil }

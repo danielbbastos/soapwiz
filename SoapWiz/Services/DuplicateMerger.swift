@@ -6,9 +6,9 @@ extension Notification.Name {
     /// Posted once a merge has committed deletions, so a screen still holding a
     /// row that was merged away can resolve itself onto the survivor.
     ///
-    /// Deliberately not `.NSPersistentStoreRemoteChange`, which is what the merge
-    /// is debounced *behind*: a screen resolving on that signal would usually run
-    /// before the deletion had happened and find nothing to do.
+    /// Deliberately not `.NSPersistentStoreRemoteChange` or the import event the
+    /// merge is debounced *behind*: a screen resolving on either signal would
+    /// usually run before the deletion had happened and find nothing to do.
     ///
     /// Nothing is posted when a pass finds no duplicates, which is the common
     /// case — only the first sync on a device that joined an existing account
