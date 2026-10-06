@@ -30,11 +30,21 @@ struct InventoryCountSummary: Equatable {
     /// Nil when there is nothing to count, so the line is left out.
     var line: String? {
         guard total > 0 else { return nil }
-        var parts = ["\(total) \(total == 1 ? "ingredient" : "ingredients")"]
-        if low > 0 { parts.append("\(low) low") }
-        if out > 0 { parts.append("\(out) out") }
+        // Plain `String(localized:)` leaves the agreement markup as it is: only
+        // an attributed string resolves it.
+        var parts = [String(AttributedString(localized: "^[\(total) ingredient](inflect: true)").characters)]
+        if low > 0 { parts.append(String(localized: "\(low) low")) }
+        if out > 0 { parts.append(String(localized: "\(out) out")) }
         return parts.joined(separator: " · ")
     }
+}
+
+/// What the Inventory screen draws from the store, computed together by
+/// `IngredientListViewModel.content(for:)`.
+struct IngredientListContent {
+    let displayed: [Ingredient]
+    let categoryCounts: (all: Int, byCategory: [PersistentIdentifier: Int])
+    let summary: InventoryCountSummary
 }
 
 @MainActor
@@ -145,44 +155,72 @@ final class IngredientListViewModel {
     }
 
     func filtered(_ ingredients: [Ingredient]) -> [Ingredient] {
-        ingredients.filter { matches($0, checkingCategory: true) }
+        ingredients.filter { !$0.isHidden && matchesFilters($0) && matchesCategory($0) }
     }
 
-    /// How many ingredients each category chip would show if tapped: the list as
-    /// filtered by everything except the category selection, so a chip's number
-    /// doesn't change as the chips are toggled. `all` is the "All" chip's total.
-    func categoryCounts(_ ingredients: [Ingredient]) -> (all: Int, byCategory: [PersistentIdentifier: Int]) {
+    /// Everything the Inventory screen draws from `ingredients`, in one pass.
+    /// The list refreshes on every save to the store, and an iCloud import saves
+    /// many times a second (SW-219), so the list, the chip counts and the count
+    /// line must not each walk the whole inventory.
+    ///
+    /// - `displayed`: the filtered list, favourites first.
+    /// - `categoryCounts`: how many ingredients each category chip would show
+    ///   if tapped, that is the list as filtered by everything except the
+    ///   category selection, so a chip's number doesn't change as the chips are
+    ///   toggled. `all` is the "All" chip's total.
+    /// - `summary`: the figures under the screen title, over every listed
+    ///   (non-hidden) ingredient regardless of the filters.
+    ///
+    /// The summary's low and out figures only count ingredients with purchases
+    /// (and only while stock is tracked), matching the stamps on the rows, so the
+    /// library's never-bought ingredients don't read as out. The Out of Stock
+    /// filter (`totalRemaining == 0`) does include them, so its result can be
+    /// longer than the header's "out" figure.
+    func content(for ingredients: [Ingredient]) -> IngredientListContent {
+        var displayed: [Ingredient] = []
         var all = 0
         var byCategory: [PersistentIdentifier: Int] = [:]
-        for ingredient in ingredients where matches(ingredient, checkingCategory: false) {
+        var total = 0
+        var low = 0
+        var out = 0
+
+        for ingredient in ingredients where !ingredient.isHidden {
+            total += 1
+            if tracksInventory, !ingredient.purchases.isEmpty {
+                let remaining = ingredient.totalRemaining
+                if remaining <= 0 {
+                    out += 1
+                } else if let threshold = ingredient.lowStockThreshold, remaining <= threshold {
+                    low += 1
+                }
+            }
+
+            guard matchesFilters(ingredient) else { continue }
             all += 1
             if let id = ingredient.category?.persistentModelID {
                 byCategory[id, default: 0] += 1
             }
+            if matchesCategory(ingredient) {
+                displayed.append(ingredient)
+            }
         }
-        return (all, byCategory)
-    }
 
-    /// The figures under the screen title: every listed (non-hidden) ingredient,
-    /// regardless of the filters, and how many of them are low and how many out.
-    func countSummary(_ ingredients: [Ingredient]) -> InventoryCountSummary {
-        let listed = ingredients.filter { !$0.isHidden }
-        let stamps = listed.map { IngredientStockStamp.stamps(for: $0, tracksInventory: tracksInventory) }
-        return InventoryCountSummary(
-            total: listed.count,
-            low: stamps.filter { $0.contains(.low) }.count,
-            out: stamps.filter { $0.contains(.out) }.count
+        return IngredientListContent(
+            displayed: displayed.favoritesFirst,
+            categoryCounts: (all, byCategory),
+            summary: InventoryCountSummary(total: total, low: low, out: out)
         )
     }
 
-    private func matches(_ ingredient: Ingredient, checkingCategory: Bool) -> Bool {
-        guard !ingredient.isHidden else { return false }
+    private func matchesCategory(_ ingredient: Ingredient) -> Bool {
+        selectedCategories.isEmpty ||
+            (ingredient.category.map { selectedCategories.contains($0.persistentModelID) } ?? false)
+    }
 
+    /// Every filter except the category selection, for a row that isn't hidden.
+    private func matchesFilters(_ ingredient: Ingredient) -> Bool {
         let matchesSearch = searchText.isEmpty ||
             ingredient.name.localizedCaseInsensitiveContains(searchText)
-
-        let matchesCategory = !checkingCategory || selectedCategories.isEmpty ||
-            (ingredient.category.map { selectedCategories.contains($0.persistentModelID) } ?? false)
 
         let matchesStock: Bool
         switch effectiveStockStatus {
@@ -203,7 +241,7 @@ final class IngredientListViewModel {
         case .noExpiry:      matchesExpiry = ingredient.purchases.allSatisfy { $0.expiryDate == nil }
         }
 
-        return matchesSearch && matchesCategory && matchesStock && matchesUnit && matchesExpiry
+        return matchesSearch && matchesStock && matchesUnit && matchesExpiry
     }
 
     /// Animated so the row's move to or from the pinned group reads as a move

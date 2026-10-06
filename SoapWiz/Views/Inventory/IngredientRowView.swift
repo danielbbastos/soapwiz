@@ -93,11 +93,10 @@ struct IngredientRowView: View {
             }
             // Beside the quantity rather than stacked above it: stacked, the
             // star adds a line to every row and makes the whole list taller.
+            // The row's own spacing is all that sets it apart from the quantity:
+            // the two carry unrelated things — how much is left, and whether
+            // this is a favourite.
             favoriteStar
-                // Set apart from the quantity rather than sitting against
-                // it: the two carry unrelated things — how much is left,
-                // and whether this is a favourite.
-                .padding(.leading, editMode?.wrappedValue != .active ? 12 : 0)
         }
     }
 
@@ -131,7 +130,7 @@ struct IngredientRowView: View {
 
     private func quantity(stamps: [IngredientStockStamp]) -> some View {
         Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
-            .font(.body.weight(.medium).monospacedDigit())
+            .font(.headline.monospacedDigit())
             .foregroundStyle(quantityColor(stamps: stamps))
     }
 

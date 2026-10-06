@@ -14,17 +14,11 @@ struct IngredientListView: View {
     /// deleted the row it can't be read off it. See `LiveIngredient`.
     @State private var selectedSlug = ""
 
-    // Favourites can't be part of the `@Query` sort: `SortDescriptor` has no `Bool`
-    // overload, so the pinning is applied here, after filtering.
-    private var displayedIngredients: [Ingredient] {
-        model.filtered(ingredients).favoritesFirst
-    }
-
     private var selectedIngredients: [Ingredient] {
         ingredients.filter { model.selection.contains($0.persistentModelID) }
     }
 
-    /// Chips are drawn from the unfiltered inventory, not `displayedIngredients`:
+    /// Chips are drawn from the unfiltered inventory, not the displayed list:
     /// narrowing to one category must not make every other chip disappear.
     private var visibleCategories: [IngredientCategory] {
         model.visibleCategories(categories, in: ingredients)
@@ -69,9 +63,12 @@ struct IngredientListView: View {
     }
 
     var body: some View {
-        // Filtered once per pass: filtering sums each row's stock and sorts,
-        // and several places below need the result.
-        let displayed = displayedIngredients
+        // Worked out once per pass, in one walk over the inventory: it sums each
+        // row's stock, and several places below need the result. Favourites can't
+        // be part of the `@Query` sort (`SortDescriptor` has no `Bool` overload),
+        // so the pinning is applied there, after filtering.
+        let content = model.content(for: ingredients)
+        let displayed = content.displayed
         ListDetailContainer(
             navigation: navigation,
             placeholder: "Select an Ingredient",
@@ -139,7 +136,7 @@ struct IngredientListView: View {
                 .readableWidth()
                 .navigationTitle("Inventory")
                 .navigationBarTitleDisplayMode(.large)
-                .ledgerLargeTitle(subtitle: model.editMode == .inactive ? model.countSummary(ingredients).line : nil)
+                .ledgerLargeTitle(subtitle: model.editMode == .inactive ? content.summary.line : nil)
                 .ledgerBackground()
                 .navigationDestination(for: Ingredient.self) { IngredientDetailView(ingredient: $0) }
                 // The chips are hidden while selecting: they would compete with
@@ -152,7 +149,7 @@ struct IngredientListView: View {
                             InventoryCategoryFilterBar(
                                 categories: visibleCategories,
                                 model: model,
-                                counts: model.categoryCounts(ingredients)
+                                counts: content.categoryCounts
                             )
                         }
                     }

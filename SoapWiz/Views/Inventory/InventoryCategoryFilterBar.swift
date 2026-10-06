@@ -10,7 +10,7 @@ import SwiftData
 struct InventoryCategoryFilterBar: View {
     let categories: [IngredientCategory]
     @Bindable var model: IngredientListViewModel
-    /// From `IngredientListViewModel.categoryCounts`.
+    /// From `IngredientListContent.categoryCounts`.
     let counts: (all: Int, byCategory: [PersistentIdentifier: Int])
 
     var body: some View {

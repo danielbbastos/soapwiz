@@ -16,8 +16,12 @@ extension View {
     ///
     /// `subtitle` is drawn under the large title on iOS 26 and later, and
     /// follows its value as it changes; nil shows none.
+    ///
+    /// Where the screen's content is capped and centred (`readableWidth()`),
+    /// the title block moves in to the content's leading edge, and the
+    /// subtitle's hairline ends at its trailing edge.
     func ledgerLargeTitle(subtitle: String? = nil) -> some View {
-        background(LedgerLargeTitleConfigurator(subtitle: subtitle).frame(width: 0, height: 0))
+        modifier(LedgerLargeTitleModifier(subtitle: subtitle))
     }
 
     func ledgerSheet() -> some View {
@@ -36,6 +40,21 @@ extension View {
         listRowBackground(LedgerSheetRowBackground(position: position, isSelected: isSelected))
             .listRowSeparatorTint(Color.rule)
             .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+private struct LedgerLargeTitleModifier: ViewModifier {
+    let subtitle: String?
+    @State private var margin: CGFloat?
+
+    func body(content: Content) -> some View {
+        content
+            .background(LedgerLargeTitleConfigurator(subtitle: subtitle, margin: margin).frame(width: 0, height: 0))
+            .onGeometryChange(for: CGFloat?.self) { proxy in
+                ReadableWidth.margin(for: proxy.size.width)
+            } action: { newMargin in
+                margin = newMargin
+            }
     }
 }
 
@@ -116,28 +135,44 @@ private final class LedgerSubtitleView: UIView {
         set { if label.text != newValue { label.text = newValue } }
     }
 
+    /// How far both sides are drawn in from the view's edges, so the block can
+    /// line up with content that is capped narrower than the bar.
+    var inset: CGFloat = 0 {
+        didSet {
+            leadingConstraint.constant = inset
+            trailingConstraint.constant = -inset
+        }
+    }
+
     private let label = UILabel()
+    private let stack = UIStackView()
+    private lazy var leadingConstraint = stack.leadingAnchor.constraint(equalTo: leadingAnchor)
+    private lazy var trailingConstraint = stack.trailingAnchor.constraint(equalTo: trailingAnchor)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
 
-        let base = UIFont.monospacedDigitSystemFont(
-            ofSize: UIFont.preferredFont(forTextStyle: .footnote).pointSize,
-            weight: .regular
-        )
+        // The footnote size at the default text size: `scaledFont` does the
+        // scaling, and starting from the current size would apply it twice.
+        let defaultSize = UIFont.preferredFont(
+            forTextStyle: .footnote,
+            compatibleWith: UITraitCollection(preferredContentSizeCategory: .large)
+        ).pointSize
+        let base = UIFont.monospacedDigitSystemFont(ofSize: defaultSize, weight: .regular)
         label.font = UIFontMetrics(forTextStyle: .footnote).scaledFont(for: base)
         label.adjustsFontForContentSizeCategory = true
         label.textColor = UIColor(named: "InkSoft") ?? .secondaryLabel
 
-        let stack = UIStackView(arrangedSubviews: [label, Self.makeOrnament()])
+        stack.addArrangedSubview(label)
+        stack.addArrangedSubview(Self.makeOrnament())
         stack.axis = .vertical
         stack.alignment = .fill
         stack.spacing = 8
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
+            leadingConstraint,
+            trailingConstraint,
             stack.topAnchor.constraint(equalTo: topAnchor),
             stack.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
@@ -191,18 +226,24 @@ private final class LedgerSubtitleView: UIView {
 /// background, and with it iOS 26's glass, is left as the system draws it.
 private struct LedgerLargeTitleConfigurator: UIViewControllerRepresentable {
     let subtitle: String?
+    /// The screen's capped-content margin from the edge of the screen, nil
+    /// where the system margin applies.
+    let margin: CGFloat?
 
     func makeUIViewController(context: Context) -> Controller { Controller() }
 
     func updateUIViewController(_ controller: Controller, context: Context) {
         controller.subtitle = subtitle
+        controller.margin = margin
         controller.apply()
     }
 
     final class Controller: UIViewController {
         var subtitle: String?
+        var margin: CGFloat?
 
         private var subtitleView: LedgerSubtitleView?
+        private var titleInset: CGFloat = 0
         private var appliedKey: String?
         /// Nil until a subtitle has been applied, so a first nil still clears.
         private var appliedSubtitle: String??
@@ -231,13 +272,18 @@ private struct LedgerLargeTitleConfigurator: UIViewControllerRepresentable {
             }
             guard let navigationController = host.parent as? UINavigationController else { return }
 
-            let key = traitCollection.preferredContentSizeCategory.rawValue
+            // How far in from the bar's own leading margin the title block goes.
+            let barMargin = navigationController.navigationBar.layoutMargins.left
+            titleInset = margin.map { max($0 - barMargin, 0) } ?? 0
+
+            let key = "\(traitCollection.preferredContentSizeCategory.rawValue) \(titleInset)"
             if key != appliedKey || host.navigationItem.standardAppearance == nil {
                 appliedKey = key
                 applyTitleAppearances(to: host, in: navigationController)
                 // The subtitle's font scales with the text size too.
                 appliedSubtitle = nil
             }
+            subtitleView?.inset = titleInset
             applySubtitle(to: host)
         }
 
@@ -255,6 +301,7 @@ private struct LedgerLargeTitleConfigurator: UIViewControllerRepresentable {
             }
             let view = subtitleView ?? LedgerSubtitleView()
             subtitleView = view
+            view.inset = titleInset
             view.text = subtitle
             if host.navigationItem.largeSubtitleView !== view {
                 host.navigationItem.largeSubtitleView = view
@@ -282,10 +329,17 @@ private struct LedgerLargeTitleConfigurator: UIViewControllerRepresentable {
         private func styled(_ source: UINavigationBarAppearance) -> UINavigationBarAppearance {
             let appearance = UINavigationBarAppearance(barAppearance: source)
             let ink = UIColor(named: "Ink") ?? .label
-            appearance.largeTitleTextAttributes = [
+            var largeTitle: [NSAttributedString.Key: Any] = [
                 .font: Self.serifFont(.largeTitle),
                 .foregroundColor: ink
             ]
+            if titleInset > 0 {
+                let paragraph = NSMutableParagraphStyle()
+                paragraph.firstLineHeadIndent = titleInset
+                paragraph.headIndent = titleInset
+                largeTitle[.paragraphStyle] = paragraph
+            }
+            appearance.largeTitleTextAttributes = largeTitle
             appearance.titleTextAttributes = [
                 .font: Self.serifFont(.title3),
                 .foregroundColor: ink
