@@ -94,8 +94,12 @@ final class StoreHost {
         do {
             try AppReset.eraseStore(in: context)
         } catch {
-            errorMessage = "Couldn’t erase everything. Some of your data may still be here; "
-                + "try again, or reinstall SoapWiz."
+            // Worded for both ways it can fail. Before the wipe is saved,
+            // everything is rolled back and another reset may work; after,
+            // the store is empty and the next launch reinstalls the library
+            // and default settings.
+            errorMessage = "Couldn’t finish resetting. Close SoapWiz from the app switcher and "
+                + "open it again, then reset again if any of your data is still there."
             return
         }
         let documents = try? FileManager.default.url(

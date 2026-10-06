@@ -134,6 +134,16 @@ final class SyncHealthMonitorTests {
         #expect(monitor.unresolvedFallback == nil)
     }
 
+    /// With sync turned off the footer already says everything stays on this
+    /// device, and nothing can sync until it's back on to clear the warning.
+    @Test func unresolvedFallback_SyncTurnedOff_IsNotShown() {
+        store().recordLocalFallback(reason: "no container")
+
+        let monitor = makeMonitor(activeStore: .offlineByChoice)
+
+        #expect(monitor.unresolvedFallback == nil)
+    }
+
     @Test func unresolvedFallback_NoFallbackEverRecorded_IsNil() {
         let monitor = makeMonitor()
         #expect(monitor.unresolvedFallback == nil)
