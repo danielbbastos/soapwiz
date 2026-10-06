@@ -19,6 +19,15 @@ struct SoapWizApp: App {
     init() {
         UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
         let container = ModelContainerFactory.makeProduction()
+        // Straight after the store opens, so its import observer is registered
+        // before the launch merge below: an import that finished in between
+        // would otherwise go unmerged until the next one. Built here rather than
+        // in a task so it also exists before the scene's first activation, which
+        // it has to see in order to skip it. Held for the app's lifetime;
+        // CloudKit imports duplicates long after launch.
+        _mergeCoordinator = State(
+            initialValue: DuplicateMergeCoordinator(context: container.mainContext)
+        )
         // Repairs the migration that gave `Ingredient` its identity, before
         // anything installs or merges ingredients.
         IngredientIdentityBackfill.repairSharedIdentitiesLoggingFailure(in: container.mainContext)
@@ -44,13 +53,6 @@ struct SoapWizApp: App {
         sharedModelContainer = container
         _syncHealth = State(
             initialValue: SyncHealthMonitor(activeStore: ModelContainerFactory.activeStore)
-        )
-        // Built here so it exists before the scene's first activation, which it
-        // has to see in order to skip it. Held for the app's lifetime so its
-        // import observer stays registered; CloudKit imports duplicates long
-        // after launch.
-        _mergeCoordinator = State(
-            initialValue: DuplicateMergeCoordinator(context: container.mainContext)
         )
     }
 
