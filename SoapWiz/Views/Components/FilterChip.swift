@@ -73,34 +73,8 @@ struct FilterChip: View {
     /// Drawn about 36pt tall, with the padding that brings the hit area to 44
     /// outside the capsule so the chip doesn't look any bigger.
     private var ledgerLabel: some View {
-        HStack(spacing: 4) {
-            if isSelected {
-                Image(systemName: "checkmark")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(Color.ink)
-            } else if let dot {
-                Circle()
-                    .fill(dot)
-                    .frame(width: 9, height: 9)
-                    .padding(.trailing, 4)
-                    .accessibilityHidden(true)
-            }
-            Text(title)
-                .font(.subheadline.weight(isSelected ? .semibold : .regular))
-                .lineLimit(1)
-                .foregroundStyle(isSelected ? Color.ink : Color.inkSoft)
-            if let count {
-                Text("\(count)")
-                    .font(.caption)
-                    .monospacedDigit()
-                    .foregroundStyle(Color.inkFaint)
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(isSelected ? Color.honey : Color.paperRaised, in: .capsule)
-        .overlay(Capsule().strokeBorder(isSelected ? Color.amber : Color.ruleStrong, lineWidth: 1))
-        .padding(.vertical, 4)
+        HoneyLedgerChip(title: title, isSelected: isSelected, count: count, dot: dot)
+            .padding(.vertical, 4)
         .contentShape(Rectangle())
     }
 }

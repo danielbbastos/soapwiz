@@ -63,7 +63,7 @@ struct HeroPhoto: View {
             topTrailingRadius: Self.cornerRadius,
             style: .continuous
         )
-        .fill(Color.warmBackground)
+        .fill(Color.paper)
         .frame(height: size.height)
         .shadow(color: .black.opacity(0.22), radius: 8, y: -3)
         .offset(y: pageEdge)
@@ -116,8 +116,6 @@ struct HeroPhotoHeader: ViewModifier {
     /// as unreadable as brown type over a bright picture.
     @Binding var coversNavigationBar: Bool
 
-    var pageStyle: HeroPageStyle = .warm
-
     /// Measured rather than assumed. The width decides both the photo's own
     /// frame and the space the form reserves above its first section, and the
     /// two have to agree exactly or the photo is overlapped or trailed by a gap.
@@ -143,12 +141,13 @@ struct HeroPhotoHeader: ViewModifier {
     }
 
     /// What the form reserves above its first section for the photo to show
-    /// through. The scroll view's inset is this plus the safe area.
-    private var reservedTop: CGFloat { size.height + pageStyle.spacingBelowPhoto }
+    /// through: the photo alone, since the ledger's first header brings its own
+    /// inset and the ornament sits centred under the photo. The scroll view's
+    /// inset is this plus the safe area.
+    private var reservedTop: CGFloat { size.height }
 
     /// Where the top edge of the page sits on screen. It starts at the bottom of
-    /// the photo — the gap below the photo belongs to the page, not to the
-    /// photo, so it travels up with the cards rather than staying behind.
+    /// the photo and travels up with the cards as the screen scrolls.
     private var pageTop: CGFloat { size.height - max(0, scrolled) }
 
     /// The bottom of the navigation bar, measured down from the top of the
@@ -176,9 +175,9 @@ struct HeroPhotoHeader: ViewModifier {
     func body(content: Content) -> some View {
         if let image {
             content
-                // The photo's own height plus the gap below it. The scroll
-                // offset is measured against this inset, so the photo still
-                // sits flush with the top of the screen at rest.
+                // The photo's own height. The scroll offset is measured against
+                // this inset, so the photo still sits flush with the top of the
+                // screen at rest.
                 .contentMargins(.top, reservedTop, for: .scrollContent)
                 .onScrollGeometryChange(for: CGFloat.self) { geometry in
                     geometry.contentOffset.y + geometry.contentInsets.top
@@ -208,9 +207,10 @@ struct HeroPhotoHeader: ViewModifier {
         }
     }
 
-    /// The page the form's cards sit on, in the app's own background colour so
-    /// that it is indistinguishable from the screen below the photo and hides
-    /// the photo completely once it has passed over it.
+    /// The page the form's cards sit on: the Honey Ledger's paper and grain,
+    /// drawn from the screen's own origin so the grain lines up with
+    /// `ledgerBackground()` behind it. It is indistinguishable from the screen
+    /// below the photo and hides the photo completely once it has passed over it.
     ///
     /// Its top edge takes the same curve as the photo's bottom, so the two read
     /// as the same shape whichever one is on top: at rest the photo's rounded
@@ -224,22 +224,13 @@ struct HeroPhotoHeader: ViewModifier {
     /// stays pinned to the bottom of the screen. Sized to one screen and merely
     /// offset, that edge climbs into view as the page rises and the photo shows
     /// through the gaps between the cards below it.
-    @ViewBuilder
     private var page: some View {
-        switch pageStyle {
-        case .warm:
-            pageShape
-                .fill(Color.warmBackground)
-                .frame(height: pageHeight)
-                .offset(y: pageTop)
-        case .honeyLedger:
-            HoneyLedgerPaper()
-                .mask(alignment: .top) {
-                    pageShape
-                        .frame(height: pageHeight)
-                        .offset(y: pageTop)
-                }
-        }
+        HoneyLedgerPaper()
+            .mask(alignment: .top) {
+                pageShape
+                    .frame(height: pageHeight)
+                    .offset(y: pageTop)
+            }
     }
 
     private var pageShape: UnevenRoundedRectangle {
@@ -259,26 +250,6 @@ struct HeroPhotoHeader: ViewModifier {
     private static let pageBottomOverflow: CGFloat = 200
 }
 
-/// What the page that rides over the photo is filled with.
-enum HeroPageStyle {
-    /// The warm background, for screens still on the warm look.
-    case warm
-    /// The Honey Ledger's paper and grain, drawn from the screen's own origin so
-    /// the grain lines up with `ledgerBackground()` behind it.
-    case honeyLedger
-
-    /// Breathing room under the photo, so the first card starts below it rather
-    /// than against it. The warm style matches the spacing the form already puts
-    /// between its own sections; the ledger's first header brings its own inset,
-    /// so it reserves none here and the ornament sits centred under the photo.
-    var spacingBelowPhoto: CGFloat {
-        switch self {
-        case .warm: 16
-        case .honeyLedger: 0
-        }
-    }
-}
-
 extension View {
     /// Draws `image` full bleed behind the top of this scrolling screen. Apply
     /// it before any modifier that puts a background of its own behind the
@@ -286,15 +257,13 @@ extension View {
     func heroPhotoHeader(
         image: UIImage?,
         aspectRatio: CGFloat,
-        coversNavigationBar: Binding<Bool>,
-        pageStyle: HeroPageStyle = .warm
+        coversNavigationBar: Binding<Bool>
     ) -> some View {
         modifier(
             HeroPhotoHeader(
                 image: image,
                 aspectRatio: aspectRatio,
-                coversNavigationBar: coversNavigationBar,
-                pageStyle: pageStyle
+                coversNavigationBar: coversNavigationBar
             )
         )
     }

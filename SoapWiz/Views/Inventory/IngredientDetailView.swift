@@ -102,7 +102,7 @@ struct IngredientDetailView: View {
                         // Without a photo the List's first-header inset leaves the
                         // ornament lower than centred; the List clamps this negative
                         // padding, so -10 moves it up about 7pt. With a photo,
-                        // `HeroPageStyle.honeyLedger` handles the spacing instead.
+                        // `heroPhotoHeader` reserves no gap and the inset centres it.
                         .padding(.top, heroImage == nil ? -10 : 0)
                 } footer: {
                     // A footer sentence rather than a labelled row: where an
@@ -152,8 +152,7 @@ struct IngredientDetailView: View {
             .heroPhotoHeader(
                 image: heroImage,
                 aspectRatio: Self.heroAspectRatio,
-                coversNavigationBar: $photoCoversNavigationBar,
-                pageStyle: .honeyLedger
+                coversNavigationBar: $photoCoversNavigationBar
             )
             .navigationTitle(model.ingredient.name)
             .navigationBarTitleDisplayMode(.inline)
