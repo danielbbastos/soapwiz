@@ -16,4 +16,20 @@ extension CollectionColor {
         case .pink:    .pink
         }
     }
+
+    /// The ledger's pigment for the collection's dot, nil for `neutral`, which
+    /// shows none.
+    var pigment: Color? {
+        switch self {
+        case .neutral: nil
+        case .red:     .pigmentMadder
+        case .orange:  .pigmentClay
+        case .yellow:  .amber
+        case .green:   .pigmentOlive
+        case .teal:    .pigmentVerdigris
+        case .blue:    .pigmentWoad
+        case .purple:  .pigmentFig
+        case .pink:    .pigmentRose
+        }
+    }
 }
