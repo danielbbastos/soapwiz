@@ -25,8 +25,7 @@ struct IngredientListRow: View {
         let content = IngredientRowView(ingredient: ingredient, model: model)
         if model.editMode == .active {
             content
-                .listRowBackground(LedgerSheetRowBackground(position: position, isSelected: false))
-                .listRowSeparatorTint(Color.rule)
+                .ledgerSheetRow(position: position)
         } else {
             Button {
                 navigation.show(ingredient)

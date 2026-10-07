@@ -7,7 +7,7 @@ extension View {
     func ledgerBackground() -> some View {
         self
             .scrollContentBackground(.hidden)
-            .background { PaperBackground() }
+            .background { HoneyLedgerPaper() }
     }
 
     /// Sets this screen's large and inline titles in New York semibold `ink`,
@@ -31,6 +31,12 @@ extension View {
             .overlay(shape.strokeBorder(Color.rule, lineWidth: 1))
             .shadow(color: Color.shadow.opacity(0.10), radius: 12, y: 8)
             .shadow(color: Color.shadow.opacity(0.12), radius: 1, y: 1)
+    }
+
+    /// A row's share of the ledger sheet, unselected, with a rule between rows.
+    func ledgerSheetRow(position: LedgerSheetPosition) -> some View {
+        listRowBackground(LedgerSheetRowBackground(position: position, isSelected: false))
+            .listRowSeparatorTint(Color.rule)
     }
 
     /// `listDetailRow` on the ledger's paper: a selected row is honey, the rest
@@ -70,7 +76,7 @@ struct DoubleRule: View {
 }
 
 /// `paper` with its grain laid over it, behind everything and never over text.
-private struct PaperBackground: View {
+struct HoneyLedgerPaper: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {

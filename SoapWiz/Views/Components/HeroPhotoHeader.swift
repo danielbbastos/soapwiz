@@ -116,6 +116,8 @@ struct HeroPhotoHeader: ViewModifier {
     /// as unreadable as brown type over a bright picture.
     @Binding var coversNavigationBar: Bool
 
+    var pageStyle: HeroPageStyle = .warm
+
     /// Measured rather than assumed. The width decides both the photo's own
     /// frame and the space the form reserves above its first section, and the
     /// two have to agree exactly or the photo is overlapped or trailed by a gap.
@@ -136,18 +138,13 @@ struct HeroPhotoHeader: ViewModifier {
     /// than a guess, and the same on both idioms.
     private static let navigationBarHeight: CGFloat = 44
 
-    /// Breathing room under the photo, so the first card starts below it rather
-    /// than against it. Matched to the spacing the form already puts between its
-    /// own sections, so the photo reads as one more band of the page.
-    private static let spacingBelowPhoto: CGFloat = 16
-
     private var size: CGSize {
         CGSize(width: container.width, height: container.width / aspectRatio)
     }
 
     /// What the form reserves above its first section for the photo to show
     /// through. The scroll view's inset is this plus the safe area.
-    private var reservedTop: CGFloat { size.height + Self.spacingBelowPhoto }
+    private var reservedTop: CGFloat { size.height + pageStyle.spacingBelowPhoto }
 
     /// Where the top edge of the page sits on screen. It starts at the bottom of
     /// the photo — the gap below the photo belongs to the page, not to the
@@ -227,15 +224,58 @@ struct HeroPhotoHeader: ViewModifier {
     /// stays pinned to the bottom of the screen. Sized to one screen and merely
     /// offset, that edge climbs into view as the page rises and the photo shows
     /// through the gaps between the cards below it.
+    @ViewBuilder
     private var page: some View {
+        switch pageStyle {
+        case .warm:
+            pageShape
+                .fill(Color.warmBackground)
+                .frame(height: pageHeight)
+                .offset(y: pageTop)
+        case .honeyLedger:
+            HoneyLedgerPaper()
+                .mask(alignment: .top) {
+                    pageShape
+                        .frame(height: pageHeight)
+                        .offset(y: pageTop)
+                }
+        }
+    }
+
+    private var pageShape: UnevenRoundedRectangle {
         UnevenRoundedRectangle(
             topLeadingRadius: HeroPhoto.cornerRadius,
             topTrailingRadius: HeroPhoto.cornerRadius,
             style: .continuous
         )
-        .fill(Color.warmBackground)
-        .frame(height: max(0, container.height - pageTop))
-        .offset(y: pageTop)
+    }
+
+    /// Runs past the bottom of the container, which stops at the safe area, so
+    /// the page reaches the very bottom of the screen behind the tab bar.
+    private var pageHeight: CGFloat {
+        max(0, container.height - pageTop) + Self.pageBottomOverflow
+    }
+
+    private static let pageBottomOverflow: CGFloat = 200
+}
+
+/// What the page that rides over the photo is filled with.
+enum HeroPageStyle {
+    /// The warm background, for screens still on the warm look.
+    case warm
+    /// The Honey Ledger's paper and grain, drawn from the screen's own origin so
+    /// the grain lines up with `ledgerBackground()` behind it.
+    case honeyLedger
+
+    /// Breathing room under the photo, so the first card starts below it rather
+    /// than against it. The warm style matches the spacing the form already puts
+    /// between its own sections; the ledger's first header brings its own inset,
+    /// so it reserves none here and the ornament sits centred under the photo.
+    var spacingBelowPhoto: CGFloat {
+        switch self {
+        case .warm: 16
+        case .honeyLedger: 0
+        }
     }
 }
 
@@ -246,11 +286,15 @@ extension View {
     func heroPhotoHeader(
         image: UIImage?,
         aspectRatio: CGFloat,
-        coversNavigationBar: Binding<Bool>
+        coversNavigationBar: Binding<Bool>,
+        pageStyle: HeroPageStyle = .warm
     ) -> some View {
         modifier(
             HeroPhotoHeader(
-                image: image, aspectRatio: aspectRatio, coversNavigationBar: coversNavigationBar
+                image: image,
+                aspectRatio: aspectRatio,
+                coversNavigationBar: coversNavigationBar,
+                pageStyle: pageStyle
             )
         )
     }

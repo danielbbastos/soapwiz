@@ -7,33 +7,46 @@ struct UsageEntryRow: View {
 
     @Environment(AppNavigation.self) private var navigation
 
+    private var shortDate: String {
+        let isCurrentYear = Calendar.current.isDate(entry.date, equalTo: .now, toGranularity: .year)
+        return isCurrentYear
+            ? entry.date.formatted(.dateTime.month(.abbreviated).day())
+            : entry.date.formatted(.dateTime.month(.abbreviated).day().year())
+    }
+
+    private var detailLine: Text {
+        let date = Text(shortDate)
+        guard !entry.batch.code.isEmpty else { return date }
+        return Text(entry.batch.code).fontDesign(.monospaced) + Text(" · ") + date
+    }
+
     var body: some View {
         Button {
             navigation.showBatch(entry.batch)
         } label: {
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
+                HStack(alignment: .firstTextBaseline) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(entry.batch.recipeName)
-                            .foregroundStyle(.primary)
-                        Text(entry.date.formatted(date: .abbreviated, time: .shortened))
+                            .font(.body)
+                            .foregroundStyle(Color.ink)
+                        detailLine
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.inkSoft)
                     }
-                    Spacer()
-                    Text("−\(entry.amount.formatted(.number.precision(.fractionLength(0...2)))) \(entry.unit)")
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(.tertiary)
+                    Spacer(minLength: 8)
+                    Text.honeyLedgerFigure(
+                        entry.amount.formatted(.number.precision(.fractionLength(0...2))),
+                        unit: entry.unit
+                    )
                 }
                 if !entry.sourceLabels.isEmpty {
                     Text("From \(entry.sourceLabels.joined(separator: ", "))")
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.inkSoft)
                 }
             }
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
     }
