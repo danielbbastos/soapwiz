@@ -1,13 +1,13 @@
 import SwiftUI
 import SwiftData
 
-/// The "Cost breakdown" section of a recipe's detail screen: the whole batch's
-/// cost with RRP, expandable to its per-ingredient breakdown and flagged when
-/// some ingredients have no price (a "No cost data" note when none has one),
-/// plus an expandable cost breakdown for each product size the user tries out.
-/// Reads its figures from the view model and the app's RRP factor from
-/// settings, and writes back only the recipe's products, which can be added
-/// and deleted here.
+/// The "Cost breakdown" section of a recipe's detail screen: one sheet with the
+/// whole batch's cost and RRP, then each product size the user tries out, then
+/// "Add size". Each costed row opens in place onto its per-ingredient lines.
+/// The whole batch is flagged when some ingredients have no price, and a "No
+/// cost data" note stands in for it when none has one. Reads its figures from
+/// the view model and the app's RRP factor from settings, and writes back only
+/// the recipe's products, which can be added and deleted here.
 ///
 /// Hidden with inventory tracking off: without prices there is nothing to
 /// calculate. The sizes stay stored and come back when tracking is switched on.
@@ -19,7 +19,7 @@ struct RecipeCostSection: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var settingsRecords: [AppSettings]
     @State private var batchTotalExpanded = false
-    @State private var expandedProducts: [UUID: Bool] = [:]
+    @State private var expandedProducts: Set<UUID> = []
     @State private var showingAddProduct = false
     @State private var showingSaveError = false
 
@@ -41,31 +41,38 @@ struct RecipeCostSection: View {
     }
 
     private var calculatorSection: some View {
-        Section {
-            if batch.total > 0 {
-                DisclosureGroup(isExpanded: $batchTotalExpanded) {
-                    productBreakdownRows(batch)
-                } label: {
-                    wholeBatchLabel
-                }
-            } else {
-                Text("No cost data — add purchase prices in Inventory")
-                    .foregroundStyle(.secondary)
-            }
-
-            let products = nonWholeBatchProducts
-            let breakdowns = productBreakdowns(products, batch: batch)
-            ForEach(products, id: \.id) { draft in
-                let breakdown = breakdowns[draft.id] ?? ProductCostBreakdown()
-                if breakdown.total > 0 {
-                    DisclosureGroup(isExpanded: isExpanded(draft)) {
-                        productBreakdownRows(breakdown)
-                    } label: {
-                        productDisclosureLabel(draft, breakdown: breakdown)
+        let products = nonWholeBatchProducts
+        let breakdowns = productBreakdowns(products, batch: batch)
+        let rowCount = products.count + 2
+        return Section {
+            Group {
+                if batch.total > 0 {
+                    costRow(
+                        title: ProductUnit.wholeBatch.label,
+                        caption: wholeBatchCaption,
+                        breakdown: batch,
+                        isExpanded: $batchTotalExpanded
+                    ) {
+                        unpricedWarning
                     }
                 } else {
-                    productDisclosureLabel(draft, breakdown: breakdown)
+                    Text("No cost data — add purchase prices in Inventory")
+                        .foregroundStyle(Color.inkSoft)
                 }
+            }
+            .ledgerSheetRow(position: .position(index: 0, count: rowCount))
+
+            ForEach(Array(products.enumerated()), id: \.element.id) { index, draft in
+                let breakdown = breakdowns[draft.id] ?? ProductCostBreakdown()
+                costRow(
+                    title: productLabel(draft),
+                    caption: productCaption(breakdown),
+                    breakdown: breakdown,
+                    isExpanded: isExpanded(draft)
+                ) {
+                    EmptyView()
+                }
+                .ledgerSheetRow(position: .position(index: index + 1, count: rowCount))
             }
             .onDelete(perform: deleteProducts)
 
@@ -76,8 +83,10 @@ struct RecipeCostSection: View {
             Button {
                 showingAddProduct = true
             } label: {
-                Label("Add size", systemImage: "plus.circle.fill")
+                Label("Add size", systemImage: "plus.circle")
+                    .foregroundStyle(Color.amberText)
             }
+            .ledgerSheetRow(position: .position(index: rowCount - 1, count: rowCount))
             .sheet(isPresented: $showingAddProduct) {
                 AddRecipeProductSheet { draft in
                     saveProducts { model.productDrafts.append(draft) }
@@ -89,7 +98,7 @@ struct RecipeCostSection: View {
                 Text("The change was not saved. Please try again.")
             }
         } header: {
-            Text("Cost breakdown")
+            HoneyLedgerSectionLabel("Cost breakdown")
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
                 if batch.total > 0, batch.unpricedIngredientCount > 0 {
@@ -98,8 +107,9 @@ struct RecipeCostSection: View {
                 Text("Try product sizes, like one bar or a quarter of the batch, to see what each would cost. "
                     + "They don't affect batches or inventory.")
             }
+            .font(.footnote)
+            .foregroundStyle(Color.inkSoft)
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private func deleteProducts(at offsets: IndexSet) {
@@ -140,10 +150,18 @@ struct RecipeCostSection: View {
 
     private func isExpanded(_ draft: RecipeProductDraft) -> Binding<Bool> {
         Binding(
-            get: { expandedProducts[draft.id] ?? false },
-            set: { expandedProducts[draft.id] = $0 }
+            get: { expandedProducts.contains(draft.id) },
+            set: { isOn in
+                if isOn {
+                    expandedProducts.insert(draft.id)
+                } else {
+                    expandedProducts.remove(draft.id)
+                }
+            }
         )
     }
+
+    // MARK: - Labels
 
     private func productLabel(_ draft: RecipeProductDraft) -> String {
         guard let unit = ProductUnit(rawValue: draft.unitSymbol) else {
@@ -156,6 +174,40 @@ struct RecipeCostSection: View {
         return "\(sizeFmt) \(draft.unitSymbol)"
     }
 
+    /// The batch's own scale: its oils for a soap, which is what the recipe is
+    /// written against, or its whole weight for anything else.
+    private var wholeBatchCaption: String? {
+        if model.makesSoap {
+            let oils = (model.oilAmountCalculations ?? []).reduce(0) { $0 + $1.weight }
+            guard oils > 0 else { return nil }
+            return "\(amountText(oils, unit: model.displayWeightUnit)) oils"
+        }
+        guard let total = model.calculatedAmountRows?.last(where: \.isSummary)?.weight, total > 0 else { return nil }
+        return amountText(total, unit: model.displayWeightUnit)
+    }
+
+    /// How many of the size one batch makes. A part of the batch already says
+    /// so in its name, so it has no caption.
+    private func productCaption(_ breakdown: ProductCostBreakdown) -> String? {
+        if breakdown.exceedsBatchWeight {
+            return "Larger than the batch"
+        }
+        return breakdown.sizesPerBatch.map(CostBreakdownCaption.sizesPerBatch)
+    }
+
+    @ViewBuilder
+    private var unpricedWarning: some View {
+        let unpriced = batch.unpricedIngredientCount
+        if unpriced > 0 {
+            Label(
+                unpriced == 1 ? "1 ingredient has no price" : "\(unpriced) ingredients have no price",
+                systemImage: "exclamationmark.triangle.fill"
+            )
+            .font(.footnote)
+            .foregroundStyle(Color.warning)
+        }
+    }
+
     private func formatCurrency(_ value: Double) -> String {
         value.formatted(.currency(code: currencyCode))
     }
@@ -165,93 +217,129 @@ struct RecipeCostSection: View {
         return "\(formatted) \(unit)"
     }
 
-    private var wholeBatchLabel: some View {
-        HStack {
+    // MARK: - Rows
+
+    /// A top-level row of the sheet: the name with its caption, the total with
+    /// its RRP, and a chevron that opens the ingredient lines underneath, inside
+    /// the same row. A size nothing in it is priced for shows a dash and
+    /// doesn't open.
+    private func costRow<Warning: View>(
+        title: String,
+        caption: String?,
+        breakdown: ProductCostBreakdown,
+        isExpanded: Binding<Bool>,
+        @ViewBuilder warning: () -> Warning
+    ) -> some View {
+        let isCosted = breakdown.total > 0
+        return VStack(alignment: .leading, spacing: 0) {
+            // Not `.disabled` for an uncosted row, which would dim its name too.
+            Button {
+                guard isCosted else { return }
+                withAnimation(.easeInOut(duration: 0.2)) { isExpanded.wrappedValue.toggle() }
+            } label: {
+                costRowHead(title: title, caption: caption, breakdown: breakdown, isExpanded: isExpanded.wrappedValue) {
+                    warning()
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(expansionState(isCosted: isCosted, isExpanded: isExpanded.wrappedValue))
+
+            if isCosted, isExpanded.wrappedValue {
+                breakdownLines(breakdown)
+                    .padding(.top, 4)
+                    .padding(.bottom, 6)
+            }
+        }
+    }
+
+    private func expansionState(isCosted: Bool, isExpanded: Bool) -> String {
+        guard isCosted else { return "" }
+        return isExpanded ? String(localized: "Expanded") : String(localized: "Collapsed")
+    }
+
+    private func costRowHead<Warning: View>(
+        title: String,
+        caption: String?,
+        breakdown: ProductCostBreakdown,
+        isExpanded: Bool,
+        @ViewBuilder warning: () -> Warning
+    ) -> some View {
+        let isCosted = breakdown.total > 0
+        return HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(ProductUnit.wholeBatch.label)
-                    .fontWeight(.semibold)
-                let unpriced = batch.unpricedIngredientCount
-                if unpriced > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                        Text(unpriced == 1 ? "1 ingredient has no price" : "\(unpriced) ingredients have no price")
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.orange)
+                Text(title)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.ink)
+                if let caption {
+                    Text(caption)
+                        .font(.footnote)
+                        .foregroundStyle(Color.inkSoft)
                 }
+                warning()
             }
-            Spacer()
+            Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 1) {
-                Text(formatCurrency(batch.total))
-                    .fontWeight(.semibold)
+                Text(isCosted ? formatCurrency(breakdown.total) : "—")
+                    .font(.body.weight(.semibold))
                     .monospacedDigit()
-                Text("RRP \(formatCurrency(batch.total * pvpFactor))")
-                    .font(.caption)
-                    .foregroundStyle(.tint)
-                    .monospacedDigit()
-            }
-        }
-    }
-
-    private func productDisclosureLabel(_ draft: RecipeProductDraft, breakdown: ProductCostBreakdown) -> some View {
-        HStack {
-            Text(productLabel(draft))
-            Spacer()
-            VStack(alignment: .trailing, spacing: 1) {
-                Text(breakdown.total > 0 ? formatCurrency(breakdown.total) : "—")
-                    .font(.subheadline)
-                    .foregroundStyle(breakdown.total > 0 ? .primary : .secondary)
-                    .monospacedDigit()
-                if breakdown.total > 0 {
+                    .foregroundStyle(isCosted ? Color.ink : Color.inkSoft)
+                if isCosted {
                     Text("RRP \(formatCurrency(breakdown.total * pvpFactor))")
-                        .font(.caption)
-                        .foregroundStyle(.tint)
+                        .font(.footnote)
                         .monospacedDigit()
+                        .foregroundStyle(Color.amberText)
                 }
             }
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color.inkFaint)
+                .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                .opacity(isCosted ? 1 : 0)
+                .accessibilityHidden(true)
         }
+        .contentShape(.rect)
     }
 
-    private func productBreakdownRows(_ breakdown: ProductCostBreakdown) -> some View {
+    /// The ingredient lines under an open row: grouped under small headings,
+    /// each a name, an amount in `inkSoft` and a cost in `ink`, in three
+    /// aligned columns, with space rather than dividers between the groups.
+    private func breakdownLines(_ breakdown: ProductCostBreakdown) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(BreakdownGroupKey.groups(of: breakdown), id: \.key) { group in
                 Text(group.key.displayName)
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
-                    .padding(.top, 8)
-                    .padding(.bottom, 2)
+                    .font(.caption.weight(.bold))
+                    .textCase(.uppercase)
+                    .tracking(0.9)
+                    .foregroundStyle(Color.inkSoft)
+                    .padding(.top, 12)
+                    .padding(.bottom, 4)
                 ForEach(group.rows, id: \.ingredient.persistentModelID) { row in
-                    let display = model.displayedAmount(for: row, usesEnteredUnit: group.key.usesEnteredUnit)
-                    HStack(spacing: 8) {
-                        Text(row.ingredient.name)
-                            .font(.footnote)
-                        Spacer()
-                        if let note = display.conversionNote {
-                            InfoPopoverIcon(text: note)
-                        }
-                        Text(amountText(display.amount, unit: display.unit))
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                        // Always render the price cell, with a dash when the
-                        // ingredient has no price, so the amount stays in its
-                        // own column instead of sliding into the price slot.
-                        if row.cost > 0 {
-                            Text(formatCurrency(row.cost))
-                                .font(.footnote)
-                                .monospacedDigit()
-                                .frame(width: 64, alignment: .trailing)
-                        } else {
-                            Text("—")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .frame(width: 64, alignment: .trailing)
-                        }
-                    }
-                    .padding(.vertical, 4)
+                    breakdownLine(row, usesEnteredUnit: group.key.usesEnteredUnit)
                 }
             }
         }
-        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
+    }
+
+    private func breakdownLine(_ row: IngredientProductBreakdown, usesEnteredUnit: Bool) -> some View {
+        let display = model.displayedAmount(for: row, usesEnteredUnit: usesEnteredUnit)
+        return HStack(spacing: 8) {
+            Text(row.ingredient.name)
+                .foregroundStyle(Color.ink)
+            Spacer(minLength: 4)
+            if let note = display.conversionNote {
+                InfoPopoverIcon(text: note)
+            }
+            Text(amountText(display.amount, unit: display.unit))
+                .foregroundStyle(Color.inkSoft)
+            // Always render the cost cell, with a dash when the ingredient has
+            // no price, so the amount stays in its own column instead of
+            // sliding into the cost's.
+            Text(row.cost > 0 ? formatCurrency(row.cost) : "—")
+                .foregroundStyle(row.cost > 0 ? Color.ink : Color.inkSoft)
+                .frame(minWidth: 64, alignment: .trailing)
+        }
+        .font(.subheadline)
+        .monospacedDigit()
+        .padding(.vertical, 3)
     }
 }
