@@ -8,6 +8,8 @@ struct SoapPropertyIndicatorView: View {
     var infoTitle: String?
     var infoText: String?
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @State private var showingRange = false
 
     private var status: Status {
@@ -28,24 +30,30 @@ struct SoapPropertyIndicatorView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("\(title): ")
-                    .foregroundStyle(.secondary)
-                + Text(value, format: .number.precision(.fractionLength(1)))
-                    .font(.body.weight(.semibold))
-                    .monospacedDigit()
-                // A sibling of the concatenation rather than part of it: a view
-                // can't join a `Text` + `Text` chain.
-                if let infoText {
-                    InfoPopoverIcon(title: infoTitle, text: infoText)
+            // Two lines at the accessibility sizes: beside the info icon and the
+            // status, the title would be squeezed until it broke mid-figure.
+            if dynamicTypeSize.isAccessibilitySize {
+                HStack {
+                    Text(title)
+                        .foregroundStyle(.secondary)
+                    infoIcon
                 }
-                Spacer()
-                Text(status.label)
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(status.color.opacity(0.18), in: Capsule())
-                    .foregroundStyle(status.color)
+                HStack {
+                    valueText
+                    Spacer()
+                    statusLabel
+                }
+            } else {
+                HStack {
+                    Text("\(title): ")
+                        .foregroundStyle(.secondary)
+                    + valueText
+                    // A sibling of the concatenation rather than part of it: a view
+                    // can't join a `Text` + `Text` chain.
+                    infoIcon
+                    Spacer()
+                    statusLabel
+                }
             }
 
             GeometryReader { geo in
@@ -98,6 +106,28 @@ struct SoapPropertyIndicatorView: View {
             }
             .frame(height: 22)
         }
+    }
+
+    private var valueText: Text {
+        Text(value, format: .number.precision(.fractionLength(1)))
+            .font(.body.weight(.semibold))
+            .monospacedDigit()
+    }
+
+    @ViewBuilder
+    private var infoIcon: some View {
+        if let infoText {
+            InfoPopoverIcon(title: infoTitle, text: infoText)
+        }
+    }
+
+    private var statusLabel: some View {
+        Text(status.label)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(status.color.opacity(0.18), in: Capsule())
+            .foregroundStyle(status.color)
     }
 
     private enum Status {
