@@ -97,6 +97,8 @@ struct FattyAcidProfileSections: View {
 }
 
 private struct FattyAcidRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let label: String
     let value: Double
     var emphasis: Bool = false
@@ -106,8 +108,6 @@ private struct FattyAcidRow: View {
         self.value = value
         self.emphasis = emphasis
     }
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         // One column at the accessibility sizes: beside the percentage, the
