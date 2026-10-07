@@ -135,8 +135,11 @@ struct IngredientListView: View {
                 // the selection the toolbar is there to act on.
                 .headerStrip(showsList: !displayed.isEmpty) {
                     VStack(spacing: 0) {
-                        SearchField("Search ingredients", text: $model.searchText)
-                            .padding(.bottom, 12)
+                        // Nothing to search with an empty inventory.
+                        if !ingredients.isEmpty {
+                            SearchField("Search ingredients", text: $model.searchText)
+                                .padding(.bottom, 12)
+                        }
                         if !visibleCategories.isEmpty && model.editMode == .inactive {
                             InventoryCategoryFilterBar(
                                 categories: visibleCategories,

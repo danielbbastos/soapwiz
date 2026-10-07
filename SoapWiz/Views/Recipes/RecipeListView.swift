@@ -239,9 +239,8 @@ struct RecipeListView: View {
                                 recipeSection(String(localized: "Recently Added"), displayed.recent)
                                 recipeSection(String(localized: "All Recipes"), displayed.others)
                             } else {
-                                // Nothing recent: a flat favourites-then-rest list
-                                // with no headers, exactly as before this group
-                                // existed.
+                                // Nothing recent: a flat favourites-then-rest
+                                // list with no headers.
                                 rows(displayed.favorites + displayed.others)
                             }
                         }
@@ -288,8 +287,10 @@ struct RecipeListView: View {
                 }
                 .headerStrip(showsList: !displayed.isEmpty) {
                     VStack(spacing: 0) {
-                        SearchField("Search recipes", text: $model.searchText)
-                            .padding(.bottom, 12)
+                        if !recipes.isEmpty {
+                            SearchField("Search recipes", text: $model.searchText)
+                                .padding(.bottom, 12)
+                        }
                         if !collections.isEmpty {
                             RecipeCollectionFilterBar(collections: collections, model: model)
                         }
