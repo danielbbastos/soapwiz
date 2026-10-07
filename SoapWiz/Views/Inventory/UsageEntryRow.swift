@@ -6,6 +6,7 @@ struct UsageEntryRow: View {
     let entry: UsageEntry
 
     @Environment(AppNavigation.self) private var navigation
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var shortDate: String {
         let isCurrentYear = Calendar.current.isDate(entry.date, equalTo: .now, toGranularity: .year)
@@ -25,20 +26,17 @@ struct UsageEntryRow: View {
             navigation.showBatch(entry.batch)
         } label: {
             VStack(alignment: .leading, spacing: 4) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(entry.batch.recipeName)
-                            .font(.body)
-                            .foregroundStyle(Color.ink)
-                        detailLine
-                            .font(.footnote)
-                            .foregroundStyle(Color.inkSoft)
+                // One column at the accessibility sizes: beside the amount, the
+                // recipe name would be squeezed until it broke mid-word.
+                if dynamicTypeSize.isAccessibilitySize {
+                    names
+                    amount
+                } else {
+                    HStack(alignment: .firstTextBaseline) {
+                        names
+                        Spacer(minLength: 8)
+                        amount
                     }
-                    Spacer(minLength: 8)
-                    Text.honeyLedgerFigure(
-                        entry.amount.formatted(.number.precision(.fractionLength(0...2))),
-                        unit: entry.unit
-                    )
                 }
                 if !entry.sourceLabels.isEmpty {
                     Text("From \(entry.sourceLabels.joined(separator: ", "))")
@@ -46,8 +44,27 @@ struct UsageEntryRow: View {
                         .foregroundStyle(Color.inkSoft)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+    }
+
+    private var names: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(entry.batch.recipeName)
+                .font(.body)
+                .foregroundStyle(Color.ink)
+            detailLine
+                .font(.footnote)
+                .foregroundStyle(Color.inkSoft)
+        }
+    }
+
+    private var amount: Text {
+        Text.honeyLedgerFigure(
+            entry.amount.formatted(.number.precision(.fractionLength(0...2))),
+            unit: entry.unit
+        )
     }
 }

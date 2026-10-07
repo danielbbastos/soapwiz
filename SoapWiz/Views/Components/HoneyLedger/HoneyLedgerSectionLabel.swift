@@ -19,6 +19,7 @@ struct HoneyLedgerSectionLabel: View {
                 .textCase(.uppercase)
                 .tracking(0.9)
                 .foregroundStyle(Color.inkSoft)
+                .layoutPriority(1)
             Rectangle()
                 .fill(Color.rule)
                 .frame(height: 1)

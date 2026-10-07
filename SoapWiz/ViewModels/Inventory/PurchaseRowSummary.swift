@@ -54,15 +54,9 @@ struct PurchaseRowSummary: Equatable {
         if !hasStock {
             status = .usedUp
         } else if let expiryDate {
-            if expiryDate < now {
-                status = .expired
-                stamps.append(.stock(.expired))
-            } else {
-                status = .expires(expiryDate)
-                if let cutoff = calendar.date(byAdding: .month, value: 1, to: now), expiryDate <= cutoff {
-                    let days = IngredientStockStamp.daysUntil(expiryDate, from: now, calendar: calendar)
-                    stamps.append(.stock(.expiresIn(days: days)))
-                }
+            status = expiryDate < now ? .expired : .expires(expiryDate)
+            if let stamp = IngredientStockStamp.expiry(expiryDate, now: now, calendar: calendar) {
+                stamps.append(.stock(stamp))
             }
         }
 
