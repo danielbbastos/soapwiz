@@ -11,7 +11,7 @@ struct IncompleteFattyAcidWarningRow: View {
         if !oilNames.isEmpty {
             Text("\(Image(systemName: "exclamationmark.triangle")) \(RecipeStatsCopy.incompleteSoapProperties(names: oilNames))")
                 .font(.footnote)
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.danger)
                 .listRowSeparator(.hidden)
         }
     }

@@ -45,9 +45,13 @@ struct IngredientDetailView: View {
     /// A tappable section header with a rotating chevron. Used instead of the
     /// `Section(isExpanded:)` API, whose disclosure control doesn't render under
     /// this screen's photo header + ledger background styling.
-    private func collapsibleHeader(_ title: String, _ section: DetailSection) -> some View {
+    ///
+    /// `animated` is off for the iPad's side-by-side columns: they share one
+    /// list row, and the list resizes a row around content already laid out at
+    /// its new height, so an animated fold makes the other column jump.
+    private func collapsibleHeader(_ title: String, _ section: DetailSection, animated: Bool = true) -> some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(animated ? .easeInOut(duration: 0.2) : nil) {
                 if expandedSections.contains(section) {
                     expandedSections.remove(section)
                 } else {
@@ -64,16 +68,17 @@ struct IngredientDetailView: View {
         _model = State(initialValue: IngredientDetailViewModel(ingredient: ingredient))
     }
 
-    /// Taller than the recipe screen's crop. A photographed bar is laid flat and
-    /// shot from above; a photographed ingredient is a bottle or a bag standing
-    /// up, so a landscape band across it keeps the label and drops the rest.
-    ///
     /// Deliberately the device idiom rather than `horizontalSizeClass`, for the
     /// reason spelled out in `RecipeRowView`: `ContentView` pins the whole
     /// `TabView` to `.compact`, which leaves the size class saying "compact"
     /// everywhere.
+    private static let isPhone = UIDevice.current.userInterfaceIdiom == .phone
+
+    /// Taller than the recipe screen's crop. A photographed bar is laid flat and
+    /// shot from above; a photographed ingredient is a bottle or a bag standing
+    /// up, so a landscape band across it keeps the label and drops the rest.
     private static let heroAspectRatio: CGFloat =
-        UIDevice.current.userInterfaceIdiom == .phone ? 4.0 / 3.0 : 2.0 / 1.0
+        isPhone ? 4.0 / 3.0 : 2.0 / 1.0
 
     /// Nil for an ingredient with no photo, which leaves the screen laid out
     /// exactly as it was. The letter avatar deliberately doesn't stand in here:
@@ -262,26 +267,30 @@ struct IngredientDetailView: View {
     @ViewBuilder
     private func profileSections(stats: RecipeStats) -> some View {
         Group {
-            Section {
-                if isExpanded(.fattyAcidProfile) {
-                    sheetRow(0, of: 1) {
-                        VStack(spacing: 10) { FattyAcidBreakdownRows(stats: stats) }
-                            .padding(.vertical, 4)
+            if Self.isPhone {
+                Section {
+                    if isExpanded(.fattyAcidProfile) {
+                        sheetRow(0, of: 1) {
+                            VStack(spacing: 10) { FattyAcidBreakdownRows(stats: stats) }
+                                .padding(.vertical, 4)
+                        }
                     }
+                } header: {
+                    collapsibleHeader("Fatty Acid Profile", .fattyAcidProfile)
                 }
-            } header: {
-                collapsibleHeader("Fatty Acid Profile", .fattyAcidProfile)
-            }
 
-            Section {
-                if isExpanded(.fattyAcidTypes) {
-                    sheetRow(0, of: 1) {
-                        VStack(spacing: 10) { FattyAcidTotalsRows(stats: stats) }
-                            .padding(.vertical, 4)
+                Section {
+                    if isExpanded(.fattyAcidTypes) {
+                        sheetRow(0, of: 1) {
+                            VStack(spacing: 10) { FattyAcidTotalsRows(stats: stats) }
+                                .padding(.vertical, 4)
+                        }
                     }
+                } header: {
+                    collapsibleHeader("Fatty Acid Types", .fattyAcidTypes)
                 }
-            } header: {
-                collapsibleHeader("Fatty Acid Types", .fattyAcidTypes)
+            } else {
+                fattyAcidColumnsSection(stats: stats)
             }
 
             Section {
@@ -295,6 +304,26 @@ struct IngredientDetailView: View {
                 }
             } header: {
                 collapsibleHeader("Soap Qualities", .soapQualities)
+            }
+        }
+    }
+
+    /// The profile and the types side by side on iPad: the labels never
+    /// change and are short.
+    private func fattyAcidColumnsSection(stats: RecipeStats) -> some View {
+        Section {
+            HoneyLedgerColumns {
+                HoneyLedgerColumn(isExpanded: isExpanded(.fattyAcidProfile)) {
+                    collapsibleHeader("Fatty Acid Profile", .fattyAcidProfile, animated: false)
+                } rows: {
+                    FattyAcidBreakdownRows(stats: stats)
+                }
+            } trailing: {
+                HoneyLedgerColumn(isExpanded: isExpanded(.fattyAcidTypes)) {
+                    collapsibleHeader("Fatty Acid Types", .fattyAcidTypes, animated: false)
+                } rows: {
+                    FattyAcidTotalsRows(stats: stats)
+                }
             }
         }
     }
