@@ -2,10 +2,10 @@ import SwiftUI
 
 /// Edits the eight fatty acids of an oil's profile, with a live running total.
 ///
-/// Emits rows rather than a `Section`, so the form owns the header and the card
-/// background — the same arrangement the recipe stats use for the read-only
-/// breakdown. The total is advisory: real oils carry minor acids this list
-/// doesn't track, so a profile that doesn't reach 100 is flagged, never blocked.
+/// Emits rows rather than a `Section`, so the form owns the header; each row
+/// draws its own share of the ledger sheet. The total is advisory: real oils
+/// carry minor acids this list doesn't track, so a profile that doesn't reach
+/// 100 is flagged, never blocked.
 struct FattyAcidProfileEditor: View {
     @Binding var profile: FattyAcidProfile
 
@@ -27,32 +27,37 @@ struct FattyAcidProfileEditor: View {
         !profile.isEmpty && abs(profile.total - 100) > tolerance
     }
 
+    /// The acids, then the total.
+    private var rowCount: Int { acids.count + 1 }
+
     var body: some View {
-        ForEach(acids, id: \.name) { acid in
-            HStack {
-                Text(acid.name)
-                    .layoutPriority(1)
+        ForEach(Array(acids.enumerated()), id: \.element.name) { index, acid in
+            HoneyLedgerField(acid.name, unit: "%") { focus in
                 NumericTextField(
                     prompt: "0", value: binding(for: acid.keyPath), fractionLength: 0...2,
-                    width: 80, fillsAvailableWidth: true
+                    width: 80, fillsAvailableWidth: true, focus: focus
                 )
-                Text("%")
-                    .foregroundStyle(.secondary)
-                    .fixedSize()
+            }
+            .ledgerSheetRow(position: .position(index: index, count: rowCount))
+        }
+        let totalColor: Color = totalLooksOff ? .warning : .inkFaint
+        VStack(alignment: .leading, spacing: 6) {
+            HoneyLedgerLabeledRow("Total", titleColor: .inkFaint) {
+                Text.honeyLedgerFigure(
+                    profile.total.formatted(percent),
+                    unit: "%",
+                    numberColor: totalColor,
+                    unitColor: totalColor
+                )
+            }
+            if totalLooksOff {
+                HoneyLedgerFieldNote(
+                    "Profiles usually add up to about 100%. A total far from that gives a less accurate soap-property reading.",
+                    tint: .warning
+                )
             }
         }
-        HStack {
-            Text("Total")
-            Spacer()
-            Text(profile.total.formatted(percent))
-            Text("%")
-        }
-        .foregroundStyle(totalLooksOff ? Color.orange : .secondary)
-        if totalLooksOff {
-            Text("Profiles usually add up to about 100%. A total far from that gives a less accurate soap-property reading.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
+        .ledgerSheetRow(position: .position(index: rowCount - 1, count: rowCount))
     }
 
     private var percent: FloatingPointFormatStyle<Double> {

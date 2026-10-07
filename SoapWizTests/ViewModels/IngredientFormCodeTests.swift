@@ -121,6 +121,69 @@ struct IngredientFormCodeTests: IngredientFormTestHelpers {
         model.code = ""
         #expect(!model.codeHasDuplicate(among: [other]))
     }
+    @Test func codeProblem_EmptyCode_ReturnsNil() {
+        let model = IngredientFormViewModel()
+        model.code = ""
+        #expect(model.codeProblem(among: []) == nil)
+    }
+    @Test func codeProblem_WhitespaceOnly_ReturnsNil() {
+        let model = IngredientFormViewModel()
+        model.code = "   "
+        #expect(model.codeProblem(among: []) == nil)
+    }
+    @Test func codeProblem_OneChar_ReturnsTooShort() {
+        let model = IngredientFormViewModel()
+        model.code = "A"
+        #expect(model.codeProblem(among: []) == .tooShort)
+    }
+    @Test func codeProblem_TwoChars_ReturnsTooShort() {
+        let model = IngredientFormViewModel()
+        model.code = "OO"
+        #expect(model.codeProblem(among: []) == .tooShort)
+    }
+    @Test func codeProblem_TwoCharsPaddedWithSpaces_ReturnsTooShort() {
+        let model = IngredientFormViewModel()
+        model.code = " OO "
+        #expect(model.codeProblem(among: []) == .tooShort)
+    }
+    @Test func codeProblem_ThreeChars_ReturnsNil() {
+        let model = IngredientFormViewModel()
+        model.code = "OOI"
+        #expect(model.codeProblem(among: []) == nil)
+    }
+    @Test func codeProblem_LowercaseDuplicateOfOtherIngredient_ReturnsDuplicate() {
+        let other = Ingredient(name: "Coconut Oil")
+        other.code = "COI"
+
+        let model = IngredientFormViewModel()
+        model.code = "coi"
+        #expect(model.codeProblem(among: [other]) == .duplicate)
+    }
+    @Test func codeProblem_ShortCodeAlsoTaken_ReturnsDuplicate() {
+        let other = Ingredient(name: "Olive Oil")
+        other.code = "OO"
+
+        let model = IngredientFormViewModel()
+        model.code = "OO"
+        #expect(model.codeProblem(among: [other]) == .duplicate)
+    }
+    @Test func codeProblem_OwnCodeWhileEditing_ReturnsNil() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let existing = Ingredient(name: "Coconut Oil")
+        existing.code = "COI"
+        ctx.insert(existing)
+
+        let model = IngredientFormViewModel(ingredient: existing)
+        #expect(model.codeProblem(among: [existing]) == nil)
+    }
+    @Test func codeProblem_Messages_AreDistinctAndNotEmpty() {
+        let duplicate = IngredientCodeProblem.duplicate.message
+        let tooShort = IngredientCodeProblem.tooShort.message
+        #expect(!duplicate.isEmpty)
+        #expect(!tooShort.isEmpty)
+        #expect(duplicate != tooShort)
+    }
     @Test func applyNameChange_NotManuallyEdited_UpdatesCode() {
         let model = IngredientFormViewModel()
         model.name = "Glycerin"

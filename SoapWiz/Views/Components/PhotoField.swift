@@ -84,10 +84,10 @@ struct PhotoField<Placeholder: View>: View {
             well
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color.ink)
                 Text(hint)
                     .font(.subheadline)
-                    .foregroundStyle(problem == nil ? .secondary : Color.red)
+                    .foregroundStyle(problem == nil ? Color.inkSoft : Color.danger)
             }
             Spacer()
             // An action menu, not a picker: the up/down chevrons this project
@@ -95,7 +95,7 @@ struct PhotoField<Placeholder: View>: View {
             // this row takes a photo, replaces one or removes one.
             Image(systemName: "ellipsis.circle")
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSoft)
         }
     }
 
@@ -112,7 +112,7 @@ struct PhotoField<Placeholder: View>: View {
         if let image {
             let shape = RoundedRectangle(cornerRadius: PhotoFieldWell.cornerRadius, style: .continuous)
             shape
-                .fill(Color.accentColor.opacity(0.12))
+                .fill(Color.paperSunken)
                 .frame(width: PhotoFieldWell.side, height: PhotoFieldWell.side)
                 .overlay {
                     Image(uiImage: image)
@@ -171,15 +171,15 @@ enum PhotoFieldWell {
     static let cornerRadius: CGFloat = 10
 }
 
-/// The default stand-in: a camera glyph on the app's accent, for a model with no
+/// The default stand-in: a camera glyph in a sunken well, for a model with no
 /// picture of its own to fall back on.
 struct PhotoFieldCameraPlaceholder: View {
     var body: some View {
         RoundedRectangle(cornerRadius: PhotoFieldWell.cornerRadius, style: .continuous)
-            .fill(Color.accentColor.opacity(0.12))
+            .fill(Color.paperSunken)
             .overlay {
                 Image(systemName: "camera.fill")
-                    .foregroundStyle(Color.accentColor.opacity(0.55))
+                    .foregroundStyle(Color.inkFaint)
             }
     }
 }

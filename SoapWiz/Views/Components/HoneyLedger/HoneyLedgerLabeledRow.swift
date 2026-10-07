@@ -8,11 +8,18 @@ struct HoneyLedgerLabeledRow<Value: View, Below: View>: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let title: String
+    var titleColor: Color = .ink
     @ViewBuilder let value: Value
     @ViewBuilder let below: Below
 
-    init(_ title: String, @ViewBuilder value: () -> Value, @ViewBuilder below: () -> Below) {
+    init(
+        _ title: String,
+        titleColor: Color = .ink,
+        @ViewBuilder value: () -> Value,
+        @ViewBuilder below: () -> Below
+    ) {
         self.title = title
+        self.titleColor = titleColor
         self.value = value()
         self.below = below()
     }
@@ -21,7 +28,7 @@ struct HoneyLedgerLabeledRow<Value: View, Below: View>: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.body)
-                .foregroundStyle(Color.ink)
+                .foregroundStyle(titleColor)
             below
         }
     }
@@ -47,7 +54,7 @@ struct HoneyLedgerLabeledRow<Value: View, Below: View>: View {
 }
 
 extension HoneyLedgerLabeledRow where Below == EmptyView {
-    init(_ title: String, @ViewBuilder value: () -> Value) {
-        self.init(title, value: value, below: { EmptyView() })
+    init(_ title: String, titleColor: Color = .ink, @ViewBuilder value: () -> Value) {
+        self.init(title, titleColor: titleColor, value: value, below: { EmptyView() })
     }
 }
