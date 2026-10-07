@@ -8,13 +8,21 @@ struct CostBreakdownBarView: View {
     @Binding var isExpanded: Bool
     var availableHeight: CGFloat = 0
     @Query private var settingsRecords: [AppSettings]
-    @Environment(\.modelContext) private var modelContext
     @State private var visibleCardID: AnyHashable?
     @State private var keyboardVisible = false
+    /// A touch taller than anything a page's header holds, so the bar keeps
+    /// one height as it pages between a plain title and a size's controls.
+    @ScaledMetric(relativeTo: .subheadline) private var compactPageHeaderHeight: CGFloat = 22
+    @ScaledMetric(relativeTo: .body) private var regularPageHeaderHeight: CGFloat = 24
 
-    private var headlineFont: Font { horizontalSizeClass == .regular ? .body : .subheadline }
-    private var captionFont: Font { horizontalSizeClass == .regular ? .footnote : .caption }
-    private var totalsFont: Font { horizontalSizeClass == .regular ? .body : .caption }
+    /// Narrower than the screens' readable width, so on iPad the bar reads as
+    /// a floating summary rather than a second sheet.
+    private static let maximumWidth: CGFloat = 640
+
+    private var isRegular: Bool { horizontalSizeClass == .regular }
+    private var headlineFont: Font { isRegular ? .body : .subheadline }
+    private var captionFont: Font { isRegular ? .footnote : .caption }
+    private var horizontalPadding: CGFloat { isRegular ? 20 : 16 }
 
     private var pvpFactor: Double { AppSettings.canonical(from: settingsRecords)?.pvpFactor ?? 4.0 }
 
@@ -22,64 +30,91 @@ struct CostBreakdownBarView: View {
         let batch = model.wholeBatchBreakdown
         let canExpand = model.hasIngredients
         let expanded = isExpanded && canExpand
-        let cornerRadius: CGFloat = expanded ? 24 : 20
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         VStack(spacing: 0) {
-            collapsedBar(canExpand: canExpand, expanded: expanded, batchTotal: batch.total)
+            header(canExpand: canExpand, expanded: expanded, batch: batch)
 
             if expanded {
-                carousel(batch: batch)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                VStack(spacing: 0) {
+                    carousel(batch: batch)
+                    pageDots
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .glassEffectIOS26(in: shape)
-        .shadow(color: .black.opacity(0.15), radius: 4, y: 1)
-        .frame(maxWidth: ReadableWidth.maximum)
+        .modifier(CostBarSurface(shape: RoundedRectangle(cornerRadius: 18, style: .continuous)))
+        .frame(maxWidth: Self.maximumWidth)
         .padding(.horizontal, 12)
         .padding(.bottom, 4)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
     }
 
-    private func collapsedBar(canExpand: Bool, expanded: Bool, batchTotal: Double) -> some View {
+    /// Collapsed, the batch cost and its RRP; expanded, the showing page's own
+    /// header in their place. The size header holds live controls, so the tap
+    /// that folds the bar sits behind the header, and only what isn't a
+    /// control lets it through.
+    private func header(canExpand: Bool, expanded: Bool, batch: ProductCostBreakdown) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "eurosign.circle.fill")
-                .foregroundStyle(.tint)
-            VStack(alignment: .leading, spacing: 1) {
-                if !expanded {
+                .foregroundStyle(Color.amberText)
+                .allowsHitTesting(false)
+            if expanded {
+                pageHeader(batch: batch)
+                    .frame(minHeight: isRegular ? regularPageHeaderHeight : compactPageHeaderHeight)
+            } else {
+                VStack(alignment: .leading, spacing: 1) {
                     Text("Cost breakdown")
                         .font(captionFont)
-                        .foregroundStyle(.secondary)
-                        .transition(.opacity.combined(with: .move(edge: .top)))
-                }
-                HStack(spacing: 6) {
-                    Text(summaryText(canExpand: canExpand, batchTotal: batchTotal))
+                        .foregroundStyle(Color.inkSoft)
+                    Text(model.costBarSummary(pvpFactor: pvpFactor, currencyCode: currencyCode))
                         .font(headlineFont.weight(.semibold))
+                        .foregroundStyle(Color.ink)
                         .monospacedDigit()
-                    if expanded {
-                        swipeHintButton
-                    }
                 }
+                .allowsHitTesting(false)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
-            Spacer()
+            Spacer(minLength: 0)
             if canExpand {
                 Image(systemName: "chevron.up")
                     .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.inkSoft)
                     .rotationEffect(.degrees(expanded ? 180 : 0))
+                    .allowsHitTesting(false)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard canExpand else { return }
-            withAnimation(.easeInOut(duration: 0.25)) { isExpanded.toggle() }
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, isRegular ? 14 : 10)
+        .background {
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    guard canExpand else { return }
+                    withAnimation(.easeInOut(duration: 0.25)) { isExpanded.toggle() }
+                }
         }
     }
 
-    private var swipeHintButton: some View {
-        InfoPopoverIcon(text: "Swipe left to add another size.")
+    @ViewBuilder
+    private func pageHeader(batch: ProductCostBreakdown) -> some View {
+        switch model.costBarPage(for: visibleCardID) {
+        case .addSize:
+            Text("New size")
+                .font(headlineFont.weight(.semibold))
+                .foregroundStyle(Color.ink)
+                .allowsHitTesting(false)
+        case .product(let id):
+            if let index = model.productDrafts.firstIndex(where: { $0.id == id }) {
+                let isDefault = index == 0
+                RecipeProductHeaderView(
+                    draft: $model.productDrafts[index],
+                    breakdown: model.breakdownAndCost(for: model.productDrafts[index], batch: batch),
+                    availableUnits: ProductUnit.allCases.filter { $0 != .wholeBatch },
+                    isDefault: isDefault,
+                    onDelete: isDefault ? nil : { deleteProduct(id: id) }
+                )
+            }
+        }
     }
 
     private func carousel(batch: ProductCostBreakdown) -> some View {
@@ -88,8 +123,8 @@ struct CostBreakdownBarView: View {
         return ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 0) {
-                    ForEach($model.productDrafts) { $draft in
-                        productColumn(draft: $draft, batch: batch)
+                    ForEach(model.productDrafts) { draft in
+                        productColumn(draft: draft, batch: batch)
                             .containerRelativeFrame(.horizontal)
                             .id(AnyHashable(draft.id))
                     }
@@ -100,7 +135,7 @@ struct CostBreakdownBarView: View {
                         }
                     }
                     .containerRelativeFrame(.horizontal)
-                    .id(AnyHashable("addButton"))
+                    .id(CostBarPage.addSizeID)
                 }
                 .scrollTargetLayout()
             }
@@ -127,24 +162,13 @@ struct CostBreakdownBarView: View {
         }
     }
 
-    private func productColumn(draft: Binding<RecipeProductDraft>, batch: ProductCostBreakdown) -> some View {
-        let breakdown = model.breakdownAndCost(for: draft.wrappedValue, batch: batch)
-        let draftID = draft.wrappedValue.id
-        let isDefault = model.productDrafts.first?.id == draftID
-        let onDelete: (() -> Void)? = isDefault ? nil : { deleteProduct(id: draftID) }
+    private func productColumn(draft: RecipeProductDraft, batch: ProductCostBreakdown) -> some View {
+        let breakdown = model.breakdownAndCost(for: draft, batch: batch)
         return VStack(spacing: 0) {
             ScrollView(.vertical, showsIndicators: false) {
-                RecipeProductCardView(
-                    draft: draft,
-                    breakdown: breakdown,
-                    availableUnits: ProductUnit.allCases.filter { $0 != .wholeBatch },
-                    model: model,
-                    isDefault: isDefault,
-                    onDelete: onDelete
-                )
+                RecipeProductCardView(breakdown: breakdown, model: model)
             }
             if breakdown.total > 0 {
-                Divider().opacity(0.4)
                 productTotals(breakdown)
             }
         }
@@ -160,7 +184,7 @@ struct CostBreakdownBarView: View {
         guard let previousID else { return }
         let slotID: AnyHashable = model.productDrafts.indices.contains(index)
             ? AnyHashable(model.productDrafts[index].id)
-            : AnyHashable("addButton")
+            : CostBarPage.addSizeID
         withTransaction(transaction) { visibleCardID = slotID }
         Task {
             try? await Task.sleep(for: .milliseconds(300))
@@ -169,41 +193,73 @@ struct CostBreakdownBarView: View {
         }
     }
 
-    @ViewBuilder
+    /// The page's only Total and RRP, under a double rule, pinned below the
+    /// lines as they scroll.
     private func productTotals(_ breakdown: ProductCostBreakdown) -> some View {
-        HStack {
-            Text("Total")
-                .font(totalsFont.weight(.semibold))
-            Spacer()
-            Text(breakdown.total.formatted(.currency(code: currencyCode)))
-                .font(totalsFont.weight(.semibold))
+        VStack(spacing: 2) {
+            DoubleRule()
+                .padding(.bottom, 6)
+            HStack {
+                Text("Total")
+                Spacer()
+                Text(breakdown.total.formatted(.currency(code: currencyCode)))
+            }
+            .foregroundStyle(Color.ink)
+            HStack {
+                Text("RRP")
+                Spacer()
+                Text((breakdown.total * pvpFactor).formatted(.currency(code: currencyCode)))
+            }
+            .foregroundStyle(Color.amberText)
         }
-        .padding(.horizontal, 14)
-        .padding(.top, 8)
-        .padding(.bottom, 4)
-        HStack {
-            Text("RRP")
-                .font(totalsFont.weight(.semibold))
-                .foregroundStyle(.tint)
-            Spacer()
-            Text((breakdown.total * pvpFactor).formatted(.currency(code: currencyCode)))
-                .font(totalsFont.weight(.semibold))
-                .foregroundStyle(.tint)
-        }
-        .padding(.horizontal, 14)
-        .padding(.bottom, 8)
+        .font(headlineFont.weight(.semibold))
+        .monospacedDigit()
+        .padding(.horizontal, horizontalPadding)
+        .padding(.top, isRegular ? 10 : 8)
     }
 
-    private func summaryText(canExpand: Bool, batchTotal: Double) -> String {
-        let totalText = batchTotal.formatted(.currency(code: currencyCode))
-        if !canExpand {
-            return "\(totalText) · Add ingredients first"
+    /// One dot per size and one for the add-size page, the showing one in amber.
+    private var pageDots: some View {
+        let pages = model.costBarPages
+        let current = model.costBarPage(for: visibleCardID)
+        let position = (pages.firstIndex(of: current) ?? 0) + 1
+        return HStack(spacing: 6) {
+            ForEach(pages, id: \.self) { page in
+                Circle()
+                    .fill(page == current ? Color.amberText : Color.ruleStrong.opacity(0.5))
+                    .frame(width: 6, height: 6)
+            }
         }
-        // Counted the way the detail screen lists them, so the two agree.
-        let sizeCount = model.productDrafts.count(where: \.isSeparateFromBatch)
-        if sizeCount > 0 {
-            return "\(totalText) · \(sizeCount) size\(sizeCount == 1 ? "" : "s")"
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Page \(position) of \(pages.count)")
+    }
+}
+
+/// Liquid Glass made dense with a `paperRaised` tint, so the list behind reads
+/// only as a soft blur; solid `paperRaised` with Reduce Transparency.
+private struct CostBarSurface<S: InsettableShape>: ViewModifier {
+    let shape: S
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        fill(content)
+            .overlay(shape.strokeBorder(reduceTransparency ? Color.rule : Color.glassEdge, lineWidth: 1))
+            .shadow(color: Color.shadow.opacity(colorScheme == .dark ? 0.40 : 0.16), radius: 10, y: 6)
+    }
+
+    @ViewBuilder
+    private func fill(_ content: Content) -> some View {
+        if reduceTransparency {
+            content.background(Color.paperRaised, in: shape)
+        } else if #available(iOS 26, *) {
+            content
+                .background(Color.paperRaised.opacity(0.78), in: shape)
+                .glassEffect(.regular, in: shape)
+        } else {
+            content.background(.regularMaterial, in: shape)
         }
-        return totalText
     }
 }
