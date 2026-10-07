@@ -53,11 +53,31 @@ struct CostBreakdownBarView: View {
     /// header in their place. The size header holds live controls, so the tap
     /// that folds the bar sits behind the header, and only what isn't a
     /// control lets it through.
+    ///
+    /// Assistive technologies get the toggle as an explicit action: the whole
+    /// collapsed bar is one button, and the chevron is one once expanded, so
+    /// the size controls beside it stay reachable on their own.
+    @ViewBuilder
     private func header(canExpand: Bool, expanded: Bool, batch: ProductCostBreakdown) -> some View {
+        let content = headerContent(canExpand: canExpand, expanded: expanded, batch: batch)
+        if expanded {
+            content
+        } else {
+            content
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Cost breakdown")
+                .accessibilityValue(model.costBarSummary(pvpFactor: pvpFactor, currencyCode: currencyCode))
+                .accessibilityAddTraits(canExpand ? .isButton : [])
+                .accessibilityAction { toggleExpanded(canExpand: canExpand) }
+        }
+    }
+
+    private func headerContent(canExpand: Bool, expanded: Bool, batch: ProductCostBreakdown) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "eurosign.circle.fill")
                 .foregroundStyle(Color.amberText)
                 .allowsHitTesting(false)
+                .accessibilityHidden(true)
             if expanded {
                 pageHeader(batch: batch)
                     .frame(minHeight: isRegular ? regularPageHeaderHeight : compactPageHeaderHeight)
@@ -81,6 +101,9 @@ struct CostBreakdownBarView: View {
                     .foregroundStyle(Color.inkSoft)
                     .rotationEffect(.degrees(expanded ? 180 : 0))
                     .allowsHitTesting(false)
+                    .accessibilityLabel("Collapse cost breakdown")
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { toggleExpanded(canExpand: canExpand) }
             }
         }
         .padding(.horizontal, horizontalPadding)
@@ -88,11 +111,14 @@ struct CostBreakdownBarView: View {
         .background {
             Color.clear
                 .contentShape(Rectangle())
-                .onTapGesture {
-                    guard canExpand else { return }
-                    withAnimation(.easeInOut(duration: 0.25)) { isExpanded.toggle() }
-                }
+                .onTapGesture { toggleExpanded(canExpand: canExpand) }
+                .accessibilityHidden(true)
         }
+    }
+
+    private func toggleExpanded(canExpand: Bool) {
+        guard canExpand else { return }
+        withAnimation(.easeInOut(duration: 0.25)) { isExpanded.toggle() }
     }
 
     @ViewBuilder
@@ -104,17 +130,30 @@ struct CostBreakdownBarView: View {
                 .foregroundStyle(Color.ink)
                 .allowsHitTesting(false)
         case .product(let id):
-            if let index = model.productDrafts.firstIndex(where: { $0.id == id }) {
-                let isDefault = index == 0
+            if let draft = model.productDrafts.first(where: { $0.id == id }) {
+                let isDefault = model.productDrafts.first?.id == id
                 RecipeProductHeaderView(
-                    draft: $model.productDrafts[index],
-                    breakdown: model.breakdownAndCost(for: model.productDrafts[index], batch: batch),
+                    draft: draftBinding(id: id, fallback: draft),
+                    breakdown: model.breakdownAndCost(for: draft, batch: batch),
                     availableUnits: ProductUnit.allCases.filter { $0 != .wholeBatch },
                     isDefault: isDefault,
                     onDelete: isDefault ? nil : { deleteProduct(id: id) }
                 )
             }
         }
+    }
+
+    /// Finds the size by id on every read and write. A size field that is
+    /// still focused when its size is deleted commits as it loses focus, and a
+    /// binding by position would then write past the end of the array.
+    private func draftBinding(id: UUID, fallback: RecipeProductDraft) -> Binding<RecipeProductDraft> {
+        Binding(
+            get: { model.productDrafts.first { $0.id == id } ?? fallback },
+            set: { newValue in
+                guard let index = model.productDrafts.firstIndex(where: { $0.id == id }) else { return }
+                model.productDrafts[index] = newValue
+            }
+        )
     }
 
     private func carousel(batch: ProductCostBreakdown) -> some View {
@@ -193,11 +232,13 @@ struct CostBreakdownBarView: View {
         }
     }
 
-    /// The page's only Total and RRP, under a double rule, pinned below the
-    /// lines as they scroll.
+    /// The page's only Total and RRP, under a single `inkSoft` hairline,
+    /// pinned below the lines as they scroll.
     private func productTotals(_ breakdown: ProductCostBreakdown) -> some View {
         VStack(spacing: 2) {
-            DoubleRule()
+            Rectangle()
+                .fill(Color.inkSoft)
+                .frame(height: 1)
                 .padding(.bottom, 6)
             HStack {
                 Text("Total")
