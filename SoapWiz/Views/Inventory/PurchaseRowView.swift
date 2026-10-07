@@ -4,45 +4,54 @@ struct PurchaseRowView: View {
     let purchase: IngredientPurchase
     let unit: String
 
-    private var expiryLabel: (text: String, color: Color)? {
-        guard let expiry = purchase.expiryDate else { return nil }
-        let now = Date.now
-        let formatted = expiry.formatted(.dateTime.day().month(.abbreviated).year())
-        if expiry < now {
-            return ("Expired", .red)
+    private func statusText(for summary: PurchaseRowSummary) -> String? {
+        switch summary.status {
+        case .none: nil
+        case .usedUp: String(localized: "used up")
+        case .expired: String(localized: "expired")
+        case .expires(let date):
+            String(localized: "expires \(date.formatted(.dateTime.month(.abbreviated).year()))")
         }
-        if let cutoff = Calendar.current.date(byAdding: .month, value: 1, to: now), expiry <= cutoff {
-            return (formatted, .red)
+    }
+
+    private func secondLine(for summary: PurchaseRowSummary) -> String {
+        let date = purchase.dateOfPurchase.formatted(.dateTime.day().month(.abbreviated).year())
+        guard let statusText = statusText(for: summary) else { return date }
+        return "\(date) · \(statusText)"
+    }
+
+    private var remainingText: Text {
+        let number = purchase.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))
+        if purchase.remainingAmount <= 0 {
+            return Text.honeyLedgerFigure(number, unit: unit, numberColor: .inkFaint, unitColor: .inkFaint)
         }
-        return (formatted, .secondary)
+        return Text.honeyLedgerFigure(number, unit: unit)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(purchase.provider?.name ?? "Unknown Provider")
-                    .font(.headline)
-                Spacer()
-                if let label = expiryLabel {
-                    Text(label.text)
-                        .font(.caption)
-                        .foregroundStyle(label.color)
+        let summary = PurchaseRowSummary(
+            expiryDate: purchase.expiryDate,
+            remainingAmount: purchase.remainingAmount,
+            badge: purchase.badge
+        )
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(purchase.provider?.name ?? "Unknown Provider")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.ink)
+                    Text(secondLine(for: summary))
+                        .font(.subheadline)
+                        .foregroundStyle(Color.inkSoft)
                 }
+                Spacer(minLength: 8)
+                remainingText
             }
-            HStack {
-                let remaining = purchase.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))
-                let quantity = purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))
-                Text("\(remaining) / \(quantity) \(unit)")
-                    .font(.subheadline)
-                    .foregroundStyle(purchase.remainingAmount > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
-                Spacer()
-                if !purchase.badge.isEmpty {
-                    Text(purchase.badge)
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(.secondary.opacity(0.15))
-                        .clipShape(Capsule())
+            if !summary.stamps.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(Array(summary.stamps.enumerated()), id: \.offset) { _, stamp in
+                        StatusStamp(word: stamp.word, tone: stamp.tone, glyph: stamp.glyph)
+                    }
                 }
             }
         }
