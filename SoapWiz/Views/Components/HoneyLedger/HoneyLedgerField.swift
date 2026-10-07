@@ -36,7 +36,7 @@ struct HoneyLedgerField<Field: View>: View {
         Text(title)
             .font(.body.weight(isFocused ? .semibold : .regular))
             .foregroundStyle(isFocused ? Color.amberText : Color.ink)
-            // The field carries the title for VoiceOver.
+            // The field carries the title for VoiceOver, below.
             .accessibilityHidden(true)
     }
 
@@ -49,6 +49,8 @@ struct HoneyLedgerField<Field: View>: View {
                 .tint(Color.amber)
                 .multilineTextAlignment(isStacked ? .leading : .trailing)
                 .frame(maxWidth: .infinity, alignment: isStacked ? .leading : .trailing)
+                // Not every field titles itself: `NumericTextField` reads its prompt.
+                .accessibilityLabel(Text(title))
             if let unit, !unit.isEmpty {
                 Text(unit)
                     .foregroundStyle(Color.inkSoft)
