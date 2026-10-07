@@ -35,6 +35,7 @@ struct RecipeCostCalculator {
         let rawShare = batchGrams > 0 ? productGrams / batchGrams : 0
         var result = scaleBreakdown(batch, by: min(rawShare, 1))
         result.exceedsBatchWeight = rawShare > 1
+        result.batchShare = batchGrams > 0 ? rawShare : nil
         return result
     }
 

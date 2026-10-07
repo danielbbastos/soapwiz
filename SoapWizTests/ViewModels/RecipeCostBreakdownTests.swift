@@ -283,4 +283,61 @@ struct RecipeCostBreakdownTests: RecipeFormTestHelpers {
 
         #expect(model.lyeIngredient === custom)
     }
+
+    // MARK: - Batch share
+
+    /// 100 g of oils with no sap value, so the batch weighs exactly 100 g.
+    private func makeHundredGramBatch() -> RecipeFormViewModel {
+        let model = RecipeFormViewModel()
+        model.totalOilWeight = 100
+        model.addOil(Ingredient(name: "Olive Oil"))
+        return model
+    }
+
+    @Test func breakdownAndCost_WeightSize_RecordsShareOfBatch() throws {
+        let model = makeHundredGramBatch()
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = 25
+
+        let result = model.breakdownAndCost(for: draft)
+
+        let share = try #require(result.batchShare)
+        #expect(abs(share - 0.25) < 1e-9)
+        #expect(result.sizesPerBatch == 4)
+    }
+
+    @Test func breakdownAndCost_SizeLargerThanBatch_KeepsUnclampedShare() throws {
+        let model = makeHundredGramBatch()
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = 150
+
+        let result = model.breakdownAndCost(for: draft)
+
+        let share = try #require(result.batchShare)
+        #expect(abs(share - 1.5) < 1e-9)
+        #expect(result.sizesPerBatch == nil)
+    }
+
+    @Test func breakdownAndCost_PartsOfBatch_HasNoShare() {
+        let model = makeHundredGramBatch()
+        var draft = RecipeProductDraft(unitSymbol: ProductUnit.partsOfBatch.rawValue)
+        draft.size = 4
+
+        #expect(model.breakdownAndCost(for: draft).batchShare == nil)
+    }
+
+    @Test func breakdownAndCost_WholeBatch_HasNoShare() {
+        let model = makeHundredGramBatch()
+        let draft = RecipeProductDraft(unitSymbol: ProductUnit.wholeBatch.rawValue)
+
+        #expect(model.breakdownAndCost(for: draft).batchShare == nil)
+    }
+
+    @Test func breakdownAndCost_EmptyBatch_HasNoShare() {
+        let model = RecipeFormViewModel()
+        var draft = RecipeProductDraft(unitSymbol: "g")
+        draft.size = 100
+
+        #expect(model.breakdownAndCost(for: draft).batchShare == nil)
+    }
 }
