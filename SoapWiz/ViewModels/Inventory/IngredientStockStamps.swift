@@ -65,12 +65,28 @@ enum IngredientStockStamp: Equatable {
         }
 
         if !result.contains(.expired),
-           let cutoff = calendar.date(byAdding: .month, value: 1, to: now),
-           let nearest = expiries.filter({ $0 > now && $0 <= cutoff }).min() {
-            result.append(.expiresIn(days: daysUntil(nearest, from: now, calendar: calendar)))
+           let nearest = expiries.filter({ $0 > now }).min(),
+           let stamp = expiry(nearest, now: now, calendar: calendar) {
+            result.append(stamp)
         }
 
         return Array(result.prefix(2))
+    }
+
+    /// The stamp an expiry date earns on its own: Expired once it has passed,
+    /// Expires in N d within a month of it, and nothing further out.
+    static func expiry(
+        _ date: Date,
+        now: Date = .now,
+        calendar: Calendar = .current
+    ) -> IngredientStockStamp? {
+        if date < now {
+            return .expired
+        }
+        guard let cutoff = calendar.date(byAdding: .month, value: 1, to: now), date <= cutoff else {
+            return nil
+        }
+        return .expiresIn(days: daysUntil(date, from: now, calendar: calendar))
     }
 
     static func daysUntil(_ date: Date, from now: Date, calendar: Calendar = .current) -> Int {
