@@ -24,14 +24,18 @@ struct PurchaseDetailView: View {
         content().ledgerSheetRow(position: .position(index: index, count: count))
     }
 
-    private func amount(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(0...2)))
-    }
-
-    private func plainValue(_ text: String) -> some View {
-        Text(text)
-            .font(.body)
-            .foregroundStyle(text == "—" ? Color.inkSoft : Color.ink)
+    /// The value in `ink`, or a dash in `inkSoft` when there is none.
+    @ViewBuilder
+    private func plainValue(_ text: String?) -> some View {
+        if let text, !text.isEmpty {
+            Text(text)
+                .font(.body)
+                .foregroundStyle(Color.ink)
+        } else {
+            Text("—")
+                .font(.body)
+                .foregroundStyle(Color.inkSoft)
+        }
     }
 
     private func longDate(_ date: Date) -> String {
@@ -49,14 +53,17 @@ struct PurchaseDetailView: View {
         List {
             Section {
                 sheetRow(0, of: 5) {
-                    HoneyLedgerLabeledRow("Provider") { plainValue(purchase.provider?.name ?? "—") }
+                    HoneyLedgerLabeledRow("Provider") { plainValue(purchase.provider?.name) }
                 }
                 sheetRow(1, of: 5) {
                     HoneyLedgerLabeledRow("Date") { plainValue(longDate(purchase.dateOfPurchase)) }
                 }
                 sheetRow(2, of: 5) {
                     HoneyLedgerLabeledRow("Quantity") {
-                        Text.honeyLedgerFigure(amount(purchase.quantity), unit: unit)
+                        Text.honeyLedgerFigure(
+                            purchase.quantity.formatted(.number.precision(.fractionLength(0...2))),
+                            unit: unit
+                        )
                     }
                 }
                 sheetRow(3, of: 5) {
@@ -81,7 +88,7 @@ struct PurchaseDetailView: View {
                     PurchaseRemainingRow(purchase: purchase, unit: unit, model: model)
                 }
                 sheetRow(1, of: 2) {
-                    HoneyLedgerLabeledRow("Storage Location") { plainValue(purchase.storageLocation?.name ?? "—") }
+                    HoneyLedgerLabeledRow("Storage Location") { plainValue(purchase.storageLocation?.name) }
                 }
             } header: {
                 HoneyLedgerSectionLabel("Stock")
@@ -107,7 +114,7 @@ struct PurchaseDetailView: View {
                 sheetRow(0, of: 2) {
                     HoneyLedgerLabeledRow("Badge") {
                         if purchase.badge.isEmpty {
-                            plainValue("—")
+                            plainValue(nil)
                         } else {
                             StatusStamp(word: purchase.badge, tone: .neutral)
                         }
@@ -116,7 +123,7 @@ struct PurchaseDetailView: View {
                 sheetRow(1, of: 2) {
                     HoneyLedgerLabeledRow("Journal Code") {
                         if purchase.journalCode.isEmpty {
-                            plainValue("—")
+                            plainValue(nil)
                         } else {
                             Text(purchase.journalCode)
                                 .font(.body)
