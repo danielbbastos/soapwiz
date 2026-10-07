@@ -78,28 +78,20 @@ struct IngredientListView: View {
             ZStack(alignment: .bottomTrailing) {
                 Group {
                     if ingredients.isEmpty {
-                        ContentUnavailableView {
-                            Label {
-                                Text("No ingredients yet").fontDesign(.serif)
-                            } icon: {
-                                Image(systemName: "flask")
-                            }
-                        } description: {
-                            Text("Tap + to add one.")
-                        }
+                        HoneyLedgerEmptyState(
+                            "No ingredients yet",
+                            systemImage: "flask",
+                            description: "Tap + to add one."
+                        )
                     } else if displayed.isEmpty {
                         if !model.searchText.isEmpty {
                             ContentUnavailableView.search(text: model.searchText)
                         } else {
-                            ContentUnavailableView {
-                                Label {
-                                    Text("No ingredients match").fontDesign(.serif)
-                                } icon: {
-                                    Image(systemName: "line.3.horizontal.decrease.circle")
-                                }
-                            } description: {
-                                Text("Change or clear the filters.")
-                            }
+                            HoneyLedgerEmptyState(
+                                "No ingredients match",
+                                systemImage: "line.3.horizontal.decrease.circle",
+                                description: "Change or clear the filters."
+                            )
                         }
                     } else if model.editMode == .active {
                         // The selection binding is attached only while selecting,
