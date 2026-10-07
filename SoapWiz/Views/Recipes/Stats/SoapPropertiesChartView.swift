@@ -40,7 +40,7 @@ struct SoapPropertiesChartView: View {
                     yEnd: .value("Max", range.upperBound),
                     width: .ratio(0.78)
                 )
-                .foregroundStyle(.gray.opacity(0.18))
+                .foregroundStyle(Color.chartBand)
                 .cornerRadius(4)
             }
             if hasOils {
@@ -55,8 +55,9 @@ struct SoapPropertiesChartView: View {
                     .cornerRadius(4)
                     .annotation(position: .top) {
                         Text(value, format: .number.precision(.fractionLength(1)))
-                            .font(.caption2)
+                            .font(.caption)
                             .monospacedDigit()
+                            .foregroundStyle(Color.ink)
                     }
                 }
             }
@@ -135,31 +136,34 @@ struct OilContributionCardView: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text(quality.displayName)
                         .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.ink)
                     Text(rangeText)
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.inkSoft)
                         .monospacedDigit()
                 }
                 Spacer()
                 Text(totalValue, format: .number.precision(.fractionLength(1)))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
+                    .foregroundStyle(Color.ink)
             }
 
             if contributions.isEmpty {
                 Text("No oil in this recipe contributes to \(quality.displayName.lowercased()).")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.inkSoft)
             } else {
                 ForEach(contributions) { row in
                     HStack {
                         Text(row.oilName)
                             .font(.caption)
+                            .foregroundStyle(Color.ink)
                         Spacer()
                         Text(row.value, format: .number.precision(.fractionLength(1)))
                             .font(.caption)
                             .monospacedDigit()
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.inkSoft)
                     }
                 }
             }
@@ -176,10 +180,10 @@ struct OilContributionCardView: View {
                 Image(systemName: "xmark.circle.fill")
                     .font(.title3)
                     .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.inkSoft)
                     // A background circle masks the border so the button reads as
                     // sitting cleanly on the edge rather than floating over a line.
-                    .background(Circle().fill(Color(.systemBackground)))
+                    .background(Circle().fill(Color.paperRaised))
             }
             .buttonStyle(.plain)
             // Straddle the top-right corner, centred on the border.

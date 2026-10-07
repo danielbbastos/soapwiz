@@ -41,12 +41,12 @@ enum SoapQuality: String, CaseIterable, Identifiable {
 
     var color: Color {
         switch self {
-        case .hardness: .brown
-        case .cleansing: .blue
-        case .conditioning: .teal
-        case .bubbly: .red
-        case .creamy: .yellow
-        case .longevity: .green
+        case .hardness: .chartHardness
+        case .cleansing: .chartCleansing
+        case .conditioning: .chartConditioning
+        case .bubbly: .chartBubbly
+        case .creamy: .chartCreamy
+        case .longevity: .chartLongevity
         }
     }
 

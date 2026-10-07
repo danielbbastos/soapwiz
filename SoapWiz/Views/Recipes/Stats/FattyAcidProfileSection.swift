@@ -126,15 +126,17 @@ private struct FattyAcidRow: View {
     private var name: some View {
         Text(label)
             .fontWeight(emphasis ? .semibold : .regular)
+            .foregroundStyle(Color.ink)
     }
 
     private var percentage: some View {
         HStack(spacing: 8) {
             Text(value, format: .number.precision(.fractionLength(2)))
+                .fontWeight(.medium)
                 .monospacedDigit()
-                .foregroundStyle(emphasis ? .primary : .secondary)
+                .foregroundStyle(emphasis ? Color.ink : Color.inkSoft)
             Text("%")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSoft)
         }
     }
 }
