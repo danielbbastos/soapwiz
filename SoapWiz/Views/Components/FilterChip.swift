@@ -20,6 +20,8 @@ struct FilterChip: View {
     let style: FilterChipStyle
     /// Drawn after the title by the `.ledger` style only.
     let count: Int?
+    /// Drawn before the title, when unselected, by the `.ledger` style only.
+    let dot: Color?
     let action: () -> Void
 
     init(
@@ -28,6 +30,7 @@ struct FilterChip: View {
         tint: Color = .accentColor,
         style: FilterChipStyle = .standard,
         count: Int? = nil,
+        dot: Color? = nil,
         action: @escaping () -> Void
     ) {
         self.title = title
@@ -35,6 +38,7 @@ struct FilterChip: View {
         self.tint = tint
         self.style = style
         self.count = count
+        self.dot = dot
         self.action = action
     }
 
@@ -74,6 +78,12 @@ struct FilterChip: View {
                 Image(systemName: "checkmark")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(Color.ink)
+            } else if let dot {
+                Circle()
+                    .fill(dot)
+                    .frame(width: 9, height: 9)
+                    .padding(.trailing, 4)
+                    .accessibilityHidden(true)
             }
             Text(title)
                 .font(.subheadline.weight(isSelected ? .semibold : .regular))

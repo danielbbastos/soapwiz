@@ -131,60 +131,25 @@ struct RecipeRowSummaryTests: RecipeRowSummaryTestHelpers {
         #expect(RecipeRowSummary(recipe: recipe).topOils.map(\.name) == ["Olive"])
     }
 
-    // MARK: - Composition and description lines
+    // MARK: - Composition line
 
-    /// The two lines are independent: a recipe with both shows both, which is
-    /// what distinguishes two recipes built from the same oils.
-    @Test func compositionAndDescription_BothPresent_AreBothOffered() throws {
+    @Test func composition_WithOils_NamesThem() throws {
         let (container, ctx) = try makeContext()
         _ = container
-        let recipe = Recipe.mock(desc: "A gentle everyday bar", in: ctx)
+        let recipe = Recipe.mock(in: ctx)
         recipe.addOils([("Olive", 70)], in: ctx)
 
-        let summary = RecipeRowSummary(recipe: recipe)
-        let composition = try #require(summary.composition)
+        let composition = try #require(RecipeRowSummary(recipe: recipe).composition)
 
         #expect(composition.contains("Olive"))
-        #expect(summary.summaryDescription == "A gentle everyday bar")
     }
 
-    /// A recipe nobody has added oils to yet still has to read as something.
-    @Test func composition_NoIngredients_IsNilButDescriptionCarriesTheRow() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let recipe = Recipe.mock(desc: "A gentle everyday bar", in: ctx)
-
-        let summary = RecipeRowSummary(recipe: recipe)
-
-        #expect(summary.composition == nil)
-        #expect(summary.summaryDescription == "A gentle everyday bar")
-    }
-
-    @Test func composition_NoOilsAndNoDescription_BothAreNil() throws {
+    @Test func composition_NoIngredients_IsNil() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let recipe = Recipe.mock(in: ctx)
 
-        let summary = RecipeRowSummary(recipe: recipe)
-
-        #expect(summary.composition == nil)
-        #expect(summary.summaryDescription == nil)
-    }
-
-    @Test func summaryDescription_BlankDescription_IsNil() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let recipe = Recipe.mock(desc: "   \n ", in: ctx)
-
-        #expect(RecipeRowSummary(recipe: recipe).summaryDescription == nil)
-    }
-
-    @Test func summaryDescription_Whitespace_IsTrimmed() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let recipe = Recipe.mock(desc: "  A gentle everyday bar\n", in: ctx)
-
-        #expect(RecipeRowSummary(recipe: recipe).summaryDescription == "A gentle everyday bar")
+        #expect(RecipeRowSummary(recipe: recipe).composition == nil)
     }
 
     // MARK: - Weight modes

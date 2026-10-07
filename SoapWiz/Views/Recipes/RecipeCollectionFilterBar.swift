@@ -2,8 +2,8 @@ import SwiftUI
 import SwiftData
 
 /// Horizontal, multi-select chips that narrow the recipe list to one or more
-/// collections. Nothing selected means the whole list, so the bar starts out
-/// inert and only ever subtracts.
+/// collections. A leading "All" chip clears the selection, since nothing
+/// selected already means the whole list.
 struct RecipeCollectionFilterBar: View {
     let collections: [RecipeCollection]
     @Bindable var model: RecipeListViewModel
@@ -11,14 +11,15 @@ struct RecipeCollectionFilterBar: View {
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                if model.hasActiveFilters {
-                    clearChip
+                FilterChip("All", isSelected: !model.hasActiveFilters, style: .ledger) {
+                    model.clearFilters()
                 }
                 ForEach(collections) { collection in
                     FilterChip(
                         collection.name,
                         isSelected: model.selectedCollections.contains(collection.persistentModelID),
-                        tint: collection.color.tint
+                        style: .ledger,
+                        dot: collection.color.pigment
                     ) {
                         model.toggle(collection)
                     }
@@ -31,22 +32,5 @@ struct RecipeCollectionFilterBar: View {
         // Less the chips' own padding, so the first chip lines up with the
         // capped list below it.
         .readableWidth(inset: 16)
-    }
-
-    private var clearChip: some View {
-        Button {
-            model.clearFilters()
-        } label: {
-            Label("Clear", systemImage: "xmark")
-                .labelStyle(.titleAndIcon)
-                .font(.subheadline)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .foregroundStyle(.secondary)
-                .background(Color.cardBackground, in: .capsule)
-                .overlay(Capsule().strokeBorder(.secondary.opacity(0.4)))
-        }
-        .buttonStyle(.plain)
-        .transition(.scale.combined(with: .opacity))
     }
 }
