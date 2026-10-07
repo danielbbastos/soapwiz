@@ -26,7 +26,7 @@ struct RecipeListView: View {
     /// modifier to suppress it. The push is the same, just issued by hand.
     /// `.plain` keeps the row from taking on button tinting; the star inside
     /// stays tappable because it is `.borderless`.
-    private func row(_ recipe: Recipe) -> some View {
+    private func row(_ recipe: Recipe, position: LedgerSheetPosition) -> some View {
         Button {
             if model.isSelecting {
                 model.toggleSelection(of: recipe)
@@ -37,7 +37,7 @@ struct RecipeListView: View {
             HStack(spacing: 12) {
                 if model.isSelecting {
                     Image(systemName: model.isSelected(recipe) ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(model.isSelected(recipe) ? Color.accentColor : .secondary)
+                        .foregroundStyle(model.isSelected(recipe) ? Color.amber : Color.inkFaint)
                         .imageScale(.large)
                 }
                 RecipeRowView(recipe: recipe) {
@@ -65,16 +65,24 @@ struct RecipeListView: View {
                 rowMenu(recipe)
             }
         }
-        .listDetailRow(isSelected: !model.isSelecting && navigation.isOpenBeside(recipe))
+        .ledgerListDetailRow(isSelected: !model.isSelecting && navigation.isOpenBeside(recipe), position: position)
+    }
+
+    private func rows(_ recipes: [Recipe]) -> some View {
+        ForEach(Array(recipes.enumerated()), id: \.element.id) { index, recipe in
+            row(recipe, position: .position(index: index, count: recipes.count))
+        }
     }
 
     /// One titled group of the list. Renders nothing when its group is empty, so
     /// a list with no favourites doesn't show an empty "Favourites" header.
     @ViewBuilder
-    private func recipeSection(_ title: LocalizedStringKey, _ recipes: [Recipe]) -> some View {
+    private func recipeSection(_ title: String, _ recipes: [Recipe]) -> some View {
         if !recipes.isEmpty {
-            Section(title) {
-                ForEach(recipes) { row($0) }
+            Section {
+                rows(recipes)
+            } header: {
+                HoneyLedgerSectionLabel(title)
             }
         }
     }
@@ -209,43 +217,44 @@ struct RecipeListView: View {
             ZStack(alignment: .bottomTrailing) {
                 Group {
                     if recipes.isEmpty {
-                        ContentUnavailableView(
-                            "No Recipes",
+                        HoneyLedgerEmptyState(
+                            "No recipes yet",
                             systemImage: "function",
-                            description: Text("Tap + to create your first recipe.")
+                            description: "Tap + to create one."
                         )
                     } else if displayed.isEmpty {
-                        ContentUnavailableView {
-                            Label("No Matching Recipes", systemImage: "line.3.horizontal.decrease.circle")
-                        } description: {
-                            Text("No recipes are filed under the selected collections.")
-                        } actions: {
-                            Button("Clear Filters") { model.clearFilters() }
+                        if model.isSearching {
+                            ContentUnavailableView.search(text: model.searchText)
+                        } else {
+                            HoneyLedgerEmptyState(
+                                "No recipes match",
+                                systemImage: "line.3.horizontal.decrease.circle",
+                                description: "No recipes are filed under the selected collections."
+                            )
                         }
                     } else {
                         List {
                             if displayed.isSectioned {
-                                recipeSection("Favourites", displayed.favorites)
-                                recipeSection("Recently Added", displayed.recent)
-                                recipeSection("All Recipes", displayed.others)
+                                recipeSection(String(localized: "Favourites"), displayed.favorites)
+                                recipeSection(String(localized: "Recently Added"), displayed.recent)
+                                recipeSection(String(localized: "All Recipes"), displayed.others)
                             } else {
-                                // Nothing recent: a flat favourites-then-rest list
-                                // with no headers, exactly as before this group
-                                // existed.
-                                ForEach(displayed.favorites + displayed.others) { row($0) }
+                                // Nothing recent: a flat favourites-then-rest
+                                // list with no headers.
+                                rows(displayed.favorites + displayed.others)
                             }
                         }
                         // The chips already stand off the list on their own;
                         // the scroll view's default top margin on top of that
                         // left the two looking unrelated.
-                        .contentMargins(.top, collections.isEmpty ? nil : 0, for: .scrollContent)
+                        .contentMargins(.top, 0, for: .scrollContent)
                     }
                 }
                 .readableWidth()
                 .navigationTitle(model.navigationTitle)
-                .navigationBarTitleDisplayMode(.inline)
-                .warmNavigationTitle(model.navigationTitle)
-                .warmBackground()
+                .navigationBarTitleDisplayMode(.large)
+                .ledgerLargeTitle(subtitle: model.isSelecting ? nil : RecipeCountSummary(counting: recipes).line)
+                .ledgerBackground()
                 .toolbar { selectionToolbar() }
                 .sheet(item: $model.exportFile) { file in
                     ShareSheet(items: [file.url])
@@ -277,8 +286,14 @@ struct RecipeListView: View {
                     Text(model.deleteConfirmationMessage)
                 }
                 .headerStrip(showsList: !displayed.isEmpty) {
-                    if !collections.isEmpty {
-                        RecipeCollectionFilterBar(collections: collections, model: model)
+                    VStack(spacing: 0) {
+                        if !recipes.isEmpty {
+                            SearchField("Search recipes", text: $model.searchText)
+                                .padding(.bottom, 12)
+                        }
+                        if !collections.isEmpty {
+                            RecipeCollectionFilterBar(collections: collections, model: model)
+                        }
                     }
                 }
                 .navigationDestination(for: Recipe.self) { recipe in
@@ -343,7 +358,9 @@ struct RecipeListView: View {
                                 importRequest = .manual
                             }
                         ],
-                        besideTabBar: navigation.fabBesideTabBar
+                        besideTabBar: navigation.fabBesideTabBar,
+                        tint: Color.glassAmber,
+                        ink: Color.onAmber
                     )
                 }
             }

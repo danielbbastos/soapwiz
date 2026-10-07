@@ -24,9 +24,36 @@ struct RecipeSections {
     var isSectioned: Bool { !recent.isEmpty }
 }
 
+/// The figures under the Recipes title, over every recipe whatever the search
+/// and the chips are narrowing the list to.
+struct RecipeCountSummary: Equatable {
+    let total: Int
+    let favorites: Int
+
+    /// Nil when there is nothing to count, so the line is left out.
+    var line: String? {
+        guard total > 0 else { return nil }
+        // Plain `String(localized:)` leaves the agreement markup as it is: only
+        // an attributed string resolves it.
+        var parts = [String(AttributedString(localized: "^[\(total) recipe](inflect: true)").characters)]
+        if favorites > 0 {
+            parts.append(String(AttributedString(localized: "^[\(favorites) favourite](inflect: true)").characters))
+        }
+        return parts.joined(separator: " · ")
+    }
+}
+
+extension RecipeCountSummary {
+    init(counting recipes: [Recipe]) {
+        self.init(total: recipes.count, favorites: recipes.count(where: \.isFavorite))
+    }
+}
+
 @MainActor
 @Observable
 final class RecipeListViewModel {
+    var searchText: String = ""
+
     /// Collections the list is narrowed to. Empty means "everything" rather than
     /// "nothing" — the chips are a narrowing overlay, not a required choice.
     var selectedCollections: Set<PersistentIdentifier> = []
@@ -57,6 +84,11 @@ final class RecipeListViewModel {
 
     var hasActiveFilters: Bool { !selectedCollections.isEmpty }
 
+    /// Whether the search narrows the list: a search of only spaces doesn't.
+    var isSearching: Bool { !searchQuery.isEmpty }
+
+    private var searchQuery: String { searchText.trimmingCharacters(in: .whitespaces) }
+
     var hasSelection: Bool { !selectedRecipes.isEmpty }
 
     /// The navigation title, which carries the count while selecting.
@@ -80,17 +112,21 @@ final class RecipeListViewModel {
         selectedRecipes.count == 1 ? "Share 1 Recipe" : "Share \(selectedRecipes.count) Recipes"
     }
 
-    /// Recipes in *any* selected collection. The union rather than the
-    /// intersection: selecting "Christmas" and "Gifts" asks for both piles, and a
-    /// recipe filed under only one of them is still one the user meant to see.
+    /// Recipes whose name matches the search, in *any* selected collection. The
+    /// union rather than the intersection: selecting "Christmas" and "Gifts" asks
+    /// for both piles, and a recipe filed under only one of them is still one the
+    /// user meant to see.
     ///
     /// Filtering happens here rather than in a `#Predicate` because
     /// `collectionsStorage` is an optional to-many, which the store cannot filter
     /// on — see `ModelContainerFactory.schema`.
     func filtered(_ recipes: [Recipe]) -> [Recipe] {
-        guard !selectedCollections.isEmpty else { return recipes }
+        guard isSearching || !selectedCollections.isEmpty else { return recipes }
         return recipes.filter { recipe in
-            recipe.collections.contains { selectedCollections.contains($0.persistentModelID) }
+            let matchesSearch = !isSearching || recipe.name.localizedCaseInsensitiveContains(searchQuery)
+            let matchesCollections = selectedCollections.isEmpty ||
+                recipe.collections.contains { selectedCollections.contains($0.persistentModelID) }
+            return matchesSearch && matchesCollections
         }
     }
 

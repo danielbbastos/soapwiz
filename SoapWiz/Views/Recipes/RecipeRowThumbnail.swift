@@ -7,6 +7,11 @@ import UIKit
 /// x — a list where only some rows are indented reads as damaged rather than
 /// sparse.
 ///
+/// Without a photo it shows a drop rather than the recipe's initial: the
+/// ingredient avatars carry initials, and a recipe list drawn the same way is
+/// hard to tell apart from the inventory at a glance. The wash still takes a
+/// pigment derived from the name, so recipes differ from each other.
+///
 /// The well is always a square of a fixed side, and the photo is scaled to fill
 /// it and clipped. A user's photo is whatever shape their camera produced;
 /// letting it size the well would give every row a different height and a
@@ -22,13 +27,15 @@ struct RecipeRowThumbnail: View {
     /// placeholder.
     var imageData: Data?
 
+    let color: AvatarColor
+
     /// The row picks this: a phone row gives the well less room than an iPad
     /// row, because the text beside it has far less width to spare.
     var side: CGFloat = 80
 
-    /// Kept in proportion so the well reads as the same shape at either size —
-    /// a fixed radius looks far rounder on the smaller square.
-    private var cornerRadius: CGFloat { side * 0.175 }
+    /// Stepped like the ingredient avatar's: 12 below 64, a quarter of the side
+    /// from there up.
+    private var cornerRadius: CGFloat { side < 64 ? 12 : side * 0.25 }
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -36,11 +43,13 @@ struct RecipeRowThumbnail: View {
 
     var body: some View {
         shape
-            .fill(Color.accentColor.opacity(0.12))
+            .fill(color.fill)
             .frame(width: side, height: side)
             .overlay { content }
             // After the overlay, so it crops the photo rather than only the well.
             .clipShape(shape)
+            // Over the photo too, so a pale picture still has an edge.
+            .overlay(shape.strokeBorder(color.tint.opacity(0.3), lineWidth: 1))
             .accessibilityHidden(true)
     }
 
@@ -52,8 +61,8 @@ struct RecipeRowThumbnail: View {
                 .scaledToFill()
         } else {
             Image(systemName: "drop.fill")
-                .font(.title)
-                .foregroundStyle(Color.accentColor.opacity(0.55))
+                .font(.system(size: side * 0.4))
+                .foregroundStyle(color.ink)
         }
     }
 }

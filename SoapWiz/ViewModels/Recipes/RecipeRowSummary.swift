@@ -54,13 +54,6 @@ struct RecipeRowSummary {
     let topOils: [RecipeOilShare]
     let ingredientCount: Int
 
-    /// The recipe's own description, `nil` when it is blank or only whitespace.
-    ///
-    /// Shown on its own line rather than only as a stand-in for a missing
-    /// composition: the two say different things, and the description is often
-    /// the only part that distinguishes two recipes built from the same oils.
-    let summaryDescription: String?
-
     /// What the recipe makes: the soap type, or a neutral label when it isn't
     /// soap.
     var kindLabel: String { soapType?.label ?? "Non-soap product" }
@@ -98,9 +91,6 @@ struct RecipeRowSummary {
         let usesPercentages = recipe.weightUnit == RecipeRowSummary.percentageUnit
         sharesArePercentages = usesPercentages
         displayWeightUnit = usesPercentages ? recipe.oilWeightUnit : recipe.weightUnit
-
-        let trimmedDescription = recipe.desc.trimmingCharacters(in: .whitespacesAndNewlines)
-        summaryDescription = trimmedDescription.isEmpty ? nil : trimmedDescription
 
         let ingredients = recipe.ingredients
         ingredientCount = ingredients.count
