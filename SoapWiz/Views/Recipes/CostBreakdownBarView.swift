@@ -139,6 +139,9 @@ struct CostBreakdownBarView: View {
                     isDefault: isDefault,
                     onDelete: isDefault ? nil : { deleteProduct(id: id) }
                 )
+                // Each size gets its own header, so a focused size field or an
+                // open unit picker doesn't carry over to the next size.
+                .id(id)
             }
         }
     }
