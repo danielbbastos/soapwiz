@@ -92,6 +92,8 @@ struct FattyAcidProfileSections: View {
 }
 
 private struct FattyAcidRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let label: String
     let value: Double
     var emphasis: Bool = false
@@ -103,15 +105,38 @@ private struct FattyAcidRow: View {
     }
 
     var body: some View {
-        HStack {
-            Text(label)
-                .fontWeight(emphasis ? .semibold : .regular)
-            Spacer()
+        // One column at the accessibility sizes: beside the percentage, the
+        // acid's name would be squeezed until it broke mid-word.
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 2) {
+                name
+                percentage
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+        } else {
+            HStack {
+                name
+                Spacer()
+                percentage
+            }
+        }
+    }
+
+    private var name: some View {
+        Text(label)
+            .fontWeight(emphasis ? .semibold : .regular)
+            .foregroundStyle(Color.ink)
+    }
+
+    private var percentage: some View {
+        HStack(spacing: 8) {
             Text(value, format: .number.precision(.fractionLength(2)))
+                .fontWeight(.medium)
                 .monospacedDigit()
-                .foregroundStyle(emphasis ? .primary : .secondary)
+                .foregroundStyle(emphasis ? Color.ink : Color.inkSoft)
             Text("%")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSoft)
         }
     }
 }

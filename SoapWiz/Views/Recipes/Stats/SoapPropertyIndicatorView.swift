@@ -8,6 +8,8 @@ struct SoapPropertyIndicatorView: View {
     var infoTitle: String?
     var infoText: String?
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @State private var showingRange = false
 
     private var status: Status {
@@ -28,24 +30,30 @@ struct SoapPropertyIndicatorView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("\(title): ")
-                    .foregroundStyle(.secondary)
-                + Text(value, format: .number.precision(.fractionLength(1)))
-                    .font(.body.weight(.semibold))
-                    .monospacedDigit()
-                // A sibling of the concatenation rather than part of it: a view
-                // can't join a `Text` + `Text` chain.
-                if let infoText {
-                    InfoPopoverIcon(title: infoTitle, text: infoText)
+            // Two lines at the accessibility sizes: beside the info icon and the
+            // status, the title would be squeezed until it broke mid-figure.
+            if dynamicTypeSize.isAccessibilitySize {
+                HStack {
+                    Text(title)
+                        .foregroundStyle(Color.inkSoft)
+                    infoIcon
                 }
-                Spacer()
-                Text(status.label)
-                    .font(.caption.weight(.semibold))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(status.color.opacity(0.18), in: Capsule())
-                    .foregroundStyle(status.color)
+                HStack {
+                    valueText
+                    Spacer()
+                    statusLabel
+                }
+            } else {
+                HStack {
+                    Text("\(title): ")
+                        .foregroundStyle(Color.inkSoft)
+                    + valueText
+                    // A sibling of the concatenation rather than part of it: a view
+                    // can't join a `Text` + `Text` chain.
+                    infoIcon
+                    Spacer()
+                    statusLabel
+                }
             }
 
             GeometryReader { geo in
@@ -57,7 +65,7 @@ struct SoapPropertyIndicatorView: View {
 
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(.gray.opacity(0.18))
+                        .fill(Color.chartBand)
                         .frame(height: 8)
 
                     HStack(spacing: 0) {
@@ -66,7 +74,7 @@ struct SoapPropertyIndicatorView: View {
                             showingRange = true
                         } label: {
                             Capsule()
-                                .fill(.green.opacity(0.35))
+                                .fill(Color.success.opacity(0.35))
                                 .frame(width: bandWidth, height: 22)
                                 .contentShape(Rectangle())
                         }
@@ -88,9 +96,9 @@ struct SoapPropertyIndicatorView: View {
                     }
 
                     Circle()
-                        .fill(.tint)
+                        .fill(Color.amber)
                         .frame(width: 14, height: 14)
-                        .overlay(Circle().stroke(.background, lineWidth: 2))
+                        .overlay(Circle().stroke(Color.paperRaised, lineWidth: 2))
                         .position(x: markerX, y: 11)
                         .allowsHitTesting(false)
                 }
@@ -98,6 +106,29 @@ struct SoapPropertyIndicatorView: View {
             }
             .frame(height: 22)
         }
+    }
+
+    private var valueText: Text {
+        Text(value, format: .number.precision(.fractionLength(1)))
+            .font(.body.weight(.semibold))
+            .monospacedDigit()
+            .foregroundStyle(Color.ink)
+    }
+
+    @ViewBuilder
+    private var infoIcon: some View {
+        if let infoText {
+            InfoPopoverIcon(title: infoTitle, text: infoText)
+        }
+    }
+
+    private var statusLabel: some View {
+        Text(status.label)
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(status.color.opacity(0.18), in: Capsule())
+            .foregroundStyle(status.color)
     }
 
     private enum Status {
@@ -113,9 +144,9 @@ struct SoapPropertyIndicatorView: View {
 
         var color: Color {
             switch self {
-            case .ideal: .green
-            case .low: .orange
-            case .high: .orange
+            case .ideal: .success
+            case .low: .warning
+            case .high: .warning
             }
         }
     }
