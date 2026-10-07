@@ -30,25 +30,26 @@ struct InventoryFilterView: View {
         }
     }
 
+    /// The menus this sheet shows, in order: stock and expiry only mean something
+    /// when inventory is tracked, and a category menu needs categories.
+    private var filterRows: [InventoryFilterRow] {
+        var rows: [InventoryFilterRow] = []
+        if !categories.isEmpty { rows.append(.category) }
+        if model.tracksInventory { rows.append(.stockStatus) }
+        rows.append(.unit)
+        if model.tracksInventory { rows.append(.expiry) }
+        return rows
+    }
+
     var body: some View {
         NavigationStack {
             Form {
-                if !categories.isEmpty {
-                    categoryMenu
-                        .listRowBackground(Color.cardBackground)
-                }
-
-                if model.tracksInventory {
-                    stockStatusMenu
-                        .listRowBackground(Color.cardBackground)
-                }
-
-                unitMenu
-                    .listRowBackground(Color.cardBackground)
-
-                if model.tracksInventory {
-                    expiryMenu
-                        .listRowBackground(Color.cardBackground)
+                Section {
+                    let rows = filterRows
+                    ForEach(Array(rows.enumerated()), id: \.element) { index, row in
+                        menu(for: row)
+                            .ledgerSheetRow(position: .position(index: index, count: rows.count))
+                    }
                 }
 
                 // Deliberately not a filter, and so deliberately absent from
@@ -59,23 +60,28 @@ struct InventoryFilterView: View {
                         NavigationLink {
                             HiddenIngredientsView(model: model)
                         } label: {
-                            LabeledContent("Hidden Ingredients", value: "\(hiddenIngredients.count)")
+                            HoneyLedgerLabeledRow("Hidden Ingredients") {
+                                Text.honeyLedgerFigure("\(hiddenIngredients.count)")
+                            }
                         }
+                        .ledgerSheetRow(position: .only)
                     } footer: {
                         Text("Hidden ingredients stay out of Inventory and out of recipe ingredient pickers. Unhide one to use it again.")
+                            .font(.footnote)
+                            .foregroundStyle(Color.inkSoft)
                     }
-                    .listRowBackground(Color.cardBackground)
                 }
             }
+            .environment(\.defaultMinListRowHeight, 48)
             .navigationTitle("Filters")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Filters")
-            .warmBackground()
+            .honeyLedgerInlineTitle("Filters")
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if model.hasActiveFilters {
                         Button("Clear All") { model.clearFilters() }
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.danger)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -85,13 +91,23 @@ struct InventoryFilterView: View {
         }
     }
 
+    @ViewBuilder
+    private func menu(for row: InventoryFilterRow) -> some View {
+        switch row {
+        case .category: categoryMenu
+        case .stockStatus: stockStatusMenu
+        case .unit: unitMenu
+        case .expiry: expiryMenu
+        }
+    }
+
     /// Multi-select, so the menu is pinned open: otherwise every tap dismissed
     /// it and picking three categories meant opening it three times. Unlike
     /// `.contextMenu`, whose content SwiftUI snapshots once, a `Menu`
     /// re-evaluates — so the checkmarks still follow each tap. See the note in
     /// `RecipeCollectionsPickerSheet`, which rejected this API for that reason.
     private var categoryMenu: some View {
-        filterMenu(title: "Category", value: categoryLabel) {
+        filterMenu(title: "Category", value: categoryLabel, isUnfiltered: model.selectedCategories.isEmpty) {
             ForEach(categories) { category in
                 Button {
                     model.toggleCategory(category)
@@ -107,7 +123,7 @@ struct InventoryFilterView: View {
     }
 
     private var unitMenu: some View {
-        filterMenu(title: "Unit Type", value: unitLabel) {
+        filterMenu(title: "Unit Type", value: unitLabel, isUnfiltered: model.selectedUnits.isEmpty) {
             ForEach(IngredientUnit.allCases, id: \.self) { unit in
                 Button {
                     if model.selectedUnits.contains(unit) {
@@ -129,7 +145,7 @@ struct InventoryFilterView: View {
     /// Single-select, so the default dismiss-on-tap is right: the menu has done
     /// its job the moment one option is picked.
     private var stockStatusMenu: some View {
-        filterMenu(title: "Stock Status", value: model.stockStatus.rawValue) {
+        filterMenu(title: "Stock Status", value: model.stockStatus.rawValue, isUnfiltered: model.stockStatus == .all) {
             ForEach(StockStatusFilter.allCases) { status in
                 Button {
                     model.stockStatus = status
@@ -141,7 +157,7 @@ struct InventoryFilterView: View {
     }
 
     private var expiryMenu: some View {
-        filterMenu(title: "Expiry Date", value: model.expiryFilter.rawValue) {
+        filterMenu(title: "Expiry Date", value: model.expiryFilter.rawValue, isUnfiltered: model.expiryFilter == .all) {
             ForEach(ExpiryFilter.allCases) { filter in
                 Button {
                     model.expiryFilter = filter
@@ -155,18 +171,25 @@ struct InventoryFilterView: View {
     /// One filter row: a menu whose label fills the row, so a tap anywhere on it
     /// opens the menu. `PickerMenuRowLabel` spans the row but its `Spacer` is not
     /// hit-tested on its own — without `contentShape` only the value text on the
-    /// right responded.
+    /// right responded. `isUnfiltered` draws the value as a placeholder, since
+    /// "All" narrows nothing.
     private func filterMenu<Content: View>(
         title: String,
         value: String,
+        isUnfiltered: Bool,
         @ViewBuilder content: () -> Content
     ) -> some View {
         Menu {
             content()
         } label: {
-            PickerMenuRowLabel(title: title, value: value)
+            PickerMenuRowLabel(title: title, value: value, isPlaceholder: isUnfiltered)
                 .contentShape(.rect)
         }
-        .tint(.primary)
+        .tint(Color.ink)
     }
+}
+
+/// One menu in the filter sheet, so each can be told where it sits in the sheet.
+private enum InventoryFilterRow: Hashable {
+    case category, stockStatus, unit, expiry
 }
