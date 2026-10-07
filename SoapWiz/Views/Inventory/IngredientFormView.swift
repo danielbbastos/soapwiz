@@ -38,7 +38,7 @@ struct IngredientFormView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Details") {
+                Section {
                     PhotoField(imageData: $model.imageData) {
                         IngredientAvatar(
                             letter: model.avatarLetter,
@@ -46,48 +46,44 @@ struct IngredientFormView: View {
                             side: PhotoFieldWell.side
                         )
                     }
-                    TextField("Name", text: $model.name)
+                    .ledgerSheetRow(position: .first)
+                    HoneyLedgerField("Name", text: $model.name, prompt: "Required")
                         .onChange(of: model.name) { _, _ in
                             model.applyNameChange(existingCodes: existingCodes)
                         }
-                    codeField
-                    Menu {
-                        Button { model.selectedCategory = nil } label: {
-                            MenuSelectionLabel("None", isSelected: model.selectedCategory == nil)
-                        }
-                        Button { showingNewCategory = true } label: {
-                            Label("New Category", systemImage: "plus")
-                        }
-                        Divider()
-                        ForEach(categories) { category in
-                            Button { model.selectedCategory = category } label: {
-                                MenuSelectionLabel(category.name, isSelected: model.selectedCategory === category)
-                            }
-                        }
-                    } label: {
-                        PickerMenuRowLabel(title: "Category", value: model.selectedCategory?.name ?? "None")
-                    }
-                    .tint(.primary)
-                    Picker("Unit", selection: $model.selectedUnit) {
-                        Text("None").tag(Optional<IngredientUnit>.none)
-                        ForEach(IngredientUnit.allCases, id: \.self) { unit in
-                            Text("\(unit.label) (\(unit.rawValue))").tag(Optional(unit))
-                        }
-                    }
+                        .ledgerSheetRow(position: .middle)
+                    HoneyLedgerField(
+                        "Ingredient Code",
+                        text: codeBinding,
+                        prompt: "Optional",
+                        error: model.codeProblem(among: allIngredients)?.message
+                    )
+                    .textInputAutocapitalization(.characters)
+                    .ledgerSheetRow(position: .middle)
+                    categoryMenu
+                        .ledgerSheetRow(position: .middle)
+                    unitMenu
+                        .ledgerSheetRow(position: .last)
+                } header: {
+                    HoneyLedgerSectionLabel("Details")
                 }
-                .listRowBackground(Color.cardBackground)
 
                 if model.showsSapValue || model.showsDensity {
-                    Section("Properties") {
+                    Section {
+                        let count = (model.showsSapValue ? 2 : 0) + (model.showsDensity ? 1 : 0)
                         if model.showsSapValue {
-                            decimalRow(title: "SAP Value (NaOH)", placeholder: 0.134, text: $model.sapValue, unit: "g/g")
-                            decimalRow(title: "SAP Value (KOH)", placeholder: 0.188, text: $model.kohSapValue, unit: "g/g")
+                            decimalField("SAP Value (NaOH)", placeholder: 0.134, text: $model.sapValue, unit: "g/g")
+                                .ledgerSheetRow(position: .position(index: 0, count: count))
+                            decimalField("SAP Value (KOH)", placeholder: 0.188, text: $model.kohSapValue, unit: "g/g")
+                                .ledgerSheetRow(position: .position(index: 1, count: count))
                         }
                         if model.showsDensity {
-                            decimalRow(title: "Density", placeholder: 0.92, text: $model.density, unit: "g/ml")
+                            decimalField("Density", placeholder: 0.92, text: $model.density, unit: "g/ml")
+                                .ledgerSheetRow(position: .position(index: count - 1, count: count))
                         }
+                    } header: {
+                        HoneyLedgerSectionLabel("Properties")
                     }
-                    .listRowBackground(Color.cardBackground)
                 }
 
                 if model.showsSapValue {
@@ -96,36 +92,40 @@ struct IngredientFormView: View {
                             FattyAcidProfileEditor(profile: $model.fattyAcidProfile)
                         }
                     } header: {
-                        CollapsibleSectionHeader(title: "Fatty-Acid Profile", expanded: $profileExpanded)
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) { profileExpanded.toggle() }
+                        } label: {
+                            HoneyLedgerSectionLabel("Fatty-Acid Profile", isExpanded: profileExpanded)
+                        }
+                        .buttonStyle(.plain)
                     } footer: {
                         if profileExpanded {
-                            Text("Used to work out an oil's soap qualities — hardness, cleansing, "
-                                 + "conditioning and the rest. Leave blank if you don't have it.")
+                            footer("Used to work out an oil's soap qualities — hardness, cleansing, "
+                                   + "conditioning and the rest. Leave blank if you don't have it.")
                         }
                     }
-                    .listRowBackground(Color.cardBackground)
                 }
 
                 Section {
-                    HStack {
-                        TextField("Low Stock Threshold", text: $model.lowStockThreshold.decimalOnly())
-                            .keyboardType(.decimalPad)
-                        if let symbol = model.selectedUnit?.rawValue {
-                            Text(symbol)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                    decimalField(
+                        "Low Stock Threshold",
+                        placeholder: nil,
+                        text: $model.lowStockThreshold,
+                        // Not after the "None" placeholder: "None g" reads as an amount.
+                        unit: model.lowStockThreshold.isEmpty ? nil : model.selectedUnit?.rawValue
+                    )
+                    .ledgerSheetRow(position: .only)
                 } header: {
-                    Text("Alerts")
+                    HoneyLedgerSectionLabel("Alerts")
                 } footer: {
-                    Text("You'll see a warning when stock falls at or below this amount. Leave blank to disable.")
+                    footer("You'll see a warning when stock falls at or below this amount. Leave blank to disable.")
                 }
-                .listRowBackground(Color.cardBackground)
             }
+            .environment(\.defaultMinListRowHeight, 48)
             .navigationTitle(model.isEditing ? "Edit Ingredient" : "New Ingredient")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle(model.isEditing ? "Edit Ingredient" : "New Ingredient")
-            .warmBackground()
+            .honeyLedgerInlineTitle(model.isEditing ? "Edit Ingredient" : "New Ingredient")
+            .ledgerBackground()
             // A prefilled name arrives before the field exists, so the
             // `onChange` that derives the code never fires for it.
             .task {
@@ -181,36 +181,80 @@ struct IngredientFormView: View {
         )
     }
 
-    /// One trailing-aligned decimal field with a trailing unit label. The SAP and
-    /// density rows are the same shape, so they share this rather than repeating it.
-    private func decimalRow(title: String, placeholder: Double, text: Binding<String>, unit: String) -> some View {
-        HStack {
-            Text(title)
-                .layoutPriority(1)
-            TextField(placeholder.formatted(), text: text.decimalOnly())
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(minWidth: 80, maxWidth: .infinity)
-            Text(unit)
-                .foregroundStyle(.secondary)
-                .fixedSize()
-        }
+    /// A decimal field with its unit. The SAP, density and threshold rows are the
+    /// same shape, so they share this rather than repeating it. A nil
+    /// `placeholder` reads "None", for a field left blank to switch it off.
+    private func decimalField(
+        _ title: String,
+        placeholder: Double?,
+        text: Binding<String>,
+        unit: String?
+    ) -> some View {
+        HoneyLedgerField(
+            title,
+            text: text.decimalOnly(),
+            prompt: placeholder?.formatted() ?? String(localized: "None"),
+            unit: unit,
+            keyboard: .decimalPad
+        )
     }
 
-    @ViewBuilder
-    private var codeField: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            TextField("Ingredient Code", text: codeBinding)
-                .textInputAutocapitalization(.characters)
-            if model.codeHasDuplicate(among: allIngredients) {
-                Text("This code is already in use.")
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            } else if !model.trimmedCode.isEmpty && model.trimmedCode.count < 3 {
-                Text("Code must be at least 3 characters.")
-                    .font(.caption)
-                    .foregroundStyle(.red)
+    private func footer(_ text: String) -> some View {
+        Text(text)
+            .font(.footnote)
+            .foregroundStyle(Color.inkSoft)
+    }
+
+    private var categoryMenu: some View {
+        Menu {
+            Button { model.selectedCategory = nil } label: {
+                MenuSelectionLabel("None", isSelected: model.selectedCategory == nil)
             }
+            Button { showingNewCategory = true } label: {
+                Label("New Category", systemImage: "plus")
+            }
+            Divider()
+            ForEach(categories) { category in
+                Button { model.selectedCategory = category } label: {
+                    MenuSelectionLabel(category.name, isSelected: model.selectedCategory === category)
+                }
+            }
+        } label: {
+            PickerMenuRowLabel(
+                title: "Category",
+                value: model.selectedCategory?.name ?? String(localized: "None"),
+                isPlaceholder: model.selectedCategory == nil
+            )
         }
+        .tint(.primary)
+    }
+
+    /// A menu rather than a `Picker`: a menu picker draws its value in the
+    /// accent colour, and amber is only ever a fill.
+    private var unitMenu: some View {
+        Menu {
+            Button { model.selectedUnit = nil } label: {
+                MenuSelectionLabel("None", isSelected: model.selectedUnit == nil)
+            }
+            Divider()
+            let units = IngredientUnit.allCases
+            let symbols = MenuColumnPadding.padded(units.map(\.rawValue))
+            ForEach(Array(zip(units, symbols)), id: \.0) { unit, symbol in
+                Button { model.selectedUnit = unit } label: {
+                    MenuSelectionLabel("\(symbol) · \(unit.label)", isSelected: model.selectedUnit == unit)
+                }
+            }
+        } label: {
+            PickerMenuRowLabel(
+                title: "Unit",
+                value: model.selectedUnit.map(unitName) ?? String(localized: "None"),
+                isPlaceholder: model.selectedUnit == nil
+            )
+        }
+        .tint(.primary)
+    }
+
+    private func unitName(_ unit: IngredientUnit) -> String {
+        "\(unit.rawValue) · \(unit.label)"
     }
 }

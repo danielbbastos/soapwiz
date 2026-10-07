@@ -198,6 +198,15 @@ final class IngredientFormViewModel {
         }
     }
 
+    /// What is wrong with the code as typed, if anything. A duplicate wins over
+    /// length: a short code that is also taken needs changing, not lengthening.
+    func codeProblem(among ingredients: [Ingredient]) -> IngredientCodeProblem? {
+        if codeHasDuplicate(among: ingredients) { return .duplicate }
+        let code = trimmedCode
+        if !code.isEmpty && code.count < 3 { return .tooShort }
+        return nil
+    }
+
     func applyNameChange(existingCodes: [String]) {
         guard !codeIsManuallyEdited else { return }
         code = suggestCode(for: trimmedName, existingCodes: existingCodes)

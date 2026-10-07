@@ -24,8 +24,11 @@ struct NumericTextField: View {
     var body: some View {
         TextField(
             prompt, value: $value,
-            format: .number.precision(.fractionLength(allowsDecimals ? fractionLength : 0...0))
+            format: .number.precision(.fractionLength(allowsDecimals ? fractionLength : 0...0)),
+            prompt: Text(prompt).foregroundStyle(Color.inkFaint)
         )
+            .fontWeight(.medium)
+            .monospacedDigit()
             .keyboardType(allowsDecimals ? .decimalPad : .numberPad)
             .multilineTextAlignment(alignment)
             .onChange(of: value) { _, newValue in
