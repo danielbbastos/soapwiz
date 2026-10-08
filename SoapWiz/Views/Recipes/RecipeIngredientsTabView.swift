@@ -1,45 +1,6 @@
 import SwiftUI
 import SwiftData
 
-struct AvailableHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
-    }
-}
-
-/// Label style with a tighter gap between the icon and title than the default.
-private struct TightLabelStyle: LabelStyle {
-    var spacing: CGFloat = 4
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: spacing) {
-            configuration.icon
-            configuration.title
-        }
-    }
-}
-
-private enum PickerSection: String, Identifiable {
-    case oils, additives, fragrances
-    /// The merged section a non-soap recipe uses in place of oils + additives.
-    case ingredients
-    var id: String { rawValue }
-
-    var roles: Set<RecipeIngredientRole> {
-        switch self {
-        case .oils: return [.oil]
-        case .additives: return [.additive]
-        case .fragrances: return [.fragrance]
-        case .ingredients: return [.oil, .additive]
-        }
-    }
-
-    /// The merged Ingredients section also offers role-less "Others" ingredients,
-    /// so a general recipe isn't limited to oils and additives. Every soap-only
-    /// section keeps its exact role set.
-    var includesUnroled: Bool { self == .ingredients }
-}
-
 struct RecipeIngredientsTabView: View {
     @Bindable var model: RecipeFormViewModel
     /// Matches the extras table's query, so a cream-soap glycerine add that had to
@@ -54,6 +15,8 @@ struct RecipeIngredientsTabView: View {
     @State private var costBreakdownExpanded = false
     @State private var deletedRows: [PickerSection: Int] = [:]
     @State private var availableHeight: CGFloat = 0
+    /// Keeps the batch weights beside the percentages in one column.
+    @ScaledMetric(relativeTo: .body) private var weightColumnWidth: CGFloat = 72
 
     private var tracksInventory: Bool { AppSettings.tracksInventory(from: settingsRecords) }
 
@@ -104,17 +67,15 @@ struct RecipeIngredientsTabView: View {
     private var unresolvedLineItemsSection: some View {
         if model.unresolvedLineItemCount > 0 {
             Section {
-                Label {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(unresolvedLineItemsTitle)
-                        Text(unresolvedLineItemsSubtitle)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                VStack(alignment: .leading, spacing: 4) {
+                    HoneyLedgerFieldNote(unresolvedLineItemsTitle, tint: .warning)
+                        .font(.body)
+                    Text(unresolvedLineItemsSubtitle)
+                        .font(.footnote)
+                        .foregroundStyle(Color.inkSoft)
                 }
+                .accessibilityElement(children: .combine)
+                .ledgerSheetRow(position: .only)
             }
         }
     }
@@ -134,20 +95,24 @@ struct RecipeIngredientsTabView: View {
     // MARK: - Oils
 
     private var oilsSection: some View {
-        Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.oils, expanded: $oilsExpanded)
-            .expandingSectionHeader(RecipeFormSection.oils, expanded: oilsExpanded)) {
+        Section {
             if oilsExpanded {
-                HStack {
-                    addButton("Add oil") { activePicker = .oils }
-                    Spacer()
-                    percentageTotal
-                }
-                ForEach(model.oilDrafts) { draft in
-                    baseRow(draft)
+                let count = model.oilDrafts.count + 1
+                let weights = model.oilBatchWeightsByDraftID
+                ForEach(Array(model.oilDrafts.enumerated()), id: \.element.id) { index, draft in
+                    baseRow(draft, batchWeight: weights[draft.id])
+                        .ledgerSheetRow(position: .position(index: index, count: count))
                 }
                 .onDelete(perform: deletingRows(in: .oils, model.removeOil))
                 .id(deletedRows[.oils, default: 0])
+                addButton("Add oil") { activePicker = .oils }
+                    .ledgerSheetRow(position: .position(index: count - 1, count: count))
             }
+        } header: {
+            CollapsibleSectionHeader(title: IngredientCategory.Name.oils, expanded: $oilsExpanded)
+                .expandingSectionHeader(RecipeFormSection.oils, expanded: oilsExpanded)
+        } footer: {
+            percentageTotal(isExpanded: oilsExpanded)
         }
     }
 
@@ -161,20 +126,18 @@ struct RecipeIngredientsTabView: View {
     /// back to soap restore the two sections intact. Base rows still carry the
     /// redistribution that holds the formula at 100%; the rest do not.
     private var ingredientsSection: some View {
-        Section(header: CollapsibleSectionHeader(title: "Ingredients", expanded: $ingredientsExpanded)
-            .expandingSectionHeader(RecipeFormSection.ingredients, expanded: ingredientsExpanded)) {
+        Section {
             if ingredientsExpanded {
-                HStack {
-                    addButton("Add ingredient") { activePicker = .ingredients }
-                    Spacer()
-                    percentageTotal
-                }
-                ForEach(model.oilDrafts) { draft in
-                    baseRow(draft)
+                let oilCount = model.oilDrafts.count
+                let count = oilCount + model.additiveDrafts.count + 1
+                let weights = model.oilBatchWeightsByDraftID
+                ForEach(Array(model.oilDrafts.enumerated()), id: \.element.id) { index, draft in
+                    baseRow(draft, batchWeight: weights[draft.id])
+                        .ledgerSheetRow(position: .position(index: index, count: count))
                 }
                 .onDelete(perform: deletingRows(in: .ingredients, model.removeOil))
                 .id(deletedRows[.ingredients, default: 0])
-                ForEach(model.additiveDrafts) { draft in
+                ForEach(Array(model.additiveDrafts.enumerated()), id: \.element.id) { index, draft in
                     RecipeAmountRow(
                         name: draft.ingredient.name,
                         amount: Binding(
@@ -189,40 +152,78 @@ struct RecipeIngredientsTabView: View {
                         // ingredient's own, so every row reads the same way and
                         // there is nothing to choose.
                         Text(model.unitLabel(for: draft.unit))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.inkSoft)
                     }
+                    .ledgerSheetRow(position: .position(index: oilCount + index, count: count))
                 }
                 .onDelete(perform: deletingRows(in: .ingredients, model.removeAdditive))
                 .id(deletedRows[.ingredients, default: 0])
+                addButton("Add ingredient") { activePicker = .ingredients }
+                    .ledgerSheetRow(position: .position(index: count - 1, count: count))
             }
+        } header: {
+            CollapsibleSectionHeader(title: "Ingredients", expanded: $ingredientsExpanded)
+                .expandingSectionHeader(RecipeFormSection.ingredients, expanded: ingredientsExpanded)
+        } footer: {
+            percentageTotal(isExpanded: ingredientsExpanded)
         }
     }
 
     // MARK: - Shared rows
 
+    /// The foot of an ingredient sheet: a quiet `amberText` action.
     private func addButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Label(title, systemImage: "plus")
-                .labelStyle(TightLabelStyle())
+            HStack(spacing: 10) {
+                Image(systemName: "plus")
+                Text(title)
+            }
+            .fontWeight(.semibold)
+            .foregroundStyle(Color.amberText)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(.rect)
         }
+        .buttonStyle(.plain)
     }
 
-    /// The running total of the percentage scale, green once it reaches 100.
-    /// Shown only in percentage mode, and only once there is something to total.
+    /// The running total of the percentage scale, under the sheet. Plain once it
+    /// reaches 100, and then only while the section is open. Short of that it's
+    /// a caution, shown even with the section folded so a greyed-out Save always
+    /// has its reason on screen: `danger`, saying why, when it blocks Save, and
+    /// `warning` for a saved recipe that was already off 100% and is excused
+    /// until its rows are edited. Either way it sits as far from the next
+    /// section as a sheet does. Shown only in percentage mode, and only once
+    /// there is something to total.
     @ViewBuilder
-    private var percentageTotal: some View {
+    private func percentageTotal(isExpanded: Bool) -> some View {
         if model.weightUnitIsPercentage && !model.oilDrafts.isEmpty {
-            Text(model.totalPercentageText)
-                .foregroundStyle(abs(model.totalPercentage - 100) < 0.1 ? Color.green : Color.red)
-                .frame(width: 60, alignment: .trailing)
-            Text("%")
-                .foregroundStyle(.secondary)
+            // No-break spaces keep each figure with its "%".
+            let rows = model.makesSoap ? String(localized: "Oils") : String(localized: "Ingredients")
+            let total = "\(rows) total \(model.totalPercentageText)\u{00A0}%."
+            Group {
+                if model.percentageTotalBlocksSave {
+                    HoneyLedgerFieldNote(
+                        "\(total) They must add up to 100\u{00A0}% to save.",
+                        tint: .danger,
+                        font: .subheadline.weight(.semibold)
+                    )
+                } else if !model.isPercentageTotalComplete {
+                    HoneyLedgerFieldNote("\(total) They should add up to 100\u{00A0}%.", tint: .warning)
+                } else if isExpanded {
+                    Text("Total \(model.totalPercentageText) %")
+                        .font(.footnote)
+                        .foregroundStyle(Color.inkSoft)
+                }
+            }
+            .monospacedDigit()
+            .padding(.bottom, 16)
         }
     }
 
     /// A base-ingredient row: the amount redistributes against the other
-    /// unlocked base rows to hold the scale at 100%.
-    private func baseRow(_ draft: OilIngredientDraft) -> some View {
+    /// unlocked base rows to hold the scale at 100%. In percentage mode the
+    /// row also shows its weight in the batch, once the lye maths resolves.
+    private func baseRow(_ draft: OilIngredientDraft, batchWeight: Double?) -> some View {
         RecipeAmountRow(
             name: draft.ingredient.name,
             amount: Binding(
@@ -230,19 +231,29 @@ struct RecipeIngredientsTabView: View {
                 set: { model.userEdited(id: draft.id, amount: $0) }
             )
         ) {
-            Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
+                if model.weightUnitIsPercentage, let batchWeight {
+                    Text(weightText(batchWeight))
+                        .monospacedDigit()
+                        .frame(minWidth: weightColumnWidth, alignment: .trailing)
+                }
+            }
+            .foregroundStyle(Color.inkSoft)
         }
+    }
+
+    private func weightText(_ weight: Double) -> String {
+        "\(weight.formatted(.number.precision(.fractionLength(0...1)))) \(model.displayWeightUnit)"
     }
 
     // MARK: - Additives
 
     private var additivesSection: some View {
-        Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.additives, expanded: $additivesExpanded)
-            .expandingSectionHeader(RecipeFormSection.additives, expanded: additivesExpanded)) {
+        Section {
             if additivesExpanded {
-                addButton("Add additive") { activePicker = .additives }
-                ForEach(model.additiveDrafts) { draft in
+                let count = model.additiveDrafts.count + 1
+                ForEach(Array(model.additiveDrafts.enumerated()), id: \.element.id) { index, draft in
                     RecipeAmountRow(
                         name: draft.ingredient.name,
                         amount: Binding(
@@ -252,32 +263,46 @@ struct RecipeIngredientsTabView: View {
                         fractionLength: 0...3,
                         fieldWidth: 55
                     ) {
-                        Picker("Unit", selection: Binding(
-                            get: { draft.unit },
-                            set: { model.updateAdditive(id: draft.id, unit: $0) }
-                        )) {
-                            ForEach(RecipeUnitOptions.additive, id: \.self) { Text($0) }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.menu)
+                        additiveUnitMenu(draft)
                     }
+                    .ledgerSheetRow(position: .position(index: index, count: count))
                 }
                 .onDelete(perform: deletingRows(in: .additives, model.removeAdditive))
                 .id(deletedRows[.additives, default: 0])
+                addButton("Add additive") { activePicker = .additives }
+                    .ledgerSheetRow(position: .position(index: count - 1, count: count))
             }
+        } header: {
+            CollapsibleSectionHeader(title: IngredientCategory.Name.additives, expanded: $additivesExpanded)
+                .expandingSectionHeader(RecipeFormSection.additives, expanded: additivesExpanded)
         }
+    }
+
+    /// A menu picker rather than a `Menu`: a `Menu` keeps its label at the old
+    /// value's width while it closes, so a longer unit showed squeezed ("% c")
+    /// for a moment. Tinted `ink`, since the picker draws its value in the
+    /// tint and amber is only ever a fill.
+    private func additiveUnitMenu(_ draft: IngredientAmountDraft) -> some View {
+        Picker("Unit", selection: Binding(
+            get: { draft.unit },
+            set: { model.updateAdditive(id: draft.id, unit: $0) }
+        )) {
+            ForEach(RecipeUnitOptions.additive, id: \.self) { Text($0) }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .tint(Color.ink)
     }
 
     // MARK: - Fragrances
 
     private var fragrancesSection: some View {
-        Section(header: CollapsibleSectionHeader(title: IngredientCategory.Name.fragrances, expanded: $fragrancesExpanded)
-            .expandingSectionHeader(RecipeFormSection.fragrances, expanded: fragrancesExpanded)) {
+        Section {
             if fragrancesExpanded {
-                RecipeFragrancesHeaderRow(model: model) {
-                    addButton("Add fragrance") { activePicker = .fragrances }
-                }
-                ForEach(model.fragranceDrafts) { draft in
+                let count = model.fragranceDrafts.count + 2
+                RecipeFragrancesHeaderRow(model: model)
+                    .ledgerSheetRow(position: .position(index: 0, count: count))
+                ForEach(Array(model.fragranceDrafts.enumerated()), id: \.element.id) { index, draft in
                     RecipeAmountRow(
                         name: draft.ingredient.name,
                         amount: Binding(
@@ -288,13 +313,20 @@ struct RecipeIngredientsTabView: View {
                         fieldWidth: 55
                     ) {
                         Text(model.fragranceUnit.rawValue)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.inkSoft)
                     }
+                    .ledgerSheetRow(position: .position(index: index + 1, count: count))
                 }
                 .onDelete(perform: deletingRows(in: .fragrances, model.removeFragrance))
                 .id(deletedRows[.fragrances, default: 0])
-                blendTotalWarning
+                addButton("Add fragrance") { activePicker = .fragrances }
+                    .ledgerSheetRow(position: .position(index: count - 1, count: count))
             }
+        } header: {
+            CollapsibleSectionHeader(title: IngredientCategory.Name.fragrances, expanded: $fragrancesExpanded)
+                .expandingSectionHeader(RecipeFormSection.fragrances, expanded: fragrancesExpanded)
+        } footer: {
+            if fragrancesExpanded { blendTotalWarning }
         }
     }
 
@@ -304,15 +336,11 @@ struct RecipeIngredientsTabView: View {
     @ViewBuilder
     private var blendTotalWarning: some View {
         if let blendTotal = model.fragranceBlendTotal, abs(blendTotal - 100) > 0.5 {
-            Label {
-                Text("Blend shares total \(model.formatPercentage(blendTotal))%. "
-                    + "They are applied as shares of that total, not of 100%.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            } icon: {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
-            }
+            HoneyLedgerFieldNote(
+                "Blend shares total \(model.formatPercentage(blendTotal))%. "
+                    + "They are applied as shares of that total, not of 100%.",
+                tint: .warning
+            )
         }
     }
 

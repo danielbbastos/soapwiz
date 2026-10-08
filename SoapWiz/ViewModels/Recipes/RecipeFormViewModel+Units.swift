@@ -16,6 +16,30 @@ extension RecipeFormViewModel {
         oilDrafts.reduce(0) { $0 + $1.amount } + (makesSoap ? 0 : percentageAdditiveTotal)
     }
 
+    /// Whether the running total reads 100%, to within a tenth of a point.
+    var isPercentageTotalComplete: Bool {
+        abs(totalPercentage - 100) < 0.1
+    }
+
+    /// A recipe measured in percentages can't be saved until its scale totals
+    /// 100%: anything else describes a batch that doesn't add up. A recipe
+    /// with no base rows yet has nothing to total, so it can still be saved
+    /// as a draft. A saved recipe that was already off 100% is excused until
+    /// its rows are edited, so it can still be renamed or refiled.
+    var percentageTotalBlocksSave: Bool {
+        weightUnitIsPercentage && !oilDrafts.isEmpty && !isPercentageTotalComplete
+            && percentageScaleChangedSinceLoad
+    }
+
+    /// Each oil row's weight in the batch, in the display unit, keyed by its
+    /// draft. Empty while the lye maths can't resolve, as with a 0% purity.
+    var oilBatchWeightsByDraftID: [UUID: Double] {
+        Dictionary(
+            (oilAmountCalculations ?? []).map { ($0.id, $0.weight) },
+            uniquingKeysWith: +
+        )
+    }
+
     /// Sum of the additive rows entered as a share of the total. Only these
     /// participate in the 100% scale — a gram or a count doesn't.
     var percentageAdditiveTotal: Double {

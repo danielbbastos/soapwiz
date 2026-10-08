@@ -57,13 +57,36 @@ struct RecipeConfigTabView: View {
         }
     }
 
+    private func sheetRow<Content: View>(
+        _ index: Int,
+        of count: Int,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content().ledgerSheetRow(position: .position(index: index, count: count))
+    }
+
+    private func footer(_ text: String) -> some View {
+        Text(text)
+            .font(.footnote)
+            .foregroundStyle(Color.inkSoft)
+    }
+
     private var detailsSection: some View {
-        Section("Details") {
-            TextField("Name", text: $model.name)
-            TextField("Description", text: $model.desc, axis: .vertical)
-                .lineLimit(3...6)
-            PhotoField(imageData: $model.imageData)
-            collectionsMenu
+        Section {
+            sheetRow(0, of: 4) {
+                HoneyLedgerField("Name", text: $model.name, prompt: "Required")
+            }
+            sheetRow(1, of: 4) {
+                HoneyLedgerStackedField(
+                    title: "Description",
+                    text: $model.desc,
+                    prompt: "What makes this recipe special"
+                )
+            }
+            sheetRow(2, of: 4) { PhotoField(imageData: $model.imageData) }
+            sheetRow(3, of: 4) { collectionsMenu }
+        } header: {
+            HoneyLedgerSectionLabel("Details")
         }
     }
 
@@ -94,56 +117,48 @@ struct RecipeConfigTabView: View {
     /// so switching back is lossless.
     private var productKindSection: some View {
         Section {
-            Toggle("Non-soap product", isOn: $model.isNonSoapProduct)
+            toggleRow("Non-soap recipe", isOn: $model.isNonSoapProduct)
+                .ledgerSheetRow(position: .only)
         } footer: {
-            if model.isNonSoapProduct {
-                Text("Lye, water, super fat and the soap method options don't apply to "
-                     + "candles, balms and salves, so they're hidden. Their settings are kept "
-                     + "in case you switch back.")
-            }
+            footer("Turn on for balms, lotions and other recipes without lye.")
         }
     }
 
     private var weightSection: some View {
-        Section(model.makesSoap ? "Oils weight & unit" : "Weight & unit") {
-            HStack {
-                Text("Measurement unit")
-                Spacer()
-                Picker("Unit", selection: $model.weightUnit) {
-                    ForEach(weightUnits, id: \.self) { Text($0) }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .tint(.primary)
+        Section {
+            let count = model.weightUnitIsPercentage ? 4 : 1
+            sheetRow(0, of: count) {
+                unitMenu("Unit", units: weightUnits, selection: $model.weightUnit)
             }
-
             if model.weightUnitIsPercentage {
-                HStack {
-                    Text(model.baseWeightLabel)
-                        .layoutPriority(1)
-                    NumericTextField(prompt: "0", value: $model.totalOilWeight,
-                                     width: 80, fillsAvailableWidth: true, focus: $oilWeightFocused)
-                    Picker(model.baseWeightLabel, selection: $model.oilWeightUnit) {
-                        ForEach(absoluteWeightUnits, id: \.self) { Text($0) }
+                sheetRow(1, of: count) {
+                    HoneyLedgerField(model.baseWeightLabel, unit: model.oilWeightUnit) { focus in
+                        NumericTextField(prompt: "0", value: $model.totalOilWeight,
+                                         width: 80, fillsAvailableWidth: true, focus: focus)
+                            .focused($oilWeightFocused)
                     }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .tint(.primary)
-                    .fixedSize()
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
-
-                Button {
-                    showMoldCalculator = true
-                } label: {
-                    Text("Calculate from mold…")
-                        .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(.rect)
+                sheetRow(2, of: count) {
+                    unitMenu("Weight unit", units: absoluteWeightUnits, selection: $model.oilWeightUnit)
                 }
-                .buttonStyle(.plain)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+                sheetRow(3, of: count) {
+                    Button {
+                        showMoldCalculator = true
+                    } label: {
+                        Label("Calculate from mold…", systemImage: "ruler")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.amberText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
+        } header: {
+            HoneyLedgerSectionLabel(model.makesSoap ? "Oils" : "Weight")
         }
         .animation(.default, value: model.weightUnitIsPercentage)
         .onChange(of: model.weightUnitIsPercentage) { _, isPercentage in
@@ -156,121 +171,143 @@ struct RecipeConfigTabView: View {
         }
     }
 
+    /// The single-lye rows are toggle, lye type, soap type, ingredient,
+    /// purity, water and super fat; dual lye swaps the middle four for the
+    /// split, both purities and both ingredients.
     private var lyeSection: some View {
-        Section("Lye configuration") {
-            Toggle("Dual lye (NaOH + KOH)", isOn: $model.useHybrid)
-
-            HStack {
-                Text("Soap type")
-                Spacer()
-                Text(model.soapType.label)
-                    .foregroundStyle(.secondary)
+        Section {
+            let count = model.useHybrid ? 10 : 7
+            sheetRow(0, of: count) {
+                toggleRow("Dual lye (NaOH + KOH)", isOn: $model.useHybrid)
             }
-
             if model.useHybrid {
-                hybridLyeRows
+                sheetRow(1, of: count) { soapTypeRow }
+                sheetRow(2, of: count) {
+                    percentRow("KOH", value: Binding(get: { model.kohPercentage }, set: model.setKOHPercentage), prompt: "0")
+                }
+                sheetRow(3, of: count) {
+                    percentRow("NaOH", value: Binding(get: { model.naohPercentage }, set: model.setNaOHPercentage), prompt: "0")
+                }
+                sheetRow(4, of: count) { percentRow("KOH purity", value: $model.kohPurity, prompt: "90") }
+                sheetRow(5, of: count) { percentRow("NaOH purity", value: $model.naohPurity, prompt: "99") }
+                sheetRow(6, of: count) { lyeIngredientRow("KOH ingredient", selected: $model.kohLyeIngredient) }
+                sheetRow(7, of: count) { lyeIngredientRow("NaOH ingredient", selected: $model.lyeIngredient) }
             } else {
-                singleLyeRows
+                sheetRow(1, of: count) {
+                    HoneyLedgerSegmented(
+                        "Lye type",
+                        selection: Binding(get: { model.lyeType }, set: model.setLyeType),
+                        options: [("NaOH", "NaOH"), ("KOH", "KOH")]
+                    )
+                }
+                sheetRow(2, of: count) { soapTypeRow }
+                sheetRow(3, of: count) {
+                    lyeIngredientRow(
+                        "Lye ingredient",
+                        selected: model.lyeType == "KOH" ? $model.kohLyeIngredient : $model.lyeIngredient
+                    )
+                }
+                sheetRow(4, of: count) { percentRow("Lye purity", value: $model.lyePurity, prompt: "99") }
             }
-
-            waterRatioRow
-            percentRow("Super Fat", value: $model.superFat, prompt: "5")
+            sheetRow(count - 2, of: count) { waterRatioRow }
+            sheetRow(count - 1, of: count) { percentRow("Super Fat", value: $model.superFat, prompt: "5") }
+        } header: {
+            HoneyLedgerSectionLabel("Lye configuration")
         }
         .animation(.default, value: model.useHybrid)
     }
 
+    private var soapTypeRow: some View {
+        HoneyLedgerCalculatedRow(title: "Soap type", value: model.soapType.label)
+    }
+
     private var soapMethodSection: some View {
         Section {
-            // The info icon is a sibling of the toggle rather than part of its
-            // label, which would swallow the tap.
-            HStack {
-                Text("Cream soap method")
-                InfoPopoverIcon(title: "Cream soap method", text: creamSoapExplanation)
-                Spacer()
-                Toggle("Cream soap method", isOn: Binding(
-                    get: { model.isCreamSoap },
-                    set: { model.setCreamSoap($0, from: allIngredients) }
-                ))
-                .labelsHidden()
+            let showsCFM = model.soapType != .solid
+            let count = 1 + (showsCFM ? 1 : 0) + (showsCFM && model.useCFM ? 2 : 0)
+            sheetRow(0, of: count) {
+                infoToggleRow(
+                    "Cream soap method",
+                    explanation: creamSoapExplanation,
+                    isOn: Binding(
+                        get: { model.isCreamSoap },
+                        set: { model.setCreamSoap($0, from: allIngredients) }
+                    )
+                )
             }
             // The Catherine Failor method only makes sense for non-solid soaps
             // (single KOH or dual lye), so it's hidden for a solid NaOH bar.
-            if model.soapType != .solid {
-                // The info icon is a sibling of the toggle rather than part of
-                // its label, which would swallow the tap.
-                HStack {
-                    Text("Catherine Failor method")
-                    InfoPopoverIcon(title: "Catherine Failor method", text: cfmExplanation)
-                    Spacer()
-                    Toggle("Catherine Failor method", isOn: $model.useCFM)
-                        .labelsHidden()
+            if showsCFM {
+                sheetRow(1, of: count) {
+                    infoToggleRow("Catherine Failor method", explanation: cfmExplanation, isOn: $model.useCFM)
                 }
                 if model.useCFM {
-                    Picker("Neutraliser", selection: Binding(
-                        get: { model.cfmNeutralizer },
-                        set: { model.setCFMNeutralizer($0, from: additiveIngredients) }
-                    )) {
-                        ForEach(CFMNeutralizer.allCases, id: \.self) { option in
-                            Text(option.displayName).tag(option)
-                        }
+                    sheetRow(2, of: count) {
+                        HoneyLedgerSegmented(
+                            "Neutraliser",
+                            selection: Binding(
+                                get: { model.cfmNeutralizer },
+                                set: { model.setCFMNeutralizer($0, from: additiveIngredients) }
+                            ),
+                            options: CFMNeutralizer.allCases.map { ($0, $0.displayName) }
+                        )
                     }
-                    .pickerStyle(.segmented)
-                    neutralizerIngredientRow
+                    sheetRow(3, of: count) { neutralizerIngredientRow }
                 }
             }
         } header: {
-            Text("Soap method")
+            HoneyLedgerSectionLabel("Soap method")
         } footer: {
             if model.soapType == .solid {
-                Text("The Catherine Failor liquid-soap method appears when the recipe makes a liquid "
-                     + "or cream soap — switch to KOH or dual lye.")
+                footer("The Catherine Failor liquid-soap method appears when the recipe makes a liquid "
+                       + "or cream soap — switch to KOH or dual lye.")
             } else if model.useCFM && model.neutralizerIngredient == nil {
-                Text("The neutraliser dose is shown in the amounts table, but without an ingredient "
-                     + "it isn't costed or deducted from inventory when you make a batch.")
+                footer("The neutraliser dose is shown in the amounts table, but without an ingredient "
+                       + "it isn't costed or deducted from inventory when you make a batch.")
             }
         }
         .animation(.default, value: model.useCFM)
         .animation(.default, value: model.soapType)
     }
 
-    @ViewBuilder
-    private var singleLyeRows: some View {
-        HStack {
-            Text("Lye type")
-            Spacer()
-            Picker("Lye type", selection: Binding(get: { model.lyeType }, set: model.setLyeType)) {
-                Text("NaOH").tag("NaOH")
-                Text("KOH").tag("KOH")
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
-            .tint(.primary)
-        }
-        lyeIngredientRow(
-            "Lye ingredient",
-            selected: model.lyeType == "KOH" ? $model.kohLyeIngredient : $model.lyeIngredient
-        )
-        percentRow("Lye purity", value: $model.lyePurity, prompt: "99")
+    private func toggleRow(_ title: String, isOn: Binding<Bool>) -> some View {
+        Toggle(title, isOn: isOn)
+            .foregroundStyle(Color.ink)
+            .tint(Color.amber)
     }
 
-    @ViewBuilder
-    private var hybridLyeRows: some View {
-        percentRow("KOH", value: Binding(get: { model.kohPercentage }, set: model.setKOHPercentage), prompt: "0")
-        percentRow("NaOH", value: Binding(get: { model.naohPercentage }, set: model.setNaOHPercentage), prompt: "0")
-        percentRow("KOH purity", value: $model.kohPurity, prompt: "90")
-        percentRow("NaOH purity", value: $model.naohPurity, prompt: "99")
-        lyeIngredientRow("KOH ingredient", selected: $model.kohLyeIngredient)
-        lyeIngredientRow("NaOH ingredient", selected: $model.lyeIngredient)
+    /// The info icon is a sibling of the toggle rather than part of its label,
+    /// which would swallow the tap.
+    private func infoToggleRow(_ title: String, explanation: String, isOn: Binding<Bool>) -> some View {
+        HStack {
+            Text(title)
+                .foregroundStyle(Color.ink)
+            InfoPopoverIcon(title: title, text: explanation)
+            Spacer()
+            Toggle(title, isOn: isOn)
+                .labelsHidden()
+                .tint(Color.amber)
+        }
+    }
+
+    /// A menu rather than a `Picker`: a menu picker draws its value in the
+    /// accent colour, and amber is only ever a fill.
+    private func unitMenu(_ title: String, units: [String], selection: Binding<String>) -> some View {
+        Menu {
+            ForEach(units, id: \.self) { unit in
+                Button { selection.wrappedValue = unit } label: {
+                    MenuSelectionLabel(unit, isSelected: selection.wrappedValue == unit)
+                }
+            }
+        } label: {
+            PickerMenuRowLabel(title: title, value: selection.wrappedValue)
+        }
+        .tint(.primary)
     }
 
     private func percentRow(_ label: String, value: Binding<Double>, prompt: String) -> some View {
-        HStack {
-            Text(label)
-                .layoutPriority(1)
-            NumericTextField(prompt: prompt, value: value, fillsAvailableWidth: true)
-            Text("%")
-                .foregroundStyle(.secondary)
-                .fixedSize()
+        HoneyLedgerField(label, unit: "%") { focus in
+            NumericTextField(prompt: prompt, value: value, fillsAvailableWidth: true, focus: focus)
         }
     }
 
@@ -297,87 +334,31 @@ struct RecipeConfigTabView: View {
             // iPhone widths.
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)
+                    .foregroundStyle(Color.ink)
                 Text(selected.wrappedValue?.name ?? "Select…")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .fontWeight(selected.wrappedValue == nil ? .regular : .medium)
+                    .foregroundStyle(selected.wrappedValue == nil ? Color.inkFaint : Color.inkSoft)
             }
         }
     }
 
     private var waterRatioRow: some View {
-        HStack {
-            Text("Water to lye ratio")
-                .layoutPriority(1)
-            NumericTextField(prompt: 1.5.formatted(), value: $model.waterParts, width: 30, fillsAvailableWidth: true)
-            Text(":")
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
-                .fixedSize()
-            Text("1")
-                .foregroundStyle(.secondary)
-                .fixedSize()
+        HoneyLedgerField("Water to lye ratio", unit: ": 1") { focus in
+            NumericTextField(prompt: 1.5.formatted(), value: $model.waterParts, width: 30,
+                             fillsAvailableWidth: true, focus: focus)
         }
-    }
-
-    /// Explains what the toggle surfaces. The two fractions are the same constants
-    /// `LyeCalculator` scales the amounts by, so the quoted percentages can't drift
-    /// from the numbers shown in the tables.
-    private var creamSoapExplanation: String {
-        let water = LyeCalculator.creamSoapWaterFraction
-            .formatted(.percent.precision(.fractionLength(0...2)))
-        let glycerine = LyeCalculator.creamSoapGlycerineFraction
-            .formatted(.percent.precision(.fractionLength(0...2)))
-        return "Cream soap is a soft, whippable soap. Turning this on adds the extra "
-            + "water and glycerine it needs, scaled to the oil weight and whipped in after "
-            + "the cook to dilute.\n\n"
-            + "The additional water (\(water) of the oil weight) appears in the calculated "
-            + "amounts — it's free, so it's never costed. Glycerine (\(glycerine)) drops into "
-            + "your ingredients as a costed extra when you have it in stock; otherwise it's "
-            + "suggested under Extra Ingredients."
-    }
-
-    /// Liquid-soap method described in Catherine Failor's *Making Natural Liquid
-    /// Soaps*, as implemented in `LyeCalculator`. The dose is quoted in the
-    /// recipe's own units: Failor's ¾ oz per lb when the recipe is measured in
-    /// oz or lb, the metric equivalent otherwise.
-    private var cfmExplanation: String {
-        "Takes the lye at 0% super fat plus a 10% excess so every oil saponifies, "
-        + "then neutralises what's left over after the cook. Water is still sized "
-        + "from the recipe's normal super-fat lye, so the excess doesn't dilute the batch.\n\n"
-        + "The neutraliser is \(cfmDoseDescription) — boric acid at 20% solid "
-        + "to 80% water, or borax at 33% to 67%. The dose is shown with the calculated "
-        + "amounts and, once a neutraliser ingredient is chosen, costed and deducted "
-        + "from inventory like the lye."
-    }
-
-    /// Failor's ¾ oz of solution per lb of soap, or the same fraction expressed
-    /// as grams per kilogram for a metric recipe — derived from the calculator's
-    /// constant rather than typed out, so the two can't drift apart.
-    private var cfmDoseDescription: String {
-        if model.usesImperialUnits {
-            return "¾ oz of solution per lb of soap"
-        }
-        let gramsPerKilogram = (LyeCalculator.cfmNeutralizerSolutionFraction * 1000)
-            .formatted(.number.precision(.fractionLength(0)))
-        return "about \(gramsPerKilogram) g of solution per kg of soap"
     }
 
     private var fragranceSection: some View {
-        Section("Fragrance configuration") {
-            HStack {
-                Text("EO / Fragrances")
-                    .layoutPriority(1)
-                InfoPopoverIcon(
-                    title: "EO / Fragrances %",
-                    text: "The target percentage of \(model.makesSoap ? "total oil weight" : "total weight") "
-                        + "reserved for essential oils and fragrance oils. Used to calculate the "
-                        + "recommended amount and to track usage in the Ingredients tab."
-                )
-                NumericTextField(prompt: "3", value: $model.fragrancePercentage, fillsAvailableWidth: true)
-                Text("%")
-                    .foregroundStyle(.secondary)
-                    .fixedSize()
-            }
+        Section {
+            percentRow("EO / Fragrances", value: $model.fragrancePercentage, prompt: "3")
+                .ledgerSheetRow(position: .only)
+        } header: {
+            HoneyLedgerSectionLabel("Fragrance configuration")
+        } footer: {
+            footer("The share of \(model.makesSoap ? "total oil weight" : "total weight") kept for "
+                   + "essential and fragrance oils, used for the recommended amount on the Ingredients tab.")
         }
     }
 }

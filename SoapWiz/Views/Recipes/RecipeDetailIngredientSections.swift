@@ -33,13 +33,9 @@ struct RecipeDetailIngredientSections: View {
         model.oilDrafts.sorted { $0.amount > $1.amount }
     }
 
-    private var oilBatchWeightByDraftId: [UUID: Double] {
-        Dictionary(uniqueKeysWithValues: (model.oilAmountCalculations ?? []).map { ($0.id, $0.weight) })
-    }
-
     private var oilsSection: some View {
         let oils = sortedOils
-        let weights = oilBatchWeightByDraftId
+        let weights = model.oilBatchWeightsByDraftID
         return Section {
             if oils.isEmpty {
                 emptyRow("No oils added")
@@ -59,7 +55,7 @@ struct RecipeDetailIngredientSections: View {
     /// not be split one way on the edit screen and another way here.
     private var ingredientsSection: some View {
         let oils = sortedOils
-        let oilWeights = oilBatchWeightByDraftId
+        let oilWeights = model.oilBatchWeightsByDraftID
         let additiveWeights = batchWeightLookup(batch.additives)
         let count = oils.count + model.additiveDrafts.count
         return Section {
@@ -182,11 +178,11 @@ struct RecipeDetailIngredientSections: View {
                 let offset = showsUnitToggle ? 1 : 0
                 let count = rows.count + offset
                 if showsUnitToggle {
-                    Picker("Units", selection: $showInGrams) {
-                        Text(model.displayWeightUnit).tag(false)
-                        Text("g").tag(true)
-                    }
-                    .pickerStyle(.segmented)
+                    HoneyLedgerSegmented(
+                        "Units",
+                        selection: $showInGrams,
+                        options: [(false, model.displayWeightUnit), (true, "g")]
+                    )
                     .ledgerSheetRow(position: .position(index: 0, count: count))
                 }
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in

@@ -20,21 +20,24 @@ struct RecipeAmountRow<Trailing: View>: View {
     @ViewBuilder let trailing: Trailing
 
     var body: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            VStack(alignment: .leading) {
-                Text(name)
-                amountField(alignment: .leading)
-                trailing
-            }
-        } else {
-            HStack {
-                Text(name)
-                    .layoutPriority(1)
-                amountField(alignment: .trailing)
-                trailing
-                    .fixedSize()
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading) {
+                    Text(name)
+                    amountField(alignment: .leading)
+                    trailing
+                }
+            } else {
+                HStack {
+                    Text(name)
+                        .layoutPriority(1)
+                    amountField(alignment: .trailing)
+                    trailing
+                        .fixedSize()
+                }
             }
         }
+        .foregroundStyle(Color.ink)
     }
 
     private func amountField(alignment: TextAlignment) -> some View {
@@ -46,5 +49,7 @@ struct RecipeAmountRow<Trailing: View>: View {
             fillsAvailableWidth: true,
             alignment: alignment
         )
+        .tint(Color.amber)
+        .accessibilityLabel(Text(name))
     }
 }

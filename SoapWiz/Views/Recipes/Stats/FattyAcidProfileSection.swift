@@ -61,36 +61,6 @@ struct FattyAcidTotalsRows: View {
         + "set firmer. 41–70 is the usual target for a blend of soft and hard fats."
 }
 
-/// The fatty acid sections of the recipe form's Stats tab. The recipe detail
-/// lays the same rows out in its own ledger sheets (`RecipeDetailStatsSections`).
-/// Emits `Section`s, so it must sit directly inside a `List` or `Form`.
-///
-/// Shown for both kinds. A non-soap recipe carries the iodine value here,
-/// since it has no Soap properties section to host it.
-///
-/// When the explanation stands in for the profile is decided by
-/// `RecipeStats.showsMissingFattyAcidExplanation`.
-struct FattyAcidProfileSections: View {
-    let stats: RecipeStats
-
-    @ViewBuilder
-    var body: some View {
-        if stats.hasFattyAcidData {
-            Section("Fatty acid profile") {
-                FattyAcidBreakdownRows(stats: stats)
-            }
-            Section(RecipeStatsCopy.totalsHeader) {
-                FattyAcidTotalsRows(stats: stats, showsIodine: !stats.makesSoap)
-            }
-        } else if stats.showsMissingFattyAcidExplanation {
-            Section("Fatty acid profile") {
-                Text(RecipeStatsCopy.noFattyAcidData)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-}
-
 private struct FattyAcidRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
