@@ -179,7 +179,9 @@ final class RecipeFormViewModel {
     /// against its oils; a general recipe's resolve against a plain total.
     var baseWeightLabel: String { makesSoap ? "Total oil weight" : "Total weight" }
 
-    var canSave: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
+    var canSave: Bool {
+        !name.trimmingCharacters(in: .whitespaces).isEmpty && !percentageTotalBlocksSave
+    }
 
     var totalPercentageText: String { formatPercentage(totalPercentage) }
 

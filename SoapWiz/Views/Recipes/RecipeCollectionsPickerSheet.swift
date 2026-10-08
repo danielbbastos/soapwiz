@@ -25,30 +25,38 @@ struct RecipeCollectionsPickerSheet: View {
         NavigationStack {
             Group {
                 if collections.isEmpty {
-                    ContentUnavailableView {
-                        Label("No Collections", systemImage: "square.stack")
-                    } description: {
-                        Text("Group recipes into themes like \"Christmas\" or \"Gifts\".")
-                    } actions: {
+                    VStack(spacing: 20) {
+                        HoneyLedgerEmptyState(
+                            "No Collections",
+                            systemImage: "square.stack",
+                            description: "Group recipes into themes like \"Christmas\" or \"Gifts\"."
+                        )
+                        .fixedSize(horizontal: false, vertical: true)
                         Button("New Collection") { showingNewCollection = true }
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.amberText)
                     }
+                    .frame(maxHeight: .infinity)
                 } else {
                     List {
-                        ForEach(collections) { collection in
+                        ForEach(Array(collections.enumerated()), id: \.element.id) { index, collection in
                             Button {
                                 onToggle(collection)
                             } label: {
                                 row(collection)
                             }
+                            .ledgerListDetailRow(
+                                isSelected: recipe.isFiled(under: collection),
+                                position: .position(index: index, count: collections.count)
+                            )
                         }
-                        .listRowBackground(Color.cardBackground)
                     }
                 }
             }
             .navigationTitle(recipe.name)
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle(recipe.name)
-            .warmBackground()
+            .honeyLedgerInlineTitle(recipe.name)
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("New Collection", systemImage: "plus") { showingNewCollection = true }
@@ -73,13 +81,14 @@ struct RecipeCollectionsPickerSheet: View {
                 .fill(collection.color.tint)
                 .frame(width: 12, height: 12)
             Text(collection.name)
-                .foregroundStyle(.primary)
+                .fontWeight(isMember ? .semibold : .regular)
+                .foregroundStyle(Color.ink)
             Spacer()
             Image(systemName: "checkmark")
-                .foregroundStyle(.tint)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.amberText)
                 .opacity(isMember ? 1 : 0)
         }
         .contentShape(.rect)
-        .accessibilityAddTraits(isMember ? .isSelected : [])
     }
 }

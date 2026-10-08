@@ -14,14 +14,36 @@ struct RecipeExtraIngredientsSection: View {
     @ViewBuilder
     var body: some View {
         if let data = model.extraIngredientData {
-            Section(header: CollapsibleSectionHeader(title: "Extra Ingredients", expanded: $expanded)
-                .expandingSectionHeader(RecipeFormSection.extraIngredients, expanded: expanded)) {
+            Section {
                 if expanded {
+                    // The dosage only applies to the first group, so the line
+                    // under it is the darker `inkSoft` a total sits under, run
+                    // to both edges of the sheet's content. Both rows share it,
+                    // so both tint it; inside `ledgerSheetRow`, whose own
+                    // `rule` tint would otherwise win.
                     extraSectionA(rows: data.sectionA)
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 16 }
+                        .alignmentGuide(.listRowSeparatorTrailing) { $0.width - 16 }
+                        .listRowSeparatorTint(Color.inkSoft, edges: .bottom)
+                        .ledgerSheetRow(position: .first)
                     extraSectionB(rows: data.sectionB)
+                        .padding(.top, 8)
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 16 }
+                        .alignmentGuide(.listRowSeparatorTrailing) { $0.width - 16 }
+                        .listRowSeparatorTint(Color.inkSoft, edges: .top)
+                        .ledgerSheetRow(position: .last)
                 }
+            } header: {
+                CollapsibleSectionHeader(title: "Extra Ingredients", expanded: $expanded)
+                    .expandingSectionHeader(RecipeFormSection.extraIngredients, expanded: expanded)
             }
         }
+    }
+
+    private var rule: some View {
+        Rectangle()
+            .fill(Color.rule)
+            .frame(height: 1)
     }
 
     // MARK: - Section A (dosage-percentage rows)
@@ -30,7 +52,7 @@ struct RecipeExtraIngredientsSection: View {
         VStack(spacing: 0) {
             extraSectionAHeader
             ForEach(rows) { row in
-                Divider().padding(.leading, 16)
+                rule.padding(.leading, 16)
                 extraSectionARow(label: row.label, weight: value(from: row), isSubrow: false)
                 if let naoh = row.naohLye {
                     let naohValue = selectedSectionAPct == 1 ? naoh.val1 : selectedSectionAPct == 2 ? naoh.val2 : naoh.val3
@@ -55,23 +77,22 @@ struct RecipeExtraIngredientsSection: View {
 
     private var extraSectionAHeader: some View {
         HStack(spacing: 8) {
-            Text("Ingredient")
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Picker("Percentage", selection: $selectedSectionAPct) {
-                Text("1%").tag(1)
-                Text("2%").tag(2)
-                Text("3%").tag(3)
-            }
-            .pickerStyle(.segmented)
-            .fixedSize()
+            Text("Dosage")
+                .font(.caption.weight(.semibold))
+                .textCase(.uppercase)
+                .tracking(0.9)
+                .foregroundStyle(Color.inkSoft)
             InfoPopoverIcon(title: "Dosage Percentages", text: sectionADosageExplanation)
+            Spacer(minLength: 8)
+            HoneyLedgerSegmented(
+                "Dosage",
+                selection: $selectedSectionAPct,
+                options: [(1, "1%"), (2, "2%"), (3, "3%")]
+            )
+            .frame(maxWidth: 200)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .font(.footnote)
-        .fontWeight(.medium)
-        .foregroundStyle(.secondary)
-        .background(Color.cardBackground)
+        .padding(.vertical, 10)
     }
 
     private var sectionADosageExplanation: String {
@@ -96,8 +117,8 @@ struct RecipeExtraIngredientsSection: View {
             .padding(.leading, isSubrow ? 32 : 16)
             .padding(.trailing, 16)
             .padding(.vertical, 10)
-            .font(.footnote)
-            .foregroundStyle(isSubrow ? Color.secondary : Color.primary)
+            .font(.subheadline)
+            .foregroundStyle(isSubrow ? Color.inkSoft : Color.ink)
             .italic(isSubrow)
         }
     }
@@ -109,7 +130,7 @@ struct RecipeExtraIngredientsSection: View {
             // The Form already draws a separator above this block, so the first
             // row skips its own divider to avoid a doubled line.
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                if index > 0 { Divider().padding(.leading, 16) }
+                if index > 0 { rule.padding(.leading, 16) }
                 extraSectionBRow(row)
                 if let naoh = row.naohLye {
                     extraSectionBSubRow("↳ Extra NaOH", value: naoh)
@@ -132,8 +153,8 @@ struct RecipeExtraIngredientsSection: View {
                         .lineLimit(1)
                     if let note = row.note {
                         Text(note)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                            .foregroundStyle(Color.inkSoft)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -147,7 +168,8 @@ struct RecipeExtraIngredientsSection: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .font(.footnote)
+            .font(.subheadline)
+            .foregroundStyle(Color.ink)
         }
     }
 
@@ -155,16 +177,15 @@ struct RecipeExtraIngredientsSection: View {
         HStack(spacing: 8) {
             Text(label)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .foregroundStyle(.secondary)
                 .italic()
             Text(formatWeight(value))
                 .monospacedDigit()
-                .foregroundStyle(.secondary)
         }
+        .foregroundStyle(Color.inkSoft)
         .padding(.leading, 32)
         .padding(.trailing, 16)
         .padding(.vertical, 6)
-        .font(.footnote)
+        .font(.subheadline)
     }
 
     // MARK: - Shared row helpers
@@ -196,7 +217,7 @@ struct RecipeExtraIngredientsSection: View {
         if let ingredient {
             let isAdded = model.isExtraAdded(ingredient)
             Image(systemName: isAdded ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(isAdded ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
+                .foregroundStyle(isAdded ? Color.amberText : Color.inkFaint)
         } else {
             InfoPopoverIcon(
                 text: "Not in inventory. Add an ingredient matching “\(label)” to include it in the recipe cost.",

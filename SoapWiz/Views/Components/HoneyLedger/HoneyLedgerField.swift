@@ -112,14 +112,47 @@ struct HoneyLedgerTextInput: View {
     }
 }
 
-/// One sentence under a field, after a caution glyph, in `tint`.
+/// A long-text field per the Field component: the label in small tracked
+/// capitals above, the text below, growing over `lineLimit` lines. Like
+/// `HoneyLedgerField`, the label turns `amberText` while the field has focus.
+struct HoneyLedgerStackedField: View {
+    let title: String
+    @Binding var text: String
+    let prompt: String
+    var lineLimit: ClosedRange<Int> = 3...6
+
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .textCase(.uppercase)
+                .tracking(0.9)
+                .foregroundStyle(isFocused ? Color.amberText : Color.inkSoft)
+                .accessibilityHidden(true)
+            TextField(title, text: $text, prompt: Text(prompt).foregroundStyle(Color.inkFaint), axis: .vertical)
+                .lineLimit(lineLimit)
+                .foregroundStyle(Color.ink)
+                .tint(Color.amber)
+                .focused($isFocused)
+        }
+        .padding(.vertical, 4)
+        .animation(.default, value: isFocused)
+    }
+}
+
+/// One sentence under a field, after a caution glyph, in `tint`. Footnote
+/// size unless the note has to stand out more.
 struct HoneyLedgerFieldNote: View {
     let message: String
     let tint: Color
+    let font: Font
 
-    init(_ message: String, tint: Color) {
+    init(_ message: String, tint: Color, font: Font = .footnote) {
         self.message = message
         self.tint = tint
+        self.font = font
     }
 
     var body: some View {
@@ -127,7 +160,7 @@ struct HoneyLedgerFieldNote: View {
             Image(systemName: "exclamationmark.triangle")
             Text(message)
         }
-        .font(.footnote)
+        .font(font)
         .foregroundStyle(tint)
         .accessibilityElement(children: .combine)
     }
