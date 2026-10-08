@@ -1,27 +1,6 @@
 import SwiftUI
 import SwiftData
 
-private enum PickerSection: String, Identifiable {
-    case oils, additives, fragrances
-    /// The merged section a non-soap recipe uses in place of oils + additives.
-    case ingredients
-    var id: String { rawValue }
-
-    var roles: Set<RecipeIngredientRole> {
-        switch self {
-        case .oils: return [.oil]
-        case .additives: return [.additive]
-        case .fragrances: return [.fragrance]
-        case .ingredients: return [.oil, .additive]
-        }
-    }
-
-    /// The merged Ingredients section also offers role-less "Others" ingredients,
-    /// so a general recipe isn't limited to oils and additives. Every soap-only
-    /// section keeps its exact role set.
-    var includesUnroled: Bool { self == .ingredients }
-}
-
 struct RecipeIngredientsTabView: View {
     @Bindable var model: RecipeFormViewModel
     /// Matches the extras table's query, so a cream-soap glycerine add that had to
@@ -133,7 +112,7 @@ struct RecipeIngredientsTabView: View {
             CollapsibleSectionHeader(title: IngredientCategory.Name.oils, expanded: $oilsExpanded)
                 .expandingSectionHeader(RecipeFormSection.oils, expanded: oilsExpanded)
         } footer: {
-            if oilsExpanded { percentageTotal }
+            percentageTotal(isExpanded: oilsExpanded)
         }
     }
 
@@ -186,7 +165,7 @@ struct RecipeIngredientsTabView: View {
             CollapsibleSectionHeader(title: "Ingredients", expanded: $ingredientsExpanded)
                 .expandingSectionHeader(RecipeFormSection.ingredients, expanded: ingredientsExpanded)
         } footer: {
-            if ingredientsExpanded { percentageTotal }
+            percentageTotal(isExpanded: ingredientsExpanded)
         }
     }
 
@@ -207,30 +186,37 @@ struct RecipeIngredientsTabView: View {
         .buttonStyle(.plain)
     }
 
-    /// The running total of the percentage scale, under the sheet: plain once
-    /// it reaches 100, and until then a `danger` caution saying why Save is
-    /// off. Either way it sits as far from the next section as a sheet does.
-    /// Shown only in percentage mode, and only once there is something to total.
+    /// The running total of the percentage scale, under the sheet. Plain once it
+    /// reaches 100, and then only while the section is open. Short of that it's
+    /// a caution, shown even with the section folded so a greyed-out Save always
+    /// has its reason on screen: `danger`, saying why, when it blocks Save, and
+    /// `warning` for a saved recipe that was already off 100% and is excused
+    /// until its rows are edited. Either way it sits as far from the next
+    /// section as a sheet does. Shown only in percentage mode, and only once
+    /// there is something to total.
     @ViewBuilder
-    private var percentageTotal: some View {
+    private func percentageTotal(isExpanded: Bool) -> some View {
         if model.weightUnitIsPercentage && !model.oilDrafts.isEmpty {
-            if model.isPercentageTotalComplete {
-                Text("Total \(model.totalPercentageText) %")
-                    .font(.footnote)
-                    .monospacedDigit()
-                    .foregroundStyle(Color.inkSoft)
-                    .padding(.bottom, 16)
-            } else {
-                let rows = model.makesSoap ? String(localized: "Oils") : String(localized: "Ingredients")
-                HoneyLedgerFieldNote(
-                    // No-break spaces keep each figure with its "%".
-                    "\(rows) total \(model.totalPercentageText)\u{00A0}%. They must add up to 100\u{00A0}% to save.",
-                    tint: .danger,
-                    font: .subheadline.weight(.semibold)
-                )
-                .monospacedDigit()
-                .padding(.bottom, 16)
+            // No-break spaces keep each figure with its "%".
+            let rows = model.makesSoap ? String(localized: "Oils") : String(localized: "Ingredients")
+            let total = "\(rows) total \(model.totalPercentageText)\u{00A0}%."
+            Group {
+                if model.percentageTotalBlocksSave {
+                    HoneyLedgerFieldNote(
+                        "\(total) They must add up to 100\u{00A0}% to save.",
+                        tint: .danger,
+                        font: .subheadline.weight(.semibold)
+                    )
+                } else if !model.isPercentageTotalComplete {
+                    HoneyLedgerFieldNote("\(total) They should add up to 100\u{00A0}%.", tint: .warning)
+                } else if isExpanded {
+                    Text("Total \(model.totalPercentageText) %")
+                        .font(.footnote)
+                        .foregroundStyle(Color.inkSoft)
+                }
             }
+            .monospacedDigit()
+            .padding(.bottom, 16)
         }
     }
 

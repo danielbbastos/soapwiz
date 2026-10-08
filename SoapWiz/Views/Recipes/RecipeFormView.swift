@@ -58,8 +58,8 @@ struct RecipeFormView: View {
                     .shadow(color: Color.shadow.opacity(0.12), radius: 4, y: 1)
                     // As wide as the capped form below it, on a full-screen iPad.
                     .frame(maxWidth: ReadableWidth.maximum)
-                .padding(.horizontal)
-                .padding(.bottom, 8)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
             }
             .navigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
             .navigationBarTitleDisplayMode(.inline)

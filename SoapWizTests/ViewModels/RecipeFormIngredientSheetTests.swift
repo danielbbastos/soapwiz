@@ -98,6 +98,38 @@ struct RecipeFormIngredientSheetTests: RecipeFormTestHelpers {
         #expect(!model.canSave)
     }
 
+    @Test func canSave_SavedRecipeAlreadyOff100AndUnedited_IsTrue() {
+        let model = makePercentageModel(amounts: [60, 30])
+        model.name = "Bastille"
+        model.captureSnapshot()
+
+        model.name = "Bastille Bar"
+
+        #expect(!model.percentageTotalBlocksSave)
+        #expect(model.canSave)
+    }
+
+    @Test func canSave_SavedRecipeAlreadyOff100AfterARowEdit_IsFalse() {
+        let model = makePercentageModel(amounts: [60, 30])
+        model.name = "Bastille"
+        model.captureSnapshot()
+
+        model.oilDrafts[1].amount = 35
+
+        #expect(!model.canSave)
+    }
+
+    @Test func canSave_SwitchedToPercentageAfterLoad_IsHeldToTheRule() {
+        let model = makePercentageModel(amounts: [60, 30])
+        model.weightUnit = "g"
+        model.name = "Bastille"
+        model.captureSnapshot()
+
+        model.weightUnit = "%"
+
+        #expect(!model.canSave)
+    }
+
     // MARK: - oilBatchWeightsByDraftID
 
     @Test func oilBatchWeights_PercentageMode_ResolveAgainstTheOilWeight() throws {

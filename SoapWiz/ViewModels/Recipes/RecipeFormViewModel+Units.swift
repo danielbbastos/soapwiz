@@ -24,9 +24,11 @@ extension RecipeFormViewModel {
     /// A recipe measured in percentages can't be saved until its scale totals
     /// 100%: anything else describes a batch that doesn't add up. A recipe
     /// with no base rows yet has nothing to total, so it can still be saved
-    /// as a draft.
+    /// as a draft. A saved recipe that was already off 100% is excused until
+    /// its rows are edited, so it can still be renamed or refiled.
     var percentageTotalBlocksSave: Bool {
         weightUnitIsPercentage && !oilDrafts.isEmpty && !isPercentageTotalComplete
+            && percentageScaleChangedSinceLoad
     }
 
     /// Each oil row's weight in the batch, in the display unit, keyed by its
