@@ -51,11 +51,11 @@ struct RecipeFormView: View {
 
     var body: some View {
         currentTab
-            .scrollContentBackground(.hidden)
-            .background(Color.warmBackground.ignoresSafeArea())
+            .environment(\.defaultMinListRowHeight, 48)
+            .ledgerBackground()
             .safeAreaInset(edge: .top, spacing: 0) {
                 tabPicker
-                    .shadow(color: .black.opacity(0.12), radius: 4, y: 1)
+                    .shadow(color: Color.shadow.opacity(0.12), radius: 4, y: 1)
                     // As wide as the capped form below it, on a full-screen iPad.
                     .frame(maxWidth: ReadableWidth.maximum)
                     .padding(.horizontal)
@@ -63,7 +63,7 @@ struct RecipeFormView: View {
             }
             .navigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
+            .honeyLedgerInlineTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
             .task(id: recipe?.persistentModelID) {
                 // Runs again when the form reappears after a pushed picker (lye,
                 // neutraliser) is popped, not only on first appearance. Loading a
@@ -145,11 +145,16 @@ struct RecipeFormView: View {
         }
     }
 
-    /// The segmented control gets an opaque fill shaped to the control itself,
-    /// so scrolled content never shows through the pill while the header band
-    /// around it keeps the system's scroll-under glass effect.
+    /// The system segmented control, so the tabs keep Liquid Glass on iOS 26;
+    /// the paper `HoneyLedgerSegmented` is for choices inside a sheet. Its
+    /// track matches that one's: an opaque `paperSunken` fill with a
+    /// `ruleStrong` hairline, shaped to the control, which also keeps scrolled
+    /// content from showing through. The segments' colours come from
+    /// `HoneyLedgerSegmentedAppearance`.
     @ViewBuilder
     private var tabPicker: some View {
+        // Before the picker's control is made, which happens after `body`.
+        let _: Void = HoneyLedgerSegmentedAppearance.applied
         let picker = Picker("Tab", selection: $selectedTab) {
             ForEach(RecipeTab.allCases, id: \.self) { tab in
                 Text(tab.rawValue).tag(tab)
@@ -158,9 +163,14 @@ struct RecipeFormView: View {
         .pickerStyle(.segmented)
 
         if #available(iOS 26, *) {
-            picker.background(Color.warmBackground, in: .capsule)
+            picker
+                .background(Color.paperSunken, in: .capsule)
+                .overlay(Capsule().strokeBorder(Color.ruleStrong, lineWidth: 1))
         } else {
-            picker.background(Color.warmBackground, in: .rect(cornerRadius: 8))
+            let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
+            picker
+                .background(Color.paperSunken, in: shape)
+                .overlay(shape.strokeBorder(Color.ruleStrong, lineWidth: 1))
         }
     }
 }

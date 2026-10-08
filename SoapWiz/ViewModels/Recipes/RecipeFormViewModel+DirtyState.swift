@@ -33,4 +33,16 @@ extension RecipeFormViewModel {
         guard let snapshot else { return false }
         return snapshot != currentSnapshot
     }
+
+    /// Whether anything that feeds the percentage total has changed since the
+    /// form loaded: the rows, the measurement unit, or the recipe kind, which
+    /// decides whether percentage additives count. `true` without a baseline,
+    /// so a form that never loaded is held to the rule rather than excused.
+    var percentageScaleChangedSinceLoad: Bool {
+        guard let snapshot else { return true }
+        return snapshot.oilDrafts != oilDrafts
+            || snapshot.additiveDrafts != additiveDrafts
+            || snapshot.weightUnit != weightUnit
+            || snapshot.recipeKind != recipeKind
+    }
 }
