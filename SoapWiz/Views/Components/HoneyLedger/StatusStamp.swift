@@ -33,10 +33,15 @@ enum StatusStampTone {
 ///
 /// Always carries a word: the colour and the glyph are reinforcement, never the
 /// only carrier. The glyph is hidden from VoiceOver so only the word is read.
+///
+/// `isInked` strikes it larger and slightly crooked, as if pressed by hand. That
+/// is for a batch whose cure is over, wherever that status appears: the batch
+/// screen and the history list.
 struct StatusStamp: View {
     let word: String
     let tone: StatusStampTone
     var glyph: String?
+    var isInked = false
 
     var body: some View {
         HStack(spacing: 4) {
@@ -46,15 +51,16 @@ struct StatusStamp: View {
             }
             Text(word)
         }
-        .font(.caption.weight(.bold))
+        .font(isInked ? .subheadline.weight(.bold) : .caption.weight(.bold))
         .textCase(.uppercase)
         .tracking(0.9)
         .foregroundStyle(tone.ink)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 2)
+        .padding(.horizontal, isInked ? 12 : 8)
+        .padding(.vertical, isInked ? 5 : 2)
         .background(tone.wash, in: shape)
         .overlay(shape.strokeBorder(tone.ink, lineWidth: 1))
         .fixedSize(horizontal: false, vertical: true)
+        .rotationEffect(.degrees(isInked ? -2.5 : 0))
     }
 
     private var shape: RoundedRectangle {

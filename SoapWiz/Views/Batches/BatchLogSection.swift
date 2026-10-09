@@ -28,30 +28,31 @@ struct BatchLogSection: View {
     }
 
     var body: some View {
+        let entries = sortedEntries
         Section {
-            Button {
+            HoneyLedgerActionRow("Add Entry", systemImage: "plus") {
                 presentation.addingEntry = true
-            } label: {
-                Label("Add Entry", systemImage: "plus")
             }
-            ForEach(sortedEntries) { entry in
+            .ledgerSheetRow(position: .position(index: 0, count: entries.count + 1))
+            ForEach(Array(entries.enumerated()), id: \.element.persistentModelID) { index, entry in
                 BatchLogEntryRow(
                     entry: entry,
                     onEdit: { presentation.editingEntry = entry },
                     onDelete: { presentation.entryPendingDelete = entry },
-                    onOpenPhoto: { index in openPhoto(at: index, of: entry) }
+                    onOpenPhoto: { photoIndex in openPhoto(at: photoIndex, of: entry) }
                 )
+                .ledgerSheetRow(position: .position(index: index + 1, count: entries.count + 1))
             }
         } header: {
-            Text("Log")
+            HoneyLedgerSectionLabel("Log")
         } footer: {
             // Cure checks only for a batch that cures: anything else never
             // mentions a cure.
             if batch.logEntries.isEmpty {
                 if batch.cureDays > 0 {
-                    Text("Keep notes and photos as the batch goes: the pour, unmoulding, the cut, cure checks.")
+                    HoneyLedgerFooter("Keep notes and photos as the batch goes: the pour, unmoulding, the cut, cure checks.")
                 } else {
-                    Text("Keep notes and photos as the batch goes: the pour, unmoulding, the cut.")
+                    HoneyLedgerFooter("Keep notes and photos as the batch goes: the pour, unmoulding, the cut.")
                 }
             }
         }

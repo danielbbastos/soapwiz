@@ -45,17 +45,6 @@ struct CreateBatchSheet: View {
         "\(numberText(amount)) \(unit)"
     }
 
-    private func stepperLabel(_ title: LocalizedStringKey, value: Text, valueColor: Color) -> some View {
-        HStack {
-            Text(title)
-                .foregroundStyle(Color.ink)
-            Spacer(minLength: 8)
-            value
-                .monospacedDigit()
-                .foregroundStyle(valueColor)
-        }
-    }
-
     var body: some View {
         let existingCodes = batches.map(\.code)
         let codeIsTaken = model.codeIsTaken(among: batches)
@@ -73,8 +62,8 @@ struct CreateBatchSheet: View {
                 Section {
                     sheetRow(0, of: summaryCount) {
                         Stepper(value: $model.batchCount, in: 1...999) {
-                            stepperLabel(
-                                "Batches",
+                            HoneyLedgerStepperLabel(
+                                title: "Batches",
                                 value: Text("\(model.batchCount)").fontWeight(.semibold),
                                 valueColor: .ink
                             )
@@ -237,8 +226,8 @@ struct CreateBatchSheet: View {
             }
             sheetRow(2, of: 3) {
                 Stepper(value: $model.cureDays, in: BatchCureLimits.days, step: 7) {
-                    stepperLabel(
-                        "Length",
+                    HoneyLedgerStepperLabel(
+                        title: "Length",
                         value: CureLengthText.text(days: model.cureDays),
                         valueColor: .inkSoft
                     )
