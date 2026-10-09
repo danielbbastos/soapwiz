@@ -40,6 +40,56 @@ struct BatchHistoryViewModelTests {
         #expect(sorted.map(\.recipeName) == ["Newest", "Middle", "Old"])
     }
 
+    // MARK: - Count summary
+
+    private func expectedLine(total: Int, curing: Int) -> String {
+        var parts = [String(AttributedString(localized: "^[\(total) batch](inflect: true)").characters)]
+        if curing > 0 {
+            parts.append(String(localized: "\(curing) curing"))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    @Test func countSummaryLine_NoBatches_IsNil() {
+        #expect(BatchCountSummary(total: 0, curing: 0).line == nil)
+    }
+
+    @Test func countSummaryLine_NoneCuring_HasOnlyTheTotal() {
+        let line = BatchCountSummary(total: 3, curing: 0).line
+
+        #expect(line == expectedLine(total: 3, curing: 0))
+        #expect(line?.contains("·") == false)
+    }
+
+    @Test func countSummaryLine_SomeCuring_HasBothFigures() throws {
+        let line = try #require(BatchCountSummary(total: 27, curing: 5).line)
+
+        #expect(line == expectedLine(total: 27, curing: 5))
+        #expect(line.contains("·"))
+    }
+
+    @Test func countSummaryLine_SingleBatch_IsSingular() {
+        let line = BatchCountSummary(total: 1, curing: 0).line
+
+        #expect(line == expectedLine(total: 1, curing: 0))
+        #expect(line != expectedLine(total: 2, curing: 0))
+    }
+
+    @Test func countSummaryCounting_NoBatches_IsZero() {
+        #expect(BatchCountSummary(counting: []) == BatchCountSummary(total: 0, curing: 0))
+    }
+
+    @Test func countSummaryCounting_MixedBatches_CountsOnlyCuring() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let curing = Batch(recipe: nil, recipeName: "Curing", dateCreated: try date(daysAgo: 2), batchCount: 1, cureDays: 28)
+        let ready = Batch(recipe: nil, recipeName: "Ready", dateCreated: try date(daysAgo: 60), batchCount: 1, cureDays: 28)
+        let noCure = Batch(recipe: nil, recipeName: "No cure", dateCreated: try date(daysAgo: 1), batchCount: 1)
+        for batch in [curing, ready, noCure] { ctx.insert(batch) }
+
+        #expect(BatchCountSummary(counting: [curing, ready, noCure]) == BatchCountSummary(total: 3, curing: 1))
+    }
+
     // MARK: - Search
 
     private func searchFixture() -> [Batch] {
