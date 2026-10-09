@@ -20,28 +20,31 @@ struct BatchLogEntryFormView: View {
             Form {
                 Section {
                     DatePicker("Date", selection: $model.date)
-                }
-                .listRowBackground(Color.cardBackground)
-
-                Section("Notes") {
-                    TextField(
-                        "What happened — pour, unmould, cut, cure check…",
+                        .foregroundStyle(Color.ink)
+                        .tint(Color.amberText)
+                        .ledgerSheetRow(position: .position(index: 0, count: 2))
+                    HoneyLedgerStackedField(
+                        title: "Notes",
                         text: $model.text,
-                        axis: .vertical
+                        prompt: "What happened — pour, unmould, cut, cure check…",
+                        lineLimit: 4...12
                     )
-                    .lineLimit(4...12)
+                    .ledgerSheetRow(position: .position(index: 1, count: 2))
+                } header: {
+                    HoneyLedgerSectionLabel("Entry")
                 }
-                .listRowBackground(Color.cardBackground)
 
-                Section("Photos") {
+                Section {
                     BatchLogPhotosField(model: model)
+                        .ledgerSheetRow(position: .only)
+                } header: {
+                    HoneyLedgerSectionLabel("Photos")
                 }
-                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle(title)
-            .warmBackground()
+            .honeyLedgerInlineTitle(title)
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
