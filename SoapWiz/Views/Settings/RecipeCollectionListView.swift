@@ -19,30 +19,37 @@ struct RecipeCollectionListView: View {
         ZStack(alignment: .bottomTrailing) {
             Group {
                 if collections.isEmpty {
-                    ContentUnavailableView(
+                    HoneyLedgerEmptyState(
                         "No Collections",
                         systemImage: "square.stack",
-                        description: Text("Tap + to group your recipes into themes.")
+                        description: "Tap + to group your recipes into themes."
                     )
                 } else {
                     List {
-                        ForEach(collections) { collection in
-                            Button {
-                                model.collectionToEdit = collection
-                            } label: {
-                                row(collection)
+                        Section {
+                            ForEach(Array(collections.enumerated()), id: \.element.id) { index, collection in
+                                Button {
+                                    model.collectionToEdit = collection
+                                } label: {
+                                    row(collection)
+                                }
+                                .ledgerSheetRow(position: .position(index: index, count: collections.count))
                             }
+                            .onDelete { model.delete(at: $0, in: collections) }
+                        } header: {
+                            // The List's first-header inset leaves the ornament lower than
+                            // centred; it clamps this negative padding to about 7pt up.
+                            HoneyLedgerOrnament()
+                                .padding(.top, -10)
                         }
-                        .onDelete { model.delete(at: $0, in: collections) }
-                        .listRowBackground(Color.cardBackground)
                     }
                 }
             }
             .readableWidth()
             .navigationTitle("Collections")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Collections")
-            .warmBackground()
+            .honeyLedgerInlineTitle("Collections")
+            .ledgerBackground()
 
             if editMode?.wrappedValue != .active {
                 FloatingActionButton { model.showingAddCollection = true }
@@ -70,11 +77,12 @@ struct RecipeCollectionListView: View {
                 .fill(collection.color.tint)
                 .frame(width: 12, height: 12)
             Text(collection.name)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.ink)
             Spacer()
             Text("\(collection.recipes.count)")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSoft)
                 .font(.subheadline)
+                .monospacedDigit()
         }
     }
 }

@@ -19,19 +19,20 @@ struct CategoryFormView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $model.name)
-                } footer: {
-                    if model.isDuplicate(among: allCategories) {
-                        Text("A category with this name already exists.")
-                            .foregroundStyle(.red)
-                    }
+                    HoneyLedgerField(
+                        "Name",
+                        text: $model.name,
+                        prompt: "Required",
+                        error: model.isDuplicate(among: allCategories)
+                            ? String(localized: "A category with this name already exists.") : nil
+                    )
+                    .ledgerSheetRow(position: .only)
                 }
-                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle(model.isEditing ? "Edit Category" : "New Category")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle(model.isEditing ? "Edit Category" : "New Category")
-            .warmBackground()
+            .honeyLedgerInlineTitle(model.isEditing ? "Edit Category" : "New Category")
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

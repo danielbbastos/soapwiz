@@ -15,38 +15,53 @@ struct ICloudSettingsSection: View {
 
     var body: some View {
         let health = syncHealth.health
+        let lastSync = syncHealth.lastSuccessfulSync
+        // Last Synced and the toggle are conditional, so the sheet's shape
+        // follows which of them are shown.
+        let lastSyncOffset = lastSync == nil ? 0 : 1
+        let shownToggle = health != .notMirrored
+        let count = 2 + lastSyncOffset + (shownToggle ? 1 : 0)
         Section {
-            LabeledContent("Status") {
+            HoneyLedgerLabeledRow("Status") {
                 Label(health.statusText, systemImage: health.statusSymbol)
                     .labelStyle(.titleAndIcon)
                     .foregroundStyle(syncTint(for: health.severity))
             }
-            if let lastSync = syncHealth.lastSuccessfulSync {
-                LabeledContent(
-                    "Last Synced",
-                    value: lastSync.formatted(.relative(presentation: .named))
-                )
+            .ledgerSheetRow(position: .position(index: 0, count: count))
+            if let lastSync {
+                HoneyLedgerLabeledRow("Last Synced") {
+                    Text(lastSync.formatted(.relative(presentation: .named)))
+                        .foregroundStyle(Color.inkSoft)
+                }
+                .ledgerSheetRow(position: .position(index: 1, count: count))
             }
             // A build without the iCloud entitlement can't sync either way.
-            if health != .notMirrored {
+            if shownToggle {
                 Toggle("Sync with iCloud", isOn: syncToggle)
+                    .foregroundStyle(Color.ink)
+                    .tint(Color.amber)
+                    .ledgerSheetRow(position: .position(index: 1 + lastSyncOffset, count: count))
             }
-            Button("Reset Everything…", role: .destructive) {
+            Button(role: .destructive) {
                 resetConfirmationText = ""
                 showsResetConfirmation = true
+            } label: {
+                Text("Reset Everything…")
+                    .foregroundStyle(Color.danger)
             }
+            .ledgerSheetRow(position: .position(index: count - 1, count: count))
         } header: {
-            Text("iCloud")
+            HoneyLedgerSectionLabel("iCloud")
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
                 if storeHost.needsRelaunch {
                     Label(relaunchNotice, systemImage: "arrow.clockwise.circle.fill")
-                        .foregroundStyle(.orange)
+                        .font(.footnote)
+                        .foregroundStyle(Color.warning)
                 }
-                Text(syncFooter)
+                HoneyLedgerFooter(syncFooter)
             }
         }
-        .listRowBackground(Color.cardBackground)
         .alert("Reset Everything?", isPresented: $showsResetConfirmation) {
             TextField(AppReset.confirmationWord, text: $resetConfirmationText)
                 .textInputAutocapitalization(.characters)
@@ -96,10 +111,10 @@ struct ICloudSettingsSection: View {
 
     private func syncTint(for severity: SyncSeverity) -> Color {
         switch severity {
-        case .good: .green
-        case .info: .secondary
-        case .actionable: .orange
-        case .fault: .red
+        case .good: .success
+        case .info: .inkSoft
+        case .actionable: .warning
+        case .fault: .danger
         }
     }
 }
