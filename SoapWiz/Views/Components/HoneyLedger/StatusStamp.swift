@@ -4,12 +4,16 @@ import SwiftUI
 enum StatusStampTone {
     case danger
     case warning
+    case success
+    case amber
     case neutral
 
     var ink: Color {
         switch self {
         case .danger:  Color.danger
         case .warning: Color.warning
+        case .success: Color.success
+        case .amber:   Color.amberText
         case .neutral: Color.inkSoft
         }
     }
@@ -18,6 +22,8 @@ enum StatusStampTone {
         switch self {
         case .danger:  Color.dangerWash
         case .warning: Color.warningWash
+        case .success: Color.successWash
+        case .amber:   Color.honey
         case .neutral: Color.paperSunken
         }
     }

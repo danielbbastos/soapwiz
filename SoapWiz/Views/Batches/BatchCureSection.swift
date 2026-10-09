@@ -46,13 +46,12 @@ struct BatchCureSection: View {
     @ViewBuilder
     private var statusRow: some View {
         switch batch.cureStatus {
-        case .curing(let remaining, let progress):
+        case .curing(_, let progress):
             ProgressView(value: progress) {
-                CureLengthText.remaining(remaining)
+                BatchCureStatusLine(status: batch.cureStatus)
             }
         case .ready:
-            Label("Ready to use", systemImage: "checkmark.seal.fill")
-                .foregroundStyle(.green)
+            BatchCureStatusLine(status: batch.cureStatus)
         case .none:
             EmptyView()
         }
