@@ -5,8 +5,6 @@ import SwiftData
 /// purchase. Tapping rows toggles selection; "Next" starts the sequential entry
 /// flow with the chosen ingredients in name order.
 struct BulkImportSelectionView: View {
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     @Query(sort: \Ingredient.name) private var ingredients: [Ingredient]
 
     @State private var selection: Set<PersistentIdentifier> = []
@@ -71,35 +69,13 @@ struct BulkImportSelectionView: View {
         }
     }
 
-    /// A picker row: the state at the leading edge, and a selected row in honey
-    /// with its circle filled in `amberText`. At accessibility text sizes the
-    /// name moves under the circle instead of breaking mid-word beside it.
+    /// A selected row is honey, with its circle filled in `amberText`.
     private func row(_ ingredient: Ingredient, position: LedgerSheetPosition) -> some View {
         let isSelected = selection.contains(ingredient.persistentModelID)
-        let circle = Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-            .foregroundStyle(isSelected ? Color.amberText : Color.inkSoft)
-            .accessibilityHidden(true)
-        let name = Text(ingredient.name)
-            .foregroundStyle(Color.ink)
         return Button {
             toggle(ingredient)
         } label: {
-            Group {
-                if dynamicTypeSize.isAccessibilitySize {
-                    VStack(alignment: .leading, spacing: 4) {
-                        circle
-                        name
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    HStack(spacing: 12) {
-                        circle
-                        name
-                        Spacer()
-                    }
-                }
-            }
-            .contentShape(.rect)
+            HoneyLedgerPickerRow(name: ingredient.name, state: isSelected ? .selected : .unselected)
         }
         .ledgerListDetailRow(isSelected: isSelected, position: position)
     }

@@ -31,5 +31,14 @@ extension RecipeIngredientsTabView {
         /// so a general recipe isn't limited to oils and additives. Every soap-only
         /// section keeps its exact role set.
         var includesUnroled: Bool { self == .ingredients }
+
+        var pickerConfig: IngredientPickerConfig {
+            switch self {
+            case .oils: .oils
+            case .additives: .additives
+            case .fragrances: .fragrances
+            case .ingredients: .ingredients
+            }
+        }
     }
 }
