@@ -40,6 +40,10 @@ struct HoneyLedgerPickerRow: View {
             }
         }
         .contentShape(.rect)
+        // The circle is hidden from VoiceOver, so an added row would otherwise
+        // read only as a dimmed name. No selected trait: the caller's
+        // `.ledgerListDetailRow(isSelected:)` adds that for a selected row.
+        .accessibilityValue(state == .added ? Text("Already in recipe") : Text(verbatim: ""))
     }
 
     private var circle: some View {
