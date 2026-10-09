@@ -217,31 +217,20 @@ struct RecipeImportView: View {
             // model at all.
             if model.canReadFreeText {
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    sourceChip("Photo", systemImage: "photo")
+                    RecipeImportSourceChip(title: "Photo", systemImage: "photo")
                 }
                 .buttonStyle(.plain)
                 if DocumentScannerView.isSupported {
                     Button {
                         showingScanner = true
                     } label: {
-                        sourceChip("Scan", systemImage: "text.viewfinder")
+                        RecipeImportSourceChip(title: "Scan", systemImage: "text.viewfinder")
                     }
                     .buttonStyle(.plain)
                 }
             }
             Spacer(minLength: 0)
         }
-    }
-
-    /// The ledger's unselected chip, with a glyph where the chip's dot would be.
-    private func sourceChip(_ title: String, systemImage: String) -> some View {
-        Label(title, systemImage: systemImage)
-            .font(.subheadline)
-            .foregroundStyle(Color.inkSoft)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color.paperRaised, in: .capsule)
-            .overlay(Capsule().strokeBorder(Color.ruleStrong, lineWidth: 1))
     }
 
     /// Says what will happen to an over-long paste before the user commits to
@@ -362,5 +351,25 @@ struct RecipeImportView: View {
         model.rawText = newValue
         textRevision += 1
         readingProblem = nil
+    }
+}
+
+/// The ledger's unselected chip, with a glyph where the chip's dot would be.
+/// Fades to `inkFaint` while disabled, since its colours are its own and a
+/// plain button style won't dim them.
+private struct RecipeImportSourceChip: View {
+    @Environment(\.isEnabled) private var isEnabled
+
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .font(.subheadline)
+            .foregroundStyle(isEnabled ? Color.inkSoft : Color.inkFaint)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.paperRaised, in: .capsule)
+            .overlay(Capsule().strokeBorder(isEnabled ? Color.ruleStrong : Color.rule, lineWidth: 1))
     }
 }
