@@ -38,7 +38,7 @@ struct RecipeTextInputView: View {
         ZStack(alignment: .topLeading) {
             if text.isEmpty {
                 Text("Paste the recipe here")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.inkFaint)
                     .padding(.top, 8)
                     .padding(.leading, 5)
                     .allowsHitTesting(false)
@@ -46,6 +46,8 @@ struct RecipeTextInputView: View {
             }
             TextEditor(text: $text)
                 .scrollContentBackground(.hidden)
+                .foregroundStyle(Color.ink)
+                .tint(Color.amber)
                 .disabled(!isEnabled)
                 .accessibilityLabel("Recipe text")
                 .id(revision)

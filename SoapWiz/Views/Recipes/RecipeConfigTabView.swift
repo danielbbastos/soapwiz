@@ -65,12 +65,6 @@ struct RecipeConfigTabView: View {
         content().ledgerSheetRow(position: .position(index: index, count: count))
     }
 
-    private func footer(_ text: String) -> some View {
-        Text(text)
-            .font(.footnote)
-            .foregroundStyle(Color.inkSoft)
-    }
-
     private var detailsSection: some View {
         Section {
             sheetRow(0, of: 4) {
@@ -120,7 +114,7 @@ struct RecipeConfigTabView: View {
             toggleRow("Non-soap recipe", isOn: $model.isNonSoapProduct)
                 .ledgerSheetRow(position: .only)
         } footer: {
-            footer("Turn on for balms, lotions and other recipes without lye.")
+            HoneyLedgerFooter("Turn on for balms, lotions and other recipes without lye.")
         }
     }
 
@@ -259,10 +253,10 @@ struct RecipeConfigTabView: View {
             HoneyLedgerSectionLabel("Soap method")
         } footer: {
             if model.soapType == .solid {
-                footer("The Catherine Failor liquid-soap method appears when the recipe makes a liquid "
+                HoneyLedgerFooter("The Catherine Failor liquid-soap method appears when the recipe makes a liquid "
                        + "or cream soap — switch to KOH or dual lye.")
             } else if model.useCFM && model.neutralizerIngredient == nil {
-                footer("The neutraliser dose is shown in the amounts table, but without an ingredient "
+                HoneyLedgerFooter("The neutraliser dose is shown in the amounts table, but without an ingredient "
                        + "it isn't costed or deducted from inventory when you make a batch.")
             }
         }
@@ -357,7 +351,7 @@ struct RecipeConfigTabView: View {
         } header: {
             HoneyLedgerSectionLabel("Fragrance configuration")
         } footer: {
-            footer("The share of \(model.makesSoap ? "total oil weight" : "total weight") kept for "
+            HoneyLedgerFooter("The share of \(model.makesSoap ? "total oil weight" : "total weight") kept for "
                    + "essential and fragrance oils, used for the recommended amount on the Ingredients tab.")
         }
     }

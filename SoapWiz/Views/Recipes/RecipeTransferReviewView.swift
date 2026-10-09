@@ -27,18 +27,21 @@ struct RecipeTransferReviewView: View {
             }
             confirmSection
         }
+        .environment(\.defaultMinListRowHeight, 48)
     }
 
     // MARK: - Recipes
 
     private var recipesSection: some View {
-        Section("Recipes") {
-            ForEach(plan.recipeSummaries) { summary in
+        Section {
+            ForEach(Array(plan.recipeSummaries.enumerated()), id: \.element.id) { index, summary in
                 VStack(alignment: .leading, spacing: 2) {
                     Text(summary.displayName)
+                        .foregroundStyle(Color.ink)
                     Text(summary.detail)
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .foregroundStyle(Color.inkSoft)
                     // Said here rather than in an alert. The rename is a fact
                     // about one row, and a payload can hold fifteen — a prompt
                     // for each would be a wall of taps between the user and an
@@ -57,16 +60,20 @@ struct RecipeTransferReviewView: View {
                             + "already have. It will be added separately."
                         )
                         .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.inkSoft)
                     } else if summary.isRenamed {
-                        Text("You already have “\(summary.incomingName)”, so this one is renamed.")
-                            .font(.footnote)
-                            .foregroundStyle(.orange)
+                        HoneyLedgerFieldNote(
+                            "You already have “\(summary.incomingName)”, so this one is renamed.",
+                            tint: .warning
+                        )
                     }
                 }
+                .padding(.vertical, 4)
+                .ledgerSheetRow(position: .position(index: index, count: plan.recipeSummaries.count))
             }
+        } header: {
+            HoneyLedgerSectionLabel("Recipes")
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     // MARK: - Ingredients
@@ -80,44 +87,46 @@ struct RecipeTransferReviewView: View {
     /// route where it arrives from someone else, so it is shown in full.
     private var newIngredientsSection: some View {
         Section {
-            ForEach(plan.ingredientsToCreate) { entry in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.name)
-                    Text(chemistryText(entry.incoming))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+            ForEach(Array(plan.ingredientsToCreate.enumerated()), id: \.element.id) { index, entry in
+                ingredientRow(entry.name, detail: chemistryText(entry.incoming))
+                    .ledgerSheetRow(position: .position(index: index, count: plan.ingredientsToCreate.count))
             }
         } header: {
-            Text("Will Be Added to Your Inventory")
+            HoneyLedgerSectionLabel("Will Be Added to Your Inventory")
         } footer: {
-            Text(
+            HoneyLedgerFooter(
                 "These aren’t in your inventory yet. The values above came with the recipe, "
                 + "from whoever shared it — check them before you make a batch."
             )
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private var conflictsSection: some View {
         Section {
-            ForEach(plan.conflictingIngredients) { entry in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(entry.name)
-                    Text(conflictText(entry))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+            ForEach(Array(plan.conflictingIngredients.enumerated()), id: \.element.id) { index, entry in
+                ingredientRow(entry.name, detail: conflictText(entry))
+                    .ledgerSheetRow(position: .position(index: index, count: plan.conflictingIngredients.count))
             }
         } header: {
-            Text("Your Values Will Be Used")
+            HoneyLedgerSectionLabel("Your Values Will Be Used")
         } footer: {
-            Text(
+            HoneyLedgerFooter(
                 "You already have these, with different values from the sender’s. "
                 + "Yours are kept, so these recipes may not work out exactly as they did for them."
             )
         }
-        .listRowBackground(Color.cardBackground)
+    }
+
+    private func ingredientRow(_ name: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(name)
+                .foregroundStyle(Color.ink)
+            Text(detail)
+                .font(.footnote)
+                .monospacedDigit()
+                .foregroundStyle(Color.inkSoft)
+        }
+        .padding(.vertical, 4)
     }
 
     private func chemistryText(_ incoming: RecipeTransferIngredient) -> String {
@@ -169,27 +178,29 @@ struct RecipeTransferReviewView: View {
 
     private var collectionsSection: some View {
         Section {
-            ForEach(plan.unmatchedCollectionNames, id: \.self) { name in
+            ForEach(Array(plan.unmatchedCollectionNames.enumerated()), id: \.element) { index, name in
                 Text(name)
+                    .foregroundStyle(Color.ink)
+                    .ledgerSheetRow(position: .position(index: index, count: plan.unmatchedCollectionNames.count))
             }
         } header: {
-            Text("Collections Not Added")
+            HoneyLedgerSectionLabel("Collections Not Added")
         } footer: {
-            Text("You don’t have these collections, so the recipes arrive unfiled. Nothing new is created.")
+            HoneyLedgerFooter("You don’t have these collections, so the recipes arrive unfiled. Nothing new is created.")
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     // MARK: - Confirm
 
     private var confirmSection: some View {
         Section {
-            Button(confirmTitle) { onConfirm() }
-            Button("Cancel") { onCancel() }
+            HoneyLedgerActionRow(confirmTitle) { onConfirm() }
+                .ledgerSheetRow(position: .first)
+            HoneyLedgerActionRow("Cancel", isPrimary: false) { onCancel() }
+                .ledgerSheetRow(position: .last)
         } footer: {
-            Text("Nothing is added until you tap \(confirmTitle).")
+            HoneyLedgerFooter("Nothing is added until you tap \(confirmTitle).")
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private var confirmTitle: String {
