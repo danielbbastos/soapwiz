@@ -10,32 +10,63 @@ struct BatchCureSection: View {
 
     @State private var syncTask: Task<Void, Never>?
 
+    /// The rows this batch shows, in order. The sheet is drawn one row at a
+    /// time, so each row needs to know where among them it sits.
+    private enum Row: Identifiable {
+        case process(SoapProcess)
+        case recommended(CureBand)
+        case status
+        case usable(Date)
+        case ready(Date)
+        case length
+
+        /// Each case appears at most once, so a row keeps its identity (and the
+        /// stepper its state) when the rows before it come and go.
+        var id: String {
+            switch self {
+            case .process: "process"
+            case .recommended: "recommended"
+            case .status: "status"
+            case .usable: "usable"
+            case .ready: "ready"
+            case .length: "length"
+            }
+        }
+    }
+
+    private var rows: [Row] {
+        var rows: [Row] = []
+        if let process = SoapProcess.resolve(batch.process) {
+            rows.append(.process(process))
+        }
+        if let band = CureBand.resolve(batch.cureBand) {
+            rows.append(.recommended(band))
+        }
+        if batch.cureStatus != .none {
+            rows.append(.status)
+        }
+        if let usableDate = batch.cureUsableDate {
+            rows.append(.usable(usableDate))
+        }
+        if let readyDate = batch.cureReadyDate {
+            rows.append(.ready(readyDate))
+        }
+        rows.append(.length)
+        return rows
+    }
+
     var body: some View {
+        let rows = rows
         Section {
-            if let process = SoapProcess.resolve(batch.process) {
-                LabeledContent("Process", value: process.label)
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                rowView(row)
+                    .ledgerSheetRow(position: .position(index: index, count: rows.count))
             }
-            if let band = CureBand.resolve(batch.cureBand) {
-                LabeledContent("Recommended", value: band.rangeText)
-            }
-            statusRow
-            if let usableDate = batch.cureUsableDate {
-                LabeledContent("Usable from", value: usableDate.formatted(date: .abbreviated, time: .omitted))
-            }
-            if let readyDate = batch.cureReadyDate {
-                LabeledContent("Fully cured on", value: readyDate.formatted(date: .abbreviated, time: .omitted))
-            }
-            Stepper(value: $batch.cureDays, in: BatchCureLimits.days, step: 7) {
-                LabeledContent("Length") {
-                    CureLengthText.text(days: batch.cureDays)
-                }
-            }
-            .accessibilityValue(CureLengthText.text(days: batch.cureDays))
         } header: {
-            Text("Cure")
+            HoneyLedgerSectionLabel("Cure")
         } footer: {
             if AppSettings.canonical(from: settings)?.cureNotificationsEnabled != true {
-                Text("Turn on Cure Reminders in Settings to be notified when it's usable and when it's ready.")
+                HoneyLedgerFooter("Turn on Cure Reminders in Settings to be notified when it's usable and when it's ready.")
             }
         }
         .onChange(of: batch.cureDays) {
@@ -44,14 +75,56 @@ struct BatchCureSection: View {
     }
 
     @ViewBuilder
+    private func rowView(_ row: Row) -> some View {
+        switch row {
+        case .process(let process):
+            valueRow("Process", value: process.label)
+        case .recommended(let band):
+            valueRow("Recommended", value: band.rangeText)
+        case .status:
+            // The row's first content is a stamp, which the list takes as the
+            // separator's start; pin it to the leading content edge instead.
+            statusRow
+                .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+        case .usable(let date):
+            valueRow("Usable from", value: date.formatted(date: .abbreviated, time: .omitted))
+        case .ready(let date):
+            valueRow("Fully cured on", value: date.formatted(date: .abbreviated, time: .omitted))
+        case .length:
+            Stepper(value: $batch.cureDays, in: BatchCureLimits.days, step: 7) {
+                HoneyLedgerStepperLabel(
+                    title: "Length",
+                    value: CureLengthText.text(days: batch.cureDays),
+                    valueColor: .inkSoft
+                )
+            }
+            .accessibilityValue(CureLengthText.text(days: batch.cureDays))
+        }
+    }
+
+    private func valueRow(_ title: String, value: String) -> some View {
+        HoneyLedgerLabeledRow(title) {
+            Text(value)
+                .foregroundStyle(Color.inkSoft)
+        }
+    }
+
+    @ViewBuilder
     private var statusRow: some View {
         switch batch.cureStatus {
         case .curing(_, let progress):
-            ProgressView(value: progress) {
+            VStack(alignment: .leading, spacing: 14) {
                 BatchCureStatusLine(status: batch.cureStatus)
+                ProgressView(value: progress)
+                    .tint(Color.amber)
+                    .accessibilityLabel("Cure progress")
             }
         case .ready:
-            BatchCureStatusLine(status: batch.cureStatus)
+            // Extra room on the batch sheet for the large stamp, on top of the
+            // tilt room the status line itself leaves.
+            BatchCureStatusLine(status: batch.cureStatus, readyWord: String(localized: "Cured"))
+                .padding(.vertical, 3)
+                .frame(maxWidth: .infinity, alignment: .leading)
         case .none:
             EmptyView()
         }

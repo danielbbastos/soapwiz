@@ -24,23 +24,27 @@ struct BatchCodeEditSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Batch Code", text: $code)
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
+                    HoneyLedgerField("Batch code") { focus in
+                        TextField("Batch code", text: $code)
+                            .textInputAutocapitalization(.characters)
+                            .autocorrectionDisabled()
+                            .fontDesign(.monospaced)
+                            .focused(focus)
+                    }
+                    .ledgerSheetRow(position: .only)
                 } footer: {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("The code that goes on the label of everything made in this batch.")
+                        HoneyLedgerFooter("The code that goes on the label of everything made in this batch.")
                         if codeIsTaken {
                             BatchCodeDuplicateWarning()
                         }
                     }
                 }
-                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle("Batch Code")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Batch Code")
-            .warmBackground()
+            .honeyLedgerInlineTitle("Batch Code")
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

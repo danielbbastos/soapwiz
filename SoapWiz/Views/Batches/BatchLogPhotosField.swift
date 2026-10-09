@@ -28,11 +28,18 @@ struct BatchLogPhotosField: View {
         return "Take one or choose from your library"
     }
 
+    private var isAddDisabled: Bool {
+        !model.canAddPhoto || model.isLoadingPhotos
+    }
+
     var body: some View {
-        if !model.photos.isEmpty {
-            grid
+        // One view, so the sheet draws the grid and the menu as a single row.
+        VStack(alignment: .leading, spacing: 8) {
+            if !model.photos.isEmpty {
+                grid
+            }
+            addMenu
         }
-        addMenu
     }
 
     private var grid: some View {
@@ -51,7 +58,7 @@ struct BatchLogPhotosField: View {
     private func cell(_ draft: BatchLogPhotoDraft) -> some View {
         let shape = RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
         return shape
-            .fill(Color.accentColor.opacity(0.12))
+            .fill(Color.honey)
             .frame(width: Self.side, height: Self.side)
             .overlay {
                 if let image = draft.previewData.flatMap(UIImage.init(data:)) {
@@ -97,19 +104,18 @@ struct BatchLogPhotosField: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Add Photos")
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(isAddDisabled ? Color.inkFaint : Color.ink)
                     Text(hint)
                         .font(.subheadline)
-                        .foregroundStyle(problem == nil ? .secondary : Color.red)
+                        .foregroundStyle(problem == nil ? Color.inkSoft : Color.danger)
                 }
                 Spacer()
                 Image(systemName: "plus.circle")
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(isAddDisabled ? Color.inkFaint : Color.amberText)
             }
         }
-        .tint(.primary)
-        .disabled(!model.canAddPhoto || model.isLoadingPhotos)
+        .disabled(isAddDisabled)
         .photosPicker(
             isPresented: $showingLibrary,
             selection: $pickerItems,

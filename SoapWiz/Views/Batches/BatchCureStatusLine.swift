@@ -1,10 +1,12 @@
 import SwiftUI
 
 /// A batch's cure status as a stamp: "Curing" with the time left beside it, or
-/// "Ready". Nothing for a batch that doesn't cure. Shared by the history row and
-/// the batch's Cure section so the two always say the same thing.
+/// the inked stamp once the cure is over. Nothing for a batch that doesn't cure.
+/// Shared by the history row, where the inked stamp reads "Ready", and the
+/// batch's Cure section, which passes "Cured" as `readyWord`.
 struct BatchCureStatusLine: View {
     let status: CureStatus
+    var readyWord = String(localized: "Ready")
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -26,8 +28,11 @@ struct BatchCureStatusLine: View {
             }
             .accessibilityElement(children: .combine)
         case .ready:
-            StatusStamp(word: String(localized: "Ready"), tone: .success, glyph: "checkmark.circle")
+            // Inked, so the end of the cure stands out. Vertical room so the
+            // stamp's tilt isn't clipped by the row.
+            StatusStamp(word: readyWord, tone: .success, glyph: "checkmark.circle", isInked: true)
                 .fixedSize()
+                .padding(.vertical, 3)
         case .none:
             EmptyView()
         }

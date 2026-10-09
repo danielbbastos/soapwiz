@@ -16,6 +16,8 @@ struct BatchDetailView: View {
     @State private var codeCopied = false
     @State private var logPresentation = BatchLogPresentation()
 
+    @ScaledMetric(relativeTo: .body) private var costColumnWidth: CGFloat = 72
+
     private func formatCurrency(_ value: Double) -> String {
         value.formatted(.currency(code: currencyCode))
     }
@@ -29,65 +31,24 @@ struct BatchDetailView: View {
     }
 
     var body: some View {
-        Form {
-            Section {
-                codeRow
-            } footer: {
-                if BatchCodeGenerator.isTaken(batch.code, among: batches, excluding: batch) {
-                    BatchCodeDuplicateWarning()
-                }
-            }
-            .listRowBackground(Color.cardBackground)
-
-            Section {
-                LabeledContent("Recipe", value: batch.recipeName)
-                LabeledContent("Date", value: batch.dateCreated.formatted(date: .abbreviated, time: .shortened))
-                LabeledContent("Batches", value: "\(batch.batchCount)")
-                if batch.tracksInventory {
-                    LabeledContent("Total cost", value: formatCurrency(batch.totalCost))
-                    if batch.batchCount > 1, let costPerBatch = BatchHistoryViewModel.costPerBatch(of: batch) {
-                        LabeledContent("Cost per batch", value: formatCurrency(costPerBatch))
-                    }
-                }
-            } footer: {
-                if !batch.tracksInventory {
-                    Text("Made without inventory tracking, so no cost was recorded.")
-                }
-            }
-            .listRowBackground(Color.cardBackground)
+        List {
+            summarySection
 
             if batch.cureDays > 0 {
                 BatchCureSection(batch: batch)
-                    .listRowBackground(Color.cardBackground)
             }
 
             BatchLogSection(batch: batch, presentation: $logPresentation)
-                .listRowBackground(Color.cardBackground)
 
-            Section("Consumed") {
-                ForEach(sortedLineItems) { item in
-                    lineItemRow(item)
-                }
-            }
-            .listRowBackground(Color.cardBackground)
+            consumedSection
 
-            Section {
-                if let recipe = batch.recipe {
-                    NavigationLink(value: recipe) {
-                        Label("Open recipe", systemImage: "function")
-                    }
-                } else {
-                    Label("The original recipe no longer exists.", systemImage: "function")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .listRowBackground(Color.cardBackground)
+            recipeSection
         }
         .readableWidth()
-        .navigationTitle("Batch")
+        .navigationTitle(batch.recipeName)
         .navigationBarTitleDisplayMode(.inline)
-        .warmNavigationTitle("Batch")
-        .warmBackground()
+        .honeyLedgerInlineTitle(batch.recipeName)
+        .ledgerBackground()
         .sheet(isPresented: $editingCode) {
             BatchCodeEditSheet(batch: batch)
         }
@@ -99,13 +60,74 @@ struct BatchDetailView: View {
         }
     }
 
-    /// Two buttons in one row, so both are borderless: a form row otherwise
+    // MARK: - Summary
+
+    private var summarySection: some View {
+        let costPerBatch = batch.batchCount > 1 ? BatchHistoryViewModel.costPerBatch(of: batch) : nil
+        let count = 3 + (batch.tracksInventory ? 1 : 0) + (costPerBatch == nil ? 0 : 1)
+        let isDuplicate = BatchCodeGenerator.isTaken(batch.code, among: batches, excluding: batch)
+        return Section {
+            codeRow
+                .ledgerSheetRow(position: .position(index: 0, count: count))
+            HoneyLedgerLabeledRow("Made") {
+                figure(batch.dateCreated.formatted(date: .abbreviated, time: .shortened))
+            }
+            .ledgerSheetRow(position: .position(index: 1, count: count))
+            HoneyLedgerLabeledRow("Batches") {
+                figure("\(batch.batchCount)")
+            }
+            .ledgerSheetRow(position: .position(index: 2, count: count))
+            if batch.tracksInventory {
+                HoneyLedgerLabeledRow("Total cost") {
+                    figure(formatCurrency(batch.totalCost))
+                }
+                .ledgerSheetRow(position: .position(index: 3, count: count))
+                if let costPerBatch {
+                    HoneyLedgerLabeledRow("Cost per batch") {
+                        figure(formatCurrency(costPerBatch))
+                    }
+                    .ledgerSheetRow(position: .position(index: 4, count: count))
+                }
+            }
+        } header: {
+            HoneyLedgerOrnament()
+                // The List's first-header inset leaves the ornament lower than
+                // centred; the List clamps this negative padding, so -10 moves
+                // it up about 7pt.
+                .padding(.top, -10)
+        } footer: {
+            if isDuplicate || !batch.tracksInventory {
+                VStack(alignment: .leading, spacing: 8) {
+                    if isDuplicate {
+                        BatchCodeDuplicateWarning()
+                    }
+                    if !batch.tracksInventory {
+                        HoneyLedgerFooter("Made without inventory tracking, so no cost was recorded.")
+                    }
+                }
+            }
+        }
+    }
+
+    private func figure(_ value: String) -> some View {
+        Text(value)
+            .font(.body.weight(.medium))
+            .monospacedDigit()
+            .foregroundStyle(Color.ink)
+    }
+
+    /// Two buttons in one row, so both are borderless: a list row otherwise
     /// takes the whole row as the tap target of whichever button comes first.
     private var codeRow: some View {
-        LabeledContent("Batch code") {
+        HStack {
+            Text("Batch code")
+                .foregroundStyle(Color.ink)
+            Spacer(minLength: 8)
             HStack(spacing: 16) {
                 Text(BatchHistoryViewModel.displayCode(of: batch))
-                    .monospacedDigit()
+                    .font(.body.weight(.medium))
+                    .fontDesign(.monospaced)
+                    .foregroundStyle(Color.ink)
                     .textSelection(.enabled)
                 let code = BatchCodeGenerator.trimmed(batch.code)
                 if !code.isEmpty {
@@ -115,6 +137,7 @@ struct BatchDetailView: View {
                     } label: {
                         Image(systemName: codeCopied ? "checkmark" : "doc.on.doc")
                             .contentTransition(.symbolEffect(.replace))
+                            .foregroundStyle(Color.amberText)
                     }
                     .buttonStyle(.borderless)
                     .accessibilityLabel("Copy Batch Code")
@@ -123,6 +146,7 @@ struct BatchDetailView: View {
                     editingCode = true
                 } label: {
                     Image(systemName: "pencil")
+                        .foregroundStyle(Color.amberText)
                 }
                 .buttonStyle(.borderless)
                 .accessibilityLabel("Edit Batch Code")
@@ -130,18 +154,35 @@ struct BatchDetailView: View {
         }
     }
 
+    // MARK: - Consumed
+
+    private var consumedSection: some View {
+        let items = sortedLineItems
+        return Section {
+            ForEach(Array(items.enumerated()), id: \.element.persistentModelID) { index, item in
+                lineItemRow(item)
+                    .ledgerSheetRow(position: .position(index: index, count: items.count))
+            }
+        } header: {
+            HoneyLedgerSectionLabel("Consumed")
+        }
+    }
+
     private func lineItemRow(_ item: BatchLineItem) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text(item.ingredientName)
+                    .foregroundStyle(Color.ink)
                 Spacer()
                 Text(amountText(item.amountConsumed, unit: item.unit))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.inkSoft)
                     .monospacedDigit()
                 if item.cost > 0 {
                     Text(formatCurrency(item.cost))
+                        .font(.body.weight(.medium))
                         .monospacedDigit()
-                        .frame(width: 72, alignment: .trailing)
+                        .foregroundStyle(Color.ink)
+                        .frame(width: costColumnWidth, alignment: .trailing)
                 }
             }
             ForEach(item.draws.indices, id: \.self) { index in
@@ -154,11 +195,31 @@ struct BatchDetailView: View {
                         .monospacedDigit()
                     Text(formatCurrency(draw.cost))
                         .monospacedDigit()
-                        .frame(width: 72, alignment: .trailing)
+                        .frame(width: costColumnWidth, alignment: .trailing)
                 }
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSoft)
             }
+        }
+    }
+
+    // MARK: - Recipe
+
+    private var recipeSection: some View {
+        Section {
+            Group {
+                if let recipe = batch.recipe {
+                    NavigationLink(value: recipe) {
+                        Label("Open recipe", systemImage: "function")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.amberText)
+                    }
+                } else {
+                    Label("The original recipe no longer exists.", systemImage: "function")
+                        .foregroundStyle(Color.inkSoft)
+                }
+            }
+            .ledgerSheetRow(position: .only)
         }
     }
 }
