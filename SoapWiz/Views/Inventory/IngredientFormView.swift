@@ -100,7 +100,7 @@ struct IngredientFormView: View {
                         .buttonStyle(.plain)
                     } footer: {
                         if profileExpanded {
-                            footer("Used to work out an oil's soap qualities — hardness, cleansing, "
+                            HoneyLedgerFooter("Used to work out an oil's soap qualities — hardness, cleansing, "
                                    + "conditioning and the rest. Leave blank if you don't have it.")
                         }
                     }
@@ -118,7 +118,7 @@ struct IngredientFormView: View {
                 } header: {
                     HoneyLedgerSectionLabel("Alerts")
                 } footer: {
-                    footer("You'll see a warning when stock falls at or below this amount. Leave blank to disable.")
+                    HoneyLedgerFooter("You'll see a warning when stock falls at or below this amount. Leave blank to disable.")
                 }
             }
             .environment(\.defaultMinListRowHeight, 48)
@@ -197,12 +197,6 @@ struct IngredientFormView: View {
             unit: unit,
             keyboard: .decimalPad
         )
-    }
-
-    private func footer(_ text: String) -> some View {
-        Text(text)
-            .font(.footnote)
-            .foregroundStyle(Color.inkSoft)
     }
 
     private var categoryMenu: some View {

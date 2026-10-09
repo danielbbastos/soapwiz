@@ -15,19 +15,24 @@ struct RecipeImportProgressView: View {
             Section {
                 HStack(spacing: 10) {
                     ProgressView()
+                        .tint(Color.inkSoft)
                     Text(status)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.inkSoft)
                 }
+                .ledgerSheetRow(position: .only)
             }
-            .listRowBackground(Color.cardBackground)
 
             if let draft, draft.hasAnyIngredient {
                 if !draft.name.isEmpty {
-                    Section("Recipe") {
+                    Section {
+                    } header: {
                         Text(draft.name)
-                            .font(.headline)
+                            .font(.title2.weight(.semibold))
+                            .fontDesign(.serif)
+                            .foregroundStyle(Color.ink)
+                            .textCase(nil)
+                            .accessibilityAddTraits(.isHeader)
                     }
-                    .listRowBackground(Color.cardBackground)
                 }
 
                 ingredientSection("Oils", draft.oils, in: draft)
@@ -36,6 +41,7 @@ struct RecipeImportProgressView: View {
                 settingsSection(draft)
             }
         }
+        .environment(\.defaultMinListRowHeight, 48)
         .animation(.default, value: draft)
     }
 
@@ -48,30 +54,33 @@ struct RecipeImportProgressView: View {
         in draft: RecipeImportDraft
     ) -> some View {
         if !ingredients.isEmpty {
-            Section(title) {
-                ForEach(Array(ingredients.enumerated()), id: \.offset) { _, ingredient in
-                    LabeledContent(ingredient.name, value: amountText(for: ingredient, in: draft))
+            Section {
+                ForEach(Array(ingredients.enumerated()), id: \.offset) { index, ingredient in
+                    HoneyLedgerLabeledRow(ingredient.name) {
+                        Text.honeyLedgerFigure(amountText(for: ingredient, in: draft))
+                    }
+                    .ledgerSheetRow(position: .position(index: index, count: ingredients.count))
                 }
+            } header: {
+                HoneyLedgerSectionLabel(title)
             }
-            .listRowBackground(Color.cardBackground)
         }
     }
 
     @ViewBuilder
     private func settingsSection(_ draft: RecipeImportDraft) -> some View {
         if draft.statesLyeSettings {
-            Section("Lye Settings") {
-                if let lyeType = draft.lyeType {
-                    LabeledContent("Lye", value: lyeType)
+            let rows = draft.statedLyeSettingRows
+            Section {
+                ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+                    HoneyLedgerLabeledRow(row.title) {
+                        Text.honeyLedgerFigure(row.value)
+                    }
+                    .ledgerSheetRow(position: .position(index: index, count: rows.count))
                 }
-                if let superFat = draft.superFat {
-                    LabeledContent("Super Fat", value: "\(PercentageFormatter.string(superFat))%")
-                }
-                if let waterParts = draft.waterParts {
-                    LabeledContent("Water : Lye", value: "\(PercentageFormatter.string(waterParts)) : 1")
-                }
+            } header: {
+                HoneyLedgerSectionLabel("Lye Settings")
             }
-            .listRowBackground(Color.cardBackground)
         }
     }
 
