@@ -19,6 +19,11 @@ struct RecipeImportView: View {
     @State private var textRevision = 0
     @State private var readingProblem: String?
     @State private var hasOpenedFile = false
+    @State private var textBoxHeight = Self.minimumTextBoxHeight
+
+    /// About seven lines. Below this the box stops shrinking and the form
+    /// scrolls instead.
+    private static let minimumTextBoxHeight: CGFloat = 160
 
     /// A file handed in from another app, opened as soon as the sheet appears so
     /// it lands on the exact-import review. `nil` for the in-app path, which
@@ -136,7 +141,12 @@ struct RecipeImportView: View {
             }
 
             Section {
-                RecipeTextInputView(text: $model.rawText, isEnabled: !model.isExtracting, revision: textRevision)
+                RecipeTextInputView(
+                    text: $model.rawText,
+                    isEnabled: !model.isExtracting,
+                    height: textBoxHeight,
+                    revision: textRevision
+                )
                     .ledgerSheetRow(position: .only)
             } header: {
                 HoneyLedgerSectionLabel(model.canReadFreeText ? "Recipe Text" : "Paste a Copied Recipe")
@@ -174,6 +184,17 @@ struct RecipeImportView: View {
             }
         }
         .environment(\.defaultMinListRowHeight, 48)
+        // The text box takes whatever height the screen has spare, so the
+        // form fills the sheet without scrolling, down to its minimum. The
+        // spare height is the visible height less the content's; the box
+        // changes by that much, which leaves nothing spare and settles.
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            let visible = geometry.containerSize.height - geometry.contentInsets.top - geometry.contentInsets.bottom
+            return (visible - geometry.contentSize.height).rounded()
+        } action: { _, spare in
+            let fitted = max(Self.minimumTextBoxHeight, textBoxHeight + spare)
+            if fitted != textBoxHeight { textBoxHeight = fitted }
+        }
     }
 
     /// Says which path the text in the box will take, since they

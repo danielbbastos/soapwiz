@@ -7,11 +7,13 @@ import SwiftUI
 /// row until the buttons below it were pushed off the screen entirely, and any
 /// trailing blank lines showed up as dead space nothing could fill.
 ///
-/// A fixed-height `TextEditor` scrolls its own content, which keeps the rest of
-/// the form reachable no matter how much is pasted.
+/// A `TextEditor` held at a set height scrolls its own content, which keeps the
+/// rest of the form reachable no matter how much is pasted. The height comes
+/// from the form, which gives the box whatever room the screen has spare.
 struct RecipeTextInputView: View {
     @Binding var text: String
     var isEnabled: Bool = true
+    let height: CGFloat
 
     /// Bumped whenever the text is replaced from outside the field — a paste, a
     /// photo, a scan, a clear.
@@ -23,16 +25,6 @@ struct RecipeTextInputView: View {
     /// length. Rebuilding on a revision that only changes for programmatic
     /// writes forces a fresh layout without rebuilding on every keystroke.
     var revision: Int = 0
-
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-
-    /// Regular in both axes means iPad, where the sheet has room to show more
-    /// of the recipe at once. Everything else keeps the compact height, which
-    /// has to leave the buttons and the action below it on screen.
-    private var height: CGFloat {
-        horizontalSizeClass == .regular && verticalSizeClass == .regular ? 320 : 200
-    }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
