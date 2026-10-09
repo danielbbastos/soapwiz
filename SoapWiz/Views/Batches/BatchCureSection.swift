@@ -12,13 +12,26 @@ struct BatchCureSection: View {
 
     /// The rows this batch shows, in order. The sheet is drawn one row at a
     /// time, so each row needs to know where among them it sits.
-    private enum Row {
+    private enum Row: Identifiable {
         case process(SoapProcess)
         case recommended(CureBand)
         case status
         case usable(Date)
         case ready(Date)
         case length
+
+        /// Each case appears at most once, so a row keeps its identity (and the
+        /// stepper its state) when the rows before it come and go.
+        var id: String {
+            switch self {
+            case .process: "process"
+            case .recommended: "recommended"
+            case .status: "status"
+            case .usable: "usable"
+            case .ready: "ready"
+            case .length: "length"
+            }
+        }
     }
 
     private var rows: [Row] {
@@ -45,7 +58,7 @@ struct BatchCureSection: View {
     var body: some View {
         let rows = rows
         Section {
-            ForEach(Array(rows.enumerated()), id: \.offset) { index, row in
+            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                 rowView(row)
                     .ledgerSheetRow(position: .position(index: index, count: rows.count))
             }
@@ -107,6 +120,8 @@ struct BatchCureSection: View {
                     .accessibilityLabel("Cure progress")
             }
         case .ready:
+            // Extra room on the batch sheet for the large stamp, on top of the
+            // tilt room the status line itself leaves.
             BatchCureStatusLine(status: batch.cureStatus, readyWord: String(localized: "Cured"))
                 .padding(.vertical, 3)
                 .frame(maxWidth: .infinity, alignment: .leading)
