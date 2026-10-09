@@ -12,44 +12,52 @@ struct StorageLocationListView: View {
         ZStack(alignment: .bottomTrailing) {
             Group {
                 if locations.isEmpty {
-                    ContentUnavailableView(
+                    HoneyLedgerEmptyState(
                         "No Locations",
                         systemImage: "archivebox",
-                        description: Text("Tap + to create your first storage location.")
+                        description: "Tap + to create your first storage location."
                     )
                 } else {
                     List {
-                        ForEach(locations) { location in
-                            Button {
-                                model.locationToEdit = location
-                            } label: {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack {
-                                        Text(location.name)
-                                            .foregroundStyle(.primary)
-                                        Spacer()
-                                        Text("\(location.purchases.count)")
-                                            .foregroundStyle(.secondary)
-                                            .font(.subheadline)
-                                    }
-                                    if !location.locationDescription.isEmpty {
-                                        Text(location.locationDescription)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                        Section {
+                            ForEach(Array(locations.enumerated()), id: \.element.id) { index, location in
+                                Button {
+                                    model.locationToEdit = location
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        HStack {
+                                            Text(location.name)
+                                                .foregroundStyle(Color.ink)
+                                            Spacer()
+                                            Text("\(location.purchases.count)")
+                                                .foregroundStyle(Color.inkSoft)
+                                                .font(.subheadline)
+                                                .monospacedDigit()
+                                        }
+                                        if !location.locationDescription.isEmpty {
+                                            Text(location.locationDescription)
+                                                .font(.caption)
+                                                .foregroundStyle(Color.inkSoft)
+                                        }
                                     }
                                 }
+                                .ledgerSheetRow(position: .position(index: index, count: locations.count))
                             }
+                            .onDelete { model.delete(at: $0, in: locations, context: modelContext) }
+                        } header: {
+                            // The List's first-header inset leaves the ornament lower than
+                            // centred; it clamps this negative padding to about 7pt up.
+                            HoneyLedgerOrnament()
+                                .padding(.top, -10)
                         }
-                        .onDelete { model.delete(at: $0, in: locations, context: modelContext) }
-                        .listRowBackground(Color.cardBackground)
                     }
                 }
             }
             .readableWidth()
             .navigationTitle("Storage Locations")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Storage Locations")
-            .warmBackground()
+            .honeyLedgerInlineTitle("Storage Locations")
+            .ledgerBackground()
 
             if editMode?.wrappedValue != .active {
                 FloatingActionButton { model.showingAddLocation = true }

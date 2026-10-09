@@ -18,4 +18,16 @@ struct CurrencyChoice: Identifiable, Hashable {
             }
             .sorted { $0.label.localizedStandardCompare($1.label) == .orderedAscending }
     }
+
+    /// The choices whose label or code contains `query`, ignoring case and
+    /// diacritics. A blank query keeps every choice.
+    static func filter(_ choices: [CurrencyChoice], matching query: String) -> [CurrencyChoice] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return choices }
+        let options: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
+        return choices.filter {
+            $0.label.range(of: trimmed, options: options) != nil
+                || $0.code.range(of: trimmed, options: options) != nil
+        }
+    }
 }
