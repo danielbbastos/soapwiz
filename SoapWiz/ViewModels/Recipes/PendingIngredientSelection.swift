@@ -13,6 +13,8 @@ struct PendingIngredientSelection {
 
     var isEmpty: Bool { slugs.isEmpty }
 
+    var count: Int { slugs.count }
+
     func contains(_ id: PersistentIdentifier) -> Bool {
         slugs[id] != nil
     }

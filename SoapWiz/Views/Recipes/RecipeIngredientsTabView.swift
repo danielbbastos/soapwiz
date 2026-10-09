@@ -53,6 +53,7 @@ struct RecipeIngredientsTabView: View {
         .expandingSectionScrollContainer()
         .sheet(item: $activePicker) { section in
             IngredientPickerView(
+                config: section.pickerConfig,
                 addedIDs: addedIDs(for: section),
                 allowedRoles: section.roles,
                 includesUnroled: section.includesUnroled,
