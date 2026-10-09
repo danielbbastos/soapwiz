@@ -129,7 +129,7 @@ struct IngredientPickerView: View {
                     if rows.isEmpty {
                         Section {
                             emptyState
-                                .frame(height: 280)
+                                .frame(minHeight: 280)
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
                         }
