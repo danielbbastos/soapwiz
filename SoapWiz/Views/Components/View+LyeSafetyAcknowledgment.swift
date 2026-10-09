@@ -47,23 +47,14 @@ private struct LyeSafetySheet: View {
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 16) {
                 LyeSafetyDisclaimer()
-                // `Color("AccentColor")`, the same gold the rest of the app
-                // tints with, rather than `Color.accentColor`, which resolves a
-                // shade darker inside the sheet's environment.
-                Button(action: onAccept) {
-                    Text("I Understand")
-                        .font(.system(.headline, design: .rounded, weight: .heavy))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
-                        .background(Color("AccentColor"), in: .capsule)
-                }
+                Button("I Understand", action: onAccept)
+                    .buttonStyle(.honeyLedgerPrimary)
             }
             .padding(.horizontal)
             .padding(.bottom, 8)
-            .background(Color.warmBackground)
+            .background(Color.paper)
         }
-        .background(Color.warmBackground)
+        .background { HoneyLedgerPaper() }
         // Accepting is the only way out: see the modifier's note above.
         .interactiveDismissDisabled()
     }
