@@ -19,24 +19,27 @@ struct RecipeCollectionFormView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $model.name)
-                } footer: {
-                    if model.isDuplicate(among: allCollections) {
-                        Text("A collection with this name already exists.")
-                            .foregroundStyle(.red)
-                    }
+                    HoneyLedgerField(
+                        "Name",
+                        text: $model.name,
+                        prompt: "Required",
+                        error: model.isDuplicate(among: allCollections)
+                            ? String(localized: "A collection with this name already exists.") : nil
+                    )
+                    .ledgerSheetRow(position: .only)
                 }
-                .listRowBackground(Color.cardBackground)
 
-                Section("Colour") {
+                Section {
                     colorGrid
+                        .ledgerSheetRow(position: .only)
+                } header: {
+                    HoneyLedgerSectionLabel("Colour")
                 }
-                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle(model.isEditing ? "Edit Collection" : "New Collection")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle(model.isEditing ? "Edit Collection" : "New Collection")
-            .warmBackground()
+            .honeyLedgerInlineTitle(model.isEditing ? "Edit Collection" : "New Collection")
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

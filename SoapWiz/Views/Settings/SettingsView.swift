@@ -67,9 +67,9 @@ struct SettingsView: View {
                 Text(dataTransfer.errorMessage ?? "")
             }
             .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Settings")
-            .warmBackground()
+            .navigationBarTitleDisplayMode(.large)
+            .ledgerLargeTitle()
+            .ledgerBackground()
             .task(id: scenePhase) {
                 guard scenePhase == .active else { return }
                 await refreshNotificationAuthorization()
@@ -92,29 +92,38 @@ struct SettingsView: View {
             NotificationService.deviceMayNotNotify(for: settings, authorization: $0)
         } ?? false
         return Section {
-            Toggle("Expiry Reminders", isOn: reminderToggle(\.expiryNotificationsEnabled, of: settings))
-            Toggle("Cure Reminders", isOn: reminderToggle(\.cureNotificationsEnabled, of: settings))
+            reminderRow(
+                "Expiry Reminders",
+                subtitle: "1 month and 1 week before an ingredient expires",
+                isOn: reminderToggle(\.expiryNotificationsEnabled, of: settings)
+            )
+            .ledgerSheetRow(position: .first)
+            reminderRow(
+                "Cure Reminders",
+                subtitle: "The mornings a batch becomes usable and finishes curing",
+                isOn: reminderToggle(\.cureNotificationsEnabled, of: settings)
+            )
+            .ledgerSheetRow(position: .last)
         } header: {
-            Text("Notifications")
+            HoneyLedgerSectionLabel("Notifications")
         } footer: {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Get notified 1 month and 1 week before ingredients expire, "
-                     + "and on the mornings a batch becomes usable and finishes curing.")
-                // The setting is shared across devices and the permission isn't,
-                // so this one can show reminders on while none arrive here.
-                if mayNotNotify {
+            // The setting is shared across devices and the permission isn't,
+            // so this one can show reminders on while none arrive here.
+            if mayNotNotify {
+                VStack(alignment: .leading, spacing: 8) {
                     Label(
                         "Notifications are turned off for SoapWiz on this device, "
                             + "so reminders won't arrive here.",
                         systemImage: "exclamationmark.triangle.fill"
                     )
-                    .foregroundStyle(.orange)
+                    .font(.footnote)
+                    .foregroundStyle(Color.warning)
                     Button("Open Settings", action: openAppSettings)
                         .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.amberText)
                 }
             }
         }
-        .listRowBackground(Color.cardBackground)
         // However the setting changed, from a tap, another device or a restore,
         // this device schedules, cancels or skips its own reminders to match,
         // and never writes the setting back.
@@ -130,6 +139,46 @@ struct SettingsView: View {
         } message: {
             Text("SoapWiz needs notification permission to send reminders. "
                  + "You can enable it in Settings.")
+        }
+    }
+
+    private func reminderRow(_ title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.body)
+                    .foregroundStyle(Color.ink)
+                Text(subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(Color.inkSoft)
+            }
+        }
+        .tint(Color.amber)
+        .accessibilityLabel(title)
+        .accessibilityHint(subtitle)
+    }
+
+    private func toggleRow(_ title: String, isOn: Binding<Bool>) -> some View {
+        Toggle(title, isOn: isOn)
+            .foregroundStyle(Color.ink)
+            .tint(Color.amber)
+    }
+
+    private func countRow(_ title: String, count: Int) -> some View {
+        HoneyLedgerLabeledRow(title) {
+            Text("\(count)")
+                .foregroundStyle(Color.inkSoft)
+                .monospacedDigit()
+        }
+    }
+
+    private func linkLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
+        Label {
+            Text(title)
+                .foregroundStyle(Color.ink)
+        } icon: {
+            Image(systemName: systemImage)
+                .foregroundStyle(Color.inkSoft)
         }
     }
 
@@ -163,7 +212,7 @@ struct SettingsView: View {
     /// under it, rather than under the Inventory lookups.
     private func stockTrackingSection(_ settings: AppSettings) -> some View {
         Section {
-            Toggle("Track ingredient stock", isOn: Bindable(settings).tracksInventory)
+            toggleRow("Track ingredient stock", isOn: Bindable(settings).tracksInventory)
                 .onChange(of: settings.tracksInventory) { _, tracks in
                     Task {
                         if tracks {
@@ -173,49 +222,61 @@ struct SettingsView: View {
                         }
                     }
                 }
+                .ledgerSheetRow(position: .only)
         } header: {
-            Text("Stock Tracking")
+            // The List's first-header inset leaves the ornament lower than
+            // centred; it clamps this negative padding to about 7pt up.
+            HoneyLedgerOrnament()
+                .padding(.top, -10)
         } footer: {
-            Text("Turn off to use SoapWiz without recording purchases: batches don't check "
-                 + "or deduct stock, stock and expiry warnings are hidden, and costs aren't shown. "
-                 + "Your purchases are kept for when you turn it back on.")
+            HoneyLedgerFooter(
+                "Turn off to use SoapWiz without recording purchases: batches don't check "
+                    + "or deduct stock, stock and expiry warnings are hidden, and costs aren't shown. "
+                    + "Your purchases are kept for when you turn it back on."
+            )
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private var inventorySection: some View {
-        Section("Inventory") {
+        Section {
             NavigationLink(destination: CategoryListView()) {
-                LabeledContent("Categories", value: "\(categories.count)")
+                countRow("Categories", count: categories.count)
             }
+            .ledgerSheetRow(position: .first)
             NavigationLink(destination: StorageLocationListView()) {
-                LabeledContent("Storage Locations", value: "\(locations.count)")
+                countRow("Storage Locations", count: locations.count)
             }
+            .ledgerSheetRow(position: .middle)
             NavigationLink(destination: ProviderListView()) {
-                LabeledContent("Providers", value: "\(providers.count)")
+                countRow("Providers", count: providers.count)
             }
+            .ledgerSheetRow(position: .last)
+        } header: {
+            HoneyLedgerSectionLabel("Inventory")
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     /// Collections sit apart from the inventory lookups above: they group
     /// recipes, and the two axes never meet — an ingredient's category also
     /// decides what it can be picked as, which a theme must never do.
     private var recipesSection: some View {
-        Section("Recipes") {
+        Section {
             NavigationLink(destination: RecipeCollectionListView()) {
-                LabeledContent("Collections", value: "\(collections.count)")
+                countRow("Collections", count: collections.count)
             }
+            .ledgerSheetRow(position: .only)
+        } header: {
+            HoneyLedgerSectionLabel("Recipes")
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private func pricingSection(_ settings: AppSettings) -> some View {
         Section {
             CurrencyPickerRow(settings: settings)
-                .listRowBackground(Color.cardBackground)
+                .ledgerSheetRow(position: .first)
             HStack {
                 Text("RRP factor")
+                    .foregroundStyle(Color.ink)
                     .layoutPriority(1)
                 InfoPopoverIcon(
                     title: "RRP Factor",
@@ -229,11 +290,11 @@ struct SettingsView: View {
                     prompt: "4", value: Bindable(settings).pvpFactor, fractionLength: 0...2, fillsAvailableWidth: true
                 )
             }
-            .listRowBackground(Color.cardBackground)
+            .ledgerSheetRow(position: .last)
         } header: {
-            Text("Pricing")
+            HoneyLedgerSectionLabel("Pricing")
         } footer: {
-            Text("Prices are kept as amounts, so changing the currency relabels them without converting.")
+            HoneyLedgerFooter("Prices are kept as amounts, so changing the currency relabels them without converting.")
         }
     }
 
@@ -246,61 +307,69 @@ struct SettingsView: View {
     private var recipeImportSection: some View {
         let availability = RecipeImportAvailability.current
         return Section {
-            LabeledContent("Status") {
+            HoneyLedgerLabeledRow("Status") {
                 Label(availability.statusText, systemImage: availability.statusSymbol)
                     .labelStyle(.titleAndIcon)
                     .foregroundStyle(statusTint(for: availability))
             }
+            .ledgerSheetRow(position: .only)
         } header: {
-            Text("Recipe Import")
+            HoneyLedgerSectionLabel("Recipe Import")
         } footer: {
-            Text(availability.settingsFooter)
+            HoneyLedgerFooter(availability.settingsFooter)
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private func statusTint(for availability: RecipeImportAvailability) -> Color {
-        if availability.isAvailable { return .green }
-        return availability.isActionable ? .orange : .secondary
+        if availability.isAvailable { return .success }
+        return availability.isActionable ? .warning : .inkSoft
     }
 
     private var aboutSection: some View {
-        Section("About") {
-            LabeledContent("Version", value: Bundle.main.appVersionDisplay)
+        Section {
+            HoneyLedgerLabeledRow("Version") {
+                Text(Bundle.main.appVersionDisplay)
+                    .foregroundStyle(Color.inkSoft)
+            }
+            .ledgerSheetRow(position: .first)
             NavigationLink(destination: LyeSafetyScreen()) {
-                Label("Lye Safety", systemImage: "exclamationmark.triangle")
+                linkLabel("Lye Safety", systemImage: "exclamationmark.triangle")
             }
+            .ledgerSheetRow(position: .middle)
             Link(destination: AppLinks.privacyPolicy) {
-                Label("Privacy Policy", systemImage: "hand.raised")
+                linkLabel("Privacy Policy", systemImage: "hand.raised")
             }
+            .ledgerSheetRow(position: .middle)
             Link(destination: AppLinks.support) {
-                Label("Support", systemImage: "questionmark.circle")
+                linkLabel("Support", systemImage: "questionmark.circle")
             }
+            .ledgerSheetRow(position: .last)
+        } header: {
+            HoneyLedgerSectionLabel("About")
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private var backupSection: some View {
         Section {
-            Toggle("Include Photos", isOn: $dataTransfer.includesPhotos)
-            Button {
+            toggleRow("Include Photos", isOn: $dataTransfer.includesPhotos)
+                .ledgerSheetRow(position: .first)
+            HoneyLedgerActionRow("Export Data", systemImage: "square.and.arrow.up") {
                 dataTransfer.export(from: modelContext)
-            } label: {
-                Label("Export Data", systemImage: "square.and.arrow.up")
             }
-            Button {
+            .ledgerSheetRow(position: .middle)
+            HoneyLedgerActionRow("Import Data", systemImage: "square.and.arrow.down") {
                 dataTransfer.isImporterPresented = true
-            } label: {
-                Label("Import Data", systemImage: "square.and.arrow.down")
             }
+            .ledgerSheetRow(position: .last)
         } header: {
-            Text("Backup")
+            HoneyLedgerSectionLabel("Backup")
         } footer: {
-            Text("Export saves all your ingredients, recipes, and history to a single file. "
-                 + "Leaving photos out makes a much smaller file, but importing it brings "
-                 + "everything back without them. "
-                 + "Importing a file replaces everything currently in the app.")
+            HoneyLedgerFooter(
+                "Export saves all your ingredients, recipes, and history to a single file. "
+                    + "Leaving photos out makes a much smaller file, but importing it brings "
+                    + "everything back without them. "
+                    + "Importing a file replaces everything currently in the app."
+            )
         }
-        .listRowBackground(Color.cardBackground)
     }
 }

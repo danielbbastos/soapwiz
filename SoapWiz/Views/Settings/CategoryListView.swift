@@ -12,31 +12,38 @@ struct CategoryListView: View {
         ZStack(alignment: .bottomTrailing) {
             Group {
                 if categories.isEmpty {
-                    ContentUnavailableView(
+                    HoneyLedgerEmptyState(
                         "No Categories",
                         systemImage: "tag",
-                        description: Text("Tap + to create your first category.")
+                        description: "Tap + to create your first category."
                     )
                 } else {
                     List {
                         Section {
-                            ForEach(categories) { category in
-                                if category.isRenamable {
-                                    Button {
-                                        model.categoryToEdit = category
-                                    } label: {
+                            ForEach(Array(categories.enumerated()), id: \.element.id) { index, category in
+                                Group {
+                                    if category.isRenamable {
+                                        Button {
+                                            model.categoryToEdit = category
+                                        } label: {
+                                            row(for: category)
+                                        }
+                                        .deleteDisabled(category.isBuiltIn)
+                                    } else {
                                         row(for: category)
+                                            .deleteDisabled(true)
                                     }
-                                    .deleteDisabled(category.isBuiltIn)
-                                } else {
-                                    row(for: category)
-                                        .deleteDisabled(true)
                                 }
+                                .ledgerSheetRow(position: .position(index: index, count: categories.count))
                             }
                             .onDelete { model.delete(at: $0, in: categories, context: modelContext) }
-                            .listRowBackground(Color.cardBackground)
+                        } header: {
+                            // The List's first-header inset leaves the ornament lower than
+                            // centred; it clamps this negative padding to about 7pt up.
+                            HoneyLedgerOrnament()
+                                .padding(.top, -10)
                         } footer: {
-                            Text("Built-in categories can't be deleted, and only Others can be renamed.")
+                            HoneyLedgerFooter("Built-in categories can't be deleted, and only Others can be renamed.")
                         }
                     }
                 }
@@ -44,8 +51,8 @@ struct CategoryListView: View {
             .readableWidth()
             .navigationTitle("Categories")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Categories")
-            .warmBackground()
+            .honeyLedgerInlineTitle("Categories")
+            .ledgerBackground()
 
             if editMode?.wrappedValue != .active {
                 FloatingActionButton { model.showingAddCategory = true }
@@ -76,17 +83,18 @@ struct CategoryListView: View {
     private func row(for category: IngredientCategory) -> some View {
         HStack {
             Text(category.name)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.ink)
             if category.isBuiltIn {
                 Image(systemName: "lock.fill")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.inkFaint)
                     .accessibilityLabel("Built-in")
             }
             Spacer()
             Text("\(category.ingredients.count)")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSoft)
                 .font(.subheadline)
+                .monospacedDigit()
         }
     }
 }

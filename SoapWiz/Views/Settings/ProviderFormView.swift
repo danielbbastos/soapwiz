@@ -19,33 +19,34 @@ struct ProviderFormView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $model.name)
-                } footer: {
-                    if model.isDuplicate(among: allProviders) {
-                        Text("A provider with this name already exists.")
-                            .foregroundStyle(.red)
+                    HoneyLedgerField(
+                        "Name",
+                        text: $model.name,
+                        prompt: "Required",
+                        error: model.isDuplicate(among: allProviders)
+                            ? String(localized: "A provider with this name already exists.") : nil
+                    )
+                    .ledgerSheetRow(position: .first)
+                    HoneyLedgerField("Website") { focus in
+                        TextField("Website", text: $model.website, prompt: Text("https://…").foregroundStyle(Color.inkFaint))
+                            .textInputAutocapitalization(.never)
+                            .keyboardType(.URL)
+                            .autocorrectionDisabled()
+                            .focused(focus)
                     }
+                    .ledgerSheetRow(position: .middle)
+                    HoneyLedgerStackedField(
+                        title: "Notes",
+                        text: $model.notes,
+                        prompt: "Optional (e.g. lead time, minimum order)"
+                    )
+                    .ledgerSheetRow(position: .last)
                 }
-                .listRowBackground(Color.cardBackground)
-
-                Section("Website") {
-                    TextField("https://…", text: $model.website)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.URL)
-                        .autocorrectionDisabled()
-                }
-                .listRowBackground(Color.cardBackground)
-
-                Section("Notes") {
-                    TextField("Optional (e.g. lead time, minimum order)", text: $model.notes, axis: .vertical)
-                        .lineLimit(3...6)
-                }
-                .listRowBackground(Color.cardBackground)
             }
             .navigationTitle(model.isEditing ? "Edit Provider" : "New Provider")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle(model.isEditing ? "Edit Provider" : "New Provider")
-            .warmBackground()
+            .honeyLedgerInlineTitle(model.isEditing ? "Edit Provider" : "New Provider")
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
