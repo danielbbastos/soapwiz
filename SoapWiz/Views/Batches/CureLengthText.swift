@@ -20,14 +20,3 @@ enum CureLengthText {
         }
     }
 }
-
-/// An icon and title closer together than a list row's `Label` puts them,
-/// for the small status line under a history row.
-struct CompactLabelStyle: LabelStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 9) {
-            configuration.icon
-            configuration.title
-        }
-    }
-}
