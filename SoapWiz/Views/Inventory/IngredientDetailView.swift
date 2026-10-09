@@ -17,6 +17,12 @@ struct IngredientDetailView: View {
     /// Whether the purchases section has been expanded past its two-row preview.
     @State private var showAllPurchases = false
 
+    @State private var lastPurchaseDate: Date?
+
+    private var latestPurchaseDate: Date {
+        model.ingredient.purchases.max(by: { $0.dateOfPurchase < $1.dateOfPurchase })!.dateOfPurchase
+    }
+
     /// The collapsible sections currently open. Everything but Summary (and the
     /// single-line composition note) can be collapsed; all start expanded.
     @State private var expandedSections: Set<DetailSection> = Set(DetailSection.allCases)
@@ -93,6 +99,9 @@ struct IngredientDetailView: View {
                     }
                     if !model.ingredient.unit.isEmpty {
                         LabeledContent("Unit", value: IngredientUnit(rawValue: model.ingredient.unit)?.label ?? model.ingredient.unit)
+                    }
+                    if tracksInventory, let lastPurchaseDate {
+                        LabeledContent("Last Purchased", value: lastPurchaseDate.formatted(date: .abbreviated, time: .omitted))
                     }
                     if tracksInventory {
                         LabeledContent("Total Remaining") {
@@ -186,7 +195,12 @@ struct IngredientDetailView: View {
         // On appear for a merge that landed while this screen was pushed but not
         // on top, and on the notification for one that lands while the user is
         // looking at it.
-        .onAppear { model.resolve(in: modelContext) }
+        .onAppear {
+            model.resolve(in: modelContext)
+            DispatchQueue.main.async {
+                lastPurchaseDate = latestPurchaseDate
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
             model.resolve(in: modelContext)
         }
