@@ -2,10 +2,8 @@ import SwiftUI
 
 /// The lye safety text, shown once as a sheet and kept readable in Settings.
 ///
-/// Colours come from the asset catalogue rather than the mock's hex values, so
-/// the gold and the red both follow the app into light mode. The one new colour
-/// is `dangerAccent`, which had no equivalent: nothing else in the app has had
-/// to say "this can hurt you".
+/// Set in the Honey Ledger tokens: `danger` on `dangerWash` for the warning,
+/// `amberText` on `honey` for the instructions, `ink` and `inkSoft` for text.
 ///
 /// No card behind the text: the notice fills the sheet, which keeps the lines
 /// wide enough to fit without scrolling.
@@ -25,8 +23,9 @@ struct LyeSafetyNoticeView: View {
                     + "a batch."
             )
             Text("Always add lye to water — never water to lye.")
-                .font(.system(.headline, design: .rounded, weight: .heavy))
-                .foregroundStyle(Color.dangerAccent)
+                .font(.headline.weight(.semibold))
+                .fontDesign(.serif)
+                .foregroundStyle(Color.danger)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
         }
@@ -37,15 +36,17 @@ struct LyeSafetyNoticeView: View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 28))
-                .foregroundStyle(Color.dangerAccent)
+                .foregroundStyle(Color.danger)
                 .frame(width: 64, height: 64)
-                .background(Color.dangerAccent.opacity(0.14), in: .circle)
-                .overlay(Circle().stroke(Color.dangerAccent.opacity(0.38), lineWidth: 1))
+                .background(Color.dangerWash, in: .circle)
+                .overlay(Circle().stroke(Color.danger.opacity(0.38), lineWidth: 1))
             Text("Handle Lye with Care")
-                .font(.system(.title, design: .rounded, weight: .heavy))
+                .font(.title.weight(.semibold))
+                .fontDesign(.serif)
+                .foregroundStyle(Color.ink)
                 .multilineTextAlignment(.center)
             Text("Lye (sodium or potassium hydroxide) is caustic. It can burn skin and damage eyes.")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSoft)
                 .multilineTextAlignment(.center)
         }
     }
@@ -54,10 +55,11 @@ struct LyeSafetyNoticeView: View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: symbol)
                 .font(.system(size: 18))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.amberText)
                 .frame(width: 40, height: 40)
-                .background(Color.accentColor.opacity(0.14), in: .rect(cornerRadius: 12))
+                .background(Color.honey, in: .rect(cornerRadius: 12))
             Text(text)
+                .foregroundStyle(Color.ink)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
@@ -70,7 +72,7 @@ struct LyeSafetyDisclaimer: View {
     var body: some View {
         Text("SoapWiz can't guarantee a safe result. You use its calculations at your own risk.")
             .font(.footnote)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Color.inkSoft)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
     }
@@ -89,12 +91,12 @@ struct LyeSafetyScreen: View {
         .readableWidth(inset: 16)
         .navigationTitle("Lye Safety")
         .navigationBarTitleDisplayMode(.inline)
-        .warmNavigationTitle("Lye Safety")
-        .warmBackground()
+        .honeyLedgerInlineTitle("Lye Safety")
+        .ledgerBackground()
     }
 }
 
 #Preview {
     ScrollView { LyeSafetyNoticeView().padding() }
-        .background(Color.warmBackground)
+        .background { HoneyLedgerPaper() }
 }

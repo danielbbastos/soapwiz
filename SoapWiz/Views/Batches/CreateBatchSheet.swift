@@ -37,8 +37,23 @@ struct CreateBatchSheet: View {
         ))
     }
 
+    private func numberText(_ amount: Double) -> String {
+        amount.formatted(.number.precision(.fractionLength(0...2)))
+    }
+
     private func amountText(_ amount: Double, unit: String) -> String {
-        "\(amount.formatted(.number.precision(.fractionLength(0...2)))) \(unit)"
+        "\(numberText(amount)) \(unit)"
+    }
+
+    private func stepperLabel(_ title: LocalizedStringKey, value: Text, valueColor: Color) -> some View {
+        HStack {
+            Text(title)
+                .foregroundStyle(Color.ink)
+            Spacer(minLength: 8)
+            value
+                .monospacedDigit()
+                .foregroundStyle(valueColor)
+        }
     }
 
     var body: some View {
@@ -51,74 +66,100 @@ struct CreateBatchSheet: View {
                 let estimatedCost = model.estimatedCost
                 let totalBatchWeight = model.totalBatchWeight
 
+                let showsWeight = totalBatchWeight > 0
+                let showsCost = shortages.isEmpty && estimatedCost > 0
+                let summaryCount = 1 + (showsWeight ? 1 : 0) + (showsCost ? 1 : 0)
+
                 Section {
-                    Stepper(value: $model.batchCount, in: 1...999) {
-                        LabeledContent("Batches", value: "\(model.batchCount)")
+                    sheetRow(0, of: summaryCount) {
+                        Stepper(value: $model.batchCount, in: 1...999) {
+                            stepperLabel(
+                                "Batches",
+                                value: Text("\(model.batchCount)").fontWeight(.semibold),
+                                valueColor: .ink
+                            )
+                        }
+                        .accessibilityValue("\(model.batchCount)")
                     }
                     // Shown even when stock is short, unlike estimated cost: the
                     // size of the batch you can't yet make is what tells you how
                     // much more to buy.
-                    if totalBatchWeight > 0 {
-                        LabeledContent(
-                            "Total weight",
-                            value: amountText(totalBatchWeight, unit: model.batchWeightUnit)
-                        )
+                    if showsWeight {
+                        sheetRow(1, of: summaryCount) {
+                            HoneyLedgerLabeledRow("Total weight") {
+                                Text.honeyLedgerFigure(
+                                    numberText(totalBatchWeight),
+                                    unit: model.batchWeightUnit
+                                )
+                            }
+                        }
                     }
-                    if shortages.isEmpty && estimatedCost > 0 {
-                        LabeledContent(
-                            "Estimated cost",
-                            value: estimatedCost.formatted(.currency(code: currencyCode))
+                    if showsCost {
+                        sheetRow(summaryCount - 1, of: summaryCount) {
+                            HoneyLedgerLabeledRow("Estimated cost") {
+                                Text.honeyLedgerFigure(estimatedCost.formatted(.currency(code: currencyCode)))
+                            }
+                        }
+                    }
+                } header: {
+                    HoneyLedgerSectionLabel("Batch")
+                }
+
+                // Straight under the batch count: it is the lever that causes the
+                // shortage and the one that fixes it.
+                if requirements.isEmpty {
+                    Section {
+                        sheetRow(0, of: 1) {
+                            Text("This recipe has no ingredients to consume.")
+                                .foregroundStyle(Color.inkSoft)
+                        }
+                    }
+                } else if !shortages.isEmpty {
+                    Section {
+                        ForEach(Array(shortages.enumerated()), id: \.element.id) { index, req in
+                            sheetRow(index, of: shortages.count) {
+                                shortageRow(req)
+                            }
+                        }
+                    } header: {
+                        // Danger, unlike the advisory warnings elsewhere: this one
+                        // blocks creation rather than merely cautioning.
+                        HoneyLedgerFieldNote(
+                            shortageMessage(count: shortages.count),
+                            tint: .danger,
+                            font: .subheadline.weight(.semibold)
                         )
+                        .textCase(nil)
+                        .accessibilityAddTraits(.isHeader)
                     }
                 }
-                .listRowBackground(Color.cardBackground)
 
                 Section {
-                    TextField("Batch Code", text: $model.code, prompt: Text(model.suggestedCode))
-                        .textInputAutocapitalization(.characters)
-                        .autocorrectionDisabled()
+                    sheetRow(0, of: 1) {
+                        HoneyLedgerField("Batch code") { focus in
+                            TextField("Batch code", text: $model.code, prompt: Text(model.suggestedCode).foregroundStyle(Color.inkFaint))
+                                .textInputAutocapitalization(.characters)
+                                .autocorrectionDisabled()
+                                .fontDesign(.monospaced)
+                                .focused(focus)
+                        }
+                    }
                 } header: {
-                    Text("Batch Code")
+                    HoneyLedgerSectionLabel("Identification")
                 } footer: {
                     if codeIsTaken {
                         BatchCodeDuplicateWarning()
                     }
                 }
-                .listRowBackground(Color.cardBackground)
 
                 if let estimate = model.cureEstimate {
                     cureSection(estimate)
                 }
-
-                if requirements.isEmpty {
-                    Section {
-                        Text("This recipe has no ingredients to consume.")
-                            .foregroundStyle(.secondary)
-                    }
-                    .listRowBackground(Color.cardBackground)
-                } else if !shortages.isEmpty {
-                    Section {
-                        ForEach(shortages) { req in
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(req.ingredient.name)
-                                Text("Need \(amountText(req.required, unit: req.unit)), have \(amountText(req.available, unit: req.unit))")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    } header: {
-                        // Red, unlike the orange advisory warnings elsewhere: this
-                        // one blocks creation rather than merely cautioning.
-                        Label("Not enough stock", systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
-                    }
-                    .listRowBackground(Color.cardBackground)
-                }
             }
             .navigationTitle("Create Batch")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Create Batch")
-            .warmBackground()
+            .honeyLedgerInlineTitle("Create Batch")
+            .ledgerBackground()
             .task(id: existingCodes) {
                 model.suggestCode(existingCodes: existingCodes)
             }
@@ -146,26 +187,68 @@ struct CreateBatchSheet: View {
         }
     }
 
+    private func sheetRow<Content: View>(
+        _ index: Int,
+        of count: Int,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content().ledgerSheetRow(position: .position(index: index, count: count))
+    }
+
+    private func shortageMessage(count: Int) -> String {
+        let text = AttributedString(
+            localized: "Not enough stock for ^[\(count) ingredient](inflect: true). Reduce the batch count or restock."
+        )
+        return String(text.characters)
+    }
+
+    private func shortageRow(_ req: BatchRequirement) -> some View {
+        let need = amountText(req.required, unit: req.unit)
+        let have = amountText(req.available, unit: req.unit)
+        let shortfall = amountText(req.shortfall, unit: req.unit)
+        return HoneyLedgerLabeledRow(req.ingredient.name, value: {
+            // U+2212, which VoiceOver would read as "minus"; the row's label
+            // says "short" instead.
+            Text.honeyLedgerFigure("\u{2212}\(shortfall)", numberColor: .danger)
+        }, below: {
+            Text("Need \(need) · have \(have)")
+                .font(.footnote)
+                .foregroundStyle(Color.inkSoft)
+        })
+        .accessibilityLabel("\(req.ingredient.name), short \(shortfall), need \(need), have \(have)")
+    }
+
     /// Only for a solid bar: a batch of anything else never mentions a cure.
     private func cureSection(_ estimate: CureEstimate) -> some View {
         Section {
-            Picker("Process", selection: $model.process) {
-                ForEach(SoapProcess.allCases) { process in
-                    Text(process.label).tag(process)
+            sheetRow(0, of: 3) {
+                HoneyLedgerSegmented(
+                    "Process",
+                    selection: $model.process,
+                    options: SoapProcess.allCases.map { ($0, $0.label) }
+                )
+            }
+            sheetRow(1, of: 3) {
+                HoneyLedgerLabeledRow("Recommended") {
+                    Text(estimate.band.rangeText)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(Color.ink)
                 }
             }
-            LabeledContent("Recommended", value: estimate.band.rangeText)
-            Stepper(value: $model.cureDays, in: BatchCureLimits.days, step: 7) {
-                LabeledContent("Length") {
-                    CureLengthText.text(days: model.cureDays)
+            sheetRow(2, of: 3) {
+                Stepper(value: $model.cureDays, in: BatchCureLimits.days, step: 7) {
+                    stepperLabel(
+                        "Length",
+                        value: CureLengthText.text(days: model.cureDays),
+                        valueColor: .inkSoft
+                    )
                 }
+                .accessibilityValue(CureLengthText.text(days: model.cureDays))
             }
-            .accessibilityValue(CureLengthText.text(days: model.cureDays))
         } header: {
-            Text("Cure")
+            HoneyLedgerSectionLabel("Cure")
         } footer: {
-            Text(estimate.explanation)
+            HoneyLedgerFooter(estimate.explanation)
         }
-        .listRowBackground(Color.cardBackground)
     }
 }
