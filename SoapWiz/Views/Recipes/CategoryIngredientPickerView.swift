@@ -62,37 +62,43 @@ struct CategoryIngredientPickerView: View {
     }
 
     var body: some View {
-        List {
+        Group {
             if candidates.isEmpty {
-                ContentUnavailableView(
-                    config.emptyTitle,
+                HoneyLedgerEmptyState(
+                    LocalizedStringKey(config.emptyTitle),
                     systemImage: "tray",
-                    description: Text(config.emptyDescription)
+                    description: LocalizedStringKey(config.emptyDescription)
                 )
             } else {
-                ForEach(filtered) { ingredient in
-                    let isSelected = selected?.persistentModelID == ingredient.persistentModelID
-                    Button {
-                        selected = ingredient
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(isSelected ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-                            Text(ingredient.name)
-                                .foregroundStyle(.primary)
-                            Spacer()
+                let rows = filtered
+                List {
+                    ForEach(Array(rows.enumerated()), id: \.element.persistentModelID) { index, ingredient in
+                        let isSelected = selected?.persistentModelID == ingredient.persistentModelID
+                        Button {
+                            selected = ingredient
+                            dismiss()
+                        } label: {
+                            HoneyLedgerPickerRow(name: ingredient.name, state: isSelected ? .selected : .unselected)
                         }
+                        .ledgerListDetailRow(
+                            isSelected: isSelected,
+                            position: .position(index: index, count: rows.count)
+                        )
                     }
-                    .listRowBackground(isSelected ? Color.selectedRowBackground : Color.cardBackground)
                 }
+                .environment(\.defaultMinListRowHeight, 48)
+                .overlay {
+                    if rows.isEmpty {
+                        ContentUnavailableView.search(text: searchText)
+                    }
+                }
+                .searchHeader("Search", text: $searchText, showsList: true)
             }
         }
         .readableWidth()
-        .searchHeader("Search", text: $searchText, showsList: true)
         .navigationTitle(config.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
-        .warmNavigationTitle(config.navigationTitle)
-        .warmBackground()
+        .honeyLedgerInlineTitle(config.navigationTitle)
+        .ledgerBackground()
     }
 }
