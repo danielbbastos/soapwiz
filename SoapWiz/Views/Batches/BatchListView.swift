@@ -37,6 +37,7 @@ struct BatchListView: View {
             navigation: navigation.history,
             placeholder: "Select a Batch",
             placeholderSymbol: "clock.arrow.circlepath",
+            placeholderDescription: "Choose a batch from the list to see its record here.",
             hasItems: !displayed.isEmpty
         ) {
             Group {
@@ -66,7 +67,7 @@ struct BatchListView: View {
             .navigationTitle("History")
             .navigationBarTitleDisplayMode(.large)
             .ledgerLargeTitle(subtitle: BatchCountSummary(counting: batches).line)
-            .ledgerBackground()
+            .ledgerBackground(sunken: navigation.history.isWide)
             .searchHeader("Search batches", text: $searchText, showsList: !displayed.isEmpty)
             .navigationDestination(for: Batch.self) { batch in
                 BatchDetailView(batch: batch)

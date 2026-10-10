@@ -212,6 +212,7 @@ struct RecipeListView: View {
             navigation: navigation,
             placeholder: "Select a Recipe",
             placeholderSymbol: "function",
+            placeholderDescription: "Choose a recipe from the list to see its formula here.",
             hasItems: !displayed.isEmpty
         ) {
             ZStack(alignment: .bottomTrailing) {
@@ -254,7 +255,7 @@ struct RecipeListView: View {
                 .navigationTitle(model.navigationTitle)
                 .navigationBarTitleDisplayMode(.large)
                 .ledgerLargeTitle(subtitle: model.isSelecting ? nil : RecipeCountSummary(counting: recipes).line)
-                .ledgerBackground()
+                .ledgerBackground(sunken: navigation.isWide)
                 .toolbar { selectionToolbar() }
                 .sheet(item: $model.exportFile) { file in
                     ShareSheet(items: [file.url])
@@ -358,9 +359,7 @@ struct RecipeListView: View {
                                 importRequest = .manual
                             }
                         ],
-                        besideTabBar: navigation.fabBesideTabBar,
-                        tint: Color.glassAmber,
-                        ink: Color.onAmber
+                        besideTabBar: navigation.fabBesideTabBar
                     )
                 }
             }
