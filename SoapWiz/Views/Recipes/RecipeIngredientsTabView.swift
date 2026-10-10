@@ -281,7 +281,8 @@ struct RecipeIngredientsTabView: View {
     /// A menu picker rather than a `Menu`: a `Menu` keeps its label at the old
     /// value's width while it closes, so a longer unit showed squeezed ("% c")
     /// for a moment. Tinted `ink`, since the picker draws its value in the
-    /// tint and amber is only ever a fill.
+    /// tint and amber is only ever a fill. Laid out at the line's height, so an
+    /// additive row is no taller than an oil row.
     private func additiveUnitMenu(_ draft: IngredientAmountDraft) -> some View {
         Picker("Unit", selection: Binding(
             get: { draft.unit },
@@ -292,6 +293,7 @@ struct RecipeIngredientsTabView: View {
         .labelsHidden()
         .pickerStyle(.menu)
         .tint(Color.ink)
+        .menuPickerLineHeight()
     }
 
     // MARK: - Fragrances
