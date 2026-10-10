@@ -219,7 +219,7 @@ struct BatchDetailView: View {
                         .foregroundStyle(Color.inkSoft)
                 }
             }
-            .ledgerSheetRow(position: .only)
+            .ledgerSheetRow(position: .only, navigates: batch.recipe != nil)
         }
     }
 }

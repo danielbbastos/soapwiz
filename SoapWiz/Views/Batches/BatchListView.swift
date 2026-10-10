@@ -26,7 +26,6 @@ struct BatchListView: View {
             BatchRowView(batch: batch)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
         .ledgerListDetailRow(isSelected: navigation.history.isOpenBeside(batch), position: position)
     }
 

@@ -123,7 +123,6 @@ struct IngredientPickerView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(.rect)
                         }
-                        .buttonStyle(.plain)
                         .ledgerSheetRow(position: .only)
                     }
                     if rows.isEmpty {

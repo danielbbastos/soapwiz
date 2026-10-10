@@ -47,7 +47,6 @@ struct UsageEntryRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
         }
-        .buttonStyle(.plain)
     }
 
     private var names: some View {
