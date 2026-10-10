@@ -62,6 +62,7 @@ struct LedgerSheetRowModifier: ViewModifier {
                 }
             )
             .listRowSeparatorTint(Color.rule)
+            .modifier(SeparatorTrailingInset())
     }
 
     /// Counted rather than a flag, so a second tap during a flash doesn't
@@ -72,6 +73,21 @@ struct LedgerSheetRowModifier: ViewModifier {
             try? await Task.sleep(for: Self.flashDuration)
             withAnimation(HoneyLedgerRowButtonStyle.release) {
                 flashCount -= 1
+            }
+        }
+    }
+}
+
+/// Before iOS 26 a row's separator runs to the sheet's trailing edge; from
+/// iOS 26 it stops at the trailing content inset. A row's own guide, set inside
+/// this modifier, is kept.
+private struct SeparatorTrailingInset: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+        } else {
+            content.alignmentGuide(.listRowSeparatorTrailing) { dimensions in
+                dimensions[explicit: .listRowSeparatorTrailing] ?? dimensions[.trailing]
             }
         }
     }

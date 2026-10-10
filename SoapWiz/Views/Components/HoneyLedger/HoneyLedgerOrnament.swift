@@ -10,18 +10,23 @@ struct HoneyLedgerOrnament: View {
             .tracking(0.9)
             .hidden()
             .frame(maxWidth: .infinity)
-            .overlay {
-                HStack(spacing: 8) {
-                    Rectangle()
-                        .fill(Color.amber)
-                        .frame(width: 8 / 2.0.squareRoot(), height: 8 / 2.0.squareRoot())
-                        .rotationEffect(.degrees(45))
-                        .frame(width: 8, height: 8)
-                    Rectangle()
-                        .fill(Color.rule)
-                        .frame(height: 1)
-                }
-            }
+            .overlay { HoneyLedgerDiamondRule() }
             .accessibilityHidden(true)
+    }
+}
+
+/// The 8pt amber diamond with a `rule` hairline running off to the trailing edge.
+struct HoneyLedgerDiamondRule: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Rectangle()
+                .fill(Color.amber)
+                .frame(width: 8 / 2.0.squareRoot(), height: 8 / 2.0.squareRoot())
+                .rotationEffect(.degrees(45))
+                .frame(width: 8, height: 8)
+            Rectangle()
+                .fill(Color.rule)
+                .frame(height: 1)
+        }
     }
 }
