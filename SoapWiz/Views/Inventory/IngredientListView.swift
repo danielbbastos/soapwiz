@@ -73,6 +73,7 @@ struct IngredientListView: View {
             navigation: navigation,
             placeholder: "Select an Ingredient",
             placeholderSymbol: "flask",
+            placeholderDescription: "Choose an ingredient from the list to see its purchases here.",
             hasItems: !displayed.isEmpty
         ) {
             ZStack(alignment: .bottomTrailing) {
@@ -129,7 +130,7 @@ struct IngredientListView: View {
                 .navigationTitle("Inventory")
                 .navigationBarTitleDisplayMode(.large)
                 .ledgerLargeTitle(subtitle: model.editMode == .inactive ? content.summary.line : nil)
-                .ledgerBackground()
+                .ledgerBackground(sunken: navigation.isWide)
                 .navigationDestination(for: Ingredient.self) { IngredientDetailView(ingredient: $0) }
                 // The chips are hidden while selecting: they would compete with
                 // the selection the toolbar is there to act on.
@@ -188,9 +189,7 @@ struct IngredientListView: View {
                                 model.showingBulkImport = true
                             }
                         ],
-                        besideTabBar: navigation.fabBesideTabBar,
-                        tint: Color.glassAmber,
-                        ink: Color.onAmber
+                        besideTabBar: navigation.fabBesideTabBar
                     )
                 } else if !model.selection.isEmpty {
                     createRecipeButton

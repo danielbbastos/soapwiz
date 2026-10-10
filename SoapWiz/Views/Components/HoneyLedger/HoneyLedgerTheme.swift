@@ -4,10 +4,12 @@ import SwiftUI
 // in View+Appearance.swift rather than replacing them, so a screen that hasn't
 // moved over looks exactly as it did.
 extension View {
-    func ledgerBackground() -> some View {
+    /// `sunken` lays the screen on `paperSunken`, a step below the paper: a
+    /// list sitting beside its detail on a wide window, underneath it.
+    func ledgerBackground(sunken: Bool = false) -> some View {
         self
             .scrollContentBackground(.hidden)
-            .background { HoneyLedgerPaper() }
+            .background { HoneyLedgerPaper(sunken: sunken) }
     }
 
     /// Sets this screen's large and inline titles in New York semibold `ink`,
@@ -39,9 +41,11 @@ extension View {
             .listRowSeparatorTint(Color.rule)
     }
 
-    /// `listDetailRow` on the ledger's paper: a selected row is honey, the rest
-    /// sit on the raised sheet with a rule between them. Each row draws its own
-    /// piece of the sheet's edge, so it needs to know where in the list it is.
+    /// A row of a list that can sit beside its detail: a selected row is honey,
+    /// the rest sit on the raised sheet with a rule between them. Each row draws
+    /// its own piece of the sheet's edge, so it needs to know where in the list
+    /// it is. A button row rather than `List(selection:)`, which on iPadOS 26
+    /// draws a bordered capsule no row background can hide.
     func ledgerListDetailRow(isSelected: Bool, position: LedgerSheetPosition) -> some View {
         listRowBackground(LedgerSheetRowBackground(position: position, isSelected: isSelected))
             .listRowSeparatorTint(Color.rule)
@@ -79,9 +83,11 @@ struct DoubleRule: View {
 struct HoneyLedgerPaper: View {
     @Environment(\.colorScheme) private var colorScheme
 
+    var sunken = false
+
     var body: some View {
         ZStack {
-            Color.paper
+            sunken ? Color.paperSunken : Color.paper
             Image(uiImage: PaperGrain.tile)
                 .resizable(resizingMode: .tile)
                 .foregroundStyle(Color.ink)
