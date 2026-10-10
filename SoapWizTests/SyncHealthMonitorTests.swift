@@ -9,16 +9,15 @@ final class SyncHealthMonitorTests {
 
     /// A throwaway suite per test, so nothing leaks into `.standard` or between
     /// tests. `nonisolated` so `deinit` can tear it down again.
-    nonisolated private let defaults: UserDefaults
-    nonisolated private let suiteName: String
+    nonisolated private let temp: TemporaryDefaults
+    private var defaults: UserDefaults { temp.defaults }
 
     init() throws {
-        suiteName = "SyncHealthMonitorTests.\(UUID().uuidString)"
-        defaults = try #require(UserDefaults(suiteName: suiteName))
+        temp = try TemporaryDefaults(prefix: "SyncHealthMonitorTests")
     }
 
     deinit {
-        defaults.removePersistentDomain(forName: suiteName)
+        temp.remove()
     }
 
     @Test func health_MirroredLaunch_StartsUndecidedRatherThanHealthy() {

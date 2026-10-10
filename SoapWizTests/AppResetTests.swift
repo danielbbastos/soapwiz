@@ -96,9 +96,9 @@ struct AppResetTests: BackupTestHelpers {
     // MARK: - Device state
 
     @Test func clearDeviceState_AcknowledgedLyeNotice_AsksAgain() throws {
-        let suiteName = "AppResetTests.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let temp = try TemporaryDefaults(prefix: "AppResetTests")
+        defer { temp.remove() }
+        let defaults = temp.defaults
         LyeSafetyAcknowledgment(defaults: defaults).acknowledge()
 
         AppReset.clearDeviceState(defaults: defaults, rollbackDirectory: nil)
@@ -108,9 +108,9 @@ struct AppResetTests: BackupTestHelpers {
 
     /// The sync choice describes the device, not the user's data.
     @Test func clearDeviceState_SyncTurnedOff_StaysOff() throws {
-        let suiteName = "AppResetTests.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let temp = try TemporaryDefaults(prefix: "AppResetTests")
+        defer { temp.remove() }
+        let defaults = temp.defaults
         SyncPreference(defaults: defaults).usesOffline = true
 
         AppReset.clearDeviceState(defaults: defaults, rollbackDirectory: nil)
@@ -119,9 +119,9 @@ struct AppResetTests: BackupTestHelpers {
     }
 
     @Test func clearDeviceState_RollbackFiles_RemovesOnlyThose() throws {
-        let suiteName = "AppResetTests.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suiteName))
-        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let temp = try TemporaryDefaults(prefix: "AppResetTests")
+        defer { temp.remove() }
+        let defaults = temp.defaults
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("AppResetTests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
