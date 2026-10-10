@@ -36,9 +36,11 @@ extension View {
     }
 
     /// A row's share of the ledger sheet, unselected, with a rule between rows.
-    func ledgerSheetRow(position: LedgerSheetPosition) -> some View {
-        listRowBackground(LedgerSheetRowBackground(position: position, isSelected: false))
-            .listRowSeparatorTint(Color.rule)
+    /// A row that is a button lights up while it is pressed; see
+    /// `LedgerSheetRowModifier`. Pass `navigates` for a row whose root is a
+    /// `NavigationLink`, which can't report its press any other way.
+    func ledgerSheetRow(position: LedgerSheetPosition, navigates: Bool = false) -> some View {
+        modifier(LedgerSheetRowModifier(position: position, isSelected: false, navigates: navigates))
     }
 
     /// A row of a list that can sit beside its detail: a selected row is honey,
@@ -47,8 +49,7 @@ extension View {
     /// it is. A button row rather than `List(selection:)`, which on iPadOS 26
     /// draws a bordered capsule no row background can hide.
     func ledgerListDetailRow(isSelected: Bool, position: LedgerSheetPosition) -> some View {
-        listRowBackground(LedgerSheetRowBackground(position: position, isSelected: isSelected))
-            .listRowSeparatorTint(Color.rule)
+        modifier(LedgerSheetRowModifier(position: position, isSelected: isSelected, navigates: false))
             .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

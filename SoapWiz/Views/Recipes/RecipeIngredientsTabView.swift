@@ -184,7 +184,6 @@ struct RecipeIngredientsTabView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
         }
-        .buttonStyle(.plain)
     }
 
     /// The running total of the percentage scale, under the sheet. Plain once it

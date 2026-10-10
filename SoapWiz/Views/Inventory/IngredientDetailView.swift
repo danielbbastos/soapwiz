@@ -37,9 +37,10 @@ struct IngredientDetailView: View {
     private func sheetRow<Content: View>(
         _ index: Int,
         of count: Int,
+        navigates: Bool = false,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        content().ledgerSheetRow(position: .position(index: index, count: count))
+        content().ledgerSheetRow(position: .position(index: index, count: count), navigates: navigates)
     }
 
     /// A tappable section header with a rotating chevron. Used instead of the
@@ -197,7 +198,7 @@ struct IngredientDetailView: View {
                     let displayed = model.displayedPurchases(showingAll: showAllPurchases)
                     let rowCount = displayed.count + (model.hasMorePurchases ? 1 : 0)
                     ForEach(Array(displayed.enumerated()), id: \.element.id) { index, purchase in
-                        sheetRow(index, of: rowCount) {
+                        sheetRow(index, of: rowCount, navigates: true) {
                             NavigationLink(destination: PurchaseDetailView(purchase: purchase)) {
                                 PurchaseRowView(purchase: purchase, unit: model.ingredient.unit)
                             }

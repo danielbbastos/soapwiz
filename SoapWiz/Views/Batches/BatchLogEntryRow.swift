@@ -54,6 +54,8 @@ struct BatchLogEntryRow: View {
             Image(systemName: "ellipsis.circle")
                 .foregroundStyle(Color.inkSoft)
         }
+        // The row's menu style would stretch this across the row and override the borderless style.
+        .menuStyle(.automatic)
         .buttonStyle(.borderless)
         .accessibilityLabel("Entry Actions")
     }

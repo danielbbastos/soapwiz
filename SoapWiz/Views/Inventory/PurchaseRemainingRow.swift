@@ -73,6 +73,8 @@ struct PurchaseRemainingRow: View {
                     .focused($amountFocused)
                     .onSubmit { model.commitEdit() }
                 Button("Done") { model.commitEdit() }
+                    // Borderless, or the row's style stretches it to share the width with the field.
+                    .buttonStyle(.borderless)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.amberText)
             }

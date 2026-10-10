@@ -242,15 +242,15 @@ struct SettingsView: View {
             NavigationLink(destination: CategoryListView()) {
                 countRow("Categories", count: categories.count)
             }
-            .ledgerSheetRow(position: .first)
+            .ledgerSheetRow(position: .first, navigates: true)
             NavigationLink(destination: StorageLocationListView()) {
                 countRow("Storage Locations", count: locations.count)
             }
-            .ledgerSheetRow(position: .middle)
+            .ledgerSheetRow(position: .middle, navigates: true)
             NavigationLink(destination: ProviderListView()) {
                 countRow("Providers", count: providers.count)
             }
-            .ledgerSheetRow(position: .last)
+            .ledgerSheetRow(position: .last, navigates: true)
         } header: {
             HoneyLedgerSectionLabel("Inventory")
         }
@@ -264,7 +264,7 @@ struct SettingsView: View {
             NavigationLink(destination: RecipeCollectionListView()) {
                 countRow("Collections", count: collections.count)
             }
-            .ledgerSheetRow(position: .only)
+            .ledgerSheetRow(position: .only, navigates: true)
         } header: {
             HoneyLedgerSectionLabel("Recipes")
         }
@@ -273,7 +273,7 @@ struct SettingsView: View {
     private func pricingSection(_ settings: AppSettings) -> some View {
         Section {
             CurrencyPickerRow(settings: settings)
-                .ledgerSheetRow(position: .first)
+                .ledgerSheetRow(position: .first, navigates: true)
             HStack {
                 Text("RRP factor")
                     .foregroundStyle(Color.ink)
@@ -335,7 +335,7 @@ struct SettingsView: View {
             NavigationLink(destination: LyeSafetyScreen()) {
                 linkLabel("Lye Safety", systemImage: "exclamationmark.triangle")
             }
-            .ledgerSheetRow(position: .middle)
+            .ledgerSheetRow(position: .middle, navigates: true)
             Link(destination: AppLinks.privacyPolicy) {
                 linkLabel("Privacy Policy", systemImage: "hand.raised")
             }
