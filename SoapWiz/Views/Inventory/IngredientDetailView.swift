@@ -170,7 +170,7 @@ struct IngredientDetailView: View {
             }
 
             if tracksInventory {
-                FloatingActionButton(tint: .glassAmber, ink: .onAmber) { navigation.detailSheetRequest = .addPurchase(model.ingredient) }
+                FloatingActionButton { navigation.detailSheetRequest = .addPurchase(model.ingredient) }
             }
         }
         // On appear for a merge that landed while this screen was pushed but not
