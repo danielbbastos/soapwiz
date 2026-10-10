@@ -9,6 +9,10 @@ import SwiftUI
 struct RecipeFragrancesHeaderRow: View {
     let model: RecipeFormViewModel
 
+    /// The height of the amount field in the fragrance rows under this one,
+    /// which is a little taller than a line of text.
+    @ScaledMetric(relativeTo: .body) private var amountFieldHeight: CGFloat = 22
+
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack {
@@ -17,6 +21,7 @@ struct RecipeFragrancesHeaderRow: View {
                 unitMenu
                     .fixedSize()
             }
+            .frame(minHeight: amountFieldHeight)
             VStack(alignment: .leading) {
                 targetLabel(keepsNaturalWidth: false)
                 unitMenu
@@ -32,7 +37,10 @@ struct RecipeFragrancesHeaderRow: View {
                 Text(target.text)
                     .lineLimit(keepsNaturalWidth ? 1 : nil)
                     .foregroundStyle(target.isOverTarget ? Color.danger : Color.inkSoft)
+                // Its tap padding would make this row taller than the
+                // fragrance rows under it.
                 InfoPopoverIcon(text: targetInfoText(for: target))
+                    .padding(.vertical, -InfoPopoverIcon.tapPadding)
             }
         } else {
             Text("Unit")
@@ -44,7 +52,8 @@ struct RecipeFragrancesHeaderRow: View {
     /// A menu picker rather than a `Menu`, which keeps its label at the old
     /// value's width while it closes and squeezes a longer unit. Tinted `ink`,
     /// since the picker draws its value in the tint and amber is only ever a
-    /// fill.
+    /// fill. Laid out at the line's height, so this row is no taller than the
+    /// fragrance rows under it.
     private var unitMenu: some View {
         Picker("Unit", selection: Binding(
             get: { model.fragranceUnit },
@@ -55,6 +64,7 @@ struct RecipeFragrancesHeaderRow: View {
         .labelsHidden()
         .pickerStyle(.menu)
         .tint(Color.ink)
+        .menuPickerLineHeight()
     }
 
     private func targetInfoText(for target: FragranceTarget) -> String {

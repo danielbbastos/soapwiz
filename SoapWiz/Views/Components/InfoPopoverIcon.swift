@@ -8,6 +8,10 @@ struct InfoPopoverIcon: View {
 
     @State private var isPresented = false
 
+    /// The glyph alone is a ~13pt target; this padding makes it reachable
+    /// without changing how it looks.
+    static let tapPadding: CGFloat = 6
+
     var body: some View {
         Button {
             isPresented = true
@@ -15,9 +19,7 @@ struct InfoPopoverIcon: View {
             Image(systemName: systemImage)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-                // The glyph alone is a ~13pt target; the padding makes it
-                // reachable without changing how it looks.
-                .padding(6)
+                .padding(Self.tapPadding)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
