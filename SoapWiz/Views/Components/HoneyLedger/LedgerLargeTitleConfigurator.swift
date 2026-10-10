@@ -176,12 +176,14 @@ struct LedgerLargeTitleConfigurator: UIViewControllerRepresentable {
             if #unavailable(iOS 26) { reportTitleLeading() }
         }
 
-        /// Hears the bar resize (rotation, a split-view change), which moves
-        /// the title without laying this view out.
+        /// Hears the bar's width change (rotation, a split-view change), which
+        /// moves the title without laying this view out. Height changes are
+        /// ignored: a large-title bar changes height every frame as it collapses.
         private func observe(_ bar: UINavigationBar) {
             guard observedBar !== bar else { return }
             observedBar = bar
-            boundsObservation = bar.layer.observe(\.bounds) { [weak self] _, _ in
+            boundsObservation = bar.layer.observe(\.bounds, options: [.old, .new]) { [weak self] _, change in
+                guard change.oldValue?.width != change.newValue?.width else { return }
                 Task { @MainActor in
                     self?.observedBar?.layoutIfNeeded()
                     self?.reportTitleLeading()
