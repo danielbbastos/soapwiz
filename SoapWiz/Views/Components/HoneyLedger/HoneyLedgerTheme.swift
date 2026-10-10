@@ -1,8 +1,6 @@
 import SwiftUI
 
-// The Honey Ledger look, adopted screen by screen. Kept beside the warm helpers
-// in View+Appearance.swift rather than replacing them, so a screen that hasn't
-// moved over looks exactly as it did.
+// The Honey Ledger look, the app's only look.
 extension View {
     /// `sunken` lays the screen on `paperSunken`, a step below the paper: a
     /// list sitting beside its detail on a wide window, underneath it.

@@ -1,21 +1,10 @@
 import SwiftUI
 
 extension CollectionColor {
-    /// The chip's accent. `neutral` follows the app tint so a collection with no
-    /// colour still reads as selectable rather than disabled.
-    var tint: Color {
-        switch self {
-        case .neutral: Color("AccentColor")
-        case .red:     .red
-        case .orange:  .orange
-        case .yellow:  .yellow
-        case .green:   .green
-        case .teal:    .teal
-        case .blue:    .blue
-        case .purple:  .purple
-        case .pink:    .pink
-        }
-    }
+    /// The colour drawn for the collection in Settings and pickers, the same
+    /// pigment as its chip dot. `neutral` falls back to the app accent so it
+    /// still reads as selectable.
+    var swatch: Color { pigment ?? Color("AccentColor") }
 
     /// The ledger's pigment for the collection's dot, nil for `neutral`, which
     /// shows none.
