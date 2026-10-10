@@ -2,6 +2,8 @@ import SwiftUI
 
 /// A whole-row action on a ledger sheet: `amberText` semibold when it is the
 /// step forward, `ink` when it is the way back, and `inkFaint` while disabled.
+/// It sets no button style, so the row's `ledgerSheetRow` lights it while
+/// pressed.
 struct HoneyLedgerActionRow: View {
     @Environment(\.isEnabled) private var isEnabled
 
@@ -16,6 +18,10 @@ struct HoneyLedgerActionRow: View {
         self.isPrimary = isPrimary
         self.action = action
     }
+
+    /// What a plain button style dims a disabled label to, which this row drew
+    /// before it took the row's own style.
+    private static let disabledOpacity = 0.5
 
     private var color: Color {
         guard isEnabled else { return .inkFaint }
@@ -33,9 +39,9 @@ struct HoneyLedgerActionRow: View {
             }
             .fontWeight(isPrimary ? .semibold : .regular)
             .foregroundStyle(color)
+            .opacity(isEnabled ? 1 : Self.disabledOpacity)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(.rect)
         }
-        .buttonStyle(.plain)
     }
 }

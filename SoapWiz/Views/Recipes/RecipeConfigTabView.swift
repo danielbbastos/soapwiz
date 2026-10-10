@@ -60,9 +60,10 @@ struct RecipeConfigTabView: View {
     private func sheetRow<Content: View>(
         _ index: Int,
         of count: Int,
+        navigates: Bool = false,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        content().ledgerSheetRow(position: .position(index: index, count: count))
+        content().ledgerSheetRow(position: .position(index: index, count: count), navigates: navigates)
     }
 
     private var detailsSection: some View {
@@ -147,7 +148,6 @@ struct RecipeConfigTabView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(.rect)
                     }
-                    .buttonStyle(.plain)
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
@@ -184,8 +184,12 @@ struct RecipeConfigTabView: View {
                 }
                 sheetRow(4, of: count) { percentRow("KOH purity", value: $model.kohPurity, prompt: "90") }
                 sheetRow(5, of: count) { percentRow("NaOH purity", value: $model.naohPurity, prompt: "99") }
-                sheetRow(6, of: count) { lyeIngredientRow("KOH ingredient", selected: $model.kohLyeIngredient) }
-                sheetRow(7, of: count) { lyeIngredientRow("NaOH ingredient", selected: $model.lyeIngredient) }
+                sheetRow(6, of: count, navigates: true) {
+                    lyeIngredientRow("KOH ingredient", selected: $model.kohLyeIngredient)
+                }
+                sheetRow(7, of: count, navigates: true) {
+                    lyeIngredientRow("NaOH ingredient", selected: $model.lyeIngredient)
+                }
             } else {
                 sheetRow(1, of: count) {
                     HoneyLedgerSegmented(
@@ -195,7 +199,7 @@ struct RecipeConfigTabView: View {
                     )
                 }
                 sheetRow(2, of: count) { soapTypeRow }
-                sheetRow(3, of: count) {
+                sheetRow(3, of: count, navigates: true) {
                     lyeIngredientRow(
                         "Lye ingredient",
                         selected: model.lyeType == "KOH" ? $model.kohLyeIngredient : $model.lyeIngredient

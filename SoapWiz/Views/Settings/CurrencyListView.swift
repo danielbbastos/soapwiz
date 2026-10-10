@@ -89,7 +89,6 @@ struct CurrencyListView: View {
             }
             .contentShape(.rect)
         }
-        .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

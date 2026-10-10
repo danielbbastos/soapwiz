@@ -32,12 +32,47 @@ enum LedgerSheetPosition: Equatable {
     }
 }
 
+/// What fills a row of the ledger sheet. Pressed is a honey wash pre-mixed over
+/// the raised paper, 35% in light mode and 50% in dark, chosen so the pressed
+/// row stands out from a plain one by the same contrast in both. A finger on a
+/// row reads as the first step towards selecting it: darker than the paper in
+/// light mode and lighter in dark, as the system's own row highlight is. The
+/// whole row takes the colour at once. A selected row stays honey while
+/// pressed.
+enum LedgerSheetRowFill: Equatable {
+    case raised, pressed, selected
+
+    init(isSelected: Bool, isPressed: Bool) {
+        if isSelected {
+            self = .selected
+        } else if isPressed {
+            self = .pressed
+        } else {
+            self = .raised
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .raised: Color.paperRaised
+        case .pressed: Color.honeyPressed
+        case .selected: Color.honey
+        }
+    }
+}
+
 /// One row's share of the ledger sheet: the `paperRaised` fill (honey when
-/// selected), with continuous corners where the sheet turns, and the 1pt `rule`
-/// edge on the sides and, at the ends of the sheet, the top or bottom.
+/// selected, pressed honey while pressed), with continuous corners where the
+/// sheet turns, and the 1pt `rule` edge on the sides and, at the ends of the
+/// sheet, the top or bottom.
 struct LedgerSheetRowBackground: View {
     let position: LedgerSheetPosition
     let isSelected: Bool
+    var isPressed = false
+
+    private var fill: LedgerSheetRowFill {
+        LedgerSheetRowFill(isSelected: isSelected, isPressed: isPressed)
+    }
 
     /// Not the design system's 18pt: the inset-grouped list masks its section
     /// with its own corner radius and clips whatever a row draws outside it,
@@ -57,7 +92,7 @@ struct LedgerSheetRowBackground: View {
             style: .continuous
         )
         shape
-            .fill(isSelected ? Color.honey : Color.paperRaised)
+            .fill(fill.color)
             .overlay {
                 // The whole outline, grown a point past the row where the sheet
                 // doesn't end, so the top or bottom stroke falls outside the

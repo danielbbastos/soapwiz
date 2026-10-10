@@ -24,8 +24,8 @@ struct RecipeListView: View {
     /// A `Button` rather than a `NavigationLink` purely to drop the disclosure
     /// chevron: a link used as a row's root always draws one, and there is no
     /// modifier to suppress it. The push is the same, just issued by hand.
-    /// `.plain` keeps the row from taking on button tinting; the star inside
-    /// stays tappable because it is `.borderless`.
+    /// No button style of its own, so the row takes the sheet's and lights
+    /// while pressed; the star inside stays tappable as it's `.borderless`.
     private func row(_ recipe: Recipe, position: LedgerSheetPosition) -> some View {
         Button {
             if model.isSelecting {
@@ -49,7 +49,6 @@ struct RecipeListView: View {
             // touch — a `NavigationLink` row was tappable across the whole cell.
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
         // Deleting and filing are single-recipe actions, and offering them while
         // the user is ticking a set to share reads as though they would apply to
         // the set. They come back when the mode ends.
@@ -58,6 +57,8 @@ struct RecipeListView: View {
                 Button("Delete", role: .destructive) {
                     delete(recipe)
                 }
+                // The sheet's row style here stops the list offering the swipe.
+                .buttonStyle(.automatic)
             }
         }
         .contextMenu {

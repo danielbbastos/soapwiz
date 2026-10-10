@@ -64,7 +64,7 @@ struct InventoryFilterView: View {
                                 Text.honeyLedgerFigure("\(hiddenIngredients.count)")
                             }
                         }
-                        .ledgerSheetRow(position: .only)
+                        .ledgerSheetRow(position: .only, navigates: true)
                     } footer: {
                         Text("Hidden ingredients stay out of Inventory and out of recipe ingredient pickers. Unhide one to use it again.")
                             .font(.footnote)
