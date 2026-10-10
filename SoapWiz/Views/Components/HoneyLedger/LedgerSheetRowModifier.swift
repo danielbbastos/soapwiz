@@ -13,6 +13,7 @@ import SwiftUI
 ///
 /// A `NavigationLink` row ignores button styles, so with `navigates` the row
 /// lights from the tracker instead, once a finger has held still for a moment.
+/// The tracker is only installed for those rows.
 ///
 /// A quick tap is over before a list reports it as a press, so the row
 /// flashes once its action fires instead: for a button when the button
@@ -31,7 +32,7 @@ struct LedgerSheetRowModifier: ViewModifier {
     private static let flashDuration: Duration = .milliseconds(150)
 
     private var isPressed: Bool {
-        isButtonPressed || flashCount > 0 || (navigates && isTouchHeld)
+        isButtonPressed || flashCount > 0 || isTouchHeld
     }
 
     func body(content: Content) -> some View {
@@ -45,17 +46,19 @@ struct LedgerSheetRowModifier: ViewModifier {
                     isPressed: isPressed
                 )
                 .background {
-                    LedgerRowTouchTracker(
-                        onHold: { isTouchHeld = true },
-                        onEnd: { isTap in
-                            if navigates && isTap {
-                                flash()
+                    if navigates {
+                        LedgerRowTouchTracker(
+                            onHold: { isTouchHeld = true },
+                            onEnd: { isTap in
+                                if isTap {
+                                    flash()
+                                }
+                                withAnimation(HoneyLedgerRowButtonStyle.release) {
+                                    isTouchHeld = false
+                                }
                             }
-                            withAnimation(HoneyLedgerRowButtonStyle.release) {
-                                isTouchHeld = false
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             )
             .listRowSeparatorTint(Color.rule)
