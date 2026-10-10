@@ -68,10 +68,11 @@ struct MoldCalculatorView: View {
                 fillSection
                 resultSection
             }
-            .warmBackground()
+            .environment(\.defaultMinListRowHeight, 48)
+            .ledgerBackground()
             .navigationTitle("Mold Calculator")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Mold Calculator")
+            .honeyLedgerInlineTitle("Mold Calculator")
             .onChange(of: lengthUnit) { _, newUnit in convertDimensions(to: newUnit) }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -86,85 +87,97 @@ struct MoldCalculatorView: View {
     }
 
     private var shapeSection: some View {
-        Section("Shape") {
-            Picker("Shape", selection: $shape) {
-                ForEach(MoldShape.allCases) { Text($0.label).tag($0) }
-            }
-            .pickerStyle(.segmented)
+        Section {
+            HoneyLedgerSegmented(
+                "Shape",
+                selection: $shape,
+                options: MoldShape.allCases.map { ($0, $0.label) }
+            )
+            .ledgerSheetRow(position: .only)
+        } header: {
+            HoneyLedgerSectionLabel("Shape")
         }
-        .listRowBackground(Color.cardBackground)
     }
 
-    @ViewBuilder
+    /// The unit row, then the shape's own dimensions: three for a box, two for
+    /// a cylinder.
     private var dimensionsSection: some View {
-        Section("Dimensions") {
+        Section {
+            let count = shape == .rectangular ? 4 : 3
             HStack {
                 Text("Measured in")
-                Spacer()
-                Picker("Unit", selection: $lengthUnit) {
-                    ForEach(MoldLengthUnit.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .tint(.primary)
+                    .foregroundStyle(Color.ink)
+                Spacer(minLength: 16)
+                HoneyLedgerSegmented(
+                    "Measured in",
+                    selection: $lengthUnit,
+                    options: MoldLengthUnit.allCases.map { ($0, $0.rawValue) }
+                )
+                .frame(maxWidth: 160)
             }
-
+            // The control's own guide would start the separator under it.
+            .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+            .ledgerSheetRow(position: .position(index: 0, count: count))
             switch shape {
             case .rectangular:
                 dimensionField("Length", value: $dimensions.length)
+                    .ledgerSheetRow(position: .position(index: 1, count: count))
                 dimensionField("Width", value: $dimensions.width)
+                    .ledgerSheetRow(position: .position(index: 2, count: count))
                 dimensionField("Depth", value: $dimensions.depth)
+                    .ledgerSheetRow(position: .position(index: 3, count: count))
             case .cylindrical:
                 dimensionField("Diameter", value: $dimensions.diameter)
+                    .ledgerSheetRow(position: .position(index: 1, count: count))
                 dimensionField("Depth", value: $dimensions.depth)
+                    .ledgerSheetRow(position: .position(index: 2, count: count))
             }
+        } header: {
+            HoneyLedgerSectionLabel("Dimensions")
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private func dimensionField(_ label: String, value: Binding<Double>) -> some View {
-        HStack {
-            Text(label)
-                .layoutPriority(1)
-            NumericTextField(prompt: "0", value: value, fractionLength: 0...2, width: 80, fillsAvailableWidth: true)
-            Text(lengthUnit.rawValue)
-                .foregroundStyle(.secondary)
-                .fixedSize()
+        HoneyLedgerField(label, unit: lengthUnit.rawValue) { focus in
+            NumericTextField(prompt: "0", value: value, fractionLength: 0...2, width: 80,
+                             fillsAvailableWidth: true, focus: focus)
         }
     }
 
     private var fillSection: some View {
         Section {
-            HStack {
-                Text("Fill")
-                InfoPopoverIcon(title: "Fill", text: fillExplanation)
-                Spacer()
-                Picker("Fill", selection: $fillMode) {
-                    ForEach(MoldFillMode.allCases) { Text($0.label).tag($0) }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 4) {
+                    Text("Fill")
+                        .foregroundStyle(Color.ink)
+                    InfoPopoverIcon(title: "Fill", text: fillExplanation)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .tint(.primary)
+                HoneyLedgerSegmented(
+                    "Fill",
+                    selection: $fillMode,
+                    options: MoldFillMode.allCases.map { ($0, $0.label) }
+                )
             }
+            .padding(.vertical, 4)
+            .ledgerSheetRow(position: .only)
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private var resultSection: some View {
         Section {
-            HStack {
-                Text("Recommended oil weight")
-                Spacer()
+            HoneyLedgerLabeledRow("Recommended oil weight") {
                 if let weight = recommendedWeight {
-                    Text("\(weight.formatted(.number.precision(.fractionLength(0...1)))) \(oilWeightUnit)")
-                        .fontWeight(.semibold)
+                    Text.honeyLedgerFigure(
+                        weight.formatted(.number.precision(.fractionLength(0...1))),
+                        unit: oilWeightUnit
+                    )
                 } else {
                     Text("—")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.inkFaint)
                 }
             }
+            .ledgerSheetRow(position: .only)
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     private var useWeightButton: some View {

@@ -12,44 +12,52 @@ struct ProviderListView: View {
         ZStack(alignment: .bottomTrailing) {
             Group {
                 if providers.isEmpty {
-                    ContentUnavailableView(
+                    HoneyLedgerEmptyState(
                         "No Providers",
                         systemImage: "shippingbox",
-                        description: Text("Tap + to add your first provider.")
+                        description: "Tap + to add your first provider."
                     )
                 } else {
                     List {
-                        ForEach(providers) { provider in
-                            Button {
-                                model.providerToEdit = provider
-                            } label: {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack {
-                                        Text(provider.name)
-                                            .foregroundStyle(.primary)
-                                        Spacer()
-                                        Text("\(provider.purchases.count)")
-                                            .foregroundStyle(.secondary)
-                                            .font(.subheadline)
-                                    }
-                                    if !provider.website.isEmpty {
-                                        Text(provider.website)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
+                        Section {
+                            ForEach(Array(providers.enumerated()), id: \.element.id) { index, provider in
+                                Button {
+                                    model.providerToEdit = provider
+                                } label: {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        HStack {
+                                            Text(provider.name)
+                                                .foregroundStyle(Color.ink)
+                                            Spacer()
+                                            Text("\(provider.purchases.count)")
+                                                .foregroundStyle(Color.inkSoft)
+                                                .font(.subheadline)
+                                                .monospacedDigit()
+                                        }
+                                        if !provider.website.isEmpty {
+                                            Text(provider.website)
+                                                .font(.caption)
+                                                .foregroundStyle(Color.inkSoft)
+                                        }
                                     }
                                 }
+                                .ledgerSheetRow(position: .position(index: index, count: providers.count))
                             }
+                            .onDelete { model.delete(at: $0, in: providers, context: modelContext) }
+                        } header: {
+                            // The List's first-header inset leaves the ornament lower than
+                            // centred; it clamps this negative padding to about 7pt up.
+                            HoneyLedgerOrnament()
+                                .padding(.top, -10)
                         }
-                        .onDelete { model.delete(at: $0, in: providers, context: modelContext) }
-                        .listRowBackground(Color.cardBackground)
                     }
                 }
             }
             .readableWidth()
             .navigationTitle("Providers")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Providers")
-            .warmBackground()
+            .honeyLedgerInlineTitle("Providers")
+            .ledgerBackground()
 
             if editMode?.wrappedValue != .active {
                 FloatingActionButton { model.showingAddProvider = true }

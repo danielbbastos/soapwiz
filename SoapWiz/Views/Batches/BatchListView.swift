@@ -19,15 +19,14 @@ struct BatchListView: View {
     /// A `Button` rather than a `NavigationLink(value:)`, so every open goes
     /// through `show(_:)` and the selection survives a width change. The
     /// chevron a link would draw is left out, as on the other lists.
-    private func row(_ batch: Batch) -> some View {
+    private func row(_ batch: Batch, position: LedgerSheetPosition) -> some View {
         Button {
             navigation.history.show(batch)
         } label: {
             BatchRowView(batch: batch)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .listDetailRow(isSelected: navigation.history.isOpenBeside(batch))
+        .ledgerListDetailRow(isSelected: navigation.history.isOpenBeside(batch), position: position)
     }
 
     var body: some View {
@@ -37,22 +36,27 @@ struct BatchListView: View {
             navigation: navigation.history,
             placeholder: "Select a Batch",
             placeholderSymbol: "clock.arrow.circlepath",
+            placeholderDescription: "Choose a batch from the list to see its record here.",
             hasItems: !displayed.isEmpty
         ) {
             Group {
                 if batches.isEmpty {
-                    ContentUnavailableView(
+                    HoneyLedgerEmptyState(
                         "No Batches",
                         systemImage: "clock.arrow.circlepath",
-                        description: Text("Batches you produce from a recipe will appear here.")
+                        description: "Batches you produce from a recipe will appear here."
                     )
                 } else if displayed.isEmpty {
                     ContentUnavailableView.search(text: searchText)
                 } else {
                     List {
                         ForEach(displayed) { section in
-                            Section(section.title) {
-                                ForEach(section.batches) { row($0) }
+                            Section {
+                                ForEach(Array(section.batches.enumerated()), id: \.element.id) { index, batch in
+                                    row(batch, position: .position(index: index, count: section.batches.count))
+                                }
+                            } header: {
+                                HoneyLedgerSectionLabel(section.title)
                             }
                         }
                     }
@@ -60,9 +64,9 @@ struct BatchListView: View {
             }
             .readableWidth()
             .navigationTitle("History")
-            .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("History")
-            .warmBackground()
+            .navigationBarTitleDisplayMode(.large)
+            .ledgerLargeTitle(subtitle: BatchCountSummary(counting: batches).line)
+            .ledgerBackground(sunken: navigation.history.isWide)
             .searchHeader("Search batches", text: $searchText, showsList: !displayed.isEmpty)
             .navigationDestination(for: Batch.self) { batch in
                 BatchDetailView(batch: batch)

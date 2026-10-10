@@ -19,12 +19,13 @@ struct BatchLogEntryRow: View {
             HStack {
                 Text(entry.date.formatted(date: .abbreviated, time: .shortened))
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+                    .foregroundStyle(Color.inkSoft)
                 Spacer()
                 menu
             }
             if !entry.text.isEmpty {
-                Text(entry.text)
+                HoneyLedgerNote(entry.text)
             }
             if !photos.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -51,8 +52,10 @@ struct BatchLogEntryRow: View {
             }
         } label: {
             Image(systemName: "ellipsis.circle")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSoft)
         }
+        // The row's menu style would stretch this across the row and override the borderless style.
+        .menuStyle(.automatic)
         .buttonStyle(.borderless)
         .accessibilityLabel("Entry Actions")
     }
@@ -63,7 +66,7 @@ struct BatchLogEntryRow: View {
             onOpenPhoto(index)
         } label: {
             shape
-                .fill(Color.accentColor.opacity(0.12))
+                .fill(Color.honey)
                 .frame(width: Self.thumbnailSide, height: Self.thumbnailSide)
                 .overlay {
                     if let image = photo.thumbnailData.flatMap(UIImage.init(data:)) {

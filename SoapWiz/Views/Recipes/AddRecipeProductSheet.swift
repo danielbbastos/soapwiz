@@ -47,26 +47,26 @@ struct AddRecipeProductSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    LabeledContent("Size") {
+                    HoneyLedgerField("Size") { focus in
                         NumericTextField(
                             prompt: "Size", value: $draft.size, width: 80, fillsAvailableWidth: true,
-                            allowsDecimals: unit != .partsOfBatch
+                            allowsDecimals: unit != .partsOfBatch, focus: focus
                         )
                     }
-                    Picker("Unit", selection: unitSelection) {
-                        ForEach(Self.availableUnits, id: \.self) { unit in
-                            Text(unit.label).tag(unit)
-                        }
-                    }
+                    .ledgerSheetRow(position: .first)
+                    unitMenu
+                        .ledgerSheetRow(position: .last)
                 } footer: {
                     Text(footerText)
+                        .font(.footnote)
+                        .foregroundStyle(Color.inkSoft)
                 }
-                .listRowBackground(Color.cardBackground)
             }
+            .environment(\.defaultMinListRowHeight, 48)
             .navigationTitle("Add Size")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Add Size")
-            .warmBackground()
+            .honeyLedgerInlineTitle("Add Size")
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -81,5 +81,20 @@ struct AddRecipeProductSheet: View {
             }
             .interactiveDismissDisabled(hasChanges)
         }
+    }
+
+    /// A menu rather than a `Picker`: a menu picker draws its value in the
+    /// accent colour, and amber is only ever a fill.
+    private var unitMenu: some View {
+        Menu {
+            ForEach(Self.availableUnits, id: \.self) { option in
+                Button { unitSelection.wrappedValue = option } label: {
+                    MenuSelectionLabel(option.label, isSelected: unit == option)
+                }
+            }
+        } label: {
+            PickerMenuRowLabel(title: "Unit", value: unit.label)
+        }
+        .tint(.primary)
     }
 }

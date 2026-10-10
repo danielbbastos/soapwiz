@@ -61,41 +61,6 @@ struct FattyAcidTotalsRows: View {
         + "set firmer. 41–70 is the usual target for a blend of soft and hard fats."
 }
 
-/// The fatty acid sections shared by the Stats tab and the recipe detail.
-/// Emits `Section`s, so it must sit directly inside a `List` or `Form`.
-///
-/// Shown for both kinds. A non-soap recipe carries the iodine value here,
-/// since it has no Soap properties section to host it.
-///
-/// When the explanation stands in for the profile is decided by
-/// `RecipeStats.showsMissingFattyAcidExplanation`.
-struct FattyAcidProfileSections: View {
-    let stats: RecipeStats
-
-    /// Applied to every section's rows; `nil` keeps the container's default.
-    var rowBackground: Color?
-
-    @ViewBuilder
-    var body: some View {
-        if stats.hasFattyAcidData {
-            Section("Fatty acid profile") {
-                FattyAcidBreakdownRows(stats: stats)
-            }
-            .listRowBackground(rowBackground)
-            Section(RecipeStatsCopy.totalsHeader) {
-                FattyAcidTotalsRows(stats: stats, showsIodine: !stats.makesSoap)
-            }
-            .listRowBackground(rowBackground)
-        } else if stats.showsMissingFattyAcidExplanation {
-            Section("Fatty acid profile") {
-                Text(RecipeStatsCopy.noFattyAcidData)
-                    .foregroundStyle(.secondary)
-            }
-            .listRowBackground(rowBackground)
-        }
-    }
-}
-
 private struct FattyAcidRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -131,15 +96,17 @@ private struct FattyAcidRow: View {
     private var name: some View {
         Text(label)
             .fontWeight(emphasis ? .semibold : .regular)
+            .foregroundStyle(Color.ink)
     }
 
     private var percentage: some View {
         HStack(spacing: 8) {
             Text(value, format: .number.precision(.fractionLength(2)))
+                .fontWeight(.medium)
                 .monospacedDigit()
-                .foregroundStyle(emphasis ? .primary : .secondary)
+                .foregroundStyle(emphasis ? Color.ink : Color.inkSoft)
             Text("%")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSoft)
         }
     }
 }

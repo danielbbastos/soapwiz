@@ -3,7 +3,7 @@ import SwiftUI
 /// One Inventory row with its tap, swipe and selection handling.
 ///
 /// A view of its own rather than a function of the list, so that a refresh of
-/// the list only compares three references per row: the list refreshes on every
+/// the list only compares three references and a position per row: the list refreshes on every
 /// save to the store, and an iCloud import saves many times a second (SW-219).
 /// Each row then redraws only when something it reads has changed.
 ///
@@ -19,12 +19,13 @@ struct IngredientListRow: View {
     let ingredient: Ingredient
     let model: IngredientListViewModel
     let navigation: ListDetailNavigation<Ingredient>
+    let position: LedgerSheetPosition
 
     var body: some View {
         let content = IngredientRowView(ingredient: ingredient, model: model)
         if model.editMode == .active {
             content
-                .listRowBackground(Color.cardBackground)
+                .ledgerSheetRow(position: position)
         } else {
             Button {
                 navigation.show(ingredient)
@@ -36,25 +37,32 @@ struct IngredientListRow: View {
                 content
                     .contentShape(Rectangle())
             }
-            // Keeps the row from taking on button tinting; the star inside stays
-            // tappable because it is `.borderless`.
-            .buttonStyle(.plain)
+            // No button style of its own, so the row takes the sheet's and
+            // lights while pressed; the star inside stays tappable because it
+            // is `.borderless`.
+            //
             // A library row offers Hide instead: deleting it would only bring a
             // pristine copy back on the next launch, so the destructive styling
             // would be promising something the installer immediately undoes.
             .swipeActions(edge: .trailing) {
-                if ingredient.isLibraryInstalled {
-                    Button("Hide") {
-                        model.hide(ingredient)
-                    }
-                    .tint(.orange)
-                } else {
-                    Button("Delete", role: .destructive) {
-                        model.delete(ingredient)
+                Group {
+                    if ingredient.isLibraryInstalled {
+                        Button("Hide") {
+                            model.hide(ingredient)
+                        }
+                        .tint(Color.warning)
+                    } else {
+                        Button("Delete", role: .destructive) {
+                            model.delete(ingredient)
+                        }
                     }
                 }
+                // The sheet's row style would otherwise reach the swipe
+                // buttons, and the list then stops offering them: a swipe
+                // opened the row instead.
+                .buttonStyle(.automatic)
             }
-            .listDetailRow(isSelected: navigation.isOpenBeside(ingredient))
+            .ledgerListDetailRow(isSelected: navigation.isOpenBeside(ingredient), position: position)
         }
     }
 }

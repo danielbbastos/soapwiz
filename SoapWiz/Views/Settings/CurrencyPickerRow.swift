@@ -8,14 +8,15 @@ struct CurrencyPickerRow: View {
     let settings: AppSettings
 
     var body: some View {
-        Picker("Currency", selection: Binding(
-            get: { currencyCode },
-            set: { settings.currencyCode = $0 }
-        )) {
-            ForEach(CurrencyChoice.all(including: currencyCode)) { choice in
-                Text(choice.label).tag(choice.code)
+        let current = CurrencyChoice.all(including: currencyCode).first { $0.code == currencyCode }
+        NavigationLink {
+            CurrencyListView(settings: settings)
+        } label: {
+            HoneyLedgerLabeledRow("Currency") {
+                Text(current?.label ?? currencyCode)
+                    .foregroundStyle(Color.inkSoft)
+                    .multilineTextAlignment(.trailing)
             }
         }
-        .pickerStyle(.navigationLink)
     }
 }

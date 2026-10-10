@@ -87,21 +87,33 @@ struct ContentView: View {
     /// The interface proper. Held apart from `body` because a restore takes it down
     /// and rebuilds it, and the alerts above have to outlive that.
     private var tabs: some View {
-        TabView(selection: $navigation.selectedTab) {
-            Tab("Inventory", systemImage: "flask", value: AppTab.inventory) {
-                IngredientListView()
+        let _: Void = HoneyLedgerTabBarAppearance.applied
+        return TabView(selection: $navigation.selectedTab) {
+            Tab(value: AppTab.inventory) {
+                IngredientListView().tint(nil)
+            } label: {
+                tabLabel("Inventory", systemImage: "flask")
             }
-            Tab("Recipes", systemImage: "function", value: AppTab.recipes) {
-                RecipeListView()
+            Tab(value: AppTab.recipes) {
+                RecipeListView().tint(nil)
+            } label: {
+                tabLabel("Recipes", systemImage: "function")
             }
-            Tab("History", systemImage: "clock.arrow.circlepath", value: AppTab.history) {
-                BatchListView()
+            Tab(value: AppTab.history) {
+                BatchListView().tint(nil)
+            } label: {
+                tabLabel("History", systemImage: "clock.arrow.circlepath")
             }
-            Tab("Settings", systemImage: "gearshape", value: AppTab.settings) {
-                SettingsView()
+            Tab(value: AppTab.settings) {
+                SettingsView().tint(nil)
+            } label: {
+                tabLabel("Settings", systemImage: "gearshape")
             }
         }
         .tabViewStyle(.tabBarOnly)
+        // The selected tab in `amberText`. Each tab's content drops the tint
+        // again, so its buttons keep their own colours.
+        .tint(Color.amberText)
         // Inside the font and size-class settings below, so the form keeps the
         // look it had as a push.
         .fullScreenCover(item: $navigation.recipeFormRequest, onDismiss: navigation.recipeFormDidClose) { request in
@@ -115,5 +127,11 @@ struct ContentView: View {
         }
         .fontDesign(.rounded)
         .environment(\.horizontalSizeClass, .compact)
+    }
+
+    /// An outline glyph in either state: the system fills the selected one.
+    private func tabLabel(_ title: LocalizedStringKey, systemImage: String) -> some View {
+        Label(title, systemImage: systemImage)
+            .environment(\.symbolVariants, .none)
     }
 }

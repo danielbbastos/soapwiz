@@ -17,10 +17,11 @@ struct PurchaseFormView: View {
             Form {
                 PurchaseFormFields(model: model)
             }
+            .environment(\.defaultMinListRowHeight, 48)
             .navigationTitle(model.isEditing ? "Edit Purchase" : "New Purchase")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle(model.isEditing ? "Edit Purchase" : "New Purchase")
-            .warmBackground()
+            .honeyLedgerInlineTitle(model.isEditing ? "Edit Purchase" : "New Purchase")
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

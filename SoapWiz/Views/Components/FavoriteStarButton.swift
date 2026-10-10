@@ -22,7 +22,7 @@ struct FavoriteStarButton: View {
         Button(action: action) {
             Image(systemName: isFavorite ? "star.fill" : "star")
                 .font(font)
-                .foregroundStyle(isFavorite ? AnyShapeStyle(.yellow) : AnyShapeStyle(.tertiary))
+                .foregroundStyle(isFavorite ? Color.favorite : Color.inkFaint)
         }
         // Without this the row's own tap target swallows the tap and opens the
         // detail screen instead of toggling.

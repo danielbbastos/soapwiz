@@ -19,6 +19,11 @@ struct RecipeImportView: View {
     @State private var textRevision = 0
     @State private var readingProblem: String?
     @State private var hasOpenedFile = false
+    @State private var textBoxHeight = Self.minimumTextBoxHeight
+
+    /// About seven lines. Below this the box stops shrinking and the form
+    /// scrolls instead.
+    private static let minimumTextBoxHeight: CGFloat = 160
 
     /// A file handed in from another app, opened as soon as the sheet appears so
     /// it lands on the exact-import review. `nil` for the in-app path, which
@@ -55,8 +60,8 @@ struct RecipeImportView: View {
             }
             .navigationTitle("Import Recipe")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Import Recipe")
-            .warmBackground()
+            .honeyLedgerInlineTitle("Import Recipe")
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -125,36 +130,44 @@ struct RecipeImportView: View {
             // Always first: a shared SoapWiz file is the exact route, and it
             // works on every device. The text below it is the approximate one.
             Section {
-                Button {
+                HoneyLedgerActionRow("Open Recipe File\u{2026}", systemImage: "doc.badge.plus") {
                     showingFilePicker = true
-                } label: {
-                    Label("Open Recipe File\u{2026}", systemImage: "doc.badge.plus")
                 }
+                .ledgerSheetRow(position: .only)
             } header: {
-                Text("Shared From SoapWiz")
+                HoneyLedgerSectionLabel("Shared From SoapWiz")
             } footer: {
-                Text("A .soapwizrecipe file comes back exactly as it was sent, however many recipes are in it.")
+                HoneyLedgerFooter("A .soapwizrecipe file comes back exactly as it was sent, however many recipes are in it.")
             }
-            .listRowBackground(Color.cardBackground)
 
             Section {
-                RecipeTextInputView(text: $model.rawText, isEnabled: !model.isExtracting, revision: textRevision)
+                RecipeTextInputView(
+                    text: $model.rawText,
+                    isEnabled: !model.isExtracting,
+                    height: textBoxHeight,
+                    revision: textRevision
+                )
+                    .ledgerSheetRow(position: .only)
             } header: {
-                Text(model.canReadFreeText ? "Recipe Text" : "Paste a Copied Recipe")
+                HoneyLedgerSectionLabel(model.canReadFreeText ? "Recipe Text" : "Paste a Copied Recipe")
             } footer: {
-                Text(inputFooter)
-                    .foregroundStyle(readingProblem == nil ? .secondary : Color.orange)
+                if readingProblem != nil {
+                    HoneyLedgerFieldNote(inputFooter, tint: .warning)
+                } else {
+                    HoneyLedgerFooter(inputFooter)
+                }
             }
-            .listRowBackground(Color.cardBackground)
 
             Section {
                 sourceButtons
+                    .ledgerSheetRow(position: .only)
             }
             .disabled(model.isExtracting || isReadingPhoto)
-            .listRowBackground(Color.cardBackground)
 
             Section {
-                Button {
+                HoneyLedgerActionRow(
+                    model.textCarriesExactPayload || model.textIsSoapWizCopy ? "Read Copied Recipe" : "Read Recipe"
+                ) {
                     Task {
                         await model.extract(
                             inventory: inventory,
@@ -163,14 +176,24 @@ struct RecipeImportView: View {
                             context: modelContext
                         )
                     }
-                } label: {
-                    Text(model.textCarriesExactPayload || model.textIsSoapWizCopy ? "Read Copied Recipe" : "Read Recipe")
                 }
                 .disabled(!model.canExtract || isReadingPhoto)
+                .ledgerSheetRow(position: .only)
             } footer: {
-                Text(readFooter)
+                HoneyLedgerFooter(readFooter)
             }
-            .listRowBackground(Color.cardBackground)
+        }
+        .environment(\.defaultMinListRowHeight, 48)
+        // The text box takes whatever height the screen has spare, so the
+        // form fills the sheet without scrolling, down to its minimum. The
+        // spare height is the visible height less the content's; the box
+        // changes by that much, which leaves nothing spare and settles.
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            let visible = geometry.containerSize.height - geometry.contentInsets.top - geometry.contentInsets.bottom
+            return (visible - geometry.contentSize.height).rounded()
+        } action: { _, spare in
+            let fitted = max(Self.minimumTextBoxHeight, textBoxHeight + spare)
+            if fitted != textBoxHeight { textBoxHeight = fitted }
         }
     }
 
@@ -202,6 +225,12 @@ struct RecipeImportView: View {
                 append(pasted)
             }
             .labelStyle(.titleAndIcon)
+            .buttonBorderShape(.capsule)
+            // The system draws this button's label white whatever it is told,
+            // so it can't take the ledger's dark `onAmber` label. White on
+            // amber is short of 4.5:1; kept anyway, because a button of our
+            // own would have iOS ask permission on every paste.
+            .tint(Color.amber)
             // Photo and Scan exist to turn a picture into text for the language
             // model to read. With no model to read it, they would produce a box
             // of OCR output and no way to do anything with it. Paste stays:
@@ -209,21 +238,20 @@ struct RecipeImportView: View {
             // model at all.
             if model.canReadFreeText {
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    Label("Photo", systemImage: "photo")
+                    RecipeImportSourceChip(title: "Photo", systemImage: "photo")
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.plain)
                 if DocumentScannerView.isSupported {
                     Button {
                         showingScanner = true
                     } label: {
-                        Label("Scan", systemImage: "text.viewfinder")
+                        RecipeImportSourceChip(title: "Scan", systemImage: "text.viewfinder")
                     }
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.plain)
                 }
             }
             Spacer(minLength: 0)
         }
-        .buttonBorderShape(.capsule)
     }
 
     /// Says what will happen to an over-long paste before the user commits to
@@ -253,14 +281,18 @@ struct RecipeImportView: View {
     // MARK: - Failure
 
     private func failureView(_ error: RecipeImportError) -> some View {
-        ContentUnavailableView {
-            Label(error.errorDescription ?? "Import failed", systemImage: "text.badge.xmark")
-        } description: {
-            Text(error.recoverySuggestion ?? "")
-        } actions: {
+        VStack(spacing: 20) {
+            HoneyLedgerEmptyState(
+                LocalizedStringKey(error.errorDescription ?? "Import failed"),
+                systemImage: "text.badge.xmark",
+                description: LocalizedStringKey(error.recoverySuggestion ?? "")
+            )
+            .fixedSize(horizontal: false, vertical: true)
             Button("Back to Text") { model.returnToInput() }
-                .buttonStyle(.borderedProminent)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color.amberText)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Actions
@@ -340,5 +372,25 @@ struct RecipeImportView: View {
         model.rawText = newValue
         textRevision += 1
         readingProblem = nil
+    }
+}
+
+/// The ledger's unselected chip, with a glyph where the chip's dot would be.
+/// Fades to `inkFaint` while disabled, since its colours are its own and a
+/// plain button style won't dim them.
+private struct RecipeImportSourceChip: View {
+    @Environment(\.isEnabled) private var isEnabled
+
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .font(.subheadline)
+            .foregroundStyle(isEnabled ? Color.inkSoft : Color.inkFaint)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background(Color.paperRaised, in: .capsule)
+            .overlay(Capsule().strokeBorder(isEnabled ? Color.ruleStrong : Color.rule, lineWidth: 1))
     }
 }

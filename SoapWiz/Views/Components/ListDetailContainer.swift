@@ -15,6 +15,7 @@ struct ListDetailContainer<Item: Hashable, ListContent: View, Detail: View>: Vie
     @Bindable var navigation: ListDetailNavigation<Item>
     let placeholder: LocalizedStringKey
     let placeholderSymbol: String
+    let placeholderDescription: LocalizedStringKey
     /// False while the list is empty: it then says so itself, and a "Select…"
     /// beside it would ask for something there is nothing to choose from.
     var hasItems = true
@@ -28,11 +29,11 @@ struct ListDetailContainer<Item: Hashable, ListContent: View, Detail: View>: Vie
             }
             .frame(width: navigation.isWide ? ListDetailLayout.listColumnWidth : nil)
             if navigation.isWide {
-                Divider()
-                    .ignoresSafeArea()
                 NavigationStack(path: $navigation.path) {
                     detailRoot
                 }
+                .background { LedgerDetailColumnShadow() }
+                .overlay(alignment: .leading) { LedgerDetailColumnRule() }
             }
         }
         .onGeometryChange(for: Bool.self) { proxy in
@@ -71,25 +72,42 @@ struct ListDetailContainer<Item: Hashable, ListContent: View, Detail: View>: Vie
         } else {
             Group {
                 if hasItems {
-                    ContentUnavailableView(placeholder, systemImage: placeholderSymbol)
+                    HoneyLedgerEmptyState(
+                        placeholder,
+                        systemImage: placeholderSymbol,
+                        description: placeholderDescription
+                    )
                 } else {
                     Color.clear
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .warmBackground()
+            .ledgerBackground()
         }
     }
 }
 
-extension View {
-    /// A row of a list that can sit beside its detail: tinted for the item open
-    /// beside it, the card colour otherwise, and marked selected for VoiceOver.
-    /// A button row rather than `List(selection:)`, which on iPadOS 26 draws a
-    /// bordered capsule no row background can hide, and which would otherwise
-    /// announce the selection itself.
-    func listDetailRow(isSelected: Bool) -> some View {
-        listRowBackground(isSelected ? Color.accentColor.opacity(0.18) : Color.cardBackground)
-            .accessibilityAddTraits(isSelected ? .isSelected : [])
+/// On a wide window the detail is a page lying over the list, so it casts a
+/// soft shadow leftwards onto it. Behind the detail, which hides the shadow's
+/// other sides, and the full height of the screen.
+private struct LedgerDetailColumnShadow: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.paper)
+            .shadow(color: Color.shadow.opacity(0.16), radius: 16, x: -5)
+            .ignoresSafeArea()
+    }
+}
+
+/// The hairline on the detail column's leading edge, over the shadow. An
+/// overlay rather than part of the shadow's view, which the detail's own paper
+/// covers.
+private struct LedgerDetailColumnRule: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.rule)
+            .frame(width: 1)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
     }
 }

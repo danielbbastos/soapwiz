@@ -30,6 +30,7 @@ Follow the steps in order. Each step gates the next — never skip a failing gat
 - `git checkout -b sw-{n}-{short-summary}` off up-to-date `main`: the issue ID plus a 3-5 word kebab summary of the change (e.g. `sw-170-prefer-oil-percentages-on-import`). Never use Linear's auto-generated `branchName`.
 
 ### 3. Implement
+- Delegate the code changes to the `coder` agent (Sonnet) with a self-contained brief; review its diff before moving on. Fixes from later steps go back to `coder` too.
 - Read the relevant existing code first; match its patterns (load **swiftui-patterns-soapwiz** for views, **tests-developer** before writing any tests).
 - Honor the issue's Notes/Acceptance sections literally — they encode constraints (e.g. "read-only", "don't recompute").
 - Make sure every helper written for testability is actually used by the production view — never test dead code.

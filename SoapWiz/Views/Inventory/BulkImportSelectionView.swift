@@ -32,34 +32,21 @@ struct BulkImportSelectionView: View {
         NavigationStack {
             Group {
                 if visibleIngredients.isEmpty {
-                    ContentUnavailableView(
+                    HoneyLedgerEmptyState(
                         "No Ingredients",
                         systemImage: "flask",
-                        description: Text("Add ingredients before importing purchases.")
+                        description: "Add ingredients before importing purchases."
                     )
                 } else {
+                    let filtered = filteredIngredients
                     List {
-                        ForEach(filteredIngredients) { ingredient in
-                            Button {
-                                toggle(ingredient)
-                            } label: {
-                                HStack {
-                                    Image(systemName: selection.contains(ingredient.persistentModelID)
-                                          ? "checkmark.circle.fill"
-                                          : "circle")
-                                        .foregroundStyle(selection.contains(ingredient.persistentModelID)
-                                                         ? Color.accentColor : .secondary)
-                                    Text(ingredient.name)
-                                        .foregroundStyle(.primary)
-                                    Spacer()
-                                }
-                                .contentShape(Rectangle())
-                            }
-                            .listRowBackground(Color.cardBackground)
+                        ForEach(Array(filtered.enumerated()), id: \.element.id) { index, ingredient in
+                            row(ingredient, position: .position(index: index, count: filtered.count))
                         }
                     }
+                    .environment(\.defaultMinListRowHeight, 48)
                     .overlay {
-                        if filteredIngredients.isEmpty {
+                        if filtered.isEmpty {
                             ContentUnavailableView.search(text: searchText)
                         }
                     }
@@ -68,8 +55,8 @@ struct BulkImportSelectionView: View {
             }
             .navigationTitle("Bulk Import")
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle("Bulk Import")
-            .warmBackground()
+            .honeyLedgerInlineTitle("Bulk Import")
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { onCancel() }
@@ -80,6 +67,17 @@ struct BulkImportSelectionView: View {
                 }
             }
         }
+    }
+
+    /// A selected row is honey, with its circle filled in `amberText`.
+    private func row(_ ingredient: Ingredient, position: LedgerSheetPosition) -> some View {
+        let isSelected = selection.contains(ingredient.persistentModelID)
+        return Button {
+            toggle(ingredient)
+        } label: {
+            HoneyLedgerPickerRow(name: ingredient.name, state: isSelected ? .selected : .unselected)
+        }
+        .ledgerListDetailRow(isSelected: isSelected, position: position)
     }
 
     private func toggle(_ ingredient: Ingredient) {

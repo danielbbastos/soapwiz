@@ -86,7 +86,7 @@ struct ExpandableFloatingActionButton: View {
         if #available(iOS 26, *) {
             Color.clear.glassEffect(.floatingActionButton, in: .capsule)
         } else {
-            Capsule().fill(Color.accentColor)
+            Capsule().fill(Color.amber)
         }
     }
 
@@ -116,7 +116,7 @@ struct ExpandableFloatingActionButton: View {
                     .font(.subheadline.weight(.semibold))
                     .fixedSize()
             }
-            .foregroundStyle(iconColor)
+            .foregroundStyle(Color.onAmber)
             .padding(.leading, 20)
             .padding(.trailing, 8)
             .frame(height: diameter)
@@ -171,12 +171,8 @@ struct ExpandableFloatingActionButton: View {
     private func icon(_ systemImage: String) -> some View {
         Image(systemName: systemImage)
             .font(.title2.weight(.semibold))
-            .foregroundStyle(iconColor)
+            .foregroundStyle(Color.onAmber)
             .frame(width: diameter, height: diameter)
-    }
-
-    private var iconColor: Color {
-        if #available(iOS 26, *) { Color.fabInk } else { .white }
     }
 
     private func expand() {
@@ -200,9 +196,9 @@ private struct FABWidthKey: PreferenceKey {
     }
 }
 
-/// The raised circle behind the `+` while expanded: interactive glass on iOS 26,
-/// a solid accent circle on earlier versions. Collapsed, the `+` needs no circle of
-/// its own — it sits directly on the shared background.
+/// The raised circle behind the `+` while expanded: interactive amber glass on
+/// iOS 26, a solid `amber` circle on earlier versions. Collapsed, the `+` needs no
+/// circle of its own — it sits directly on the shared background.
 private struct RaisedPlus: ViewModifier {
     let raised: Bool
 
@@ -211,7 +207,7 @@ private struct RaisedPlus: ViewModifier {
             if #available(iOS 26, *) {
                 content.glassEffect(.floatingActionButton, in: .circle)
             } else {
-                content.background(Color.accentColor, in: .circle)
+                content.background(Color.amber, in: .circle)
             }
         } else {
             content

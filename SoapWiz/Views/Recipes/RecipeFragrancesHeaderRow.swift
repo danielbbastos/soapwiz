@@ -1,56 +1,60 @@
 import SwiftUI
 
-/// The first row of the recipe form's Fragrances section: the add button, the
-/// fragrance target and the unit menu.
+/// The first row of the recipe form's Fragrances sheet: the fragrance target
+/// and the unit menu. The add row sits at the foot of the sheet, as on the
+/// other ingredient sheets.
 ///
-/// They share one line when they fit, as on an iPad. Otherwise the target and
-/// the menu share a line above the add button, and at the accessibility text
-/// sizes each takes its own. The first two layouts keep the target and the menu at their
-/// natural width, so the menu never gets squeezed into wrapping, including in
-/// the middle of a rotation (SW-203). The stacked one is used even when it
-/// doesn't fit, and at the largest text sizes the menu alone can be wider than
-/// the row, so there both may wrap rather than run past its edge.
-struct RecipeFragrancesHeaderRow<AddButton: View>: View {
+/// The two share one line when they fit. Otherwise, at the largest text sizes,
+/// each takes its own and may wrap rather than run past the row's edge.
+struct RecipeFragrancesHeaderRow: View {
     let model: RecipeFormViewModel
-    @ViewBuilder let addButton: AddButton
+
+    /// The height of the amount field in the fragrance rows under this one,
+    /// which is a little taller than a line of text.
+    @ScaledMetric(relativeTo: .body) private var amountFieldHeight: CGFloat = 22
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack {
-                addButton
-                Spacer()
                 targetLabel(keepsNaturalWidth: true)
-                unitPicker(keepsNaturalWidth: true)
+                Spacer()
+                unitMenu
+                    .fixedSize()
             }
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    targetLabel(keepsNaturalWidth: true)
-                    Spacer()
-                    unitPicker(keepsNaturalWidth: true)
-                }
-                addButton
-            }
+            .frame(minHeight: amountFieldHeight)
             VStack(alignment: .leading) {
-                addButton
                 targetLabel(keepsNaturalWidth: false)
-                unitPicker(keepsNaturalWidth: false)
+                unitMenu
             }
         }
     }
 
+    /// Without a target the row is titled "Unit", like the other menu rows.
     @ViewBuilder
     private func targetLabel(keepsNaturalWidth: Bool) -> some View {
         if let target = model.fragranceTarget {
             HStack(spacing: 4) {
                 Text(target.text)
                     .lineLimit(keepsNaturalWidth ? 1 : nil)
-                    .foregroundStyle(target.isOverTarget ? Color.red : Color.secondary)
+                    .foregroundStyle(target.isOverTarget ? Color.danger : Color.inkSoft)
+                // Its tap padding would make this row taller than the
+                // fragrance rows under it.
                 InfoPopoverIcon(text: targetInfoText(for: target))
+                    .padding(.vertical, -InfoPopoverIcon.tapPadding)
             }
+        } else {
+            Text("Unit")
+                .foregroundStyle(Color.ink)
+                .accessibilityHidden(true)
         }
     }
 
-    private func unitPicker(keepsNaturalWidth: Bool) -> some View {
+    /// A menu picker rather than a `Menu`, which keeps its label at the old
+    /// value's width while it closes and squeezes a longer unit. Tinted `ink`,
+    /// since the picker draws its value in the tint and amber is only ever a
+    /// fill. Laid out at the line's height, so this row is no taller than the
+    /// fragrance rows under it.
+    private var unitMenu: some View {
         Picker("Unit", selection: Binding(
             get: { model.fragranceUnit },
             set: { model.setFragranceUnit($0) }
@@ -59,7 +63,8 @@ struct RecipeFragrancesHeaderRow<AddButton: View>: View {
         }
         .labelsHidden()
         .pickerStyle(.menu)
-        .fixedSize(horizontal: keepsNaturalWidth, vertical: keepsNaturalWidth)
+        .tint(Color.ink)
+        .menuPickerLineHeight()
     }
 
     private func targetInfoText(for target: FragranceTarget) -> String {

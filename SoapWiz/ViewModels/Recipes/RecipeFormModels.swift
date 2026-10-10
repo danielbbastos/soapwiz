@@ -267,6 +267,10 @@ struct ProductCostBreakdown {
     var lye: [IngredientProductBreakdown] = []
     var total: Double = 0
     var exceedsBatchWeight: Bool = false
+    /// The product's weight over the batch's, unclamped, for a size given as a
+    /// weight. Nil for the whole batch and for a part of it, whose share is
+    /// already in its name.
+    var batchShare: Double?
 }
 
 struct OilAmountCalculation: Identifiable {

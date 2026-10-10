@@ -15,16 +15,17 @@ struct FloatingActionButton: View {
     }
 }
 
+/// Amber glass with an `onAmber` plus on iOS 26; a solid `amber` circle with a
+/// soft shadow before it.
 private struct FABStyle: ViewModifier {
     func body(content: Content) -> some View {
+        let label = content.foregroundStyle(Color.onAmber)
         if #available(iOS 26, *) {
-            content
-                .foregroundStyle(Color.fabInk)
+            label
                 .glassEffect(.floatingActionButton, in: .circle)
         } else {
-            content
-                .foregroundStyle(.white)
-                .background(Color.accentColor)
+            label
+                .background(Color.amber)
                 .clipShape(Circle())
                 .shadow(radius: 4, y: 2)
         }

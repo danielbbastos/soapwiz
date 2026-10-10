@@ -20,29 +20,33 @@ struct BulkImportFlowView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // In the content rather than pinned above it: a pinned heading
+                // needs a backing of its own, and a flat one shows a seam
+                // against the paper's grain.
+                Section {
+                } header: {
+                    Text(model.currentIngredientName)
+                        .font(.title2.weight(.semibold))
+                        .fontDesign(.serif)
+                        .foregroundStyle(Color.ink)
+                        .textCase(nil)
+                        .accessibilityAddTraits(.isHeader)
+                }
                 PurchaseFormFields(model: model.currentForm)
             }
+            .environment(\.defaultMinListRowHeight, 48)
             // Fresh identity per entry so advancing to the next ingredient resets the
             // scroll position to the top instead of staying where the last one was.
             .id(model.position)
             .navigationTitle(model.currentIngredientName)
             .navigationBarTitleDisplayMode(.inline)
-            .warmBackground()
-            .safeAreaInset(edge: .top, spacing: 0) {
-                Text(model.currentIngredientName)
-                    .font(.title2.weight(.bold))
-                    .fontDesign(.rounded)
-                    .foregroundStyle(Color.warmInk)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    .padding(.vertical, 10)
-                    .background(Color.warmBackground)
-            }
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text(model.progressText)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .foregroundStyle(Color.inkSoft)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { onFinish() }

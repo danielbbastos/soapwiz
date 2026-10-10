@@ -17,6 +17,36 @@ struct BatchMonthSection: Identifiable {
     }
 }
 
+/// The figures under the History title, over every batch whatever the search is
+/// narrowing the list to.
+struct BatchCountSummary: Equatable {
+    let total: Int
+    let curing: Int
+
+    /// Nil when there is nothing to count, so the line is left out.
+    var line: String? {
+        guard total > 0 else { return nil }
+        // Plain `String(localized:)` leaves the agreement markup as it is: only
+        // an attributed string resolves it.
+        var parts = [String(AttributedString(localized: "^[\(total) batch](inflect: true)").characters)]
+        if curing > 0 {
+            parts.append(String(localized: "\(curing) curing"))
+        }
+        return parts.joined(separator: " · ")
+    }
+}
+
+extension BatchCountSummary {
+    init(counting batches: [Batch]) {
+        self.init(
+            total: batches.count,
+            curing: batches.count {
+                if case .curing = $0.cureStatus { true } else { false }
+            }
+        )
+    }
+}
+
 /// Display logic for the batch history list and batch detail. Everything here
 /// reads the snapshot persisted at creation — never the live recipe or
 /// inventory — so history stays immutable.

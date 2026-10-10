@@ -1,51 +1,98 @@
 import SwiftUI
 
 struct PurchaseRowView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let purchase: IngredientPurchase
     let unit: String
 
-    private var expiryLabel: (text: String, color: Color)? {
-        guard let expiry = purchase.expiryDate else { return nil }
-        let now = Date.now
-        let formatted = expiry.formatted(.dateTime.day().month(.abbreviated).year())
-        if expiry < now {
-            return ("Expired", .red)
+    private func statusText(for summary: PurchaseRowSummary) -> String? {
+        switch summary.status {
+        case .none: nil
+        case .usedUp: String(localized: "used up")
+        case .expired: String(localized: "expired")
+        case .expires(let date):
+            String(localized: "expires \(date.formatted(.dateTime.month(.abbreviated).year()))")
         }
-        if let cutoff = Calendar.current.date(byAdding: .month, value: 1, to: now), expiry <= cutoff {
-            return (formatted, .red)
+    }
+
+    private func secondLine(for summary: PurchaseRowSummary) -> String {
+        let date = purchase.dateOfPurchase.formatted(.dateTime.day().month(.abbreviated).year())
+        guard let statusText = statusText(for: summary) else { return date }
+        return "\(date) · \(statusText)"
+    }
+
+    private var remainingText: Text {
+        let number = purchase.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))
+        if purchase.remainingAmount <= 0 {
+            return Text.honeyLedgerFigure(number, unit: unit, numberColor: .inkFaint, unitColor: .inkFaint)
         }
-        return (formatted, .secondary)
+        return Text.honeyLedgerFigure(number, unit: unit)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(purchase.provider?.name ?? "Unknown Provider")
-                    .font(.headline)
-                Spacer()
-                if let label = expiryLabel {
-                    Text(label.text)
-                        .font(.caption)
-                        .foregroundStyle(label.color)
-                }
-            }
-            HStack {
-                let remaining = purchase.remainingAmount.formatted(.number.precision(.fractionLength(0...2)))
-                let quantity = purchase.quantity.formatted(.number.precision(.fractionLength(0...2)))
-                Text("\(remaining) / \(quantity) \(unit)")
-                    .font(.subheadline)
-                    .foregroundStyle(purchase.remainingAmount > 0 ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
-                Spacer()
-                if !purchase.badge.isEmpty {
-                    Text(purchase.badge)
-                        .font(.caption)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 2)
-                        .background(.secondary.opacity(0.15))
-                        .clipShape(Capsule())
-                }
+        let summary = PurchaseRowSummary(
+            expiryDate: purchase.expiryDate,
+            remainingAmount: purchase.remainingAmount,
+            badge: purchase.badge
+        )
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                accessibilityLayout(summary: summary)
+            } else {
+                standardLayout(summary: summary)
             }
         }
         .padding(.vertical, 2)
+    }
+
+    private func standardLayout(summary: PurchaseRowSummary) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                names(summary: summary)
+                Spacer(minLength: 8)
+                remainingText
+            }
+            stampLine(summary.stamps)
+        }
+    }
+
+    /// One column at the accessibility sizes: beside the quantity, the provider
+    /// would be squeezed until it broke mid-word.
+    private func accessibilityLayout(summary: PurchaseRowSummary) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            names(summary: summary)
+            stampLine(summary.stamps)
+            remainingText
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func names(summary: PurchaseRowSummary) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(purchase.provider?.name ?? "Unknown Provider")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.ink)
+            Text(secondLine(for: summary))
+                .font(.subheadline)
+                .foregroundStyle(Color.inkSoft)
+        }
+    }
+
+    /// The stamps side by side, stacking when they don't fit.
+    @ViewBuilder
+    private func stampLine(_ stamps: [PurchaseRowStamp]) -> some View {
+        if !stamps.isEmpty {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) { stampViews(stamps) }
+                VStack(alignment: .leading, spacing: 4) { stampViews(stamps) }
+            }
+        }
+    }
+
+    private func stampViews(_ stamps: [PurchaseRowStamp]) -> some View {
+        ForEach(Array(stamps.enumerated()), id: \.offset) { _, stamp in
+            StatusStamp(word: stamp.word, tone: stamp.tone, glyph: stamp.glyph)
+        }
     }
 }

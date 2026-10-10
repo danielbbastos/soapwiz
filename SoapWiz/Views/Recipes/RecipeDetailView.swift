@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import UIKit
 
 struct RecipeDetailView: View {
     let recipe: Recipe
@@ -29,49 +28,31 @@ struct RecipeDetailView: View {
     @State var exportFile: ExportFile?
     @State var exportErrorMessage: String?
 
-    /// The unit the summaries (calculated amounts + cost breakdown) are shown in:
-    /// the recipe's oil weight unit, or grams when the user toggles it.
-    private var displayUnit: String { showInGrams ? "g" : model.displayWeightUnit }
-
-    /// Offer the grams toggle only when the recipe isn't already measured in grams.
-    private var showsUnitToggle: Bool { model.displayWeightUnit != "g" }
-
-    /// Converts an amount expressed in the oil weight unit into the chosen display unit.
-    private func displayed(_ batchAmount: Double) -> Double {
-        MassUnitConverter.convert(batchAmount, from: model.displayWeightUnit, to: displayUnit) ?? batchAmount
-    }
-
-    /// Formats an oil-unit amount in the chosen display unit, with the unit label.
-    private func weightText(_ batchAmount: Double) -> String {
-        "\(displayed(batchAmount).formatted(.number.precision(.fractionLength(0...2)))) \(displayUnit)"
-    }
-
     var body: some View {
         let batch = model.wholeBatchBreakdown
-        Form {
-            if !recipe.desc.isEmpty {
-                Section {
-                    Text(recipe.desc)
-                        .foregroundStyle(.secondary)
+        List {
+            Section {
+                if !recipe.desc.isEmpty {
+                    HoneyLedgerNote(recipe.desc)
+                        .padding(.vertical, 4)
+                        .ledgerSheetRow(position: .only)
                 }
-                .listRowBackground(Color.cardBackground)
+            } header: {
+                HoneyLedgerOrnament()
+                    // Without a photo the List's first-header inset leaves the
+                    // ornament lower than centred; the List clamps this negative
+                    // padding, so -10 moves it up about 7pt. With a photo,
+                    // `heroPhotoHeader` reserves no gap and the inset centres it.
+                    .padding(.top, heroImage == nil ? -10 : 0)
             }
 
             collectionsSection
-            if model.makesSoap {
-                oilsSection
-                additivesSection(batch: batch)
-            } else {
-                ingredientsSection(batch: batch)
-            }
-            fragrancesSection(batch: batch)
-            calculatedAmountsSection
-            soapPropertiesSection
+            RecipeDetailIngredientSections(model: model, batch: batch, showInGrams: $showInGrams)
+            RecipeDetailStatsSections(stats: RecipeStats(oilDrafts: model.oilDrafts, makesSoap: model.makesSoap))
             RecipeCostSection(model: model, batch: batch)
         }
         .readableWidth()
-        .expandingSectionScrollContainer()
-        // Before `warmBackground`, whose fill would otherwise cover the photo.
+        // Before `ledgerBackground`, whose fill would otherwise cover the photo.
         .heroPhotoHeader(
             image: heroImage,
             aspectRatio: Self.heroAspectRatio,
@@ -79,15 +60,15 @@ struct RecipeDetailView: View {
         )
         .navigationTitle(recipe.name)
         .navigationBarTitleDisplayMode(.inline)
-        .warmNavigationTitle(recipe.name, overPhoto: photoCoversNavigationBar)
-        .warmBackground()
+        .honeyLedgerInlineTitle(recipe.name, overPhoto: photoCoversNavigationBar)
+        .ledgerBackground()
         .safeAreaInset(edge: .bottom) {
             Button {
                 navigation.detailSheetRequest = .createBatch(recipe)
             } label: {
                 Label("Create Batch", systemImage: "bubbles.and.sparkles.fill")
                     .fontWeight(.semibold)
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(Color.amberText)
             }
             .glassButtonStyleIOS26()
             .controlSize(.large)
@@ -141,237 +122,25 @@ struct RecipeDetailView: View {
     // MARK: - Collections
 
     /// Read-only: filing a recipe happens in the form or from the list's
-    /// long-press menu, so this is a label rather than a control. Hidden
-    /// entirely when the recipe is unfiled, so a user who never made a
-    /// collection never sees an empty row.
+    /// long-press menu, so these are chips without a control behind them, on
+    /// the paper rather than in a sheet. Hidden entirely when the recipe is
+    /// unfiled, so a user who never made a collection never sees an empty row.
     @ViewBuilder
     private var collectionsSection: some View {
         let collections = recipe.collections.sortedByName
         if !collections.isEmpty {
-            Section("Collections") {
-                collectionNames(collections)
-            }
-            .listRowBackground(Color.cardBackground)
-        }
-    }
-
-    /// One `Text` rather than a row of views, so the names wrap as a sentence
-    /// on a narrow width while each still carries its collection's colour.
-    private func collectionNames(_ collections: [RecipeCollection]) -> Text {
-        collections.enumerated().reduce(Text("")) { partial, entry in
-            let separator = entry.offset == 0 ? Text("") : Text(", ")
-            return partial + separator
-                + Text(entry.element.name).foregroundStyle(entry.element.color.tint)
-        }
-    }
-
-    // MARK: - Oils
-
-    private var sortedOils: [OilIngredientDraft] {
-        model.oilDrafts.sorted { $0.amount > $1.amount }
-    }
-
-    private var oilBatchWeightByDraftId: [UUID: Double] {
-        Dictionary(uniqueKeysWithValues: (model.oilAmountCalculations ?? []).map { ($0.id, $0.weight) })
-    }
-
-    private var oilsSection: some View {
-        let weightLookup = oilBatchWeightByDraftId
-        return Section("Oils") {
-            if sortedOils.isEmpty {
-                Text("No oils added")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(sortedOils) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                        Spacer()
-                        Text(oilAmountText(draft, batchWeight: weightLookup[draft.id]))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
+            Section {
+                FlowLayout {
+                    ForEach(collections) { collection in
+                        HoneyLedgerChip(title: collection.name, dot: collection.color.pigment)
                     }
                 }
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .accessibilityElement(children: .combine)
+            } header: {
+                HoneyLedgerSectionLabel("Collections")
             }
         }
-        .listRowBackground(Color.cardBackground)
-    }
-
-    /// The merged section a non-soap recipe shows in place of Oils and
-    /// Additives, mirroring the form's Ingredients tab — the same recipe should
-    /// not be split one way on the edit screen and another way here.
-    @ViewBuilder
-    private func ingredientsSection(batch: ProductCostBreakdown) -> some View {
-        let oilWeights = oilBatchWeightByDraftId
-        let additiveWeights = batchWeightLookup(batch.additives)
-        Section("Ingredients") {
-            if sortedOils.isEmpty && model.additiveDrafts.isEmpty {
-                Text("No ingredients added")
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(sortedOils) { draft in
-                    amountRow(
-                        name: draft.ingredient.name,
-                        value: oilAmountText(draft, batchWeight: oilWeights[draft.id])
-                    )
-                }
-                ForEach(model.additiveDrafts) { draft in
-                    amountRow(
-                        name: draft.ingredient.name,
-                        value: ingredientAmountText(
-                            draft, batchWeight: additiveWeights[draft.ingredient.persistentModelID]
-                        )
-                    )
-                }
-            }
-        }
-        .listRowBackground(Color.cardBackground)
-    }
-
-    private func amountRow(name: String, value: String) -> some View {
-        HStack {
-            Text(name)
-            Spacer()
-            Text(value)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-        }
-    }
-
-    private func oilAmountText(_ draft: OilIngredientDraft, batchWeight: Double?) -> String {
-        if model.weightUnitIsPercentage {
-            let primary = model.formatPercentage(draft.amount) + "%"
-            guard let batchWeight else { return primary }
-            return "\(primary) (\(weightText(batchWeight)))"
-        }
-        // Absolute mode: the entered amount is already in the oil weight unit.
-        return weightText(batchWeight ?? draft.amount)
-    }
-
-    /// Maps each breakdown row's ingredient to its amount in the oil weight unit.
-    /// Amounts are summed rather than assumed unique — a recipe that ends up with
-    /// two rows for one ingredient should render, not trap.
-    private func batchWeightLookup(_ rows: [IngredientProductBreakdown]) -> [PersistentIdentifier: Double] {
-        Dictionary(rows.map { ($0.ingredient.persistentModelID, $0.ingredientAmount) }, uniquingKeysWith: +)
-    }
-
-    // MARK: - Additives
-
-    @ViewBuilder
-    private func additivesSection(batch: ProductCostBreakdown) -> some View {
-        if !model.additiveDrafts.isEmpty {
-            let weightLookup = batchWeightLookup(batch.additives)
-            Section("Additives") {
-                ForEach(model.additiveDrafts) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                        Spacer()
-                        Text(ingredientAmountText(draft, batchWeight: weightLookup[draft.ingredient.persistentModelID]))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
-            }
-            .listRowBackground(Color.cardBackground)
-        }
-    }
-
-    // MARK: - Fragrances
-
-    @ViewBuilder
-    private func fragrancesSection(batch: ProductCostBreakdown) -> some View {
-        if !model.fragranceDrafts.isEmpty {
-            let weightLookup = batchWeightLookup(batch.fragrances)
-            Section("Fragrances") {
-                ForEach(model.fragranceDrafts) { draft in
-                    HStack {
-                        Text(draft.ingredient.name)
-                        Spacer()
-                        Text(ingredientAmountText(draft, batchWeight: weightLookup[draft.ingredient.persistentModelID]))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                    }
-                }
-            }
-            .listRowBackground(Color.cardBackground)
-        }
-    }
-
-    /// Shows the converted weight in parentheses only when the ingredient is
-    /// expressed as a percentage; absolute units (g, kg, ml, …) stand alone.
-    private func ingredientAmountText(_ draft: IngredientAmountDraft, batchWeight: Double?) -> String {
-        let primary = amountText(draft.amount, unit: draft.unit)
-        guard RecipeUnitOptions.isPercentage(draft.unit), let batchWeight, batchWeight > 0 else { return primary }
-        return "\(primary) (\(weightText(batchWeight)))"
-    }
-
-    private func amountText(_ amount: Double, unit: String) -> String {
-        let fmt = amount.formatted(.number.precision(.fractionLength(0...2)))
-        return "\(fmt) \(model.unitLabel(for: unit))"
-    }
-
-    // MARK: - Calculated amounts
-
-    @ViewBuilder
-    private var unitTogglePicker: some View {
-        if showsUnitToggle {
-            Picker("Units", selection: $showInGrams) {
-                Text(model.displayWeightUnit).tag(false)
-                Text("g").tag(true)
-            }
-            .pickerStyle(.segmented)
-        }
-    }
-
-    @ViewBuilder
-    private var calculatedAmountsSection: some View {
-        Section("Calculated amounts") {
-            if let rows = model.calculatedAmountRows {
-                unitTogglePicker
-                ForEach(rows) { row in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(row.label)
-                                .fontWeight(row.isSummary ? .semibold : .regular)
-                            if let note = row.note {
-                                Text(note)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        Spacer()
-                        Text(weightText(row.weight))
-                            .foregroundStyle(row.isSummary ? .primary : .secondary)
-                            .monospacedDigit()
-                    }
-                }
-            } else {
-                Text("Add oils to see calculated amounts")
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .listRowBackground(Color.cardBackground)
-    }
-
-    // MARK: - Soap properties
-
-    /// A soap recipe gets the qualities chart and its INS/iodine indicators,
-    /// followed by the blend's fatty acid profile and saturation totals. A
-    /// non-soap recipe gets only the fatty acid composition, which is the part
-    /// that still means something without saponification.
-    @ViewBuilder
-    private var soapPropertiesSection: some View {
-        let stats = RecipeStats(oilDrafts: model.oilDrafts, makesSoap: model.makesSoap)
-        if stats.makesSoap {
-            Section("Soap properties") {
-                if stats.hasOils {
-                    SoapPropertiesSection(stats: stats)
-                } else {
-                    Text("Add oils to see soap properties")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .listRowBackground(Color.cardBackground)
-        }
-        FattyAcidProfileSections(stats: stats, rowBackground: Color.cardBackground)
     }
 }

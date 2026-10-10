@@ -26,11 +26,10 @@ extension Recipe {
     /// want absolute mode pass it explicitly.
     static func mock(
         name: String = "Test Recipe",
-        desc: String = "",
         weightUnit: String = "%",
         in ctx: ModelContext
     ) -> Recipe {
-        let recipe = Recipe(name: name, desc: desc)
+        let recipe = Recipe(name: name)
         recipe.weightUnit = weightUnit
         ctx.insert(recipe)
         return recipe

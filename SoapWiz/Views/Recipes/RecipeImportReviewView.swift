@@ -22,6 +22,7 @@ struct RecipeImportReviewView: View {
             ingredientSection(.additive, title: "Additives")
             confirmSection
         }
+        .environment(\.defaultMinListRowHeight, 48)
         .sheet(item: $creatingRow) { row in
             IngredientFormView(
                 defaultCategory: category(named: row.suggestedCategoryName),
@@ -43,46 +44,33 @@ struct RecipeImportReviewView: View {
     /// saponification at all says so plainly instead of being described in
     /// soap-making terms.
     private var settingsSection: some View {
-        Section("Recipe") {
-            if let lyeType = draftSummary.lyeType {
-                LabeledContent("Lye", value: lyeType)
+        let values = settingValues
+        let notes = settingNotes
+        let count = values.count + notes.count
+        return Section {
+            ForEach(Array(values.enumerated()), id: \.offset) { index, row in
+                HoneyLedgerLabeledRow(row.title) {
+                    Text.honeyLedgerFigure(row.value)
+                }
+                .ledgerSheetRow(position: .position(index: index, count: count))
             }
-            if let superFat = draftSummary.superFat {
-                LabeledContent("Super Fat", value: "\(PercentageFormatter.string(superFat))%")
-            }
-            if let waterParts = draftSummary.waterParts {
-                LabeledContent("Water : Lye", value: "\(PercentageFormatter.string(waterParts)) : 1")
-            }
-            if let fragrance = draftSummary.fragrancePercentage {
-                LabeledContent("Fragrance", value: "\(PercentageFormatter.string(fragrance))%")
-            }
-            if let neutralizer = draftSummary.cfmNeutralizer {
-                Text("\(neutralizer.displayName) becomes the Catherine Failor neutraliser. The app "
-                     + "doses it from the soap weight, so it isn't added as an ingredient here.")
+            ForEach(Array(notes.enumerated()), id: \.offset) { index, note in
+                Text(note)
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.inkSoft)
+                    .ledgerSheetRow(position: .position(index: values.count + index, count: count))
             }
-            if !draftSummary.statesLyeSettings {
-                Text("No lye settings found. The recipe opens with the form's defaults, "
-                     + "which you can change — or turn off soap making entirely in Config.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            if let trimmedNote {
-                Text(trimmedNote)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
+        } header: {
+            HoneyLedgerSectionLabel("Recipe")
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     @ViewBuilder
     private func ingredientSection(_ role: RecipeIngredientRole, title: String) -> some View {
         let rows = model.rows.filter { $0.role == role }
         if !rows.isEmpty {
-            Section(title) {
-                ForEach(rows) { row in
+            Section {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     RecipeImportRowView(
                         row: row,
                         amountText: draftSummary.amountText(for: row.imported, role: row.role),
@@ -90,24 +78,33 @@ struct RecipeImportReviewView: View {
                         onSkip: { model.skip(row.id) },
                         onUnskip: { model.unskip(row.id) }
                     )
+                    .ledgerSheetRow(position: .position(index: index, count: rows.count))
                 }
+            } header: {
+                HoneyLedgerSectionLabel(title)
             }
-            .listRowBackground(Color.cardBackground)
         }
     }
 
     private var confirmSection: some View {
         Section {
-            Button("Continue to Recipe") {
+            HoneyLedgerActionRow("Continue to Recipe") {
                 guard let prepared = model.prepared else { return }
                 onConfirm(prepared)
             }
             .disabled(!model.canConfirm)
-            Button("Back to Text") { model.returnToInput() }
+            .ledgerSheetRow(position: .first)
+            HoneyLedgerActionRow("Back to Text", isPrimary: false) { model.returnToInput() }
+                .ledgerSheetRow(position: .last)
         } footer: {
-            Text(model.confirmBlocker ?? Self.chemistryNote)
+            if let blocker = model.confirmBlocker {
+                HoneyLedgerFieldNote(blocker, tint: .danger)
+            } else {
+                Text(Self.chemistryNote)
+                    .font(.footnote)
+                    .foregroundStyle(Color.inkSoft)
+            }
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     /// Stated plainly, because it is the one thing about this feature a user
@@ -121,6 +118,30 @@ struct RecipeImportReviewView: View {
 
     private var draftSummary: RecipeImportDraft {
         model.reviewedDraft
+    }
+
+    private var settingValues: [RecipeImportSettingRow] {
+        var rows = draftSummary.statedLyeSettingRows
+        if let fragrance = draftSummary.fragrancePercentage {
+            rows.append(RecipeImportSettingRow(title: "Fragrance", value: "\(PercentageFormatter.string(fragrance))%"))
+        }
+        return rows
+    }
+
+    private var settingNotes: [String] {
+        var notes: [String] = []
+        if let neutralizer = draftSummary.cfmNeutralizer {
+            notes.append("\(neutralizer.displayName) becomes the Catherine Failor neutraliser. The app "
+                         + "doses it from the soap weight, so it isn't added as an ingredient here.")
+        }
+        if !draftSummary.statesLyeSettings {
+            notes.append("No lye settings found. The recipe opens with the form's defaults, "
+                         + "which you can change — or turn off soap making entirely in Config.")
+        }
+        if let trimmedNote {
+            notes.append(trimmedNote)
+        }
+        return notes
     }
 
     private var trimmedNote: String? {

@@ -1,6 +1,6 @@
 ---
 name: swiftui-patterns-soapwiz
-description: SoapWiz-specific SwiftUI + SwiftData conventions. Use when writing or reviewing Swift files to apply project-wide state, persistence, FAB, and form patterns.
+description: SoapWiz-specific SwiftUI + SwiftData conventions. Use when writing or reviewing Swift files to apply project-wide state, persistence, FAB, form, and ledger row (pressed tint, button style) patterns.
 ---
 
 # SwiftUI + SwiftData Patterns (SoapWiz)
@@ -59,9 +59,20 @@ ingredient.purchases.sorted { $0.dateOfPurchase > $1.dateOfPurchase }
 - Each tab root wraps its content in its own `NavigationStack`.
 - Use `NavigationLink` for push navigation; sheets for forms/creation flows.
 
+## Ledger Rows (Pressed Tint)
+
+`ledgerSheetRow` / `ledgerListDetailRow` give every row a button and menu style that tints the row while pressed (`LedgerSheetRowModifier`). An inner style always wins over it, so nothing fails at build time: a mistake shows up only as a row that doesn't light, a stretched button, or a swipe that stops working.
+
+- **Whole-row `Button` or `Menu`:** set no button style, so it takes the row's and lights. Never add `.buttonStyle(.plain)` to it.
+- **Small button inside a row** (star, "Done", ⋯ menu): `.buttonStyle(.borderless)`, plus `.menuStyle(.automatic)` for a `Menu`. Otherwise the row style stretches it across the row and lights the whole row.
+- **Swipe-action buttons:** `.buttonStyle(.automatic)` on the buttons inside `.swipeActions`, or the list stops offering the swipe.
+- **`NavigationLink` row:** pass `navigates: true` (`.ledgerSheetRow(position:navigates:)`). A link ignores button styles; it lights from `LedgerRowTouchTracker` instead.
+- **A row that shouldn't light** (an expand/collapse toggle, several buttons in one list row): keep `.buttonStyle(.plain)` on its buttons.
+
 ## Common Anti-Patterns to Avoid
 
 - Mutating a SwiftData model off the main actor.
 - Using `@State` for data that should survive view recreation.
 - Forgetting `.cascade` on a relationship with child models.
 - Sorting a SwiftData relationship array directly without `.sorted`.
+- Adding `.buttonStyle(.plain)` to a whole-row button in a ledger sheet, which stops it lighting when pressed.

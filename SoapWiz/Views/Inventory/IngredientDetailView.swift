@@ -32,12 +32,27 @@ struct IngredientDetailView: View {
         expandedSections.contains(section)
     }
 
+    /// Draws the row's share of the ledger sheet, from where it sits among the
+    /// rows its section actually shows.
+    private func sheetRow<Content: View>(
+        _ index: Int,
+        of count: Int,
+        navigates: Bool = false,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content().ledgerSheetRow(position: .position(index: index, count: count), navigates: navigates)
+    }
+
     /// A tappable section header with a rotating chevron. Used instead of the
     /// `Section(isExpanded:)` API, whose disclosure control doesn't render under
-    /// this screen's photo header + `warmBackground` styling.
-    private func collapsibleHeader(_ title: String, _ section: DetailSection) -> some View {
+    /// this screen's photo header + ledger background styling.
+    ///
+    /// `animated` is off for the iPad's side-by-side columns: they share one
+    /// list row, and the list resizes a row around content already laid out at
+    /// its new height, so an animated fold makes the other column jump.
+    private func collapsibleHeader(_ title: String, _ section: DetailSection, animated: Bool = true) -> some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(animated ? .easeInOut(duration: 0.2) : nil) {
                 if expandedSections.contains(section) {
                     expandedSections.remove(section)
                 } else {
@@ -45,14 +60,7 @@ struct IngredientDetailView: View {
                 }
             }
         } label: {
-            HStack {
-                Text(title)
-                Spacer()
-                Image(systemName: "chevron.down")
-                    .font(.caption.weight(.semibold))
-                    .rotationEffect(.degrees(isExpanded(section) ? 0 : -90))
-            }
-            .contentShape(.rect)
+            HoneyLedgerSectionLabel(title, isExpanded: isExpanded(section))
         }
         .buttonStyle(.plain)
     }
@@ -61,16 +69,17 @@ struct IngredientDetailView: View {
         _model = State(initialValue: IngredientDetailViewModel(ingredient: ingredient))
     }
 
-    /// Taller than the recipe screen's crop. A photographed bar is laid flat and
-    /// shot from above; a photographed ingredient is a bottle or a bag standing
-    /// up, so a landscape band across it keeps the label and drops the rest.
-    ///
     /// Deliberately the device idiom rather than `horizontalSizeClass`, for the
     /// reason spelled out in `RecipeRowView`: `ContentView` pins the whole
     /// `TabView` to `.compact`, which leaves the size class saying "compact"
     /// everywhere.
+    private static let isPhone = UIDevice.current.userInterfaceIdiom == .phone
+
+    /// Taller than the recipe screen's crop. A photographed bar is laid flat and
+    /// shot from above; a photographed ingredient is a bottle or a bag standing
+    /// up, so a landscape band across it keeps the label and drops the rest.
     private static let heroAspectRatio: CGFloat =
-        UIDevice.current.userInterfaceIdiom == .phone ? 4.0 / 3.0 : 2.0 / 1.0
+        isPhone ? 4.0 / 3.0 : 2.0 / 1.0
 
     /// Nil for an ingredient with no photo, which leaves the screen laid out
     /// exactly as it was. The letter avatar deliberately doesn't stand in here:
@@ -88,39 +97,19 @@ struct IngredientDetailView: View {
         ZStack(alignment: .bottomTrailing) {
             List {
                 Section {
-                    if let categoryName = model.ingredient.category?.name {
-                        LabeledContent("Category", value: categoryName)
-                    }
-                    if !model.ingredient.unit.isEmpty {
-                        LabeledContent("Unit", value: IngredientUnit(rawValue: model.ingredient.unit)?.label ?? model.ingredient.unit)
-                    }
-                    if tracksInventory {
-                        LabeledContent("Total Remaining") {
-                            let symbol = model.ingredient.unit
-                            Text("\(model.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(symbol)")
-                                .foregroundStyle(model.totalRemaining > 0 ? AnyShapeStyle(.primary) : AnyShapeStyle(.red))
-                        }
-                        LabeledContent("Purchases", value: "\(model.ingredient.purchases.count)")
-                    }
-                    // Oils carry SAP in the dedicated chemistry block below; this
-                    // is the fallback for the rare non-oil that still has a value.
-                    if !model.showsChemistry, let sap = model.ingredient.sapValue {
-                        LabeledContent("SAP Value (NaOH)") {
-                            Text("\(sap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))) g/g")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    if IngredientUnitConverter.isVolume(model.ingredient.unit) {
-                        LabeledContent("Density") {
-                            let stored = model.ingredient.density
-                            let value = stored ?? IngredientUnitConverter.defaultDensity
-                            let source = stored == nil ? "default" : "custom"
-                            Text("\(value.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))) g/ml (\(source))")
-                                .foregroundStyle(.secondary)
-                        }
-                    }
+                    IngredientDetailSummaryRows(
+                        ingredient: model.ingredient,
+                        totalRemaining: model.totalRemaining,
+                        tracksInventory: tracksInventory,
+                        showsChemistry: model.showsChemistry
+                    )
                 } header: {
-                    Text("Summary")
+                    HoneyLedgerOrnament()
+                        // Without a photo the List's first-header inset leaves the
+                        // ornament lower than centred; the List clamps this negative
+                        // padding, so -10 moves it up about 7pt. With a photo,
+                        // `heroPhotoHeader` reserves no gap and the inset centres it.
+                        .padding(.top, heroImage == nil ? -10 : 0)
                 } footer: {
                     // A footer sentence rather than a labelled row: where an
                     // ingredient came from is context, not one of its properties,
@@ -131,9 +120,9 @@ struct IngredientDetailView: View {
                         Text(model.ingredient.hasCustomChemistry
                              ? "From the built-in ingredient library, with chemistry you've changed."
                              : "From the built-in ingredient library.")
+                        .foregroundStyle(Color.inkSoft)
                     }
                 }
-                .listRowBackground(Color.cardBackground)
 
                 // Purchases sit directly under Summary: for an ingredient you
                 // already own, what you have and when you bought it matters more
@@ -148,22 +137,24 @@ struct IngredientDetailView: View {
 
                 Section {
                     if isExpanded(.usage) {
-                        if model.usageEntries.isEmpty {
-                            Text("Not used in any batch yet.")
-                                .foregroundStyle(.secondary)
+                        let entries = model.usageEntries
+                        if entries.isEmpty {
+                            sheetRow(0, of: 1) {
+                                Text("Not used in any batch yet.")
+                                    .foregroundStyle(Color.inkSoft)
+                            }
                         } else {
-                            ForEach(model.usageEntries) { entry in
-                                UsageEntryRow(entry: entry)
+                            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                                sheetRow(index, of: entries.count) { UsageEntryRow(entry: entry) }
                             }
                         }
                     }
                 } header: {
                     collapsibleHeader("Usage", .usage)
                 }
-                .listRowBackground(Color.cardBackground)
             }
             .readableWidth()
-            // Before `warmBackground`, whose fill would otherwise cover the photo.
+            // Before `ledgerBackground`, whose fill would otherwise cover the photo.
             .heroPhotoHeader(
                 image: heroImage,
                 aspectRatio: Self.heroAspectRatio,
@@ -171,8 +162,8 @@ struct IngredientDetailView: View {
             )
             .navigationTitle(model.ingredient.name)
             .navigationBarTitleDisplayMode(.inline)
-            .warmNavigationTitle(model.ingredient.name, overPhoto: photoCoversNavigationBar)
-            .warmBackground()
+            .honeyLedgerInlineTitle(model.ingredient.name, overPhoto: photoCoversNavigationBar)
+            .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Edit") { navigation.detailSheetRequest = .editIngredient(model.ingredient) }
@@ -199,23 +190,32 @@ struct IngredientDetailView: View {
         Section {
             if isExpanded(.purchases) {
                 if model.sortedPurchases.isEmpty {
-                    Text("No purchases yet. Tap + to add one.")
-                        .foregroundStyle(.secondary)
+                    sheetRow(0, of: 1) {
+                        Text("No purchases yet. Tap + to add one.")
+                            .foregroundStyle(Color.inkSoft)
+                    }
                 } else {
-                    ForEach(model.displayedPurchases(showingAll: showAllPurchases)) { purchase in
-                        NavigationLink(destination: PurchaseDetailView(purchase: purchase)) {
-                            PurchaseRowView(purchase: purchase, unit: model.ingredient.unit)
+                    let displayed = model.displayedPurchases(showingAll: showAllPurchases)
+                    let rowCount = displayed.count + (model.hasMorePurchases ? 1 : 0)
+                    ForEach(Array(displayed.enumerated()), id: \.element.id) { index, purchase in
+                        sheetRow(index, of: rowCount, navigates: true) {
+                            NavigationLink(destination: PurchaseDetailView(purchase: purchase)) {
+                                PurchaseRowView(purchase: purchase, unit: model.ingredient.unit)
+                            }
                         }
                     }
                     .onDelete { model.delete(at: $0, context: modelContext) }
 
                     if model.hasMorePurchases {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) { showAllPurchases.toggle() }
-                        } label: {
-                            Text(showAllPurchases
-                                 ? "Show fewer"
-                                 : "Show all \(model.sortedPurchases.count) purchases")
+                        sheetRow(displayed.count, of: rowCount) {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) { showAllPurchases.toggle() }
+                            } label: {
+                                Text(showAllPurchases
+                                     ? "Show fewer"
+                                     : "Show all \(model.sortedPurchases.count) purchases")
+                                    .foregroundStyle(Color.amberText)
+                            }
                         }
                     }
                 }
@@ -223,7 +223,6 @@ struct IngredientDetailView: View {
         } header: {
             collapsibleHeader("Purchases", .purchases)
         }
-        .listRowBackground(Color.cardBackground)
     }
 
     /// The read-only chemistry block, shown only for oils. The SAP figures stand
@@ -233,64 +232,115 @@ struct IngredientDetailView: View {
     private func chemistrySections(stats: RecipeStats) -> some View {
         Section {
             if isExpanded(.sapValues) {
-                sapRow("SAP (NaOH)", model.ingredient.sapValue)
-                sapRow("SAP (KOH)", model.ingredient.kohSapValue)
                 // INS rides with the qualities chart when there's a profile;
                 // without one there is no chart, so it belongs here or nowhere.
+                let rowCount = model.hasFattyAcidProfile ? 2 : 3
+                sheetRow(0, of: rowCount) { sapRow("SAP (NaOH)", model.ingredient.sapValue) }
+                sheetRow(1, of: rowCount) { sapRow("SAP (KOH)", model.ingredient.kohSapValue) }
                 if !model.hasFattyAcidProfile {
-                    LabeledContent("INS") {
-                        Text(stats.ins ?? 0, format: .number.precision(.fractionLength(1)))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
+                    sheetRow(2, of: rowCount) {
+                        HoneyLedgerLabeledRow("INS") {
+                            Text.honeyLedgerFigure(
+                                (stats.ins ?? 0).formatted(.number.precision(.fractionLength(1)))
+                            )
+                        }
                     }
                 }
             }
         } header: {
             collapsibleHeader(model.hasFattyAcidProfile ? "SAP Values" : "SAP & INS Values", .sapValues)
         }
-        .listRowBackground(Color.cardBackground)
 
         if model.hasFattyAcidProfile {
+            profileSections(stats: stats)
+        } else {
             Section {
-                if isExpanded(.fattyAcidProfile) {
-                    FattyAcidBreakdownRows(stats: stats)
+                sheetRow(0, of: 1) {
+                    Text(RecipeStatsCopy.ingredientNoFattyAcidData)
+                        .foregroundStyle(Color.inkSoft)
                 }
             } header: {
-                collapsibleHeader("Fatty Acid Profile", .fattyAcidProfile)
+                HoneyLedgerSectionLabel("Composition")
             }
-            .listRowBackground(Color.cardBackground)
+        }
+    }
 
-            Section {
-                if isExpanded(.fattyAcidTypes) {
-                    FattyAcidTotalsRows(stats: stats)
+    @ViewBuilder
+    private func profileSections(stats: RecipeStats) -> some View {
+        Group {
+            if Self.isPhone {
+                Section {
+                    if isExpanded(.fattyAcidProfile) {
+                        sheetRow(0, of: 1) {
+                            VStack(spacing: 10) { FattyAcidBreakdownRows(stats: stats) }
+                                .padding(.vertical, 4)
+                        }
+                    }
+                } header: {
+                    collapsibleHeader("Fatty Acid Profile", .fattyAcidProfile)
                 }
-            } header: {
-                collapsibleHeader("Fatty Acid Types", .fattyAcidTypes)
+
+                Section {
+                    if isExpanded(.fattyAcidTypes) {
+                        sheetRow(0, of: 1) {
+                            VStack(spacing: 10) { FattyAcidTotalsRows(stats: stats) }
+                                .padding(.vertical, 4)
+                        }
+                    }
+                } header: {
+                    collapsibleHeader("Fatty Acid Types", .fattyAcidTypes)
+                }
+            } else {
+                fattyAcidColumnsSection(stats: stats)
             }
-            .listRowBackground(Color.cardBackground)
 
             Section {
                 if isExpanded(.soapQualities) {
-                    SoapPropertiesSection(stats: stats, interactive: false)
+                    sheetRow(0, of: 1) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            SoapPropertiesSection(stats: stats, interactive: false)
+                        }
+                        .padding(.vertical, 4)
+                    }
                 }
             } header: {
                 collapsibleHeader("Soap Qualities", .soapQualities)
             }
-            .listRowBackground(Color.cardBackground)
-        } else {
-            Section("Composition") {
-                Text(RecipeStatsCopy.ingredientNoFattyAcidData)
-                    .foregroundStyle(.secondary)
+        }
+    }
+
+    /// The profile and the types side by side on iPad: the labels never
+    /// change and are short.
+    private func fattyAcidColumnsSection(stats: RecipeStats) -> some View {
+        Section {
+            HoneyLedgerColumns {
+                HoneyLedgerColumn(isExpanded: isExpanded(.fattyAcidProfile)) {
+                    collapsibleHeader("Fatty Acid Profile", .fattyAcidProfile, animated: false)
+                } rows: {
+                    FattyAcidBreakdownRows(stats: stats)
+                }
+            } trailing: {
+                HoneyLedgerColumn(isExpanded: isExpanded(.fattyAcidTypes)) {
+                    collapsibleHeader("Fatty Acid Types", .fattyAcidTypes, animated: false)
+                } rows: {
+                    FattyAcidTotalsRows(stats: stats)
+                }
             }
-            .listRowBackground(Color.cardBackground)
         }
     }
 
     private func sapRow(_ title: String, _ value: Double?) -> some View {
-        let formatted = value.map { "\($0.formatted(.number.precision(.fractionLength(0...4)).grouping(.never))) g/g" }
-        return LabeledContent(title) {
-            Text(formatted ?? "Not specified")
-                .foregroundStyle(.secondary)
+        HoneyLedgerLabeledRow(title) {
+            if let value {
+                Text.honeyLedgerFigure(
+                    value.formatted(.number.precision(.fractionLength(0...4)).grouping(.never)),
+                    unit: "g/g"
+                )
+            } else {
+                Text("Not specified")
+                    .font(.body)
+                    .foregroundStyle(Color.inkSoft)
+            }
         }
     }
 }
