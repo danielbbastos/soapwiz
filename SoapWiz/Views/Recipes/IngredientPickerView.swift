@@ -91,7 +91,7 @@ struct IngredientPickerView: View {
 
     /// The gap between the two sheets, matching the one from the chip capsule to
     /// the first sheet: the chip row's 12pt bottom padding plus the 4pt
-    /// `FilterChip` draws around its ledger capsule.
+    /// `FilterChip` draws around its capsule.
     private static let sheetSpacing: CGFloat = 16
 
     /// The title of the confirm button: how many ticked rows it will add.
@@ -192,19 +192,18 @@ struct IngredientPickerView: View {
     private var chipRow: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                FilterChip("All", isSelected: selectedCategory == nil, style: .ledger) {
+                FilterChip("All", isSelected: selectedCategory == nil) {
                     selectedCategory = nil
                 }
                 if tracksInventory {
-                    FilterChip("In stock", isSelected: showsInStockOnly, style: .ledger) {
+                    FilterChip("In stock", isSelected: showsInStockOnly) {
                         showsInStockOnly.toggle()
                     }
                 }
                 ForEach(categories) { category in
                     FilterChip(
                         category.name,
-                        isSelected: selectedCategory?.persistentModelID == category.persistentModelID,
-                        style: .ledger
+                        isSelected: selectedCategory?.persistentModelID == category.persistentModelID
                     ) {
                         selectedCategory = category
                     }

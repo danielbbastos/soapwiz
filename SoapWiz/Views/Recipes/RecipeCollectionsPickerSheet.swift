@@ -78,7 +78,7 @@ struct RecipeCollectionsPickerSheet: View {
         let isMember = recipe.isFiled(under: collection)
         return HStack {
             Circle()
-                .fill(collection.color.tint)
+                .fill(collection.color.swatch)
                 .frame(width: 12, height: 12)
             Text(collection.name)
                 .fontWeight(isMember ? .semibold : .regular)

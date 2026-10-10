@@ -11,14 +11,13 @@ struct RecipeCollectionFilterBar: View {
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                FilterChip("All", isSelected: !model.hasActiveFilters, style: .ledger) {
+                FilterChip("All", isSelected: !model.hasActiveFilters) {
                     model.clearFilters()
                 }
                 ForEach(collections) { collection in
                     FilterChip(
                         collection.name,
                         isSelected: model.selectedCollections.contains(collection.persistentModelID),
-                        style: .ledger,
                         dot: collection.color.pigment
                     ) {
                         model.toggle(collection)

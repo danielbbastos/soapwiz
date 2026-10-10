@@ -74,7 +74,7 @@ struct RecipeCollectionListView: View {
     private func row(_ collection: RecipeCollection) -> some View {
         HStack {
             Circle()
-                .fill(collection.color.tint)
+                .fill(collection.color.swatch)
                 .frame(width: 12, height: 12)
             Text(collection.name)
                 .foregroundStyle(Color.ink)

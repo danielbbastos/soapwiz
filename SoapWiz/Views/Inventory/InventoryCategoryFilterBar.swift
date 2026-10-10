@@ -16,14 +16,13 @@ struct InventoryCategoryFilterBar: View {
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
-                FilterChip("All", isSelected: model.isShowingAllCategories, style: .ledger, count: counts.all) {
+                FilterChip("All", isSelected: model.isShowingAllCategories, count: counts.all) {
                     model.selectAllCategories()
                 }
                 ForEach(categories) { category in
                     FilterChip(
                         category.name,
                         isSelected: model.selectedCategories.contains(category.persistentModelID),
-                        style: .ledger,
                         count: counts.byCategory[category.persistentModelID] ?? 0
                     ) {
                         model.toggleCategory(category)

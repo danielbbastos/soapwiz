@@ -12,11 +12,13 @@ struct RestoreProgressView: View {
                 .controlSize(.large)
             Text(title)
                 .font(.headline)
+                .fontDesign(.serif)
+                .foregroundStyle(Color.ink)
             Text("This only takes a moment.")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.inkSoft)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .warmBackground()
+        .ledgerBackground()
     }
 }

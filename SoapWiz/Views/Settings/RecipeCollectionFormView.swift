@@ -66,7 +66,7 @@ struct RecipeCollectionFormView: View {
                     model.color = option
                 } label: {
                     Circle()
-                        .fill(option.tint)
+                        .fill(option.swatch)
                         .frame(width: 32, height: 32)
                         .overlay {
                             if model.color == option {
