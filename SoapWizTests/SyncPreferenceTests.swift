@@ -4,18 +4,17 @@ import Foundation
 
 @Suite("Sync preference")
 final class SyncPreferenceTests {
-    private let suiteName: String
-    private let defaults: UserDefaults
+    private let temp: TemporaryDefaults
     private let sut: SyncPreference
+    private var defaults: UserDefaults { temp.defaults }
 
     init() throws {
-        suiteName = "SyncPreferenceTests.\(UUID().uuidString)"
-        defaults = try #require(UserDefaults(suiteName: suiteName))
-        sut = SyncPreference(defaults: defaults)
+        temp = try TemporaryDefaults(prefix: "SyncPreferenceTests")
+        sut = SyncPreference(defaults: temp.defaults)
     }
 
     deinit {
-        UserDefaults().removePersistentDomain(forName: suiteName)
+        temp.remove()
     }
 
     @Test func usesOffline_FreshInstall_IsFalse() {

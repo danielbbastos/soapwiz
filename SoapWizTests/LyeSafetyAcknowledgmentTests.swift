@@ -4,18 +4,17 @@ import Foundation
 
 @Suite("Lye safety acknowledgment")
 final class LyeSafetyAcknowledgmentTests {
-    private let suiteName: String
-    private let defaults: UserDefaults
+    private let temp: TemporaryDefaults
     private let sut: LyeSafetyAcknowledgment
+    private var defaults: UserDefaults { temp.defaults }
 
     init() throws {
-        suiteName = "LyeSafetyAcknowledgmentTests.\(UUID().uuidString)"
-        defaults = try #require(UserDefaults(suiteName: suiteName))
-        sut = LyeSafetyAcknowledgment(defaults: defaults)
+        temp = try TemporaryDefaults(prefix: "LyeSafetyAcknowledgmentTests")
+        sut = LyeSafetyAcknowledgment(defaults: temp.defaults)
     }
 
     deinit {
-        UserDefaults().removePersistentDomain(forName: suiteName)
+        temp.remove()
     }
 
     @Test func isAcknowledged_FreshInstall_IsFalse() {
@@ -61,10 +60,10 @@ final class LyeSafetyAcknowledgmentTests {
     @Test func acknowledge_OtherDefaults_AreUnaffected() throws {
         sut.acknowledge()
 
-        let otherSuite = "LyeSafetyAcknowledgmentTests.\(UUID().uuidString)"
-        let other = LyeSafetyAcknowledgment(defaults: try #require(UserDefaults(suiteName: otherSuite)))
+        let otherDefaults = try TemporaryDefaults(prefix: "LyeSafetyAcknowledgmentTests")
+        defer { otherDefaults.remove() }
+        let other = LyeSafetyAcknowledgment(defaults: otherDefaults.defaults)
 
         #expect(!other.isAcknowledged)
-        UserDefaults().removePersistentDomain(forName: otherSuite)
     }
 }
