@@ -108,9 +108,8 @@ struct RecipeRowSummary {
             guard let name = line.ingredient?.name, !name.isEmpty else { return nil }
             return RecipeOilShare(name: name, amount: line.percentage)
         }
-        let ranked = shares.sorted { first, second in
-            if first.amount == second.amount { return first.name < second.name }
-            return first.amount > second.amount
+        let ranked = shares.sorted {
+            RecipeIngredientOrder.precedes(amount: $0.amount, name: $0.name, before: $1.amount, otherName: $1.name)
         }
         topOils = Array(ranked.prefix(RecipeRowSummary.compositionLimit))
 

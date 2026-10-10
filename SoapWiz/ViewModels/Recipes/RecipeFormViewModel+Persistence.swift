@@ -42,12 +42,15 @@ extension RecipeFormViewModel {
                 guard let ingredient = line.ingredient else { return nil }
                 return OilIngredientDraft(ingredient: ingredient, amount: line.percentage, isLocked: true)
             }
+            .inRecipeOrder
         additiveDrafts = recipe.ingredients
             .filter { $0.ingredientRole == .additive }
             .compactMap(Self.amountDraft)
+            .inRecipeOrder
         fragranceDrafts = recipe.ingredients
             .filter { $0.ingredientRole == .fragrance }
             .compactMap(Self.amountDraft)
+            .inRecipeOrder
 
         lockLoadedFragranceRows(with: FragranceUnit.resolve(recipe.fragranceUnit))
 
