@@ -70,12 +70,9 @@ private struct LedgerLargeTitleModifier: ViewModifier {
     @State private var titleLeading: CGFloat?
     @Environment(\.ledgerHasHeaderStrip) private var hasHeaderStrip
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content
-            .preference(
-                key: LedgerLargeTitleInfoKey.self,
-                value: LedgerLargeTitleInfo(subtitle: subtitle, titleLeading: titleLeading)
-            )
+        let configured = content
             .background(
                 LedgerLargeTitleConfigurator(
                     subtitle: subtitle,
@@ -90,6 +87,14 @@ private struct LedgerLargeTitleModifier: ViewModifier {
             } action: { newMargin in
                 margin = newMargin
             }
+        if #available(iOS 26, *) {
+            configured
+        } else {
+            configured.preference(
+                key: LedgerLargeTitleInfoKey.self,
+                value: LedgerLargeTitleInfo(subtitle: subtitle, titleLeading: titleLeading)
+            )
+        }
     }
 }
 

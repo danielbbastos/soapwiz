@@ -128,6 +128,11 @@ struct LedgerLargeTitleConfigurator: UIViewControllerRepresentable {
         var hasHeaderStrip = false
         var onTitleLeading: ((CGFloat) -> Void)?
         private var reportedLeading: CGFloat?
+        private var hasMeasuredLeading = false
+        private var missedMeasurements = 0
+        private static let measurementsBeforeFallback = 5
+        private weak var observedBar: UINavigationBar?
+        private var boundsObservation: NSKeyValueObservation?
 
         private var subtitleView: LedgerSubtitleView?
         private var titleInset: CGFloat = 0
@@ -162,7 +167,49 @@ struct LedgerLargeTitleConfigurator: UIViewControllerRepresentable {
                 return view.subviews.lazy.compactMap { label(in: $0) }.first
             }
             let titleView = bar.subviews.first { String(describing: type(of: $0)).contains("LargeTitle") }
-            return titleView.flatMap { label(in: $0) }.map { $0.convert($0.bounds, to: bar).minX }
+            guard let found = titleView.flatMap({ label(in: $0) }), found.bounds.width > 0 else { return nil }
+            return found.convert(found.bounds, to: bar).minX
+        }
+
+        override func viewDidLayoutSubviews() {
+            super.viewDidLayoutSubviews()
+            if #unavailable(iOS 26) { reportTitleLeading() }
+        }
+
+        /// Hears the bar resize (rotation, a split-view change), which moves
+        /// the title without laying this view out.
+        private func observe(_ bar: UINavigationBar) {
+            guard observedBar !== bar else { return }
+            observedBar = bar
+            boundsObservation = bar.layer.observe(\.bounds) { [weak self] _, _ in
+                Task { @MainActor in
+                    self?.observedBar?.layoutIfNeeded()
+                    self?.reportTitleLeading()
+                }
+            }
+        }
+
+        /// Reports only what was read off the title itself. When the title
+        /// isn't laid out yet nothing is reported, and the strip lines up with
+        /// the search field meanwhile; the bar's own margin stands in only if
+        /// the title is never found, and never replaces a reading.
+        private func reportTitleLeading() {
+            guard let bar = observedBar else { return }
+            // After the view update that called this, which can't change state.
+            let leading: CGFloat
+            if let origin = Self.largeTitleOrigin(in: bar) {
+                hasMeasuredLeading = true
+                leading = origin + titleInset
+            } else if !hasMeasuredLeading {
+                missedMeasurements += 1
+                guard missedMeasurements >= Self.measurementsBeforeFallback else { return }
+                leading = bar.layoutMargins.left + titleInset
+            } else {
+                return
+            }
+            guard leading != reportedLeading else { return }
+            reportedLeading = leading
+            Task { onTitleLeading?(leading) }
         }
 
         func apply() {
@@ -176,17 +223,12 @@ struct LedgerLargeTitleConfigurator: UIViewControllerRepresentable {
             let barMargin = navigationController.navigationBar.layoutMargins.left
             titleInset = margin.map { max($0 - barMargin, 0) } ?? 0
 
+            var key = "\(traitCollection.preferredContentSizeCategory.rawValue) \(titleInset)"
             if #unavailable(iOS 26) {
-                // After the view update that called this, which can't change state.
-                let origin = Self.largeTitleOrigin(in: navigationController.navigationBar) ?? barMargin
-                let leading = origin + titleInset
-                if leading != reportedLeading {
-                    reportedLeading = leading
-                    Task { onTitleLeading?(leading) }
-                }
+                key += " \(hasHeaderStrip)"
+                observe(navigationController.navigationBar)
+                reportTitleLeading()
             }
-
-            let key = "\(traitCollection.preferredContentSizeCategory.rawValue) \(titleInset) \(hasHeaderStrip)"
             if key != appliedKey || host.navigationItem.standardAppearance == nil {
                 appliedKey = key
                 applyTitleAppearances(to: host, in: navigationController)

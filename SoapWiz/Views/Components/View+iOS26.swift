@@ -101,13 +101,52 @@ private struct HeaderStrip<Strip: View>: ViewModifier {
     let strip: Strip
 
     @State private var isScrolled = false
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.contentOffset.y + geometry.contentInsets.top > 0
+                } action: { _, scrolled in
+                    isScrolled = scrolled
+                }
+                .onChange(of: showsList) {
+                    isScrolled = false
+                }
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    strip
+                }
+        } else {
+            content.modifier(LegacyHeaderStripModifier(showsList: showsList, strip: strip))
+        }
+    }
+}
+
+/// Whether the subtitle has collapsed, given where the list is scrolled to.
+enum HeaderStripSubtitleCollapse {
+    /// Collapses once `offset` is past `subtitleHeight` plus `margin`, and
+    /// expands again only when `offset` is back at the top or beyond it.
+    static func isCollapsed(
+        wasCollapsed: Bool,
+        offset: CGFloat,
+        subtitleHeight: CGFloat,
+        margin: CGFloat = 8
+    ) -> Bool {
+        if wasCollapsed { return offset > 0 }
+        return offset > subtitleHeight + margin
+    }
+}
+
+/// `HeaderStrip` before iOS 26: the paper band, and the subtitle collapsing.
+private struct LegacyHeaderStripModifier<Strip: View>: ViewModifier {
+    let showsList: Bool
+    let strip: Strip
+
+    @State private var isScrolled = false
     @State private var titleInfo: LedgerLargeTitleInfo?
     @State private var isSubtitleCollapsed = false
     @State private var subtitleHeight: CGFloat = 0
-
-    /// How far past the subtitle's own height the list scrolls before it
-    /// collapses.
-    private let collapseMargin: CGFloat = 8
 
     func body(content: Content) -> some View {
         content
@@ -120,28 +159,24 @@ private struct HeaderStrip<Strip: View>: ViewModifier {
                 (geometry.contentOffset.y + geometry.contentInsets.top).rounded()
             } action: { _, offset in
                 isScrolled = offset > 0
-                if isSubtitleCollapsed {
-                    if offset <= 0 { isSubtitleCollapsed = false }
-                } else if offset > subtitleHeight + collapseMargin {
-                    isSubtitleCollapsed = true
-                }
+                isSubtitleCollapsed = HeaderStripSubtitleCollapse.isCollapsed(
+                    wasCollapsed: isSubtitleCollapsed,
+                    offset: offset,
+                    subtitleHeight: subtitleHeight
+                )
             }
             .onChange(of: showsList) {
                 isScrolled = false
                 isSubtitleCollapsed = false
             }
             .safeAreaInset(edge: .top, spacing: 0) {
-                if #available(iOS 26, *) {
-                    strip
-                } else {
-                    LegacyHeaderStrip(
-                        strip: strip,
-                        isScrolled: isScrolled,
-                        titleInfo: titleInfo,
-                        isSubtitleCollapsed: isSubtitleCollapsed,
-                        subtitleHeight: $subtitleHeight
-                    )
-                }
+                LegacyHeaderStrip(
+                    strip: strip,
+                    isScrolled: isScrolled,
+                    titleInfo: titleInfo,
+                    isSubtitleCollapsed: isSubtitleCollapsed,
+                    subtitleHeight: $subtitleHeight
+                )
             }
     }
 }

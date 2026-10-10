@@ -17,15 +17,9 @@ private struct HoneyLedgerInlineTitleModifier: ViewModifier {
     let title: String
     let overPhoto: Bool
 
-    @Environment(\.ledgerHasHeaderStrip) private var stripInside
-    @State private var stripOutside = false
-
-    private var background: LedgerNavigationBarBackground {
-        overPhoto || stripInside || stripOutside ? .transparent : .paper
-    }
-
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content
+        let titled = content
             .toolbar {
                 ToolbarItem(placement: .principal) {
                     Text(title)
@@ -35,16 +29,33 @@ private struct HoneyLedgerInlineTitleModifier: ViewModifier {
                         .shadow(color: .black.opacity(overPhoto ? 0.45 : 0), radius: 5, y: 1)
                 }
             }
+        if #available(iOS 26, *) {
+            titled
+        } else {
+            titled.modifier(LegacyInlineBarModifier(overPhoto: overPhoto))
+        }
+    }
+}
+
+/// The inline title's bar background before iOS 26.
+private struct LegacyInlineBarModifier: ViewModifier {
+    let overPhoto: Bool
+
+    @Environment(\.ledgerHasHeaderStrip) private var stripInside
+    @State private var stripOutside = false
+
+    private var background: LedgerNavigationBarBackground {
+        overPhoto || stripInside || stripOutside ? .transparent : .paper
+    }
+
+    func body(content: Content) -> some View {
+        content
             .onPreferenceChange(LedgerHasHeaderStripPreference.self) { hasStrip in
                 stripOutside = hasStrip
             }
             .background {
-                if #available(iOS 26, *) {
-                    EmptyView()
-                } else {
-                    LedgerInlineBarConfigurator(background: background)
-                        .frame(width: 0, height: 0)
-                }
+                LedgerInlineBarConfigurator(background: background)
+                    .frame(width: 0, height: 0)
             }
     }
 }
