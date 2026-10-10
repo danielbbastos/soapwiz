@@ -199,12 +199,11 @@ struct RecipeCostSection: View {
     private var unpricedWarning: some View {
         let unpriced = batch.unpricedIngredientCount
         if unpriced > 0 {
-            Label(
+            HoneyLedgerFieldNote(
                 unpriced == 1 ? "1 ingredient has no price" : "\(unpriced) ingredients have no price",
-                systemImage: "exclamationmark.triangle.fill"
+                tint: .warning
             )
-            .font(.footnote)
-            .foregroundStyle(Color.warning)
+            .padding(.top, 4)
         }
     }
 
