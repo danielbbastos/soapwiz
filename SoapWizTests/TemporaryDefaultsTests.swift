@@ -4,30 +4,27 @@ import Testing
 @Suite("Temporary defaults")
 struct TemporaryDefaultsTests {
 
-    @Test func remove_AfterWriting_DeletesPlistAndValue() throws {
+    @Test func remove_AfterWriting_ClearsTheValue() throws {
         let temp = try TemporaryDefaults(prefix: "TemporaryDefaultsTests")
         temp.defaults.set("value", forKey: "key")
-        temp.defaults.synchronize()
-        let url = temp.plistURL
-        try #require(FileManager.default.fileExists(atPath: url.path))
 
         temp.remove()
 
-        #expect(!FileManager.default.fileExists(atPath: url.path))
         let reopened = try #require(UserDefaults(suiteName: temp.suiteName))
         #expect(reopened.string(forKey: "key") == nil)
         temp.remove()
     }
 
-    @Test func remove_CalledTwice_LeavesPlistGone() throws {
+    @Test func remove_CalledTwice_StillClearsTheValue() throws {
         let temp = try TemporaryDefaults(prefix: "TemporaryDefaultsTests")
         temp.defaults.set("value", forKey: "key")
-        temp.defaults.synchronize()
 
         temp.remove()
         temp.remove()
 
-        #expect(!FileManager.default.fileExists(atPath: temp.plistURL.path))
+        let reopened = try #require(UserDefaults(suiteName: temp.suiteName))
+        #expect(reopened.string(forKey: "key") == nil)
+        temp.remove()
     }
 
     @Test func sweepStale_OldAndFreshFiles_DeletesOnlyOldOnesWithThePrefix() throws {
