@@ -30,7 +30,7 @@ struct RecipeDetailIngredientSections: View {
     // MARK: - Ingredients
 
     private var sortedOils: [OilIngredientDraft] {
-        model.oilDrafts.sorted { $0.amount > $1.amount }
+        model.oilDrafts.inRecipeOrder
     }
 
     private var oilsSection: some View {
