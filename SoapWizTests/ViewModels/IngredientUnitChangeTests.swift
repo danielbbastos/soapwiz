@@ -7,50 +7,7 @@ import SwiftData
 /// instead of relabelling it (SW-256).
 @Suite("Ingredient unit change", .serialized)
 @MainActor
-struct IngredientUnitChangeTests {
-
-    private let locale = Locale(identifier: "en_US_POSIX")
-
-    private func makeContainer() throws -> ModelContainer {
-        let schema = ModelContainerFactory.schema
-        return try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
-    }
-
-    private func makePurchase(quantity: Double, totalPrice: Double = 10, remaining: Double? = nil) -> IngredientPurchase {
-        let purchase = IngredientPurchase(
-            dateOfPurchase: .now,
-            quantity: quantity,
-            totalPrice: totalPrice,
-            badge: "",
-            journalCode: "",
-            expiryDate: nil,
-            openingDate: nil
-        )
-        if let remaining { purchase.remainingAmount = remaining }
-        return purchase
-    }
-
-    private func makeIngredient(
-        in context: ModelContext,
-        unit: String,
-        quantities: [Double] = [],
-        threshold: Double? = nil
-    ) throws -> Ingredient {
-        let ingredient = Ingredient(name: "Olive Oil", unit: unit)
-        ingredient.lowStockThreshold = threshold
-        context.insert(ingredient)
-        for quantity in quantities {
-            let purchase = makePurchase(quantity: quantity)
-            context.insert(purchase)
-            purchase.attach(to: ingredient)
-        }
-        try context.save()
-        return ingredient
-    }
-
-    private func approximately(_ lhs: Double, _ rhs: Double) -> Bool {
-        abs(lhs - rhs) < 1e-9
-    }
+struct IngredientUnitChangeTests: IngredientUnitChangeTestHelpers {
 
     // MARK: Converter
 
@@ -207,6 +164,66 @@ struct IngredientUnitChangeTests {
         #expect(model.lowStockThreshold == original)
     }
 
+    @Test func save_PickAcrossKindsThenBackToKind_ThresholdMatchesStock() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let ingredient = try makeIngredient(in: context, unit: "g", quantities: [500], threshold: 500)
+        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
+
+        model.selectedUnit = .milliliters
+        model.selectedUnit = .liters
+        model.save(context: context)
+
+        #expect(ingredient.unit == "L")
+        #expect(approximately(ingredient.totalRemaining, 500))
+        #expect(approximately(try #require(ingredient.lowStockThreshold), 500))
+    }
+
+    @Test func save_KilogramsViaVolumeToGrams_ThresholdAndStockBothScale() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let ingredient = try makeIngredient(in: context, unit: "kg", quantities: [2], threshold: 1)
+        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
+
+        model.selectedUnit = .milliliters
+        model.selectedUnit = .grams
+        model.save(context: context)
+
+        #expect(ingredient.unit == "g")
+        #expect(approximately(ingredient.totalRemaining, 2000))
+        #expect(approximately(try #require(ingredient.lowStockThreshold), 1000))
+    }
+
+    @Test func selectedUnit_ValueTypedAfterPick_BecomesTheNewAnchor() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let ingredient = try makeIngredient(in: context, unit: "g", quantities: [5000], threshold: 500)
+        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
+
+        model.selectedUnit = .kilograms
+        model.lowStockThreshold = "2"
+        model.selectedUnit = .grams
+        #expect(LocaleDecimal.parse(model.lowStockThreshold, locale: locale) == 2000)
+
+        model.save(context: context)
+        #expect(ingredient.unit == "g")
+        #expect(approximately(try #require(ingredient.lowStockThreshold), 2000))
+    }
+
+    @Test func selectedUnit_ThroughSeveralUnitsAndBack_RestoresOriginalText() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let ingredient = try makeIngredient(in: context, unit: "kg", quantities: [5], threshold: 1.234)
+        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
+        let original = model.lowStockThreshold
+
+        model.selectedUnit = .grams
+        model.selectedUnit = .pounds
+        model.selectedUnit = .kilograms
+
+        #expect(model.lowStockThreshold == original)
+    }
+
     @Test func save_ConvertedThreshold_SurvivesReopeningAndResaving() throws {
         let container = try makeContainer()
         let context = container.mainContext
@@ -278,78 +295,4 @@ struct IngredientUnitChangeTests {
         #expect(ingredient.lowStockThreshold == 100)
     }
 
-    // MARK: Warning flag
-
-    @Test func unitChangeKeepsAmounts_AcrossKinds_IsTrue() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-        let ingredient = try makeIngredient(in: context, unit: "g", quantities: [500])
-        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
-
-        model.selectedUnit = .milliliters
-
-        #expect(model.unitChangeKeepsAmounts)
-    }
-
-    @Test func unitChangeKeepsAmounts_ToCountOrNone_IsTrue() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-        let ingredient = try makeIngredient(in: context, unit: "g", quantities: [500])
-        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
-
-        model.selectedUnit = .units
-        #expect(model.unitChangeKeepsAmounts)
-        model.selectedUnit = nil
-        #expect(model.unitChangeKeepsAmounts)
-    }
-
-    @Test func unitChangeKeepsAmounts_ThresholdOnly_IsTrue() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-        let ingredient = try makeIngredient(in: context, unit: "g", threshold: 100)
-        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
-
-        model.selectedUnit = .milliliters
-
-        #expect(model.unitChangeKeepsAmounts)
-    }
-
-    @Test func unitChangeKeepsAmounts_NothingToKeep_IsFalse() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-        let ingredient = try makeIngredient(in: context, unit: "g")
-        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
-
-        model.selectedUnit = .milliliters
-
-        #expect(!model.unitChangeKeepsAmounts)
-    }
-
-    @Test func unitChangeKeepsAmounts_SameKind_IsFalse() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-        let ingredient = try makeIngredient(in: context, unit: "g", quantities: [500], threshold: 100)
-        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
-
-        model.selectedUnit = .kilograms
-
-        #expect(!model.unitChangeKeepsAmounts)
-    }
-
-    @Test func unitChangeKeepsAmounts_UnitUnchanged_IsFalse() throws {
-        let container = try makeContainer()
-        let context = container.mainContext
-        let ingredient = try makeIngredient(in: context, unit: "g", quantities: [500], threshold: 100)
-        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
-
-        #expect(!model.unitChangeKeepsAmounts)
-    }
-
-    @Test func unitChangeKeepsAmounts_NewIngredient_IsFalse() {
-        let model = IngredientFormViewModel(locale: locale)
-
-        model.selectedUnit = .grams
-
-        #expect(!model.unitChangeKeepsAmounts)
-    }
 }

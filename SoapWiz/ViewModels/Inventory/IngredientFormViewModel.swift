@@ -7,8 +7,10 @@ final class IngredientFormViewModel {
     var name: String = ""
     var code: String = ""
     /// Picking a unit of the same kind rewrites the threshold text into it, so the
-    /// number on screen is the one that will be saved. `didSet` is not called from
-    /// `init`, so the prefilled unit leaves the threshold as stored.
+    /// number on screen is the one that will be saved. It is converted from the
+    /// anchor below, not from the previous pick, so it agrees with how save converts
+    /// stock (stored unit to final unit). `didSet` is not called from `init`, so the
+    /// prefilled unit leaves the threshold as stored.
     var selectedUnit: IngredientUnit? {
         didSet { convertThreshold(from: oldValue, to: selectedUnit) }
     }
@@ -36,6 +38,9 @@ final class IngredientFormViewModel {
     }
 
     private(set) var codeIsManuallyEdited: Bool = false
+
+    /// What unit picks convert the threshold from. Set in `init`.
+    @ObservationIgnored private var thresholdAnchor = LowStockThresholdAnchor(text: "", unit: nil)
 
     let ingredient: Ingredient?
     private let locale: Locale
@@ -122,7 +127,7 @@ final class IngredientFormViewModel {
             selectedUnit = IngredientUnit(rawValue: ingredient.unit)
             selectedCategory = ingredient.category
             if let threshold = ingredient.lowStockThreshold {
-                lowStockThreshold = Self.thresholdText(threshold, locale: locale)
+                lowStockThreshold = LowStockThresholdAnchor.displayText(threshold, locale: locale)
             }
             if let sap = ingredient.sapValue {
                 sapValue = sap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never).locale(locale))
@@ -138,6 +143,7 @@ final class IngredientFormViewModel {
             }
             imageData = ingredient.imageData
         }
+        thresholdAnchor = LowStockThresholdAnchor(text: lowStockThreshold, unit: selectedUnit)
         // A new ingredient gets a baseline too: without one an untouched
         // New Ingredient sheet would read as dirty and refuse to dismiss.
         captureSnapshot()
@@ -289,25 +295,12 @@ final class IngredientFormViewModel {
         return IngredientUnitConverter.convertSameKind(1, from: capturedUnit, to: newUnit) == nil
     }
 
-    /// Rewrites the threshold text from one unit into another of the same kind.
-    /// Text that is blank or unreadable, or a change that can't be converted,
-    /// is left exactly as typed.
-    ///
-    /// The fraction digits run to six so that a round trip (1.234 kg to 1234 g and
-    /// back) lands on the text it started from.
+    /// Rewrites the threshold text for a newly picked unit. See
+    /// `LowStockThresholdAnchor` for why it converts from the anchor, not from the
+    /// previous pick.
     private func convertThreshold(from oldUnit: IngredientUnit?, to newUnit: IngredientUnit?) {
-        guard let oldUnit, let newUnit, oldUnit != newUnit,
-              let value = LocaleDecimal.parse(lowStockThreshold, locale: locale),
-              let converted = IngredientUnitConverter.convertSameKind(value, from: oldUnit.rawValue, to: newUnit.rawValue)
-        else { return }
-        lowStockThreshold = Self.thresholdText(converted, locale: locale)
-    }
-
-    /// The threshold as shown in the field. Used both when the form opens and when
-    /// a unit change rewrites it, so the two can't drift: a converted value such as
-    /// 1.234 kg must survive reopening the form and saving, not be rounded to 1.23.
-    private static func thresholdText(_ value: Double, locale: Locale) -> String {
-        value.formatted(.number.precision(.fractionLength(0...6)).grouping(.never).locale(locale))
+        guard oldUnit != newUnit else { return }
+        lowStockThreshold = thresholdAnchor.text(for: newUnit, from: oldUnit, current: lowStockThreshold, locale: locale)
     }
 
     @discardableResult
