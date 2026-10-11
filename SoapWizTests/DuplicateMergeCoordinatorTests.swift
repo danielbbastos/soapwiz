@@ -60,6 +60,71 @@ struct DuplicateMergeCoordinatorTests {
         #expect(!DuplicateMergeCoordinator.shouldMerge(after: event))
     }
 
+    // MARK: - History
+
+    @Test func shouldMerge_NoHistoryChanges_ReturnsFalse() {
+        #expect(!DuplicateMergeCoordinator.shouldMerge(historyChangeCount: 0))
+    }
+
+    @Test func shouldMerge_HistoryChanges_ReturnsTrue() {
+        #expect(DuplicateMergeCoordinator.shouldMerge(historyChangeCount: 3))
+    }
+
+    @Test func shouldMerge_HistoryUnreadable_ReturnsTrue() {
+        #expect(DuplicateMergeCoordinator.shouldMerge(historyChangeCount: nil))
+    }
+
+    /// Polls for up to two seconds rather than sleeping a fixed time.
+    private func waitForCategoryCount(_ expected: Int, in context: ModelContext) async throws {
+        for _ in 0..<200 where try categoryCount(in: context) != expected {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+    }
+
+    @Test func importFinished_WithChanges_Merges() async throws {
+        let (container, context) = try makeContext()
+        let sut = DuplicateMergeCoordinator(context: context, debounce: .milliseconds(10))
+        let other = ModelContext(container)
+        other.insert(IngredientCategory(name: "Oils"))
+        other.insert(IngredientCategory(name: "Oils"))
+        try other.save()
+
+        sut.importFinished()
+        try await waitForCategoryCount(1, in: context)
+
+        #expect(try categoryCount(in: context) == 1)
+    }
+
+    @Test func importFinished_WithoutChanges_DoesNotMerge() async throws {
+        let (container, context) = try makeContext()
+        _ = container
+        // Saved before the coordinator exists, so its history is not news to it.
+        try insertDuplicateCategories(in: context)
+        let sut = DuplicateMergeCoordinator(context: context, debounce: .milliseconds(10))
+
+        sut.importFinished()
+        try await Task.sleep(for: .milliseconds(200))
+
+        #expect(try categoryCount(in: context) == 2)
+    }
+
+    /// An empty import right after one that wrote something must not cancel the
+    /// merge the first one asked for.
+    @Test func importFinished_EmptyImportAfterNonEmpty_KeepsPendingMerge() async throws {
+        let (container, context) = try makeContext()
+        let sut = DuplicateMergeCoordinator(context: context, debounce: .milliseconds(50))
+        let other = ModelContext(container)
+        other.insert(IngredientCategory(name: "Oils"))
+        other.insert(IngredientCategory(name: "Oils"))
+        try other.save()
+
+        sut.importFinished()
+        sut.importFinished()
+        try await waitForCategoryCount(1, in: context)
+
+        #expect(try categoryCount(in: context) == 1)
+    }
+
     // MARK: - Merging
 
     @Test func mergeNow_WithDuplicates_Merges() throws {

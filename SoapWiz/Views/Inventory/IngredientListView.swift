@@ -4,9 +4,8 @@ import SwiftData
 struct IngredientListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
-    @Query(Ingredient.listDescriptor) private var ingredients: [Ingredient]
+    @Environment(InventoryRows.self) private var rows
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
-    @Query private var purchases: [IngredientPurchase]
     @Query private var settingsRecords: [AppSettings]
 
     @State private var model = IngredientListViewModel()
@@ -16,13 +15,13 @@ struct IngredientListView: View {
     @State private var selectedSlug = ""
 
     private var selectedIngredients: [Ingredient] {
-        ingredients.filter { model.selection.contains($0.persistentModelID) }
+        rows.ingredients.filter { model.selection.contains($0.persistentModelID) }
     }
 
     /// Chips are drawn from the unfiltered inventory, not the displayed list:
     /// narrowing to one category must not make every other chip disappear.
     private var visibleCategories: [IngredientCategory] {
-        model.visibleCategories(categories, in: ingredients)
+        model.visibleCategories(categories, in: rows.ingredients)
     }
 
     private func row(_ ingredient: Ingredient, index: Int, count: Int) -> IngredientListRow {
@@ -44,17 +43,17 @@ struct IngredientListView: View {
     /// a merge removes the open row too, and closing the detail then would
     /// throw away whatever the user had open over it.
     ///
-    /// The row counts as gone when SwiftData says so, or when the query no
-    /// longer returns it (it includes hidden rows), since a delete synced from
+    /// The row counts as gone when SwiftData says so, or when the rows no
+    /// longer include it (they include hidden rows), since a delete synced from
     /// another device isn't certain to detach the instance. Both are needed:
-    /// when this device's merge posts its notification, the query may not
-    /// have caught up yet.
+    /// when this device's merge posts its notification, the rows may not
+    /// have caught up yet, which is why that handler refreshes them first.
     ///
     /// `detailFollowed` is true only for that notification, which the open
     /// detail also answers by moving to the survivor itself.
     private func followRemovedSelection(detailFollowed: Bool) {
         guard let selection = navigation.selection,
-              selection.modelContext == nil || selection.isDeleted || !ingredients.contains(selection)
+              selection.modelContext == nil || selection.isDeleted || !rows.ingredients.contains(selection)
         else { return }
         if let live = LiveIngredient.survivor(slug: selectedSlug, excluding: selection, in: modelContext) {
             navigation.followMerge(to: live, isHidden: live.isHidden, detailFollowed: detailFollowed)
@@ -66,9 +65,10 @@ struct IngredientListView: View {
     var body: some View {
         // Worked out once per pass, in one walk over the inventory: it sums each
         // row's stock, and several places below need the result. Favourites can't
-        // be part of the `@Query` sort (`SortDescriptor` has no `Bool` overload),
+        // be part of the fetch's sort (`SortDescriptor` has no `Bool` overload),
         // so the pinning is applied there, after filtering.
-        let content = model.content(for: ingredients, stock: StockLevels(purchases))
+        let ingredients = rows.ingredients
+        let content = model.content(for: ingredients, stock: StockLevels(rows.purchases))
         let displayed = content.displayed
         ListDetailContainer(
             navigation: navigation,
@@ -211,6 +211,7 @@ struct IngredientListView: View {
             followRemovedSelection(detailFollowed: false)
         }
         .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
+            rows.refresh()
             followRemovedSelection(detailFollowed: true)
         }
         .alert(model.removalConfirmationTitle, isPresented: Binding(
