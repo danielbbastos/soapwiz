@@ -92,7 +92,20 @@ extension RecipeFormViewModel {
         redistributeFragrancePercentages()
     }
 
+    /// A commit from a fragrance amount field. The field writes its parsed value
+    /// back every time editing ends, changed or not, so an amount equal to the
+    /// stored one at the displayed precision is ignored rather than locking the
+    /// row and moving the others.
     func userEditedFragrance(id: UUID, amount: Double) {
+        guard let draft = fragranceDrafts.first(where: { $0.id == id }),
+              !draft.amount.matches(amount, fractionDigits: Self.extraAmountFractionDigits) else { return }
+        setFragranceAmount(id: id, amount: amount)
+    }
+
+    /// Assigns a fragrance amount unconditionally, locking the row and
+    /// redistributing the rest when the unit spreads a budget. Import uses this
+    /// directly so an amount equal to the current share still locks.
+    func setFragranceAmount(id: UUID, amount: Double) {
         guard let idx = fragranceDrafts.firstIndex(where: { $0.id == id }) else { return }
         fragranceDrafts[idx].amount = amount
         guard redistributionTotal != nil else { return }

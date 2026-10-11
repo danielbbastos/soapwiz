@@ -213,7 +213,7 @@ struct RecipeFormViewModelTests: RecipeFormTestHelpers {
     @Test func addOil_WhenLockedSumExceeds100_GetsZero() {
         let model = RecipeFormViewModel()
         model.addOil(Ingredient(name: "A"))
-        model.userEdited(id: model.oilDrafts[0].id, amount: 100)
+        model.setOilAmount(id: model.oilDrafts[0].id, amount: 100)
 
         model.addOil(Ingredient(name: "B"))
 

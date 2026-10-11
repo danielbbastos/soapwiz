@@ -201,13 +201,14 @@ extension RecipeFormViewModel {
                 addOil(ingredient)
                 guard let draft = oilDraft(for: ingredient) else { continue }
                 ledger.record(row, for: ingredient)
-                userEdited(id: draft.id, amount: row.imported.amount)
+                setOilAmount(id: draft.id, amount: row.imported.amount)
             case .merged:
                 guard let draft = oilDraft(for: ingredient) else { continue }
                 ledger.record(row, for: ingredient)
-                // `userEdited` assigns rather than adds, so the total is worked out
-                // here and written once.
-                userEdited(id: draft.id, amount: draft.amount + row.imported.amount)
+                // `setOilAmount` assigns rather than adds, so the total is worked out
+                // here and written once. It always locks, unlike `userEdited`, which
+                // skips an amount equal to the current one.
+                setOilAmount(id: draft.id, amount: draft.amount + row.imported.amount)
             }
         }
         merged.append(contentsOf: ledger.merges)
@@ -283,13 +284,13 @@ extension RecipeFormViewModel {
             if case .merged = rowKind {
                 guard let draft = fragranceDraft(for: ingredient) else { continue }
                 ledger.record(row, for: ingredient)
-                userEditedFragrance(id: draft.id, amount: draft.amount + row.imported.amount)
+                setFragranceAmount(id: draft.id, amount: draft.amount + row.imported.amount)
                 continue
             }
             addFragrance(ingredient)
             guard let draft = fragranceDraft(for: ingredient) else { continue }
             ledger.record(row, for: ingredient)
-            userEditedFragrance(id: draft.id, amount: row.imported.amount)
+            setFragranceAmount(id: draft.id, amount: row.imported.amount)
         }
         merged.append(contentsOf: ledger.merges)
     }
