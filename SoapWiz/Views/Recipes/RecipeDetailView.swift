@@ -74,6 +74,10 @@ struct RecipeDetailView: View {
             .controlSize(.large)
             .padding(.bottom, 8)
         }
+        // No text input here, so the button never needs to avoid the keyboard. One
+        // left up from elsewhere (the Recipes search beside the detail on iPad)
+        // would lift it, and after an app switch it stayed lifted mid-screen (SW-251).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .toolbar {
             shareToolbarItem
             editToolbarItem
