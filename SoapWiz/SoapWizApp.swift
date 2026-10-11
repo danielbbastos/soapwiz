@@ -55,7 +55,10 @@ struct SoapWizApp: App {
             .onChange(of: scenePhase) { _, newPhase in
                 // The keyboard closes while the app is still on screen, so SwiftUI
                 // removes the keyboard inset. A keyboard that disappeared in the
-                // background left the recipe form's cost bar floating mid-screen (SW-250).
+                // background left the recipe form's cost bar floating mid-screen
+                // (SW-250). `.inactive` also covers Control Center and call banners,
+                // which close the keyboard too; that's deliberate, since by
+                // `.background` the keyboard is already gone.
                 if newPhase == .inactive {
                     UIApplication.shared.endEditing()
                 }
