@@ -59,10 +59,8 @@ final class StoreHost {
         let container = ModelContainerFactory.makeProduction(offline: offline)
         // Straight after the store opens, so its import observer is registered
         // before the launch merge below: an import that finished in between
-        // would otherwise go unmerged until the next one. Built before the
-        // scene's first activation, which it has to see in order to skip it.
-        // Held for the app's lifetime; CloudKit imports duplicates long after
-        // launch.
+        // would otherwise go unmerged until the next one. Held for the app's
+        // lifetime; CloudKit imports duplicates long after launch.
         mergeCoordinator = DuplicateMergeCoordinator(context: container.mainContext)
         Self.prepare(container.mainContext)
         self.container = container
@@ -83,10 +81,6 @@ final class StoreHost {
         await reset()
         generation += 1
         phase = .ready
-    }
-
-    func appDidBecomeActive() {
-        mergeCoordinator.appDidBecomeActive()
     }
 
     private func reset() async {

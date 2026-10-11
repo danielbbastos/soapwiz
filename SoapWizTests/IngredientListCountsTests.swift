@@ -44,12 +44,20 @@ struct IngredientListCountsTests {
         return ingredient
     }
 
+    private func stock(_ ingredients: [Ingredient]) -> StockLevels {
+        StockLevels(ingredients.flatMap(\.purchases))
+    }
+
+    private func makeContent(_ ingredients: [Ingredient]) -> IngredientListContent {
+        model.content(for: ingredients, stock: stock(ingredients))
+    }
+
     private func countSummary(_ ingredients: [Ingredient]) -> InventoryCountSummary {
-        model.content(for: ingredients).summary
+        makeContent(ingredients).summary
     }
 
     private func categoryCounts(_ ingredients: [Ingredient]) -> (all: Int, byCategory: [PersistentIdentifier: Int]) {
-        model.content(for: ingredients).categoryCounts
+        makeContent(ingredients).categoryCounts
     }
 
     private func makeCategory(_ name: String) -> IngredientCategory {
@@ -267,10 +275,11 @@ struct IngredientListCountsTests {
         let other = makeIngredient("Lye", category: makeCategory("Lyes"))
         model.toggleCategory(oils)
 
-        let content = model.content(for: [plain, favourite, other])
+        let all = [plain, favourite, other]
+        let content = makeContent(all)
 
         #expect(content.displayed.map(\.name) == [favourite.name, plain.name])
-        #expect(content.displayed.map(\.name) == model.filtered([plain, favourite, other]).favoritesFirst.map(\.name))
+        #expect(content.displayed.map(\.name) == model.filtered(all).favoritesFirst.map(\.name))
     }
 
     @Test func content_CategorySelection_NarrowsListButNotCountsOrSummary() {
@@ -279,7 +288,7 @@ struct IngredientListCountsTests {
         let ingredients = [makeIngredient("Olive", category: oils), makeIngredient("Lye", category: lyes)]
         model.toggleCategory(oils)
 
-        let content = model.content(for: ingredients)
+        let content = makeContent(ingredients)
 
         #expect(content.displayed.count == 1)
         #expect(content.categoryCounts.all == 2)
@@ -290,7 +299,7 @@ struct IngredientListCountsTests {
         let ingredients = [makeIngredient("Olive"), makeIngredient("Lye")]
         model.searchText = "olive"
 
-        let content = model.content(for: ingredients)
+        let content = makeContent(ingredients)
 
         #expect(content.displayed.count == 1)
         #expect(content.summary.total == 2)

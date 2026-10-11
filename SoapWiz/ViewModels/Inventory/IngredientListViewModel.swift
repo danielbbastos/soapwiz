@@ -40,7 +40,7 @@ struct InventoryCountSummary: Equatable {
 }
 
 /// What the Inventory screen draws from the store, computed together by
-/// `IngredientListViewModel.content(for:)`.
+/// `IngredientListViewModel.content(for:stock:)`.
 struct IngredientListContent {
     let displayed: [Ingredient]
     let categoryCounts: (all: Int, byCategory: [PersistentIdentifier: Int])
@@ -154,8 +154,8 @@ final class IngredientListViewModel {
         ingredients.filter(\.isHidden)
     }
 
-    func filtered(_ ingredients: [Ingredient]) -> [Ingredient] {
-        ingredients.filter { !$0.isHidden && matchesFilters($0) && matchesCategory($0) }
+    func filtered(_ ingredients: [Ingredient], stock: StockLevels) -> [Ingredient] {
+        ingredients.filter { !$0.isHidden && matchesFilters($0, stock: stock) && matchesCategory($0) }
     }
 
     /// Everything the Inventory screen draws from `ingredients`, in one pass.
@@ -176,7 +176,11 @@ final class IngredientListViewModel {
     /// library's never-bought ingredients don't read as out. The Out of Stock
     /// filter (`totalRemaining == 0`) does include them, so its result can be
     /// longer than the header's "out" figure.
-    func content(for ingredients: [Ingredient]) -> IngredientListContent {
+    ///
+    /// Stock comes from `stock`, built from one fetch of every purchase, rather
+    /// than from each ingredient's `purchases`: after an import the purchases are
+    /// faults, and walking them per ingredient fired one SQL fetch each.
+    func content(for ingredients: [Ingredient], stock: StockLevels) -> IngredientListContent {
         var displayed: [Ingredient] = []
         var all = 0
         var byCategory: [PersistentIdentifier: Int] = [:]
@@ -186,16 +190,15 @@ final class IngredientListViewModel {
 
         for ingredient in ingredients where !ingredient.isHidden {
             total += 1
-            if tracksInventory, !ingredient.purchases.isEmpty {
-                let remaining = ingredient.totalRemaining
-                if remaining <= 0 {
+            if tracksInventory, stock.hasPurchases(ingredient) {
+                if stock.totalRemaining(ingredient) <= 0 {
                     out += 1
-                } else if let threshold = ingredient.lowStockThreshold, remaining <= threshold {
+                } else if stock.isLowStock(ingredient) {
                     low += 1
                 }
             }
 
-            guard matchesFilters(ingredient) else { continue }
+            guard matchesFilters(ingredient, stock: stock) else { continue }
             all += 1
             if let id = ingredient.category?.persistentModelID {
                 byCategory[id, default: 0] += 1
@@ -218,16 +221,16 @@ final class IngredientListViewModel {
     }
 
     /// Every filter except the category selection, for a row that isn't hidden.
-    private func matchesFilters(_ ingredient: Ingredient) -> Bool {
+    private func matchesFilters(_ ingredient: Ingredient, stock: StockLevels) -> Bool {
         let matchesSearch = searchText.isEmpty ||
             ingredient.name.localizedCaseInsensitiveContains(searchText)
 
         let matchesStock: Bool
         switch effectiveStockStatus {
         case .all:        matchesStock = true
-        case .inStock:    matchesStock = ingredient.totalRemaining > 0 && !ingredient.isLowStock
-        case .lowStock:   matchesStock = ingredient.isLowStock && ingredient.totalRemaining > 0
-        case .outOfStock: matchesStock = ingredient.totalRemaining == 0
+        case .inStock:    matchesStock = stock.totalRemaining(ingredient) > 0 && !stock.isLowStock(ingredient)
+        case .lowStock:   matchesStock = stock.isLowStock(ingredient) && stock.totalRemaining(ingredient) > 0
+        case .outOfStock: matchesStock = stock.totalRemaining(ingredient) == 0
         }
 
         let matchesUnit = selectedUnits.isEmpty ||

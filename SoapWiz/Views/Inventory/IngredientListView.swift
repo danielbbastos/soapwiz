@@ -6,6 +6,7 @@ struct IngredientListView: View {
     @Environment(AppNavigation.self) private var nav
     @Query(Ingredient.listDescriptor) private var ingredients: [Ingredient]
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
+    @Query private var purchases: [IngredientPurchase]
     @Query private var settingsRecords: [AppSettings]
 
     @State private var model = IngredientListViewModel()
@@ -67,7 +68,7 @@ struct IngredientListView: View {
         // row's stock, and several places below need the result. Favourites can't
         // be part of the `@Query` sort (`SortDescriptor` has no `Bool` overload),
         // so the pinning is applied there, after filtering.
-        let content = model.content(for: ingredients)
+        let content = model.content(for: ingredients, stock: StockLevels(purchases))
         let displayed = content.displayed
         ListDetailContainer(
             navigation: navigation,

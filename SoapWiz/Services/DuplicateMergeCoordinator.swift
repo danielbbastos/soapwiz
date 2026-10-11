@@ -9,8 +9,12 @@ import SwiftData
 /// records another device created offline. A launch-only pass would therefore
 /// leave them on screen for the whole session in which they appear, which is
 /// exactly the session the user notices them and might add purchases to the wrong
-/// copy. So the merge also runs when a CloudKit import finishes, and again
-/// whenever the app returns to the foreground.
+/// copy. So the merge also runs when a CloudKit import finishes.
+///
+/// Returning to the foreground is not a trigger. Duplicates only arrive through
+/// imports, and the import that runs on activation (including one that ran while
+/// the app was suspended) reports when it is done, so the merge then runs once
+/// rather than once on activation and again a second later.
 ///
 /// Import events rather than `.NSPersistentStoreRemoteChange`, which this used
 /// to follow (SW-219). That notification fires for every save an import makes
@@ -26,7 +30,6 @@ final class DuplicateMergeCoordinator {
     private let context: ModelContext
     private let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "merge")
     private var pendingMerge: Task<Void, Never>?
-    private var hasBeenActive = false
     /// `nonisolated` so `deinit` can unregister it. Written once in `init` and read
     /// once in `deinit`, never concurrently.
     private nonisolated(unsafe) var observer: (any NSObjectProtocol)?
@@ -49,23 +52,15 @@ final class DuplicateMergeCoordinator {
         event.kind == .import && event.isFinished
     }
 
-    /// Runs the merge now, except on the app's first activation: launch has
-    /// just merged, and nothing can have been imported in between.
-    func appDidBecomeActive() {
-        guard hasBeenActive else {
-            hasBeenActive = true
-            return
-        }
-        mergeNow()
-    }
-
-    /// Runs the merge now: on returning to the foreground, and once a burst of
-    /// imports has gone quiet.
+    /// Runs the merge now: once a burst of imports has gone quiet.
     ///
-    /// Batch codes are settled on the same triggers, for the same reason: a
+    /// Batch codes are settled on the same trigger, for the same reason: a
     /// batch without a code, or with one another device also handed out, only
     /// shows up once a sync brings it in.
-    func mergeNow() {
+    func mergeNow(trigger: String = "manual") {
+        let signposter = Signposts.foreground
+        let state = signposter.beginInterval("Merge", "\(trigger, privacy: .public)")
+        defer { signposter.endInterval("Merge", state) }
         DuplicateMerger.mergeAllLoggingFailure(in: context)
         BatchCodeBackfill.fillMissingCodesLoggingFailure(in: context)
         BatchCodeDeduplicator.resolveLoggingFailure(in: context)
@@ -80,6 +75,7 @@ final class DuplicateMergeCoordinator {
             MainActor.assumeIsolated {
                 guard let event = notification.cloudKitMirroringEvent,
                       Self.shouldMerge(after: event) else { return }
+                Signposts.foreground.emitEvent("CloudKit import finished")
                 self?.scheduleDebouncedMerge()
             }
         }
@@ -93,7 +89,7 @@ final class DuplicateMergeCoordinator {
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled, let self else { return }
             self.log.notice("CloudKit import finished, merging duplicates.")
-            self.mergeNow()
+            self.mergeNow(trigger: "import finished")
         }
     }
 }
