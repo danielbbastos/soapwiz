@@ -90,7 +90,11 @@ struct RecipeConfigTabView: View {
     /// collections aren't folders.
     private var collectionsMenu: some View {
         Menu {
-            Button { showNewCollection = true } label: {
+            Button {
+                // See `UIApplication.endEditing()`.
+                UIApplication.shared.endEditing()
+                showNewCollection = true
+            } label: {
                 Label("New Collection", systemImage: "plus")
             }
             if !collections.isEmpty {
@@ -140,6 +144,8 @@ struct RecipeConfigTabView: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
                 sheetRow(3, of: count) {
                     Button {
+                        // See `UIApplication.endEditing()`.
+                        UIApplication.shared.endEditing()
                         showMoldCalculator = true
                     } label: {
                         Label("Calculate from mold…", systemImage: "ruler")

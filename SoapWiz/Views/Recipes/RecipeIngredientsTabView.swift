@@ -174,7 +174,12 @@ struct RecipeIngredientsTabView: View {
 
     /// The foot of an ingredient sheet: a quiet `amberText` action.
     private func addButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            // On iPad the tap leaves a focused amount field first responder, and
+            // the picker sheet would hand it focus again when it closes.
+            UIApplication.shared.endEditing()
+            action()
+        } label: {
             HStack(spacing: 10) {
                 Image(systemName: "plus")
                 Text(title)
