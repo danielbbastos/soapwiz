@@ -145,7 +145,7 @@ struct RecipeIngredientsTabView: View {
                             get: { draft.amount },
                             set: { model.updateAdditive(id: draft.id, amount: $0) }
                         ),
-                        fractionLength: 0...3,
+                        fractionLength: 0...RecipeFormViewModel.extraAmountFractionDigits,
                         fieldWidth: 55
                     ) {
                         // Static, not a menu: on a non-soap recipe the unit is
@@ -229,7 +229,8 @@ struct RecipeIngredientsTabView: View {
             amount: Binding(
                 get: { draft.amount },
                 set: { model.userEdited(id: draft.id, amount: $0) }
-            )
+            ),
+            fractionLength: 0...RecipeFormViewModel.oilAmountFractionDigits
         ) {
             HStack(spacing: 10) {
                 Text(model.weightUnitIsPercentage ? "%" : model.weightUnit)
@@ -260,7 +261,7 @@ struct RecipeIngredientsTabView: View {
                             get: { draft.amount },
                             set: { model.updateAdditive(id: draft.id, amount: $0) }
                         ),
-                        fractionLength: 0...3,
+                        fractionLength: 0...RecipeFormViewModel.extraAmountFractionDigits,
                         fieldWidth: 55
                     ) {
                         additiveUnitMenu(draft)
@@ -311,7 +312,7 @@ struct RecipeIngredientsTabView: View {
                             get: { draft.amount },
                             set: { model.userEditedFragrance(id: draft.id, amount: $0) }
                         ),
-                        fractionLength: 0...3,
+                        fractionLength: 0...RecipeFormViewModel.extraAmountFractionDigits,
                         fieldWidth: 55
                     ) {
                         Text(model.fragranceUnit.rawValue)

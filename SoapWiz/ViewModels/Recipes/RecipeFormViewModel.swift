@@ -310,28 +310,6 @@ final class RecipeFormViewModel {
 
     // MARK: - Mutation
 
-    func addOil(_ ingredient: Ingredient) {
-        guard !oilDrafts.contains(where: {
-            $0.ingredient.persistentModelID == ingredient.persistentModelID
-        }) else { return }
-        oilDrafts.append(OilIngredientDraft(ingredient: ingredient))
-        if weightUnitIsPercentage { redistributePercentages() }
-    }
-
-    func removeOil(at offsets: IndexSet) {
-        oilDrafts.remove(atOffsets: offsets)
-        if weightUnitIsPercentage { redistributePercentages() }
-    }
-
-    func userEdited(id: UUID, amount: Double) {
-        guard let idx = oilDrafts.firstIndex(where: { $0.id == id }) else { return }
-        oilDrafts[idx].amount = amount
-        if weightUnitIsPercentage {
-            oilDrafts[idx].isLocked = true
-            redistributePercentages()
-        }
-    }
-
     /// Adds an ingredient to whichever section its category maps to. Used by the
     /// non-soap form, whose single Ingredients list spans both roles: the user
     /// picks from one list and the recipe still files each row correctly, so the
@@ -362,6 +340,11 @@ final class RecipeFormViewModel {
 
     func updateAdditive(id: UUID, amount: Double? = nil, unit: String? = nil) {
         guard let idx = additiveDrafts.firstIndex(where: { $0.id == id }) else { return }
+        let amountUnchanged = amount.map {
+            additiveDrafts[idx].amount.matches($0, fractionDigits: Self.extraAmountFractionDigits)
+        } ?? true
+        let unitUnchanged = unit.map { $0 == additiveDrafts[idx].unit } ?? true
+        guard !(amountUnchanged && unitUnchanged) else { return }
         if let amount { additiveDrafts[idx].amount = amount }
         if let unit { additiveDrafts[idx].unit = unit }
         rebalanceForSharedPercentageScale()
