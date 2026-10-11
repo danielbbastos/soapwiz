@@ -6,7 +6,14 @@ import SwiftData
 final class IngredientFormViewModel {
     var name: String = ""
     var code: String = ""
-    var selectedUnit: IngredientUnit?
+    /// Picking a unit of the same kind rewrites the threshold text into it, so the
+    /// number on screen is the one that will be saved. It is converted from the
+    /// anchor below, not from the previous pick, so it agrees with how save converts
+    /// stock (stored unit to final unit). `didSet` is not called from `init`, so the
+    /// prefilled unit leaves the threshold as stored.
+    var selectedUnit: IngredientUnit? {
+        didSet { convertThreshold(from: oldValue, to: selectedUnit) }
+    }
     var selectedCategory: IngredientCategory?
     var lowStockThreshold: String = ""
     var sapValue: String = ""
@@ -32,6 +39,9 @@ final class IngredientFormViewModel {
 
     private(set) var codeIsManuallyEdited: Bool = false
 
+    /// What unit picks convert the threshold from. Set in `init`.
+    @ObservationIgnored private var thresholdAnchor = LowStockThresholdAnchor(text: "", unit: nil)
+
     let ingredient: Ingredient?
     private let locale: Locale
 
@@ -47,6 +57,13 @@ final class IngredientFormViewModel {
     /// sheet was opened on, where reading `unit` off the captured reference
     /// would trap.
     private let capturedUnitIsEmpty: Bool
+
+    /// The edited row's stored unit, whether it had stock, and whether it had a
+    /// low-stock level, captured in `init` for the same reason as `ingredientSlug`.
+    /// `unitChangeKeepsAmounts` is read while the form is being drawn.
+    private let capturedUnit: String
+    private let capturedHasPurchases: Bool
+    private let capturedHasThreshold: Bool
 
     /// The edited row's stored chemistry and library standing, captured in `init`
     /// for the same reason as `ingredientSlug`. `changesLibraryChemistry` is read
@@ -91,6 +108,9 @@ final class IngredientFormViewModel {
         self.locale = locale
         self.ingredientSlug = ingredient?.librarySlug ?? ""
         self.capturedUnitIsEmpty = ingredient?.unit.isEmpty ?? false
+        self.capturedUnit = ingredient?.unit ?? ""
+        self.capturedHasPurchases = !(ingredient?.purchases.isEmpty ?? true)
+        self.capturedHasThreshold = ingredient?.lowStockThreshold != nil
         self.capturedIsLibraryInstalled = ingredient?.isLibraryInstalled ?? false
         self.capturedSapValue = ingredient?.sapValue
         self.capturedKohSapValue = ingredient?.kohSapValue
@@ -107,7 +127,7 @@ final class IngredientFormViewModel {
             selectedUnit = IngredientUnit(rawValue: ingredient.unit)
             selectedCategory = ingredient.category
             if let threshold = ingredient.lowStockThreshold {
-                lowStockThreshold = threshold.formatted(.number.precision(.fractionLength(0...2)).grouping(.never).locale(locale))
+                lowStockThreshold = LowStockThresholdAnchor.displayText(threshold, locale: locale)
             }
             if let sap = ingredient.sapValue {
                 sapValue = sap.formatted(.number.precision(.fractionLength(0...4)).grouping(.never).locale(locale))
@@ -123,6 +143,7 @@ final class IngredientFormViewModel {
             }
             imageData = ingredient.imageData
         }
+        thresholdAnchor = LowStockThresholdAnchor(text: lowStockThreshold, unit: selectedUnit)
         // A new ingredient gets a baseline too: without one an untouched
         // New Ingredient sheet would read as dirty and refuse to dismiss.
         captureSnapshot()
@@ -264,6 +285,25 @@ final class IngredientFormViewModel {
             || fattyAcidProfileToSave != capturedFattyAcidProfile
     }
 
+    /// Whether the picked unit differs from the stored one in a way that can't be
+    /// converted (weight to volume, or to or from a count), while there are
+    /// amounts that would then keep their numbers under the new unit. False when
+    /// the ingredient had no unit to begin with: a first unit converts nothing.
+    var unitChangeKeepsAmounts: Bool {
+        guard isEditing, !capturedUnit.isEmpty, capturedHasPurchases || capturedHasThreshold else { return false }
+        let newUnit = selectedUnit?.rawValue ?? ""
+        guard newUnit != capturedUnit else { return false }
+        return IngredientUnitConverter.convertSameKind(1, from: capturedUnit, to: newUnit) == nil
+    }
+
+    /// Rewrites the threshold text for a newly picked unit. See
+    /// `LowStockThresholdAnchor` for why it converts from the anchor, not from the
+    /// previous pick.
+    private func convertThreshold(from oldUnit: IngredientUnit?, to newUnit: IngredientUnit?) {
+        guard oldUnit != newUnit else { return }
+        lowStockThreshold = thresholdAnchor.text(for: newUnit, from: oldUnit, current: lowStockThreshold, locale: locale)
+    }
+
     @discardableResult
     func save(context: ModelContext) -> Ingredient? {
         defer { context.saveLoggingFailure() }
@@ -292,7 +332,7 @@ final class IngredientFormViewModel {
             ingredient.name = trimmedName
             ingredient.code = savedCode
             ingredient.category = selectedCategory
-            ingredient.unit = selectedUnit?.rawValue ?? ""
+            ingredient.changeUnit(to: selectedUnit?.rawValue ?? "")
             ingredient.lowStockThreshold = parsedThreshold
             ingredient.sapValue = savedSap
             ingredient.kohSapValue = savedKohSap
