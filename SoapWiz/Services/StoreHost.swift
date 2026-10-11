@@ -43,6 +43,9 @@ final class StoreHost {
     /// Set when a reset failed.
     var errorMessage: String?
 
+    /// The inventory's rows, shared by the screens that show them.
+    let inventoryRows: InventoryRows
+
     @ObservationIgnored private let mergeCoordinator: DuplicateMergeCoordinator
     @ObservationIgnored private let preference: SyncPreference
 
@@ -63,6 +66,8 @@ final class StoreHost {
         // lifetime; CloudKit imports duplicates long after launch.
         mergeCoordinator = DuplicateMergeCoordinator(context: container.mainContext)
         Self.prepare(container.mainContext)
+        // After `prepare`, so its first fetch already sees the repaired store.
+        inventoryRows = InventoryRows(context: container.mainContext)
         self.container = container
         // After `makeProduction()`, which records which store it opened.
         syncHealth = SyncHealthMonitor(activeStore: ModelContainerFactory.activeStore)
@@ -79,6 +84,9 @@ final class StoreHost {
         guard phase == .resetting else { return }
         await settle()
         await reset()
+        // The erase saves the context, which already refreshed the rows; this
+        // covers a reset that failed part-way and rolled back instead.
+        inventoryRows.refresh()
         generation += 1
         phase = .ready
     }

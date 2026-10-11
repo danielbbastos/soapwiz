@@ -23,19 +23,34 @@ import SwiftData
 /// long as it lasted, and the inventory stuttered under it. Only an import can
 /// bring a duplicate in, and it reports when it is done.
 ///
+/// An import that wrote nothing doesn't merge either. Most imports are empty:
+/// CloudKit reports one on every return to the foreground, and the pass costs
+/// 77 to 105 ms of main-actor time even when there is nothing to merge. The
+/// store's history says whether an import changed anything (see
+/// `StoreHistoryCursor`); when it can't be read, the merge runs as it would
+/// have. The history also holds this process's own saves (user edits, the
+/// merge's own save), so the first empty import after any local save still
+/// merges. That is safe and rare, and cheaper than filtering by transaction
+/// author, which CloudKit doesn't document. A skipped import never cancels a
+/// merge an earlier import in the same debounce window asked for.
+///
 /// Not `@Observable` — it publishes no state. Views hold it only to keep the
 /// observer registered for the app's lifetime.
 @MainActor
 final class DuplicateMergeCoordinator {
     private let context: ModelContext
     private let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "merge")
+    private let cursor: StoreHistoryCursor
+    private let debounce: Duration
     private var pendingMerge: Task<Void, Never>?
     /// `nonisolated` so `deinit` can unregister it. Written once in `init` and read
     /// once in `deinit`, never concurrently.
     private nonisolated(unsafe) var observer: (any NSObjectProtocol)?
 
-    init(context: ModelContext) {
+    init(context: ModelContext, debounce: Duration = .milliseconds(500)) {
         self.context = context
+        self.debounce = debounce
+        cursor = StoreHistoryCursor(context: context)
         observeImports()
     }
 
@@ -50,6 +65,14 @@ final class DuplicateMergeCoordinator {
     /// what it fetched.
     static func shouldMerge(after event: SyncEvent) -> Bool {
         event.kind == .import && event.isFinished
+    }
+
+    /// Whether a finished import should lead to a merge, given how many changes
+    /// the store's history shows since the last one. `nil` means the history
+    /// couldn't be read, so anything may have changed.
+    static func shouldMerge(historyChangeCount: Int?) -> Bool {
+        guard let historyChangeCount else { return true }
+        return historyChangeCount > 0
     }
 
     /// Runs the merge now: once a burst of imports has gone quiet.
@@ -76,17 +99,26 @@ final class DuplicateMergeCoordinator {
                 guard let event = notification.cloudKitMirroringEvent,
                       Self.shouldMerge(after: event) else { return }
                 Signposts.foreground.emitEvent("CloudKit import finished")
-                self?.scheduleDebouncedMerge()
+                self?.importFinished()
             }
         }
+    }
+
+    /// Asks the history what the import wrote, and schedules a merge unless it
+    /// wrote nothing. Always asks, even while a merge is pending, so the cursor
+    /// advances with every import.
+    func importFinished() {
+        let changeCount = try? cursor.changesSinceLastCheck().count
+        guard Self.shouldMerge(historyChangeCount: changeCount) else { return }
+        scheduleDebouncedMerge()
     }
 
     /// A first sync can run several imports back to back, so wait for them to
     /// go quiet rather than scan and save between each.
     private func scheduleDebouncedMerge() {
         pendingMerge?.cancel()
-        pendingMerge = Task { [weak self] in
-            try? await Task.sleep(for: .milliseconds(500))
+        pendingMerge = Task { [weak self, debounce] in
+            try? await Task.sleep(for: debounce)
             guard !Task.isCancelled, let self else { return }
             self.log.notice("CloudKit import finished, merging duplicates.")
             self.mergeNow(trigger: "import finished")
