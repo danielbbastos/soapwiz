@@ -1,3 +1,4 @@
+import OSLog
 import UserNotifications
 import SwiftData
 
@@ -116,6 +117,9 @@ enum NotificationService {
     }
 
     private static func performSync(modelContext: ModelContext) async {
+        let signposter = Signposts.foreground
+        let syncState = signposter.beginInterval("Reminder sync")
+        defer { signposter.endInterval("Reminder sync", syncState) }
         let settings = AppSettings.resolve(in: modelContext)
         let status = await authorizationStatus()
 
@@ -149,12 +153,16 @@ enum NotificationService {
         let settings = AppSettings.resolve(in: modelContext)
         let expiry: [ScheduledReminder]
         let cure: [ScheduledReminder]
+        let signposter = Signposts.foreground
+        let fetchState = signposter.beginInterval("Reminder fetch")
         do {
             expiry = expiryRemindersActive(for: settings) ? try expiryRequests(modelContext) : []
             cure = cureRemindersActive(for: settings) ? try cureRequests(modelContext) : []
         } catch {
+            signposter.endInterval("Reminder fetch", fetchState)
             return
         }
+        signposter.endInterval("Reminder fetch", fetchState)
         let requests = (expiry + cure).sorted { $0.fireDate < $1.fireDate }.prefix(pendingLimit)
 
         let center = UNUserNotificationCenter.current()

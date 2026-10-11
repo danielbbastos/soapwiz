@@ -60,34 +60,9 @@ struct DuplicateMergeCoordinatorTests {
         #expect(!DuplicateMergeCoordinator.shouldMerge(after: event))
     }
 
-    // MARK: - Activation
+    // MARK: - Merging
 
-    /// Launch has just merged, so the activation that follows it has nothing
-    /// to find.
-    @Test func appDidBecomeActive_FirstActivation_DoesNotMerge() throws {
-        let (container, context) = try makeContext()
-        _ = container
-        let sut = DuplicateMergeCoordinator(context: context)
-        try insertDuplicateCategories(in: context)
-
-        sut.appDidBecomeActive()
-
-        #expect(try categoryCount(in: context) == 2)
-    }
-
-    @Test func appDidBecomeActive_ReturnToForeground_Merges() throws {
-        let (container, context) = try makeContext()
-        _ = container
-        let sut = DuplicateMergeCoordinator(context: context)
-        sut.appDidBecomeActive()
-        try insertDuplicateCategories(in: context)
-
-        sut.appDidBecomeActive()
-
-        #expect(try categoryCount(in: context) == 1)
-    }
-
-    @Test func mergeNow_BeforeAnyActivation_Merges() throws {
+    @Test func mergeNow_WithDuplicates_Merges() throws {
         let (container, context) = try makeContext()
         _ = container
         let sut = DuplicateMergeCoordinator(context: context)

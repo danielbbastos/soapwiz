@@ -149,6 +149,11 @@ final class SyncHealthMonitor {
         ) { [weak self] notification in
             MainActor.assumeIsolated {
                 guard let event = notification.cloudKitMirroringEvent else { return }
+                let phase = event.isFinished ? "finished" : "started"
+                Signposts.foreground.emitEvent(
+                    "CloudKit event",
+                    "\(String(describing: event.kind), privacy: .public) \(phase, privacy: .public)"
+                )
                 self?.apply(event)
             }
         }

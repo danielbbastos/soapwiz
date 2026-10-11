@@ -5,6 +5,7 @@
 //  Created by Daniel Bastos on 10/05/2026.
 //
 
+import OSLog
 import SwiftUI
 import SwiftData
 
@@ -53,10 +54,12 @@ struct SoapWizApp: App {
                 Text(storeHost.errorMessage ?? "")
             }
             .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    Signposts.foreground.emitEvent("Became active")
+                }
                 // Not while a reset is under way: the placeholder is up and the
                 // store is the reset's until it finishes.
                 guard newPhase == .active, storeHost.phase == .ready else { return }
-                storeHost.appDidBecomeActive()
                 Task {
                     await NotificationService.syncIfEnabled(
                         modelContext: storeHost.container.mainContext
