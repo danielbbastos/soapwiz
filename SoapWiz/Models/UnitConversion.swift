@@ -73,6 +73,21 @@ enum IngredientUnitConverter {
         }
     }
 
+    /// Converts `amount` between two units of the same kind — mass to mass or
+    /// volume to volume — and nothing else. Returns `nil` for a mass↔volume
+    /// crossing, a count ("un"), or an unknown or empty symbol.
+    ///
+    /// Unlike `convert(_:from:to:density:)` this never falls back to a default
+    /// density, so it is safe for rewriting stored stock, where an assumed density
+    /// would silently change what the user owns.
+    static func convertSameKind(_ amount: Double, from: String, to toSymbol: String) -> Double? {
+        if let mass = MassUnitConverter.convert(amount, from: from, to: toSymbol) {
+            return mass
+        }
+        guard let milliliterValue = milliliters(amount, from: from) else { return nil }
+        return fromMilliliters(milliliterValue, to: toSymbol)
+    }
+
     /// Converts `amount` from one unit to another, applying `density` (g/mL) for
     /// any volume↔mass crossing and falling back to `defaultDensity` when it's
     /// `nil`. Returns `nil` when either unit is unknown or non-convertible

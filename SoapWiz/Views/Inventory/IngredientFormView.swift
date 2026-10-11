@@ -66,6 +66,11 @@ struct IngredientFormView: View {
                         .ledgerSheetRow(position: .last)
                 } header: {
                     HoneyLedgerSectionLabel("Details")
+                } footer: {
+                    if model.unitChangeKeepsAmounts {
+                        HoneyLedgerFooter("Weight, volume and count amounts can't be converted into each other, "
+                               + "so stock and the low-stock level keep their current numbers.")
+                    }
                 }
 
                 if model.showsSapValue || model.showsDensity {
