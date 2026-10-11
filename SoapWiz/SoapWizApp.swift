@@ -53,6 +53,12 @@ struct SoapWizApp: App {
                 Text(storeHost.errorMessage ?? "")
             }
             .onChange(of: scenePhase) { _, newPhase in
+                // The keyboard closes while the app is still on screen, so SwiftUI
+                // removes the keyboard inset. A keyboard that disappeared in the
+                // background left the recipe form's cost bar floating mid-screen (SW-250).
+                if newPhase == .inactive {
+                    UIApplication.shared.endEditing()
+                }
                 // Not while a reset is under way: the placeholder is up and the
                 // store is the reset's until it finishes.
                 guard newPhase == .active, storeHost.phase == .ready else { return }
