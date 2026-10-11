@@ -14,12 +14,16 @@ import SwiftData
 /// 30 ms, and only when something relevant changed.
 ///
 /// The rows are refetched when:
-/// - this context saves, straight away, so an edit shows up the moment it is
-///   made. Saves by other contexts and by CloudKit don't count here;
+/// - this context saves something the inventory shows (an ingredient, purchase
+///   or category), straight away, so an edit shows up the moment it is made.
+///   Saves that touch only other entities, and saves by other contexts and by
+///   CloudKit, don't count here;
 /// - a CloudKit import finishes and the store's history shows an ingredient,
 ///   purchase or category was written (`StoreHistoryCursor`);
 /// - an import is still running, checked the same way about once a second, so a
-///   long first sync fills the list as it goes;
+///   long first sync fills the list as it goes. The polling stops when the
+///   import finishes, or after `maxPollDuration` if no finish event ever
+///   arrives, and a later import start begins it again;
 /// - `refresh()` is called, which a duplicate merge and a reset do.
 ///
 /// Exports never trigger anything: they only send what this device has.
@@ -35,6 +39,7 @@ final class InventoryRows {
     @ObservationIgnored private let context: ModelContext
     @ObservationIgnored private let cursor: StoreHistoryCursor
     @ObservationIgnored private let pollInterval: Duration
+    @ObservationIgnored private let maxPollDuration: Duration
     @ObservationIgnored private var polling: Task<Void, Never>?
     /// `nonisolated` so `deinit` can unregister them. Written once in `init`
     /// and read once in `deinit`, never concurrently.
@@ -47,9 +52,38 @@ final class InventoryRows {
         Schema.entityName(for: IngredientCategory.self)
     ]
 
-    init(context: ModelContext, pollInterval: Duration = .seconds(1)) {
+    /// Whether a save that touched these entity names can alter what the
+    /// inventory shows.
+    static func touchesInventory(entityNames: some Sequence<String>) -> Bool {
+        entityNames.contains { watchedEntities.contains($0) }
+    }
+
+    /// The entity names a `didSave` notification reports as inserted, updated
+    /// or deleted, or nil when its `userInfo` is missing or can't be read.
+    static func savedEntityNames(from userInfo: [AnyHashable: Any]?) -> Set<String>? {
+        guard let userInfo else { return nil }
+        let keys: [ModelContext.NotificationKey] = [
+            .insertedIdentifiers, .updatedIdentifiers, .deletedIdentifiers
+        ]
+        var names: Set<String> = []
+        var readAny = false
+        for key in keys {
+            guard let value = userInfo[key.rawValue] else { continue }
+            guard let identifiers = value as? [PersistentIdentifier] else { return nil }
+            readAny = true
+            names.formUnion(identifiers.map(\.entityName))
+        }
+        return readAny ? names : nil
+    }
+
+    init(
+        context: ModelContext,
+        pollInterval: Duration = .seconds(1),
+        maxPollDuration: Duration = .seconds(120)
+    ) {
         self.context = context
         self.pollInterval = pollInterval
+        self.maxPollDuration = maxPollDuration
         cursor = StoreHistoryCursor(context: context)
         reload()
         observe()
@@ -93,11 +127,16 @@ final class InventoryRows {
     }
 
     private func startPolling() {
-        polling = Task { [weak self, pollInterval] in
+        polling = Task { [weak self, pollInterval, maxPollDuration] in
+            let deadline = ContinuousClock.now.advanced(by: maxPollDuration)
             while !Task.isCancelled {
                 try? await Task.sleep(for: pollInterval)
                 guard !Task.isCancelled, let self else { return }
                 self.refreshIfInventoryChanged()
+                if ContinuousClock.now >= deadline {
+                    self.polling = nil
+                    return
+                }
             }
         }
     }
@@ -124,8 +163,14 @@ final class InventoryRows {
             forName: ModelContext.didSave,
             object: context,
             queue: nil
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refresh() }
+        ) { [weak self] notification in
+            let names = Self.savedEntityNames(from: notification.userInfo)
+            MainActor.assumeIsolated {
+                // A skipped save leaves its history for the next
+                // `refreshIfInventoryChanged()`, which filters it out too.
+                if let names, !Self.touchesInventory(entityNames: names) { return }
+                self?.refresh()
+            }
         })
         observers.append(NotificationCenter.default.addObserver(
             forName: NSPersistentCloudKitContainer.eventChangedNotification,

@@ -28,8 +28,11 @@ import SwiftData
 /// 77 to 105 ms of main-actor time even when there is nothing to merge. The
 /// store's history says whether an import changed anything (see
 /// `StoreHistoryCursor`); when it can't be read, the merge runs as it would
-/// have. A skipped import never cancels a merge an earlier import in the same
-/// debounce window asked for.
+/// have. The history also holds this process's own saves (user edits, the
+/// merge's own save), so the first empty import after any local save still
+/// merges. That is safe and rare, and cheaper than filtering by transaction
+/// author, which CloudKit doesn't document. A skipped import never cancels a
+/// merge an earlier import in the same debounce window asked for.
 ///
 /// Not `@Observable` — it publishes no state. Views hold it only to keep the
 /// observer registered for the app's lifetime.

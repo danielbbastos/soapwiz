@@ -89,6 +89,36 @@ struct InventoryRowsTests {
         #expect(sut.purchases.count == 1)
     }
 
+    @Test func save_InOwnContext_AddingCategory_Refreshes() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let sut = InventoryRows(context: context)
+        let other = ModelContext(container)
+        other.insert(Ingredient(name: "Olive Oil", unit: "g"))
+        try other.save()
+
+        context.insert(IngredientCategory(name: "Oils"))
+        try context.save()
+
+        #expect(sut.ingredients.map(\.name) == ["Olive Oil"])
+    }
+
+    @Test func save_InOwnContext_OnlyNonInventoryEntity_DoesNotRefetch() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let sut = InventoryRows(context: context)
+        let other = ModelContext(container)
+        other.insert(Ingredient(name: "Olive Oil", unit: "g"))
+        try other.save()
+
+        context.insert(Provider(name: "Soap Supply"))
+        try context.save()
+
+        #expect(sut.ingredients.isEmpty)
+        #expect(sut.refreshIfInventoryChanged())
+        #expect(sut.ingredients.map(\.name) == ["Olive Oil"])
+    }
+
     @Test func save_InAnotherContext_DoesNotRefreshByItself() throws {
         let container = try makeContainer()
         let sut = InventoryRows(context: container.mainContext)
@@ -261,5 +291,53 @@ struct InventoryRowsTests {
         try other.save()
         try await Task.sleep(for: .milliseconds(100))
         #expect(sut.ingredients.map(\.name) == ["Olive Oil"])
+    }
+
+    @Test func handle_ImportNeverFinishes_StopsPollingAfterTimeLimitAndRestarts() async throws {
+        let container = try makeContainer()
+        let sut = InventoryRows(
+            context: container.mainContext,
+            pollInterval: .milliseconds(10),
+            maxPollDuration: .milliseconds(60)
+        )
+        let other = ModelContext(container)
+
+        sut.handle(SyncEvent(kind: .import, endDate: nil, succeeded: false, error: nil))
+        try await Task.sleep(for: .milliseconds(300))
+        other.insert(Ingredient(name: "Olive Oil", unit: "g"))
+        try other.save()
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(sut.ingredients.isEmpty)
+
+        sut.handle(SyncEvent(kind: .import, endDate: nil, succeeded: false, error: nil))
+        await waitUntil { !sut.ingredients.isEmpty }
+        #expect(sut.ingredients.map(\.name) == ["Olive Oil"])
+    }
+
+    // MARK: - Save classification
+
+    @Test func touchesInventory_WatchedEntityNames_ReturnsTrue() {
+        #expect(InventoryRows.touchesInventory(entityNames: [Schema.entityName(for: Ingredient.self)]))
+        #expect(InventoryRows.touchesInventory(entityNames: [Schema.entityName(for: IngredientPurchase.self)]))
+        #expect(InventoryRows.touchesInventory(entityNames: [Schema.entityName(for: IngredientCategory.self)]))
+    }
+
+    @Test func touchesInventory_OtherOrNoEntityNames_ReturnsFalse() {
+        #expect(!InventoryRows.touchesInventory(entityNames: [Schema.entityName(for: Provider.self)]))
+        #expect(!InventoryRows.touchesInventory(entityNames: [String]()))
+    }
+
+    @Test func touchesInventory_MixedEntityNames_ReturnsTrue() {
+        let names = [Schema.entityName(for: Provider.self), Schema.entityName(for: Ingredient.self)]
+
+        #expect(InventoryRows.touchesInventory(entityNames: names))
+    }
+
+    @Test func savedEntityNames_MissingOrUnreadableUserInfo_ReturnsNil() {
+        #expect(InventoryRows.savedEntityNames(from: nil) == nil)
+        #expect(InventoryRows.savedEntityNames(from: [:]) == nil)
+        #expect(InventoryRows.savedEntityNames(from: [
+            ModelContext.NotificationKey.insertedIdentifiers.rawValue: "not identifiers"
+        ]) == nil)
     }
 }
