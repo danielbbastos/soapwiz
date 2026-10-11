@@ -74,6 +74,17 @@ struct IngredientUnitChangeWarningTests: IngredientUnitChangeTestHelpers {
         #expect(!model.unitChangeKeepsAmounts)
     }
 
+    @Test func unitChangeKeepsAmounts_FirstUnitOnBlankIngredient_IsFalse() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let ingredient = try makeIngredient(in: context, unit: "", quantities: [500], threshold: 100)
+        let model = IngredientFormViewModel(ingredient: ingredient, locale: locale)
+
+        model.selectedUnit = .grams
+
+        #expect(!model.unitChangeKeepsAmounts)
+    }
+
     @Test func unitChangeKeepsAmounts_NewIngredient_IsFalse() {
         let model = IngredientFormViewModel(locale: locale)
 

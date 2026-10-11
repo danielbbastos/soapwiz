@@ -287,9 +287,10 @@ final class IngredientFormViewModel {
 
     /// Whether the picked unit differs from the stored one in a way that can't be
     /// converted (weight to volume, or to or from a count), while there are
-    /// amounts that would then keep their numbers under the new unit.
+    /// amounts that would then keep their numbers under the new unit. False when
+    /// the ingredient had no unit to begin with: a first unit converts nothing.
     var unitChangeKeepsAmounts: Bool {
-        guard isEditing, capturedHasPurchases || capturedHasThreshold else { return false }
+        guard isEditing, !capturedUnit.isEmpty, capturedHasPurchases || capturedHasThreshold else { return false }
         let newUnit = selectedUnit?.rawValue ?? ""
         guard newUnit != capturedUnit else { return false }
         return IngredientUnitConverter.convertSameKind(1, from: capturedUnit, to: newUnit) == nil
