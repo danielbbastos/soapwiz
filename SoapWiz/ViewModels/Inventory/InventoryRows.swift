@@ -1,5 +1,6 @@
 import CoreData
 import Foundation
+import OSLog
 import SwiftData
 
 /// The inventory's ingredients and purchases, kept apart from `@Query`.
@@ -40,7 +41,13 @@ final class InventoryRows {
     @ObservationIgnored private let cursor: StoreHistoryCursor
     @ObservationIgnored private let pollInterval: Duration
     @ObservationIgnored private let maxPollDuration: Duration
+    @ObservationIgnored private let fetchRows:
+        @MainActor (ModelContext) throws -> (ingredients: [Ingredient], purchases: [IngredientPurchase])
+    @ObservationIgnored private let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "inventory")
     @ObservationIgnored private var polling: Task<Void, Never>?
+    /// Set when the last refetch failed, so the next check retries even if the
+    /// history shows nothing new.
+    @ObservationIgnored private var needsReload = false
     /// `nonisolated` so `deinit` can unregister them. Written once in `init`
     /// and read once in `deinit`, never concurrently.
     @ObservationIgnored private nonisolated(unsafe) var observers: [any NSObjectProtocol] = []
@@ -79,9 +86,12 @@ final class InventoryRows {
     init(
         context: ModelContext,
         pollInterval: Duration = .seconds(1),
-        maxPollDuration: Duration = .seconds(120)
+        maxPollDuration: Duration = .seconds(120),
+        fetchRows: @escaping @MainActor (ModelContext) throws -> (ingredients: [Ingredient], purchases: [IngredientPurchase]) =
+            InventoryRows.fetchAll(in:)
     ) {
         self.context = context
+        self.fetchRows = fetchRows
         self.pollInterval = pollInterval
         self.maxPollDuration = maxPollDuration
         cursor = StoreHistoryCursor(context: context)
@@ -104,14 +114,15 @@ final class InventoryRows {
     }
 
     /// Refetches when the store's history shows an ingredient, purchase or
-    /// category was written since the last check, or can't be read. Returns
-    /// whether it did.
+    /// category was written since the last check, or can't be read, or when the
+    /// last refetch failed. Returns whether it did.
     @discardableResult
     func refreshIfInventoryChanged() -> Bool {
         let changed = (try? cursor.changesSinceLastCheck())?
             .contains { Self.watchedEntities.contains($0.entityName) } ?? true
-        if changed { reload() }
-        return changed
+        let shouldReload = changed || needsReload
+        if shouldReload { reload() }
+        return shouldReload
     }
 
     /// Reacts to one CloudKit mirroring event.
@@ -141,15 +152,32 @@ final class InventoryRows {
         }
     }
 
+    /// Both fetches the inventory shows. Injected only so a test can make them fail.
+    static func fetchAll(
+        in context: ModelContext
+    ) throws -> (ingredients: [Ingredient], purchases: [IngredientPurchase]) {
+        (
+            try context.fetch(Ingredient.listDescriptor),
+            try context.fetch(FetchDescriptor<IngredientPurchase>())
+        )
+    }
+
     private func reload() {
-        if let fetched = try? context.fetch(Ingredient.listDescriptor) {
-            let live = Self.live(fetched)
-            if live != ingredients { ingredients = live }
+        let fetched: (ingredients: [Ingredient], purchases: [IngredientPurchase])
+        do {
+            fetched = try fetchRows(context)
+        } catch {
+            // The old rows stay, and the history cursor has already moved past
+            // whatever asked for this reload, so the next check retries.
+            needsReload = true
+            log.error("Inventory fetch failed: \(error)")
+            return
         }
-        if let fetched = try? context.fetch(FetchDescriptor<IngredientPurchase>()) {
-            let live = Self.live(fetched)
-            if live != purchases { purchases = live }
-        }
+        needsReload = false
+        let liveIngredients = Self.live(fetched.ingredients)
+        if liveIngredients != ingredients { ingredients = liveIngredients }
+        let livePurchases = Self.live(fetched.purchases)
+        if livePurchases != purchases { purchases = livePurchases }
     }
 
     private static func live<Model: PersistentModel>(_ models: [Model]) -> [Model] {

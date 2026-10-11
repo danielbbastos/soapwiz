@@ -314,6 +314,56 @@ struct InventoryRowsTests {
         #expect(sut.ingredients.map(\.name) == ["Olive Oil"])
     }
 
+    // MARK: - Failed fetches
+
+    private struct FetchFailure: Error {}
+
+    /// A fetch that throws while `failing` is true and reads the store otherwise.
+    @MainActor
+    private final class FlakyFetch {
+        var failing = true
+
+        func fetch(_ context: ModelContext) throws -> (ingredients: [Ingredient], purchases: [IngredientPurchase]) {
+            if failing { throw FetchFailure() }
+            return try InventoryRows.fetchAll(in: context)
+        }
+    }
+
+    @Test func refreshIfInventoryChanged_AfterFailedReload_RetriesAndReturnsTrue() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        context.insert(Ingredient(name: "Olive Oil", unit: "g"))
+        try context.save()
+        let flaky = FlakyFetch()
+        flaky.failing = false
+        let sut = InventoryRows(context: context, fetchRows: flaky.fetch)
+        #expect(sut.ingredients.map(\.name) == ["Olive Oil"])
+        flaky.failing = true
+        let other = ModelContext(container)
+        other.insert(Ingredient(name: "Lye", unit: "g"))
+        try other.save()
+
+        #expect(sut.refreshIfInventoryChanged())
+        #expect(sut.ingredients.map(\.name) == ["Olive Oil"])
+
+        flaky.failing = false
+        let retried = sut.refreshIfInventoryChanged()
+
+        #expect(retried)
+        #expect(Set(sut.ingredients.map(\.name)) == ["Olive Oil", "Lye"])
+    }
+
+    @Test func refreshIfInventoryChanged_AfterSuccessfulRetry_ReturnsFalse() throws {
+        let container = try makeContainer()
+        let flaky = FlakyFetch()
+        let sut = InventoryRows(context: container.mainContext, fetchRows: flaky.fetch)
+        #expect(sut.refreshIfInventoryChanged())
+        flaky.failing = false
+        #expect(sut.refreshIfInventoryChanged())
+
+        #expect(!sut.refreshIfInventoryChanged())
+    }
+
     // MARK: - Save classification
 
     @Test func touchesInventory_WatchedEntityNames_ReturnsTrue() {
