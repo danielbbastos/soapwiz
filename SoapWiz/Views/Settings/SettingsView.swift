@@ -214,6 +214,9 @@ struct SettingsView: View {
         Section {
             toggleRow("Track ingredient stock", isOn: Bindable(settings).tracksInventory)
                 .onChange(of: settings.tracksInventory) { _, tracks in
+                    // `SettingsState` reads the settings when the context saves,
+                    // so the other tabs follow the toggle at once.
+                    modelContext.saveLoggingFailure()
                     Task {
                         if tracks {
                             await NotificationService.syncIfEnabled(modelContext: modelContext)

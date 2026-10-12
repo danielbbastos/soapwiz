@@ -5,8 +5,7 @@ struct IngredientListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
     @Environment(InventoryRows.self) private var rows
-    @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
-    @Query private var settingsRecords: [AppSettings]
+    @Environment(SettingsState.self) private var settings
 
     @State private var model = IngredientListViewModel()
     @State private var navigation = ListDetailNavigation<Ingredient>()
@@ -21,7 +20,7 @@ struct IngredientListView: View {
     /// Chips are drawn from the unfiltered inventory, not the displayed list:
     /// narrowing to one category must not make every other chip disappear.
     private var visibleCategories: [IngredientCategory] {
-        model.visibleCategories(categories, in: rows.ingredients)
+        model.visibleCategories(rows.categories, in: rows.ingredients)
     }
 
     private func row(_ ingredient: Ingredient, index: Int, count: Int) -> IngredientListRow {
@@ -151,10 +150,10 @@ struct IngredientListView: View {
                         }
                     }
                 }
-                .onChange(of: categories) { _, updated in
+                .onChange(of: rows.categories) { _, updated in
                     model.pruneSelectedCategories(against: updated)
                 }
-                .onChange(of: AppSettings.tracksInventory(from: settingsRecords), initial: true) { _, tracks in
+                .onChange(of: settings.tracksInventory, initial: true) { _, tracks in
                     model.tracksInventory = tracks
                 }
                 .toolbar {
