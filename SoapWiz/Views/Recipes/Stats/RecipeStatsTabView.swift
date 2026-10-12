@@ -5,8 +5,13 @@ import SwiftUI
 struct RecipeStatsTabView: View {
     @Bindable var model: RecipeFormViewModel
 
+    /// The rows the stats are computed from. They trail `model.oilDrafts` while
+    /// an amount is being typed, so the chart doesn't animate through every
+    /// intermediate value.
+    @State private var shownDrafts: [OilIngredientDraft]?
+
     var body: some View {
-        let stats = RecipeStats(oilDrafts: model.oilDrafts, makesSoap: model.makesSoap)
+        let stats = RecipeStats(oilDrafts: shownDrafts ?? model.oilDrafts, makesSoap: model.makesSoap)
         Form {
             RecipeDetailStatsSections(stats: stats)
             if stats.makesSoap {
@@ -15,6 +20,16 @@ struct RecipeStatsTabView: View {
         }
         .readableWidth()
         .scrollClipDisabled()
+        .task(id: model.oilDrafts) {
+            if RecipeStatsRefresh.updatesImmediately(from: shownDrafts, to: model.oilDrafts) {
+                shownDrafts = model.oilDrafts
+                return
+            }
+            // Each edit cancels this task, so only the last one gets past the sleep.
+            try? await Task.sleep(for: RecipeStatsRefresh.delay)
+            if Task.isCancelled { return }
+            shownDrafts = model.oilDrafts
+        }
     }
 
     @ViewBuilder
