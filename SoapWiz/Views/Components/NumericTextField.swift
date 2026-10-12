@@ -39,6 +39,7 @@ struct NumericTextField: View {
             }
             .frame(minWidth: width, maxWidth: fillsAvailableWidth ? .infinity : width)
             .focused(focus ?? $internalFocus)
+            .tapsAcrossRowHeight { (focus ?? $internalFocus).wrappedValue = true }
             .onChange(of: isFocused) { _, focused in
                 guard focused else { return }
                 Task {

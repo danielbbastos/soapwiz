@@ -49,6 +49,7 @@ struct HoneyLedgerField<Field: View>: View {
                 .tint(Color.amber)
                 .multilineTextAlignment(isStacked ? .leading : .trailing)
                 .frame(maxWidth: .infinity, alignment: isStacked ? .leading : .trailing)
+                .tapsAcrossRowHeight { isFocused = true }
                 // Not every field titles itself: `NumericTextField` reads its prompt.
                 .accessibilityLabel(Text(title))
             if let unit, !unit.isEmpty {

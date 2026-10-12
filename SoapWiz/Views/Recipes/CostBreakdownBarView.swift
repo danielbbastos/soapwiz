@@ -7,9 +7,9 @@ struct CostBreakdownBarView: View {
     @Bindable var model: RecipeFormViewModel
     @Binding var isExpanded: Bool
     var availableHeight: CGFloat = 0
+    var keyboardVisible = false
     @Query private var settingsRecords: [AppSettings]
     @State private var visibleCardID: AnyHashable?
-    @State private var keyboardVisible = false
     /// A touch taller than anything a page's header holds, so the bar keeps
     /// one height as it pages between a plain title and a size's controls.
     @ScaledMetric(relativeTo: .subheadline) private var compactPageHeaderHeight: CGFloat = 22
@@ -45,8 +45,6 @@ struct CostBreakdownBarView: View {
         .frame(maxWidth: Self.maximumWidth)
         .padding(.horizontal, 12)
         .padding(.bottom, 4)
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
     }
 
     /// Collapsed, the batch cost and its RRP; expanded, the showing page's own
