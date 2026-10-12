@@ -255,6 +255,8 @@ final class BatchProductionViewModel {
             recipeName: recipe.name,
             dateCreated: date,
             batchCount: max(1, batchCount),
+            totalWeight: totalBatchWeight,
+            totalWeightUnit: batchWeightUnit,
             tracksInventory: tracksInventory,
             cureDays: cureDays,
             process: cureEstimate == nil ? "" : process.rawValue,

@@ -189,6 +189,8 @@ enum BackupService {
             dateCreated: batch.dateCreated,
             batchCount: batch.batchCount,
             totalCost: batch.totalCost,
+            totalWeight: batch.totalWeight,
+            totalWeightUnit: batch.totalWeightUnit,
             tracksInventory: batch.tracksInventory,
             cureDays: batch.cureDays,
             process: batch.process,

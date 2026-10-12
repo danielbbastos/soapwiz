@@ -216,6 +216,11 @@ extension BackupData {
         var dateCreated: Date
         var batchCount: Int
         var totalCost: Double
+        /// Optional so a backup written before SW-259 still decodes; `nil`
+        /// restores as zero, a batch whose weight wasn't recorded.
+        var totalWeight: Double?
+        /// `nil` restores empty, alongside `totalWeight`.
+        var totalWeightUnit: String?
         /// Optional so a backup written before SW-81 still decodes; `nil`
         /// restores as tracked, the only kind of batch those builds could make.
         var tracksInventory: Bool?

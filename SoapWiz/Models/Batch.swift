@@ -24,6 +24,12 @@ final class Batch {
     var dateCreated: Date = Date.now
     var batchCount: Int = 0
     var totalCost: Double = 0
+    /// Total mass of the run (oils, lye, water, additives, fragrance) as made,
+    /// in `totalWeightUnit`. Zero for a batch made before it was recorded.
+    var totalWeight: Double = 0
+    /// The recipe's oil weight unit when the batch was made. Empty when
+    /// `totalWeight` wasn't recorded.
+    var totalWeightUnit: String = ""
     /// Whether the batch was made with inventory tracking on. Snapshotted rather
     /// than read from `AppSettings`, so an untracked batch keeps reading as
     /// uncosted after tracking is switched back on.
@@ -72,6 +78,8 @@ final class Batch {
         dateCreated: Date = .now,
         batchCount: Int,
         totalCost: Double = 0,
+        totalWeight: Double = 0,
+        totalWeightUnit: String = "",
         tracksInventory: Bool = true,
         cureDays: Int = 0,
         process: String = "",
@@ -83,6 +91,8 @@ final class Batch {
         self.dateCreated = dateCreated
         self.batchCount = batchCount
         self.totalCost = totalCost
+        self.totalWeight = totalWeight
+        self.totalWeightUnit = totalWeightUnit
         self.tracksInventory = tracksInventory
         self.cureDays = cureDays
         self.process = process
