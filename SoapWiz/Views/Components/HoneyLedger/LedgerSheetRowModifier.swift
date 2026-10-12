@@ -140,14 +140,10 @@ private struct LedgerRowMenuStyle: MenuStyle {
 private struct LedgerRowPressStyle: ButtonStyle {
     @Binding var isPressed: Bool
 
-    /// About a list row's vertical padding, so a tap near the top or bottom
-    /// of the row still lands.
-    private static let hitOutset: CGFloat = 12
-
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle().inset(by: -Self.hitOutset))
+            .contentShape(Rectangle().inset(by: -LedgerRowHitArea.outset))
             .onChange(of: configuration.isPressed) { _, pressed in
                 withAnimation(pressed ? nil : HoneyLedgerRowButtonStyle.release) {
                     isPressed = pressed

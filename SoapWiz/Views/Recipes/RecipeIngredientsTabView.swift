@@ -38,18 +38,20 @@ struct RecipeIngredientsTabView: View {
             model.reconcileCreamSoapGlycerine(from: inventory)
         }
         .scrollClipDisabled()
-        .ignoresSafeArea(.keyboard, edges: .bottom)
         .background(
             GeometryReader { geo in
                 Color.clear.preference(key: AvailableHeightKey.self, value: geo.size.height)
             }
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         )
         .onPreferenceChange(AvailableHeightKey.self) { if !costBreakdownExpanded { availableHeight = $0 } }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if tracksInventory {
-                CostBreakdownBarView(model: model, isExpanded: $costBreakdownExpanded, availableHeight: availableHeight)
-            }
-        }
+        .costBreakdownBarInset(
+            model: model,
+            isShown: tracksInventory,
+            isExpanded: $costBreakdownExpanded,
+            availableHeight: availableHeight,
+            pinsToWindowBottom: RecipeFormRequest.opensFullScreen
+        )
         .expandingSectionScrollContainer()
         .sheet(item: $activePicker) { section in
             IngredientPickerView(
