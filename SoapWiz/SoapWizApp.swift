@@ -20,6 +20,7 @@ struct SoapWizApp: App {
     init() {
         UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
         UITextField.disableNumberPadPopovers()
+        UIWindow.dismissKeyboardOnTapOutsideFields()
         _storeHost = State(initialValue: StoreHost())
     }
 
