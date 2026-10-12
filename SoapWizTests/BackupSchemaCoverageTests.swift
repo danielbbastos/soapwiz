@@ -18,8 +18,8 @@ struct BackupSchemaCoverageTests {
             "pvpFactor", "expiryNotificationsEnabled", "cureNotificationsEnabled", "tracksInventory", "currencyCode"
         ],
         "Batch": [
-            "recipe", "code", "recipeName", "dateCreated", "batchCount", "totalCost", "tracksInventory",
-            "cureDays", "process", "cureBand", "lineItemsStorage", "logEntriesStorage"
+            "recipe", "code", "recipeName", "dateCreated", "batchCount", "totalCost", "totalWeight", "totalWeightUnit",
+            "tracksInventory", "cureDays", "process", "cureBand", "lineItemsStorage", "logEntriesStorage"
         ],
         "BatchLineItem": ["ingredient", "ingredientName", "amountConsumed", "unit", "cost", "draws"],
         "BatchLogEntry": ["date", "text", "photosStorage"],

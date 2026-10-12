@@ -64,7 +64,9 @@ struct BatchDetailView: View {
 
     private var summarySection: some View {
         let costPerBatch = batch.batchCount > 1 ? BatchHistoryViewModel.costPerBatch(of: batch) : nil
-        let count = 3 + (batch.tracksInventory ? 1 : 0) + (costPerBatch == nil ? 0 : 1)
+        let showsWeight = batch.totalWeight > 0
+        let count = 3 + (showsWeight ? 1 : 0) + (batch.tracksInventory ? 1 : 0) + (costPerBatch == nil ? 0 : 1)
+        let costIndex = showsWeight ? 4 : 3
         let isDuplicate = BatchCodeGenerator.isTaken(batch.code, among: batches, excluding: batch)
         return Section {
             codeRow
@@ -77,16 +79,25 @@ struct BatchDetailView: View {
                 figure("\(batch.batchCount)")
             }
             .ledgerSheetRow(position: .position(index: 2, count: count))
+            if showsWeight {
+                HoneyLedgerLabeledRow("Total weight") {
+                    Text.honeyLedgerFigure(
+                        batch.totalWeight.formatted(.number.precision(.fractionLength(0...2))),
+                        unit: batch.totalWeightUnit
+                    )
+                }
+                .ledgerSheetRow(position: .position(index: 3, count: count))
+            }
             if batch.tracksInventory {
                 HoneyLedgerLabeledRow("Total cost") {
                     figure(formatCurrency(batch.totalCost))
                 }
-                .ledgerSheetRow(position: .position(index: 3, count: count))
+                .ledgerSheetRow(position: .position(index: costIndex, count: count))
                 if let costPerBatch {
                     HoneyLedgerLabeledRow("Cost per batch") {
                         figure(formatCurrency(costPerBatch))
                     }
-                    .ledgerSheetRow(position: .position(index: 4, count: count))
+                    .ledgerSheetRow(position: .position(index: costIndex + 1, count: count))
                 }
             }
         } header: {

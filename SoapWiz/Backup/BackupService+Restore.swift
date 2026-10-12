@@ -197,6 +197,8 @@ extension BackupService {
             dateCreated: dto.dateCreated,
             batchCount: dto.batchCount,
             totalCost: dto.totalCost,
+            totalWeight: dto.totalWeight ?? 0,
+            totalWeightUnit: dto.totalWeightUnit ?? "",
             tracksInventory: dto.tracksInventory ?? true,
             cureDays: dto.cureDays ?? 0,
             process: dto.process ?? "",
