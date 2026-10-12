@@ -1,12 +1,6 @@
 import SwiftUI
 import SwiftData
 
-private enum RecipeTab: String, CaseIterable {
-    case config = "Config"
-    case ingredients = "Ingredients"
-    case stats = "Stats"
-}
-
 struct RecipeFormView: View {
     /// Hidden lyes are excluded so the default never resolves to one the user has
     /// said they don't use. Safe because resolving only ever fills a blank — it
@@ -37,6 +31,7 @@ struct RecipeFormView: View {
     @State private var model = RecipeFormViewModel()
     @State private var selectedTab: RecipeTab = .config
     @State private var closeReason: RecipeFormCloseReason?
+    @State private var isWide = false
     /// Set once the recipe, seed or import has been applied. Before that the
     /// model holds its defaults, which say soap, and would ask on a recipe
     /// with no lye.
@@ -53,10 +48,16 @@ struct RecipeFormView: View {
         currentTab
             .environment(\.defaultMinListRowHeight, 48)
             .ledgerBackground()
+            .onGeometryChange(for: Bool.self) {
+                RecipeFormLayout.isWide(width: $0.size.width)
+            } action: { newValue in
+                isWide = newValue
+                selectedTab = selectedTab.adapted(isWide: newValue)
+            }
             .safeAreaInset(edge: .top, spacing: 0) {
                 tabPicker
                     .shadow(color: Color.shadow.opacity(0.12), radius: 4, y: 1)
-                    // As wide as the capped form below it, on a full-screen iPad.
+                    // Readable width in every layout; the wide columns below are wider.
                     .frame(maxWidth: ReadableWidth.maximum)
                     .padding(.horizontal)
                     .padding(.bottom, 8)
@@ -140,7 +141,9 @@ struct RecipeFormView: View {
     private var currentTab: some View {
         switch selectedTab {
         case .config: configTab
-        case .ingredients: ingredientsTab
+        // Both share one branch and one view structure, so the Ingredients
+        // view keeps its identity and state when the layout changes.
+        case .ingredients, .ingredientsAndStats: ingredientsColumns
         case .stats: statsTab
         }
     }
@@ -156,7 +159,7 @@ struct RecipeFormView: View {
         // Before the picker's control is made, which happens after `body`.
         let _: Void = HoneyLedgerSegmentedAppearance.applied
         let picker = Picker("Tab", selection: $selectedTab) {
-            ForEach(RecipeTab.allCases, id: \.self) { tab in
+            ForEach(RecipeTab.tabs(isWide: isWide), id: \.self) { tab in
                 Text(tab.rawValue).tag(tab)
             }
         }
@@ -188,5 +191,23 @@ private extension RecipeFormView {
 
     var statsTab: some View {
         RecipeStatsTabView(model: model)
+    }
+
+    /// Each column is its own `Form`, so each scrolls on its own. The outer
+    /// full-width frame keeps the paper background filling the screen behind
+    /// the capped columns.
+    var ingredientsColumns: some View {
+        HStack(spacing: 0) {
+            ingredientsTab
+            if isWide {
+                Color.clear
+                    .frame(width: RecipeFormLayout.columnSpacing)
+                    .overlay { Rectangle().fill(Color.rule).frame(width: 1) }
+                statsTab
+                    .frame(width: RecipeFormLayout.statsColumnWidth)
+            }
+        }
+        .frame(maxWidth: isWide ? RecipeFormLayout.maximumWideWidth : .infinity)
+        .frame(maxWidth: .infinity)
     }
 }

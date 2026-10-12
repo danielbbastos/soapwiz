@@ -9,6 +9,7 @@ struct SoapPropertyIndicatorView: View {
     var infoText: String?
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showingRange = false
 
@@ -100,6 +101,8 @@ struct SoapPropertyIndicatorView: View {
                         .frame(width: 14, height: 14)
                         .overlay(Circle().stroke(Color.paperRaised, lineWidth: 2))
                         .position(x: markerX, y: 11)
+                        // Keyed on value so rotation and first appearance don't glide.
+                        .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: value)
                         .allowsHitTesting(false)
                 }
                 .frame(height: 22)

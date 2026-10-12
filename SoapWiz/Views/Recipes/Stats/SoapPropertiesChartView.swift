@@ -10,6 +10,8 @@ struct SoapPropertiesChartView: View {
     /// bars can't be selected. See `SoapPropertiesSection.interactive`.
     var interactive: Bool = true
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var plotWidth: CGFloat = 0
     @State private var fullNameWidth: CGFloat = 0
 
@@ -28,6 +30,10 @@ struct SoapPropertiesChartView: View {
             count: SoapQuality.allCases.count,
             gap: Self.labelGap
         )
+    }
+
+    private var scores: [Double] {
+        SoapQuality.allCases.map { $0.value(from: profile) }
     }
 
     var body: some View {
@@ -62,6 +68,8 @@ struct SoapPropertiesChartView: View {
                 }
             }
         }
+        // Reduce Motion keeps the old snap.
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: scores)
         .chartYScale(domain: 0...100)
         .chartYAxis {
             AxisMarks(values: [0, 20, 40, 60, 80, 100])
