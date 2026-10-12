@@ -11,7 +11,8 @@ extension UIApplication {
     /// whichever responder is first, which `@FocusState` can't do from a view
     /// that doesn't own the field.
     ///
-    /// Also meant for dismissing the keyboard on a tap in a blank area (SW-253).
+    /// `KeyboardDismissTapRecognizer` uses it to end editing on a tap outside a
+    /// text field (SW-253).
     func endEditing() {
         sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
