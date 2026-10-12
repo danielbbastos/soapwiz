@@ -1,4 +1,5 @@
 import Testing
+import SwiftData
 @testable import SoapWiz
 
 @Suite
@@ -51,6 +52,27 @@ struct RecipeStatsRefreshTests {
         let shown = [draft("Olive"), draft("Coconut")]
         let live = [shown[0], draft("Coconut")]
         #expect(RecipeStatsRefresh.updatesImmediately(from: shown, to: live))
+    }
+
+    @Test @MainActor func updatesImmediately_IngredientSwappedKeepingDraftID_ReturnsTrue() throws {
+        let schema = ModelContainerFactory.schema
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
+        let context = container.mainContext
+
+        let deleted = Ingredient.mockOil(name: "Olive", naohSap: 0.134)
+        deleted.librarySlug = "olive"
+        let survivor = Ingredient.mockOil(name: "Olive", naohSap: 0.134)
+        survivor.librarySlug = "olive"
+        context.insert(survivor)
+        try context.save()
+
+        let shown = [OilIngredientDraft(ingredient: deleted, amount: 50)]
+        let resolved = try #require(shown[0].resolved(in: context))
+        #expect(resolved.id == shown[0].id)
+        #expect(resolved.ingredient === survivor)
+
+        #expect(RecipeStatsRefresh.updatesImmediately(from: shown, to: [resolved]))
+        _ = container
     }
 
     @Test func updatesImmediately_BothEmpty_ReturnsFalse() {
