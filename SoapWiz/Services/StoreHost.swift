@@ -46,6 +46,9 @@ final class StoreHost {
     /// The inventory's rows, shared by the screens that show them.
     let inventoryRows: InventoryRows
 
+    /// The settings the root views read, shared like the rows.
+    let settings: SettingsState
+
     @ObservationIgnored private let mergeCoordinator: DuplicateMergeCoordinator
     @ObservationIgnored private let preference: SyncPreference
 
@@ -68,6 +71,7 @@ final class StoreHost {
         Self.prepare(container.mainContext)
         // After `prepare`, so its first fetch already sees the repaired store.
         inventoryRows = InventoryRows(context: container.mainContext)
+        settings = SettingsState(context: container.mainContext)
         self.container = container
         // After `makeProduction()`, which records which store it opened.
         syncHealth = SyncHealthMonitor(activeStore: ModelContainerFactory.activeStore)
@@ -87,6 +91,7 @@ final class StoreHost {
         // The erase saves the context, which already refreshed the rows; this
         // covers a reset that failed part-way and rolled back instead.
         inventoryRows.refresh()
+        settings.refresh()
         generation += 1
         phase = .ready
     }

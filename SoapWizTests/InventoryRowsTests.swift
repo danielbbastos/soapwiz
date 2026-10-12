@@ -323,7 +323,7 @@ struct InventoryRowsTests {
     private final class FlakyFetch {
         var failing = true
 
-        func fetch(_ context: ModelContext) throws -> (ingredients: [Ingredient], purchases: [IngredientPurchase]) {
+        func fetch(_ context: ModelContext) throws -> InventoryRows.FetchedRows {
             if failing { throw FetchFailure() }
             return try InventoryRows.fetchAll(in: context)
         }

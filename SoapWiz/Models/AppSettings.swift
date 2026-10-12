@@ -37,13 +37,13 @@ final class AppSettings {
         records.min { $0.uuid.uuidString < $1.uuid.uuidString }
     }
 
-    /// The tracking setting as views read it from a `@Query`: tracked until a
-    /// settings record says otherwise, matching the stored default.
+    /// The tracking setting read from the settings records: tracked until a
+    /// record says otherwise, matching the stored default.
     static func tracksInventory(from records: [AppSettings]) -> Bool {
         canonical(from: records)?.tracksInventory ?? true
     }
 
-    /// The currency prices are shown in, as views read it from a `@Query`.
+    /// The currency prices are shown in, read from the settings records.
     static func currencyCode(from records: [AppSettings], locale: Locale = .autoupdatingCurrent) -> String {
         let chosen = canonical(from: records)?.currencyCode ?? ""
         return chosen.isEmpty ? regionCurrencyCode(locale: locale) : chosen

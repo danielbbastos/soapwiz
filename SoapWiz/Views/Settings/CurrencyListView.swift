@@ -4,6 +4,7 @@ import SwiftUI
 struct CurrencyListView: View {
     @Environment(\.currencyCode) private var currencyCode
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     let settings: AppSettings
 
     @State private var searchText = ""
@@ -76,6 +77,9 @@ struct CurrencyListView: View {
         let isSelected = choice.code == currencyCode
         return Button {
             settings.currencyCode = choice.code
+            // `SettingsState` reads the settings when the context saves, so the
+            // new currency shows at once rather than at the next autosave.
+            modelContext.saveLoggingFailure()
             dismiss()
         } label: {
             HStack {

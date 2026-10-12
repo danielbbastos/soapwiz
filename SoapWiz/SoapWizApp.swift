@@ -33,6 +33,7 @@ struct SoapWizApp: App {
                         .environment(storeHost)
                         .environment(storeHost.syncHealth)
                         .environment(storeHost.inventoryRows)
+                        .environment(storeHost.settings)
                         .modelContainer(storeHost.container)
                         .task {
                             // After launch rather than with the rest of the

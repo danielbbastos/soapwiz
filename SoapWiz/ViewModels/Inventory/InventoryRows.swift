@@ -3,7 +3,7 @@ import Foundation
 import OSLog
 import SwiftData
 
-/// The inventory's ingredients and purchases, kept apart from `@Query`.
+/// The inventory's ingredients, purchases and categories, kept apart from `@Query`.
 ///
 /// This is the one place that doesn't read stored data with `@Query`, and the
 /// reason is measured. SwiftData re-evaluates every `@Query` after each CloudKit
@@ -12,7 +12,8 @@ import SwiftData
 /// iPad with 238 ingredients and 409 purchases, one return to the foreground
 /// with nothing changed spent about 256 ms in those two queries and another
 /// 110 ms rebuilding the list. The same two fetches done by hand take about
-/// 30 ms, and only when something relevant changed.
+/// 30 ms, and only when something relevant changed. The categories are a third
+/// query the list view used to run on its own.
 ///
 /// The rows are refetched when:
 /// - this context saves something the inventory shows (an ingredient, purchase
@@ -36,13 +37,13 @@ import SwiftData
 final class InventoryRows {
     private(set) var ingredients: [Ingredient] = []
     private(set) var purchases: [IngredientPurchase] = []
+    private(set) var categories: [IngredientCategory] = []
 
     @ObservationIgnored private let context: ModelContext
     @ObservationIgnored private let cursor: StoreHistoryCursor
     @ObservationIgnored private let pollInterval: Duration
     @ObservationIgnored private let maxPollDuration: Duration
-    @ObservationIgnored private let fetchRows:
-        @MainActor (ModelContext) throws -> (ingredients: [Ingredient], purchases: [IngredientPurchase])
+    @ObservationIgnored private let fetchRows: @MainActor (ModelContext) throws -> FetchedRows
     @ObservationIgnored private let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "inventory")
     @ObservationIgnored private var polling: Task<Void, Never>?
     /// Set when the last refetch failed, so the next check retries even if the
@@ -51,6 +52,13 @@ final class InventoryRows {
     /// `nonisolated` so `deinit` can unregister them. Written once in `init`
     /// and read once in `deinit`, never concurrently.
     @ObservationIgnored private nonisolated(unsafe) var observers: [any NSObjectProtocol] = []
+
+    /// The three lists one refetch produces.
+    struct FetchedRows {
+        let ingredients: [Ingredient]
+        let purchases: [IngredientPurchase]
+        let categories: [IngredientCategory]
+    }
 
     /// Entities whose changes can alter what the inventory shows.
     private static let watchedEntities: Set<String> = [
@@ -87,8 +95,7 @@ final class InventoryRows {
         context: ModelContext,
         pollInterval: Duration = .seconds(1),
         maxPollDuration: Duration = .seconds(120),
-        fetchRows: @escaping @MainActor (ModelContext) throws -> (ingredients: [Ingredient], purchases: [IngredientPurchase]) =
-            InventoryRows.fetchAll(in:)
+        fetchRows: @escaping @MainActor (ModelContext) throws -> FetchedRows = InventoryRows.fetchAll(in:)
     ) {
         self.context = context
         self.fetchRows = fetchRows
@@ -105,7 +112,7 @@ final class InventoryRows {
         }
     }
 
-    /// Refetches both lists.
+    /// Refetches all three lists.
     func refresh() {
         // Everything written so far is about to be read, so the cursor needn't
         // report it again.
@@ -152,18 +159,17 @@ final class InventoryRows {
         }
     }
 
-    /// Both fetches the inventory shows. Injected only so a test can make them fail.
-    static func fetchAll(
-        in context: ModelContext
-    ) throws -> (ingredients: [Ingredient], purchases: [IngredientPurchase]) {
-        (
-            try context.fetch(Ingredient.listDescriptor),
-            try context.fetch(FetchDescriptor<IngredientPurchase>())
+    /// Every fetch the inventory shows. Injected only so a test can make them fail.
+    static func fetchAll(in context: ModelContext) throws -> FetchedRows {
+        FetchedRows(
+            ingredients: try context.fetch(Ingredient.listDescriptor),
+            purchases: try context.fetch(FetchDescriptor<IngredientPurchase>()),
+            categories: try context.fetch(FetchDescriptor<IngredientCategory>(sortBy: [SortDescriptor(\.name)]))
         )
     }
 
     private func reload() {
-        let fetched: (ingredients: [Ingredient], purchases: [IngredientPurchase])
+        let fetched: FetchedRows
         do {
             fetched = try fetchRows(context)
         } catch {
@@ -178,6 +184,8 @@ final class InventoryRows {
         if liveIngredients != ingredients { ingredients = liveIngredients }
         let livePurchases = Self.live(fetched.purchases)
         if livePurchases != purchases { purchases = livePurchases }
+        let liveCategories = Self.live(fetched.categories)
+        if liveCategories != categories { categories = liveCategories }
     }
 
     private static func live<Model: PersistentModel>(_ models: [Model]) -> [Model] {
