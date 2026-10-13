@@ -63,29 +63,16 @@ final class IngredientDetailViewModel {
 
     var totalRemaining: Double { ingredient.totalRemaining }
 
-    /// Whether to show the chemistry block at all. Mirrors the form's gate
-    /// (`IngredientFormViewModel.showsSapValue`): only oils carry a SAP value and
-    /// a fatty-acid composition, so only oils get the panel.
-    var showsChemistry: Bool {
-        ingredient.category?.showsSapValue ?? false
-    }
+    private var chemistry: IngredientChemistry { IngredientChemistry(ingredient: ingredient) }
 
-    /// True only when a real profile is on file. A nil or all-zero profile is
-    /// "not specified" rather than a genuine all-zero oil, so the acid tables and
-    /// the qualities chart are replaced by a note instead of a page of `0.00 %`.
-    var hasFattyAcidProfile: Bool {
-        guard let profile = ingredient.fattyAcidProfile else { return false }
-        return !profile.isEmpty
-    }
+    /// See `IngredientChemistry.showsChemistry`.
+    var showsChemistry: Bool { chemistry.showsChemistry }
 
-    /// The ingredient's own chemistry expressed as a one-oil blend, so the detail
-    /// page reuses `RecipeStats` and the recipe stats views verbatim — the
-    /// weighted sum of a single profile is that profile, and the SAP/iodine/INS
-    /// fall out with it. `nil` for anything that isn't an oil.
-    var chemistryStats: RecipeStats? {
-        guard showsChemistry else { return nil }
-        return RecipeStats(oilDrafts: [OilIngredientDraft(ingredient: ingredient, amount: 1)])
-    }
+    /// See `IngredientChemistry.hasFattyAcidProfile`.
+    var hasFattyAcidProfile: Bool { chemistry.hasFattyAcidProfile }
+
+    /// See `IngredientChemistry.stats`.
+    var chemistryStats: RecipeStats? { chemistry.stats }
 
     func delete(at offsets: IndexSet, context: ModelContext) {
         let purchases = sortedPurchases
