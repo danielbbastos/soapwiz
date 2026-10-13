@@ -17,15 +17,14 @@ struct IngredientDetailView: View {
     /// Whether the purchases section has been expanded past its two-row preview.
     @State private var showAllPurchases = false
 
-    /// The collapsible sections currently open. Everything but Summary (and the
-    /// single-line composition note) can be collapsed; all start expanded.
+    /// The collapsible sections currently open; all start expanded. The
+    /// chemistry sections keep their own state in `IngredientChemistrySections`.
     @State private var expandedSections: Set<DetailSection> = Set(DetailSection.allCases)
 
-    /// The sections that carry a collapse chevron. Summary and the composition
-    /// note are deliberately absent — Summary is always shown, and a one-line
-    /// note has nothing to gain from folding away.
+    /// The sections that carry a collapse chevron. Summary is deliberately
+    /// absent — it is always shown.
     private enum DetailSection: CaseIterable {
-        case purchases, sapValues, fattyAcidProfile, fattyAcidTypes, soapQualities, usage
+        case purchases, usage
     }
 
     private func isExpanded(_ section: DetailSection) -> Bool {
@@ -47,12 +46,9 @@ struct IngredientDetailView: View {
     /// `Section(isExpanded:)` API, whose disclosure control doesn't render under
     /// this screen's photo header + ledger background styling.
     ///
-    /// `animated` is off for the iPad's side-by-side columns: they share one
-    /// list row, and the list resizes a row around content already laid out at
-    /// its new height, so an animated fold makes the other column jump.
-    private func collapsibleHeader(_ title: String, _ section: DetailSection, animated: Bool = true) -> some View {
+    private func collapsibleHeader(_ title: String, _ section: DetailSection) -> some View {
         Button {
-            withAnimation(animated ? .easeInOut(duration: 0.2) : nil) {
+            withAnimation(.easeInOut(duration: 0.2)) {
                 if expandedSections.contains(section) {
                     expandedSections.remove(section)
                 } else {
@@ -131,9 +127,7 @@ struct IngredientDetailView: View {
                     purchasesSection
                 }
 
-                if let stats = model.chemistryStats {
-                    chemistrySections(stats: stats)
-                }
+                IngredientChemistrySections(ingredient: model.ingredient)
 
                 Section {
                     if isExpanded(.usage) {
@@ -222,125 +216,6 @@ struct IngredientDetailView: View {
             }
         } header: {
             collapsibleHeader("Purchases", .purchases)
-        }
-    }
-
-    /// The read-only chemistry block, shown only for oils. The SAP figures stand
-    /// on their own; the composition and qualities need a profile, and are
-    /// replaced by a note when the oil has none yet.
-    @ViewBuilder
-    private func chemistrySections(stats: RecipeStats) -> some View {
-        Section {
-            if isExpanded(.sapValues) {
-                // INS rides with the qualities chart when there's a profile;
-                // without one there is no chart, so it belongs here or nowhere.
-                let rowCount = model.hasFattyAcidProfile ? 2 : 3
-                sheetRow(0, of: rowCount) { sapRow("SAP (NaOH)", model.ingredient.sapValue) }
-                sheetRow(1, of: rowCount) { sapRow("SAP (KOH)", model.ingredient.kohSapValue) }
-                if !model.hasFattyAcidProfile {
-                    sheetRow(2, of: rowCount) {
-                        HoneyLedgerLabeledRow("INS") {
-                            Text.honeyLedgerFigure(
-                                (stats.ins ?? 0).formatted(.number.precision(.fractionLength(1)))
-                            )
-                        }
-                    }
-                }
-            }
-        } header: {
-            collapsibleHeader(model.hasFattyAcidProfile ? "SAP Values" : "SAP & INS Values", .sapValues)
-        }
-
-        if model.hasFattyAcidProfile {
-            profileSections(stats: stats)
-        } else {
-            Section {
-                sheetRow(0, of: 1) {
-                    Text(RecipeStatsCopy.ingredientNoFattyAcidData)
-                        .foregroundStyle(Color.inkSoft)
-                }
-            } header: {
-                HoneyLedgerSectionLabel("Composition")
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func profileSections(stats: RecipeStats) -> some View {
-        Group {
-            if Self.isPhone {
-                Section {
-                    if isExpanded(.fattyAcidProfile) {
-                        sheetRow(0, of: 1) {
-                            VStack(spacing: 10) { FattyAcidBreakdownRows(stats: stats) }
-                                .padding(.vertical, 4)
-                        }
-                    }
-                } header: {
-                    collapsibleHeader("Fatty Acid Profile", .fattyAcidProfile)
-                }
-
-                Section {
-                    if isExpanded(.fattyAcidTypes) {
-                        sheetRow(0, of: 1) {
-                            VStack(spacing: 10) { FattyAcidTotalsRows(stats: stats) }
-                                .padding(.vertical, 4)
-                        }
-                    }
-                } header: {
-                    collapsibleHeader("Fatty Acid Types", .fattyAcidTypes)
-                }
-            } else {
-                fattyAcidColumnsSection(stats: stats)
-            }
-
-            Section {
-                if isExpanded(.soapQualities) {
-                    sheetRow(0, of: 1) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            SoapPropertiesSection(stats: stats, interactive: false)
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-            } header: {
-                collapsibleHeader("Soap Qualities", .soapQualities)
-            }
-        }
-    }
-
-    /// The profile and the types side by side on iPad: the labels never
-    /// change and are short.
-    private func fattyAcidColumnsSection(stats: RecipeStats) -> some View {
-        Section {
-            HoneyLedgerColumns {
-                HoneyLedgerColumn(isExpanded: isExpanded(.fattyAcidProfile)) {
-                    collapsibleHeader("Fatty Acid Profile", .fattyAcidProfile, animated: false)
-                } rows: {
-                    FattyAcidBreakdownRows(stats: stats)
-                }
-            } trailing: {
-                HoneyLedgerColumn(isExpanded: isExpanded(.fattyAcidTypes)) {
-                    collapsibleHeader("Fatty Acid Types", .fattyAcidTypes, animated: false)
-                } rows: {
-                    FattyAcidTotalsRows(stats: stats)
-                }
-            }
-        }
-    }
-
-    private func sapRow(_ title: String, _ value: Double?) -> some View {
-        HoneyLedgerLabeledRow(title) {
-            if let value {
-                Text.honeyLedgerFigure(
-                    value.formatted(.number.precision(.fractionLength(0...4)).grouping(.never)),
-                    unit: "g/g"
-                )
-            } else {
-                Text("Not specified")
-                    .font(.body)
-                    .foregroundStyle(Color.inkSoft)
-            }
         }
     }
 }

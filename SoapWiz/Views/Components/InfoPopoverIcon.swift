@@ -6,15 +6,41 @@ struct InfoPopoverIcon: View {
     let text: String
     var systemImage: String = "info.circle"
 
-    @State private var isPresented = false
+    @State private var internalIsPresented = false
+
+    private let externalIsPresented: Binding<Bool>?
 
     /// The glyph alone is a ~13pt target; this padding makes it reachable
     /// without changing how it looks.
     static let tapPadding: CGFloat = 6
 
+    init(title: String? = nil, text: String, systemImage: String = "info.circle") {
+        self.title = title
+        self.text = text
+        self.systemImage = systemImage
+        externalIsPresented = nil
+    }
+
+    /// Lets a parent open the popover, for a row that is tappable as a whole.
+    init(
+        title: String? = nil,
+        text: String,
+        systemImage: String = "info.circle",
+        isPresented: Binding<Bool>
+    ) {
+        self.title = title
+        self.text = text
+        self.systemImage = systemImage
+        externalIsPresented = isPresented
+    }
+
+    private var isPresented: Binding<Bool> {
+        externalIsPresented ?? $internalIsPresented
+    }
+
     var body: some View {
         Button {
-            isPresented = true
+            isPresented.wrappedValue = true
         } label: {
             Image(systemName: systemImage)
                 .font(.footnote)
@@ -23,7 +49,7 @@ struct InfoPopoverIcon: View {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .popover(isPresented: $isPresented) {
+        .popover(isPresented: isPresented) {
             VStack(alignment: .leading, spacing: 8) {
                 if let title {
                     Text(title)

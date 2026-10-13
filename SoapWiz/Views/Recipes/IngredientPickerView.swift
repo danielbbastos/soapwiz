@@ -56,6 +56,10 @@ struct IngredientPickerView: View {
     @State private var showsInStockOnly = false
     @State private var pendingSelections = PendingIngredientSelection()
     @State private var showingNewIngredient = false
+    /// The oil whose properties are pushed. Held on the stack's root rather than
+    /// in a row, so going back returns to the list with its selections, search
+    /// and scroll position as they were.
+    @State private var propertiesIngredient: Ingredient?
 
     /// Whether an ingredient or category with the given role is offered by a
     /// picker configured with these options. A `nil` role is the "Others"
@@ -158,6 +162,7 @@ struct IngredientPickerView: View {
             .navigationBarTitleDisplayMode(.inline)
             .honeyLedgerInlineTitle(config.title)
             .ledgerBackground()
+            .navigationDestination(item: $propertiesIngredient) { OilPropertiesView(ingredient: $0) }
             // Every device installs its own categories, so the first sync on a
             // joining device merges the chip's copy away. Kept, it would empty
             // the list and reach "Add new ingredient" as a row that traps when
@@ -237,12 +242,36 @@ struct IngredientPickerView: View {
         let isAdded = addedIDs.contains(ingredient.persistentModelID)
         let isPending = pendingSelections.contains(ingredient.persistentModelID)
         let state: HoneyLedgerPickerRowState = isAdded ? .added : (isPending ? .selected : .unselected)
-        return Button {
-            pendingSelections.toggle(ingredient)
-        } label: {
-            HoneyLedgerPickerRow(name: ingredient.name, state: state)
+        return HStack(spacing: 0) {
+            Button {
+                pendingSelections.toggle(ingredient)
+            } label: {
+                HoneyLedgerPickerRow(name: ingredient.name, state: state)
+            }
+            .buttonStyle(.borderless)
+            .disabled(isAdded)
+            if IngredientChemistry(ingredient: ingredient).showsChemistry {
+                propertiesButton(for: ingredient)
+            }
         }
-        .disabled(isAdded)
         .ledgerListDetailRow(isSelected: state == .selected, position: position)
+    }
+
+    /// Opens the oil's soap chemistry beside the select circle's row. A sibling
+    /// of the selection button rather than inside it, so a tap here never
+    /// toggles the row, and it stays live on a row already in the recipe, whose
+    /// selection button is disabled. Both are borderless so the list doesn't
+    /// merge them into one tap target.
+    private func propertiesButton(for ingredient: Ingredient) -> some View {
+        Button {
+            propertiesIngredient = ingredient
+        } label: {
+            Image(systemName: "chart.bar")
+                .foregroundStyle(Color.inkSoft)
+                .frame(width: 44)
+                .contentShape(RowHeightHitShape())
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel("Properties of \(ingredient.name)")
     }
 }

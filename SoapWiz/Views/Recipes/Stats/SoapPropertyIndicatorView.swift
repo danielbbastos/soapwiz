@@ -23,10 +23,11 @@ struct SoapPropertyIndicatorView: View {
         }
     }
 
-    private var rangeText: String {
-        let low = recommended.lowerBound.formatted(.number.precision(.fractionLength(0)))
-        let high = recommended.upperBound.formatted(.number.precision(.fractionLength(0)))
-        return "\(low) – \(high)"
+    /// A range in whole numbers, for the popover and for VoiceOver.
+    static func rangeText(_ range: ClosedRange<Double>) -> String {
+        let low = range.lowerBound.formatted(.number.precision(.fractionLength(0)))
+        let high = range.upperBound.formatted(.number.precision(.fractionLength(0)))
+        return "\(low) to \(high)"
     }
 
     var body: some View {
@@ -85,7 +86,7 @@ struct SoapPropertyIndicatorView: View {
                                 Text("Recommended")
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(.secondary)
-                                Text(rangeText)
+                                Text(Self.rangeText(recommended))
                                     .font(.caption)
                                     .monospacedDigit()
                             }
