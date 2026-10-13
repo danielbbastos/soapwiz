@@ -4,15 +4,20 @@ import SwiftUI
 /// enamel finish. The label is `onAmber`, not white, which is only about 3:1
 /// on amber. Pressing nudges it down a point and softens its shadow; the fill
 /// never darkens.
+///
+/// `isCompact` sizes it to its label instead, for a button that shares a row.
 struct HoneyLedgerPrimaryButtonStyle: ButtonStyle {
+    var isCompact = false
+
     func makeBody(configuration: Configuration) -> some View {
-        HoneyLedgerPrimaryButtonBody(configuration: configuration)
+        HoneyLedgerPrimaryButtonBody(configuration: configuration, isCompact: isCompact)
     }
 }
 
 private struct HoneyLedgerPrimaryButtonBody: View {
     @Environment(\.isEnabled) private var isEnabled
     let configuration: ButtonStyleConfiguration
+    let isCompact: Bool
 
     private var fill: LinearGradient {
         LinearGradient(
@@ -30,7 +35,8 @@ private struct HoneyLedgerPrimaryButtonBody: View {
         configuration.label
             .font(.body.weight(.semibold))
             .foregroundStyle(Color.onAmber)
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .padding(.horizontal, isCompact ? 22 : 0)
+            .frame(maxWidth: isCompact ? nil : .infinity, minHeight: isCompact ? 44 : 52)
             .background(fill, in: .capsule)
             .overlay {
                 Capsule()
@@ -51,4 +57,5 @@ private struct HoneyLedgerPrimaryButtonBody: View {
 
 extension ButtonStyle where Self == HoneyLedgerPrimaryButtonStyle {
     static var honeyLedgerPrimary: HoneyLedgerPrimaryButtonStyle { HoneyLedgerPrimaryButtonStyle() }
+    static var honeyLedgerPrimaryCompact: HoneyLedgerPrimaryButtonStyle { HoneyLedgerPrimaryButtonStyle(isCompact: true) }
 }
