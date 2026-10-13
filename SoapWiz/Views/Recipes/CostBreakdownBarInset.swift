@@ -36,6 +36,7 @@ struct CostBreakdownBarInset: ViewModifier {
     @State private var containerSize: CGSize = .zero
     @State private var window: UIWindow?
     @State private var windowSafeMaxY: CGFloat?
+    @State private var isLandscapeWindow = false
 
     private var hidesBar: Bool {
         Self.hidesCostBar(isEditing: isEditing, dockedKeyboard: dockedKeyboard, isExpanded: isExpanded)
@@ -58,9 +59,7 @@ struct CostBreakdownBarInset: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background {
-                if pinsToWindowBottom {
-                    WindowProbe { window = $0; refreshWindowBottom() }
-                }
+                WindowProbe { window = $0; refreshWindowBottom() }
             }
             .onKeyboardFrameChange(keyboardChanged)
             .onEditingChange(began: editingBegan, ended: editingEnded)
@@ -73,7 +72,10 @@ struct CostBreakdownBarInset: ViewModifier {
                 containerMaxY = maxY
                 refreshWindowBottom()
             }
-            .onGeometryChange(for: CGSize.self) { $0.size } action: { containerSize = $0 }
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { size in
+                containerSize = size
+                refreshWindowBottom()
+            }
             .overlay(alignment: .bottom) { overlayBar }
     }
 
@@ -86,7 +88,7 @@ struct CostBreakdownBarInset: ViewModifier {
                     extraHeight: $extraHeight,
                     availableHeight: availableHeight,
                     maximumHeight: max(0, containerSize.height - Self.topMargin),
-                    isLandscape: containerSize.width > containerSize.height,
+                    isLandscape: isLandscapeWindow,
                     keyboardVisible: dockedKeyboard
                 )
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
@@ -100,13 +102,17 @@ struct CostBreakdownBarInset: ViewModifier {
     /// Re-read from the view's own window whenever something that could have
     /// changed it happens: the window attaches, the tab's frame changes
     /// (rotation, a resized Stage Manager or Split View window), the keyboard
-    /// moves, or editing begins or ends.
+    /// moves, or editing begins or ends. The window's shape is read with it:
+    /// the tab can be a narrow column, so its own shape says nothing about
+    /// the orientation.
     private func refreshWindowBottom() {
         guard let window else {
             windowSafeMaxY = nil
+            isLandscapeWindow = false
             return
         }
         windowSafeMaxY = window.bounds.maxY - window.safeAreaInsets.bottom
+        isLandscapeWindow = window.bounds.width > window.bounds.height
     }
 
     private func keyboardChanged(_ note: Notification) {

@@ -11,7 +11,7 @@ struct CostBreakdownBarView: View {
     var availableHeight: CGFloat = 0
     /// The tallest the whole panel may be, or 0 while that isn't measured yet.
     var maximumHeight: CGFloat = 0
-    /// Whether the tab is wider than it is tall.
+    /// Whether the window is wider than it is tall.
     var isLandscape = false
     var keyboardVisible = false
     @Query private var settingsRecords: [AppSettings]
