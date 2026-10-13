@@ -3,6 +3,7 @@ import SwiftData
 
 struct RecipeIngredientsTabView: View {
     @Bindable var model: RecipeFormViewModel
+    @Binding var costPanelExtraHeight: CGFloat
     /// Matches the extras table's query, so a cream-soap glycerine add that had to
     /// wait for oils can complete against the same set here.
     @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
@@ -50,6 +51,7 @@ struct RecipeIngredientsTabView: View {
             isShown: tracksInventory,
             isExpanded: $costBreakdownExpanded,
             availableHeight: availableHeight,
+            extraHeight: $costPanelExtraHeight,
             pinsToWindowBottom: RecipeFormRequest.opensFullScreen
         )
         .expandingSectionScrollContainer()
