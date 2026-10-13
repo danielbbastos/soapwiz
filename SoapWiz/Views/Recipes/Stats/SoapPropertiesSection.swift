@@ -76,12 +76,14 @@ struct SoapPropertiesSection: View {
             ForEach(SoapQuality.allCases) { quality in
                 metricView(
                     for: .quality(quality),
-                    title: quality.displayName,
-                    value: quality.value(from: stats.fattyAcidProfile),
-                    range: quality.recommendedRange,
-                    scale: 0...100,
-                    infoTitle: quality.displayName,
-                    infoText: quality.explanation
+                    MetricRow(
+                        title: quality.displayName,
+                        value: quality.value(from: stats.fattyAcidProfile),
+                        range: quality.recommendedRange,
+                        scale: 0...100,
+                        infoTitle: quality.displayName,
+                        infoText: quality.explanation
+                    )
                 )
                 .modifier(sheetRow(.quality(quality), isCompact: true))
             }
@@ -118,44 +120,54 @@ struct SoapPropertiesSection: View {
                         .frame(height: 1, alignment: .top)
                         .padding(.top, 13)
                 }
-                metricView(for: .ins, title: "INS", value: ins, range: SoapMetric.insRange,
-                           scale: SoapMetric.insScale, infoTitle: "INS", infoText: Self.insExplanation)
+                metricView(
+                    for: .ins,
+                    MetricRow(
+                        title: "INS",
+                        value: ins,
+                        range: SoapMetric.insRange,
+                        scale: SoapMetric.insScale,
+                        infoTitle: "INS",
+                        infoText: Self.insExplanation
+                    )
+                )
             }
             .modifier(sheetRow(.ins, isCompact: style == .bars))
-            metricView(for: .iodine, title: "Iodine", value: stats.iodineValue, range: SoapMetric.iodineRange,
-                       scale: SoapMetric.iodineScale, infoTitle: "Iodine value", infoText: Self.iodineExplanation)
-                .modifier(sheetRow(.iodine, isCompact: style == .bars))
+            metricView(
+                for: .iodine,
+                MetricRow(
+                    title: "Iodine",
+                    value: stats.iodineValue,
+                    range: SoapMetric.iodineRange,
+                    scale: SoapMetric.iodineScale,
+                    infoTitle: "Iodine value",
+                    infoText: Self.iodineExplanation
+                )
+            )
+            .modifier(sheetRow(.iodine, isCompact: style == .bars))
         }
     }
 
     @ViewBuilder
-    private func metricView(
-        for row: SoapPropertiesRow,
-        title: String,
-        value: Double,
-        range: ClosedRange<Double>,
-        scale: ClosedRange<Double>,
-        infoTitle: String,
-        infoText: String
-    ) -> some View {
+    private func metricView(for row: SoapPropertiesRow, _ metric: MetricRow) -> some View {
         switch style {
         case .chart:
             SoapPropertyIndicatorView(
-                title: title,
-                value: value,
-                recommended: range,
-                scale: scale,
-                infoTitle: infoTitle,
-                infoText: infoText
+                title: metric.title,
+                value: metric.value,
+                recommended: metric.range,
+                scale: metric.scale,
+                infoTitle: metric.infoTitle,
+                infoText: metric.infoText
             )
         case .bars:
             SoapPropertyRowView(
-                title: title,
-                value: value,
-                recommended: range,
-                scale: scale,
-                infoTitle: infoTitle,
-                infoText: infoText,
+                title: metric.title,
+                value: metric.value,
+                recommended: metric.range,
+                scale: metric.scale,
+                infoTitle: metric.infoTitle,
+                infoText: metric.infoText,
                 minHeight: drawsLedgerSheet ? CompactRowInsets.rowMinHeight : 44,
                 verticalPadding: drawsLedgerSheet ? CompactRowInsets.rowVerticalPadding : 0,
                 paddedEdges: position(of: row).innerEdges
@@ -192,6 +204,16 @@ struct SoapPropertiesSection: View {
 enum SoapPropertiesStyle {
     case chart
     case bars
+}
+
+/// What one quality, INS or iodine row shows, in either style.
+private struct MetricRow {
+    let title: String
+    let value: Double
+    let range: ClosedRange<Double>
+    let scale: ClosedRange<Double>
+    let infoTitle: String
+    let infoText: String
 }
 
 private enum SoapPropertiesRow: Equatable {
