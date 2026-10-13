@@ -9,7 +9,7 @@ struct OilPropertiesView: View {
 
     var body: some View {
         List {
-            IngredientChemistrySections(ingredient: ingredient, order: .qualitiesFirst)
+            IngredientChemistrySections(ingredient: ingredient, prefersColumns: false)
         }
         .readableWidth()
         .navigationTitle(ingredient.name)

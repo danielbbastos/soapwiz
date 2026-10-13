@@ -7,16 +7,11 @@ import UIKit
 /// the oil has none yet. Emits nothing for an ingredient that isn't an oil.
 /// Emits `Section`s, so it must sit directly inside a `List`.
 struct IngredientChemistrySections: View {
-    /// Which end of the block the SAP figures sit at. The ingredient's own page
-    /// leads with them; a quick look from the picker leads with what the oil
-    /// does to a bar, and keeps the lye figures for last.
-    enum Order {
-        case sapFirst
-        case qualitiesFirst
-    }
-
     let ingredient: Ingredient
-    var order: Order = .sapFirst
+
+    /// Whether the profile, types and SAP values may sit side by side on iPad.
+    /// Off where the screen is narrow, such as the picker's pushed sheet.
+    var prefersColumns: Bool = true
 
     /// The collapsible sections currently open; all start expanded.
     @State private var expandedSections: Set<ChemistrySection> = Set(ChemistrySection.allCases)
@@ -72,38 +67,21 @@ struct IngredientChemistrySections: View {
         let chemistry = IngredientChemistry(ingredient: ingredient)
         if let stats = chemistry.stats {
             let hasProfile = chemistry.hasFattyAcidProfile
-            switch order {
-            case .sapFirst:
-                sapSection(stats: stats, hasProfile: hasProfile)
-                compositionSections(stats: stats, hasProfile: hasProfile, qualitiesFirst: false)
-            case .qualitiesFirst:
-                compositionSections(stats: stats, hasProfile: hasProfile, qualitiesFirst: true)
-                sapSection(stats: stats, hasProfile: hasProfile)
+            if hasProfile {
+                qualitiesSection(stats: stats)
+                profileTypesAndSapSections(stats: stats)
+            } else {
+                compositionNoteSection
+                sapSection(stats: stats, hasProfile: false)
             }
-        }
-    }
-
-    /// The composition block: the profile and types with the qualities chart
-    /// when there's a profile, or a note saying there isn't one. `qualitiesFirst`
-    /// puts the chart ahead of the acid tables.
-    @ViewBuilder
-    private func compositionSections(stats: RecipeStats, hasProfile: Bool, qualitiesFirst: Bool) -> some View {
-        if !hasProfile {
-            compositionNoteSection
-        } else if qualitiesFirst {
-            qualitiesSection(stats: stats)
-            profileAndTypesSections(stats: stats)
-        } else {
-            profileAndTypesSections(stats: stats)
-            qualitiesSection(stats: stats)
         }
     }
 
     private func sapSection(stats: RecipeStats, hasProfile: Bool) -> some View {
         Section {
             if isExpanded(.sapValues) {
-                // INS rides with the qualities chart when there's a profile;
-                // without one there is no chart, so it belongs here or nowhere.
+                // INS rides with the qualities bars when there's a profile;
+                // without one there are no bars, so it belongs here or nowhere.
                 let rowCount = hasProfile ? 2 : 3
                 sheetRow(0, of: rowCount) { sapRow("SAP (NaOH)", ingredient.sapValue) }
                 sheetRow(1, of: rowCount) { sapRow("SAP (KOH)", ingredient.kohSapValue) }
@@ -134,8 +112,8 @@ struct IngredientChemistrySections: View {
     }
 
     @ViewBuilder
-    private func profileAndTypesSections(stats: RecipeStats) -> some View {
-        if Self.isPhone {
+    private func profileTypesAndSapSections(stats: RecipeStats) -> some View {
+        if Self.isPhone || !prefersColumns {
             Section {
                 if isExpanded(.fattyAcidProfile) {
                     sheetRow(0, of: 1) {
@@ -157,6 +135,8 @@ struct IngredientChemistrySections: View {
             } header: {
                 collapsibleHeader("Fatty Acid Types", .fattyAcidTypes)
             }
+
+            sapSection(stats: stats, hasProfile: true)
         } else {
             fattyAcidColumnsSection(stats: stats)
         }
@@ -165,15 +145,19 @@ struct IngredientChemistrySections: View {
     private func qualitiesSection(stats: RecipeStats) -> some View {
         Section {
             if isExpanded(.soapQualities) {
-                sheetRow(0, of: 1) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        SoapPropertiesSection(stats: stats, interactive: false)
-                    }
-                    .padding(.vertical, 4)
-                }
+                SoapPropertiesSection(
+                    stats: stats,
+                    interactive: false,
+                    style: .bars,
+                    drawsLedgerSheet: true
+                )
             }
         } header: {
             collapsibleHeader("Soap Qualities", .soapQualities)
+        } footer: {
+            if isExpanded(.soapQualities) {
+                HoneyLedgerFooter("Outlined boxes are the usual range for a whole recipe.")
+            }
         }
     }
 
@@ -188,10 +172,20 @@ struct IngredientChemistrySections: View {
                     FattyAcidBreakdownRows(stats: stats)
                 }
             } trailing: {
-                HoneyLedgerColumn(isExpanded: isExpanded(.fattyAcidTypes)) {
-                    collapsibleHeader("Fatty Acid Types", .fattyAcidTypes, animated: false)
-                } rows: {
-                    FattyAcidTotalsRows(stats: stats)
+                // The SAP figures sit under the types in the same column, as
+                // two short rows that would leave a full-width sheet mostly empty.
+                VStack(spacing: 24) {
+                    HoneyLedgerColumn(isExpanded: isExpanded(.fattyAcidTypes)) {
+                        collapsibleHeader("Fatty Acid Types", .fattyAcidTypes, animated: false)
+                    } rows: {
+                        FattyAcidTotalsRows(stats: stats)
+                    }
+                    HoneyLedgerColumn(isExpanded: isExpanded(.sapValues)) {
+                        collapsibleHeader("SAP Values", .sapValues, animated: false)
+                    } rows: {
+                        sapRow("SAP (NaOH)", ingredient.sapValue)
+                        sapRow("SAP (KOH)", ingredient.kohSapValue)
+                    }
                 }
             }
         }

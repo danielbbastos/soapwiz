@@ -36,9 +36,9 @@ struct FattyAcidTotalsRows: View {
     var showsIodine: Bool = false
 
     var body: some View {
-        FattyAcidRow("Saturated", stats.fattyAcidProfile.saturated, emphasis: true)
-        FattyAcidRow("Mono-unsaturated", stats.fattyAcidProfile.monoUnsaturated, emphasis: true)
-        FattyAcidRow("Poly-unsaturated", stats.fattyAcidProfile.polyUnsaturated, emphasis: true)
+        FattyAcidRow("Saturated", stats.fattyAcidProfile.saturated)
+        FattyAcidRow("Mono-unsaturated", stats.fattyAcidProfile.monoUnsaturated)
+        FattyAcidRow("Poly-unsaturated", stats.fattyAcidProfile.polyUnsaturated)
 
         if showsIodine {
             SoapPropertyIndicatorView(
@@ -58,21 +58,27 @@ struct FattyAcidTotalsRows: View {
     private static let iodineExplanation =
         "The iodine value measures how unsaturated the oils are. Higher values mean a softer, "
         + "oilier blend that is more prone to going rancid (DOS); lower values keep longer and "
-        + "set firmer. 41–70 is the usual target for a blend of soft and hard fats."
+        + "set firmer. 41 to 70 is the usual target for a blend of soft and hard fats."
 }
 
-private struct FattyAcidRow: View {
+struct FattyAcidRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let label: String
     let value: Double
-    var emphasis: Bool = false
 
-    init(_ label: String, _ value: Double, emphasis: Bool = false) {
+    init(_ label: String, _ value: Double) {
         self.label = label
         self.value = value
-        self.emphasis = emphasis
     }
+
+    /// Whether the figure shows as 0.0 at the one decimal the row displays, so
+    /// an acid that is absent reads as quiet rather than as a measured value.
+    static func isEffectivelyZero(_ value: Double) -> Bool {
+        abs(value) < 0.05
+    }
+
+    private var isZero: Bool { Self.isEffectivelyZero(value) }
 
     var body: some View {
         // One column at the accessibility sizes: beside the percentage, the
@@ -95,18 +101,17 @@ private struct FattyAcidRow: View {
 
     private var name: some View {
         Text(label)
-            .fontWeight(emphasis ? .semibold : .regular)
-            .foregroundStyle(Color.ink)
+            .foregroundStyle(isZero ? Color.inkFaint : Color.ink)
     }
 
     private var percentage: some View {
         HStack(spacing: 8) {
-            Text(value, format: .number.precision(.fractionLength(2)))
+            Text(value, format: .number.precision(.fractionLength(1)))
                 .fontWeight(.medium)
                 .monospacedDigit()
-                .foregroundStyle(emphasis ? Color.ink : Color.inkSoft)
+                .foregroundStyle(isZero ? Color.inkFaint : Color.inkSoft)
             Text("%")
-                .foregroundStyle(Color.inkSoft)
+                .foregroundStyle(isZero ? Color.inkFaint : Color.inkSoft)
         }
     }
 }
@@ -122,7 +127,7 @@ enum RecipeStatsCopy {
     /// have no triglyceride composition to break down.
     static let noFattyAcidData =
         "None of these ingredients has a fatty acid profile recorded. "
-        + "Waxes usually don't — they aren't triglycerides. Add an oil, fat or butter "
+        + "Waxes usually don't, since they aren't triglycerides. Add an oil, fat or butter "
         + "to see the blend's composition."
 
     /// Shown on a single ingredient's own detail page when it has no profile yet.
@@ -136,7 +141,7 @@ enum RecipeStatsCopy {
     static func incompleteSoapProperties(names: [String]) -> String {
         let list = names.formatted(.list(type: .and))
         let verb = names.count == 1 ? "has" : "have"
-        return "Soap properties may be incomplete — \(list) \(verb) no fatty-acid data, "
+        return "Soap properties may be incomplete. \(list) \(verb) no fatty-acid data, "
             + "so this breakdown may be inaccurate."
     }
 }
