@@ -109,22 +109,52 @@ struct TourProgressTests {
         #expect(elapsed < .seconds(3))
     }
 
-    @Test func shouldPresentAtLaunch_NotificationButCloudStillFalse_IsTrue() async {
+    @Test func shouldPresentAtLaunch_NotificationButCloudStillFalse_KeepsWaitingThenPresents() async {
         let cloud = FakeFlagStore()
         let local = FakeFlagStore()
         let center = NotificationCenter()
-        let sut = makeSUT(cloud: cloud, local: local, center: center, timeout: .seconds(5))
+        let sut = makeSUT(cloud: cloud, local: local, center: center, timeout: .milliseconds(300))
 
         let poster = Task {
             try? await Task.sleep(for: .milliseconds(50))
             center.post(name: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: nil)
         }
+        let clock = ContinuousClock()
+        let start = clock.now
 
         let result = await sut.shouldPresentAtLaunch()
+        let elapsed = clock.now - start
         await poster.value
 
         #expect(result)
         #expect(!local.bool(forKey: key))
+        #expect(elapsed >= .milliseconds(200))
+    }
+
+    @Test func shouldPresentAtLaunch_UnrelatedChangeThenFlag_IsFalseBeforeTimeout() async {
+        let cloud = FakeFlagStore()
+        let local = FakeFlagStore()
+        let center = NotificationCenter()
+        let sut = makeSUT(cloud: cloud, local: local, center: center, timeout: .seconds(5))
+        let key = key
+
+        let poster = Task {
+            try? await Task.sleep(for: .milliseconds(50))
+            center.post(name: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: nil)
+            try? await Task.sleep(for: .milliseconds(50))
+            cloud.set(true, forKey: key)
+            center.post(name: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: nil)
+        }
+        let clock = ContinuousClock()
+        let start = clock.now
+
+        let result = await sut.shouldPresentAtLaunch()
+        let elapsed = clock.now - start
+        await poster.value
+
+        #expect(!result)
+        #expect(local.bool(forKey: key))
+        #expect(elapsed < .seconds(3))
     }
 
     @Test func markFinished_WritesBothStoresAndSynchronizesCloudOnce() {

@@ -3,7 +3,7 @@ import Foundation
 
 /// The slice of a key-value store the tour flag needs, so tests can stand in
 /// for iCloud and for `UserDefaults`.
-nonisolated protocol TourFlagStore {
+nonisolated protocol TourFlagStore: Sendable {
     func bool(forKey: String) -> Bool
     func set(_ value: Bool, forKey: String)
     @discardableResult func synchronize() -> Bool
@@ -67,8 +67,8 @@ nonisolated struct TourProgress {
     ///
     /// A fresh install on a second device would otherwise replay a tour the
     /// user finished elsewhere, because iCloud hasn't delivered the flag yet.
-    /// So when neither store knows, wait briefly for it, ending early if iCloud
-    /// reports a change, and show the tour only if it still hasn't arrived.
+    /// So when neither store knows, wait briefly for it, ending early once the
+    /// flag arrives, and show the tour only if it still hasn't arrived.
     /// With no iCloud account nothing can arrive, so a new user doesn't wait.
     /// The account check counts toward the same timeout as the wait.
     func shouldPresentAtLaunch() async -> Bool {
@@ -88,15 +88,20 @@ nonisolated struct TourProgress {
     }
 
     /// Observes before synchronizing, so a change delivered by the
-    /// synchronization itself can't slip past.
+    /// synchronization itself can't slip past. Only a notification that leaves
+    /// the flag set ends the wait: iCloud reports changes to any key, and
+    /// another key can arrive first.
     private func waitForCloudChange() async {
         let (changes, continuation) = AsyncStream.makeStream(of: Void.self, bufferingPolicy: .bufferingNewest(1))
+        let cloud = cloud
         let observer = notificationCenter.addObserver(
             forName: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
             object: nil,
             queue: nil
         ) { _ in
-            continuation.yield()
+            if cloud.bool(forKey: Key.finished) {
+                continuation.yield()
+            }
         }
         defer { notificationCenter.removeObserver(observer) }
 
