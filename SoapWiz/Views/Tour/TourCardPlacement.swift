@@ -34,6 +34,10 @@ nonisolated enum TourCardPlacement {
         /// Set when the card is taller than the room it was given. The card
         /// should be no taller than this, and scroll its text to fit.
         let maxHeight: CGFloat?
+
+        /// False when the card had to cover the spotlight, so there is
+        /// nothing for a notch to point at.
+        var showsNotch = true
     }
 
     static let margin: CGFloat = 16
@@ -43,6 +47,11 @@ nonisolated enum TourCardPlacement {
     static let notchCornerClearance: CGFloat = 18
     static let maxCardWidth: CGFloat = 400
 
+    /// The least a card can be and still show something: the card's top and
+    /// bottom padding (18 and 12), the pinned Skip and Next row (44), and
+    /// about 80 pt of scrolling text.
+    static let minimumCardHeight: CGFloat = 154
+
     static func cardWidth(for containerWidth: CGFloat) -> CGFloat {
         min(maxCardWidth, containerWidth - 2 * margin)
     }
@@ -50,7 +59,9 @@ nonisolated enum TourCardPlacement {
     /// `cutouts` are in container coordinates, the first being the one the
     /// card points at. Tries below it, then above, then (when `allowsSide`)
     /// beside it. When none leaves the card clear of every spotlight, it goes
-    /// where there is most room and reports that room as `maxHeight`.
+    /// where there is most room and reports that room as `maxHeight`. When
+    /// that room is under `minimumCardHeight`, it stops avoiding the
+    /// spotlights and takes the bottom of the safe area instead.
     static func place(
         container: CGSize,
         safeInsets: TourSafeInsets,
@@ -147,6 +158,10 @@ nonisolated enum TourCardPlacement {
         }
 
         /// No edge fits the whole card: use the edge with the most free height.
+        /// If even that is too little to use, the card goes to the bottom of
+        /// the safe area at a usable height and may cover the spotlight. The
+        /// tour must never trap the user behind a card too small to reach Skip
+        /// or Next, so that trade is the right one.
         func crowdedResult(cardHeight: CGFloat, allowsSide: Bool) -> Result {
             var best = (edge: TourCardEdge.below, space: space(.below))
             let above = space(.above)
@@ -161,6 +176,17 @@ nonisolated enum TourCardPlacement {
             }
 
             let available = best.space.length
+            let usableHeight = min(cardHeight, minimumCardHeight)
+            guard available >= usableHeight else {
+                let top = max(safe.minY, safe.maxY - usableHeight)
+                return Result(
+                    origin: CGPoint(x: centredX, y: top),
+                    edge: .below,
+                    notchOffset: notchCornerClearance,
+                    maxHeight: usableHeight < cardHeight ? usableHeight : nil,
+                    showsNotch: false
+                )
+            }
             let height = min(cardHeight, available)
             let origin: CGPoint
             switch best.edge {

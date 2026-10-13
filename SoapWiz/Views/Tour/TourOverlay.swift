@@ -43,6 +43,10 @@ private struct TourOverlayLayer: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var cardSize: CGSize?
 
+    /// Whether the card has been placed once already. Its first placement
+    /// must not animate, or it would slide in from the corner it waits in.
+    @State private var hasPlacement = false
+
     var body: some View {
         Group {
             if let step {
@@ -97,8 +101,11 @@ private struct TourOverlayLayer: View {
             measuringCard(for: step, width: width)
         }
         .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
-        .animation(animation, value: placement)
+        .animation(hasPlacement ? animation : nil, value: placement)
         .animation(animation, value: cutouts)
+        .onChange(of: placement != nil) { _, isPlaced in
+            hasPlacement = isPlaced
+        }
         .accessibilityAddTraits(.isModal)
     }
 
@@ -111,7 +118,7 @@ private struct TourOverlayLayer: View {
         TourCaptionCard(
             step: step,
             width: width,
-            edge: hasCutouts ? placement?.edge : nil,
+            edge: hasCutouts && placement?.showsNotch == true ? placement?.edge : nil,
             notchOffset: placement?.notchOffset ?? 0,
             maxHeight: placement?.maxHeight,
             onSkip: onSkip,

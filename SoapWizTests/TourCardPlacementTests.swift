@@ -211,8 +211,8 @@ struct TourCardPlacementTests {
     }
 
     @Test func place_NoRoomWithTwoCutouts_CardAvoidsBoth() throws {
-        let primary = CGRect(x: 12, y: 160, width: 366, height: 300)
-        let second = CGRect(x: 12, y: 520, width: 366, height: 250)
+        let primary = CGRect(x: 12, y: 300, width: 366, height: 200)
+        let second = CGRect(x: 12, y: 560, width: 366, height: 200)
 
         let result = phonePlacement(cutouts: [primary, second], cardHeight: 500)
 
@@ -224,13 +224,66 @@ struct TourCardPlacementTests {
     }
 
     @Test func place_NoRoomOnRegularWithSide_PrefersLargestFreeSpace() throws {
-        let wide = CGRect(x: 40, y: 80, width: 1100, height: 640)
+        let narrow = CGRect(x: 480, y: 60, width: 300, height: 700)
 
-        let result = padPlacement(cutouts: [wide], cardHeight: 600)
+        let result = padPlacement(cutouts: [narrow], cardHeight: 800)
 
-        let rect = cardRect(result, width: 400, height: 600)
-        #expect(!inflated(wide).intersects(rect))
-        #expect(result.maxHeight != nil)
+        let maxHeight = try #require(result.maxHeight)
+        let rect = cardRect(result, width: 400, height: 800)
+        #expect(result.edge == .leading)
+        #expect(maxHeight >= TourCardPlacement.minimumCardHeight)
+        #expect(!inflated(narrow).intersects(rect))
+    }
+
+    @Test(arguments: [200.0, 80.0, 700.0])
+    func place_CutoutFillsSafeAreaOnPhone_CardStaysUsableInsideSafeArea(cardHeight: CGFloat) {
+        let everything = CGRect(x: 0, y: 0, width: phone.width, height: phone.height)
+
+        let result = phonePlacement(cutouts: [everything], cardHeight: cardHeight)
+
+        expectUsableCard(result, cardHeight: cardHeight, width: 358, container: phone, insets: phoneInsets)
+    }
+
+    @Test(arguments: [200.0, 80.0, 700.0])
+    func place_CutoutFillsSafeAreaOnPad_CardStaysUsableInsideSafeArea(cardHeight: CGFloat) {
+        let everything = CGRect(x: 0, y: 0, width: pad.width, height: pad.height)
+
+        let result = padPlacement(cutouts: [everything], cardHeight: cardHeight)
+
+        expectUsableCard(result, cardHeight: cardHeight, width: 400, container: pad, insets: padInsets)
+    }
+
+    @Test func place_CutoutFillsSafeArea_HidesNotch() {
+        let everything = CGRect(x: 0, y: 0, width: phone.width, height: phone.height)
+
+        let result = phonePlacement(cutouts: [everything])
+
+        #expect(!result.showsNotch)
+    }
+
+    @Test func place_RoomAvailable_ShowsNotch() {
+        let result = phonePlacement(cutouts: [CGRect(x: 12, y: 180, width: 366, height: 52)])
+
+        #expect(result.showsNotch)
+    }
+
+    private func expectUsableCard(
+        _ result: TourCardPlacement.Result,
+        cardHeight: CGFloat,
+        width: CGFloat,
+        container: CGSize,
+        insets: TourSafeInsets
+    ) {
+        let height = min(cardHeight, result.maxHeight ?? cardHeight)
+        #expect(height >= min(cardHeight, TourCardPlacement.minimumCardHeight))
+        let rect = CGRect(x: result.origin.x, y: result.origin.y, width: width, height: height)
+        let safe = CGRect(
+            x: insets.leading + TourCardPlacement.margin,
+            y: insets.top + TourCardPlacement.margin,
+            width: container.width - insets.leading - insets.trailing - 2 * TourCardPlacement.margin,
+            height: container.height - insets.top - insets.bottom - 2 * TourCardPlacement.margin
+        )
+        #expect(safe.contains(rect))
     }
 
     @Test func place_NoCutouts_ReturnsCardInsideSafeArea() {
