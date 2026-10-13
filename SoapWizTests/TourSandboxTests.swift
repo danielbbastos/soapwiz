@@ -207,6 +207,42 @@ struct TourSandboxTests {
         #expect(TourSandbox.isSandbox(probe.mainContext) == false)
     }
 
+    @Test func isSandbox_TwoAliveAtOnce_TrueForBothUntilOneIsReleased() throws {
+        let other = try ModelContainer(
+            for: ModelContainerFactory.schema,
+            configurations: ModelConfiguration.inMemory(ModelContainerFactory.schema)
+        )
+        let first = try makeSandbox()
+        var second: TourSandbox? = try makeSandbox()
+        let secondContext = try #require(second?.container.mainContext)
+
+        #expect(TourSandbox.isSandbox(first.container.mainContext))
+        #expect(TourSandbox.isSandbox(secondContext))
+
+        second = nil
+
+        #expect(second == nil)
+        #expect(TourSandbox.isSandbox(first.container.mainContext))
+        #expect(TourSandbox.isSandbox(other.mainContext) == false)
+    }
+
+    // MARK: - Reminders
+
+    @Test func syncs_SandboxContext_IsFalse() throws {
+        let sandbox = try makeSandbox()
+
+        #expect(NotificationService.syncs(in: sandbox.container.mainContext) == false)
+    }
+
+    @Test func syncs_OrdinaryContext_IsTrue() throws {
+        let other = try ModelContainer(
+            for: ModelContainerFactory.schema,
+            configurations: ModelConfiguration.inMemory(ModelContainerFactory.schema)
+        )
+
+        #expect(NotificationService.syncs(in: other.mainContext))
+    }
+
     @Test func build_DoesNotTouchTheActiveStore() throws {
         let before = ModelContainerFactory.activeStore
 

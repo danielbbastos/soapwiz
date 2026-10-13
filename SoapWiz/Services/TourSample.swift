@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import SwiftData
 
 /// The fixed sample the onboarding tour runs on: stock for one recipe, the
@@ -10,6 +11,8 @@ import SwiftData
 /// olive oil purchase) without reading them back from the store. The batch uses
 /// 360 g of olive oil, which leaves about 605 ml of it.
 enum TourSample {
+    private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "tour")
+
     static let recipeName = "Classic Bastille Bar"
     static let providerName = "Local supplier"
     static let lyeName = "Sodium Hydroxide (Lye)"
@@ -59,12 +62,17 @@ enum TourSample {
 
         let ingredients = libraryIngredients(in: context)
         insertStock(for: ingredients, into: context, now: now)
-        guard let recipe = insertRecipe(from: ingredients, into: context) else { return }
+        guard let recipe = insertRecipe(from: ingredients, into: context) else {
+            log.error("Tour sample has no recipe, so no batch either")
+            return
+        }
         context.saveLoggingFailure()
 
         let model = BatchProductionViewModel(recipe: recipe, lyeCandidates: [])
         model.process = .cold
-        model.create(context: context, date: now)
+        if model.create(context: context, date: now) == nil {
+            log.error("Tour sample batch was not created")
+        }
     }
 
     private static func libraryIngredients(in context: ModelContext) -> [String: Ingredient] {

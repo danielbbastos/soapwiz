@@ -7,6 +7,10 @@ enum TourSandboxError: Error {
     case noThrowawayDefaults
 }
 
+private struct WeakContainer {
+    weak var container: ModelContainer?
+}
+
 /// A separate, in-memory copy of the app for the onboarding tour: the ingredient
 /// library plus `TourSample`, in a store of its own. The tour shows the real
 /// tab interface on it, so nothing the user taps there can touch their data.
@@ -25,10 +29,14 @@ enum TourSandboxError: Error {
 final class TourSandbox {
     private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "tour")
 
-    /// The container of the sandbox most recently built, while it is alive.
-    /// Weak, so a released sandbox needs no cleanup and an identity check can
-    /// never match a container that has gone.
-    private static weak var live: ModelContainer?
+    /// The containers of every sandbox alive. A set, since a second sandbox can
+    /// be built while the first is still going away (the tour reopened during
+    /// its dismiss animation). Weak with pointer identity, so a released sandbox
+    /// needs no cleanup and nothing matches a container that has gone.
+    ///
+    /// Not an `NSHashTable`: it kept a released container alive, which is the
+    /// one thing this must not do.
+    private static var live: [WeakContainer] = []
 
     let container: ModelContainer
     let inventoryRows: InventoryRows
@@ -47,8 +55,7 @@ final class TourSandbox {
     /// For code that has a context and no view environment, such as the reminder
     /// sync, which has many callers and must do nothing for any of them.
     static func isSandbox(_ context: ModelContext) -> Bool {
-        guard let live else { return false }
-        return context.container === live
+        live.contains { $0.container === context.container }
     }
 
     init(currencyCode: String, now: Date = .now) throws {
@@ -86,7 +93,8 @@ final class TourSandbox {
             store: SyncStatusStore(defaults: defaults)
         )
 
-        Self.live = container
+        Self.live.removeAll { $0.container == nil }
+        Self.live.append(WeakContainer(container: container))
         buildDuration = clock.now - start
         let formattedDuration = buildDuration.formatted(.units(allowed: [.milliseconds]))
         Self.log.notice("Tour sandbox built in \(formattedDuration, privacy: .public)")

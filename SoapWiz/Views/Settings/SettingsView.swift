@@ -222,6 +222,9 @@ struct SettingsView: View {
                     // `SettingsState` reads the settings when the context saves,
                     // so the other tabs follow the toggle at once.
                     modelContext.saveLoggingFailure()
+                    // Cancelling takes no context, so it would clear the user's
+                    // real expiry reminders from inside the tour.
+                    guard !isTourSandbox else { return }
                     Task {
                         if tracks {
                             await NotificationService.syncIfEnabled(modelContext: modelContext)
