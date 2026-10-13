@@ -156,8 +156,8 @@ struct SoapPropertiesSection: View {
                 scale: scale,
                 infoTitle: infoTitle,
                 infoText: infoText,
-                minHeight: CompactRowInsets.rowMinHeight,
-                verticalPadding: CompactRowInsets.rowVerticalPadding,
+                minHeight: drawsLedgerSheet ? CompactRowInsets.rowMinHeight : 44,
+                verticalPadding: drawsLedgerSheet ? CompactRowInsets.rowVerticalPadding : 0,
                 paddedEdges: position(of: row).innerEdges
             )
         }

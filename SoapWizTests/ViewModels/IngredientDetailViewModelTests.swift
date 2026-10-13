@@ -142,7 +142,6 @@ struct IngredientDetailViewModelTests {
         ing.category = IngredientCategory(name: IngredientCategory.Name.oils)
         let model = IngredientDetailViewModel(ingredient: ing)
         #expect(model.showsChemistry)
-        #expect(model.chemistryStats != nil)
     }
 
     @Test func showsChemistry_NonOilCategory_IsFalse() {
@@ -150,76 +149,10 @@ struct IngredientDetailViewModelTests {
         ing.category = IngredientCategory(name: IngredientCategory.Name.lyes)
         let model = IngredientDetailViewModel(ingredient: ing)
         #expect(model.showsChemistry == false)
-        #expect(model.chemistryStats == nil)
     }
 
     @Test func showsChemistry_NoCategory_IsFalse() {
         let model = IngredientDetailViewModel(ingredient: Ingredient(name: "Mystery", unit: "g"))
         #expect(model.showsChemistry == false)
-        #expect(model.chemistryStats == nil)
-    }
-
-    // MARK: - Profile presence (SW-153)
-
-    @Test func hasFattyAcidProfile_RealProfile_IsTrue() {
-        let ing = Ingredient.mockOil(name: "Olive", naohSap: 0.134, palmitic: 14, oleic: 69)
-        ing.category = IngredientCategory(name: IngredientCategory.Name.oils)
-        #expect(IngredientDetailViewModel(ingredient: ing).hasFattyAcidProfile)
-    }
-
-    /// An all-zero profile is "not specified" rather than a genuine all-zero oil,
-    /// so the composition sections give way to a note instead of a page of 0.00 %.
-    @Test func hasFattyAcidProfile_AllZeroProfile_IsFalse() {
-        let ing = Ingredient.mockOil(name: "Custom", naohSap: 0.19)
-        ing.category = IngredientCategory(name: IngredientCategory.Name.oils)
-        #expect(IngredientDetailViewModel(ingredient: ing).hasFattyAcidProfile == false)
-    }
-
-    @Test func hasFattyAcidProfile_NoProfileAtAll_IsFalse() {
-        let ing = Ingredient(name: "Custom Oil", unit: "g")
-        ing.sapValue = 0.19
-        ing.category = IngredientCategory(name: IngredientCategory.Name.oils)
-        #expect(IngredientDetailViewModel(ingredient: ing).hasFattyAcidProfile == false)
-    }
-
-    // MARK: - Single-ingredient stats reproduce the ingredient's own chemistry (SW-153)
-
-    @Test func chemistryStats_ReproducesTheProfile() throws {
-        let ing = Ingredient.mockOil(name: "Olive", naohSap: 0.134, palmitic: 14, oleic: 69)
-        ing.category = IngredientCategory(name: IngredientCategory.Name.oils)
-        let stats = try #require(IngredientDetailViewModel(ingredient: ing).chemistryStats)
-        #expect(stats.fattyAcidProfile.palmitic == 14)
-        #expect(stats.fattyAcidProfile.oleic == 69)
-    }
-
-    @Test func chemistryStats_ReproducesNaOHAndKOHSap() throws {
-        let ing = Ingredient.mockOil(name: "Olive", naohSap: 0.134, kohSap: 0.188, oleic: 69)
-        ing.category = IngredientCategory(name: IngredientCategory.Name.oils)
-        let stats = try #require(IngredientDetailViewModel(ingredient: ing).chemistryStats)
-        #expect(abs(try #require(stats.totalNaOHSap) - 0.134) < 0.0001)
-        #expect(abs(try #require(stats.totalKOHSap) - 0.188) < 0.0001)
-    }
-
-    @Test func chemistryStats_INSMatchesTheDerivedValue() throws {
-        let ing = Ingredient.mockOil(name: "Olive", naohSap: 0.134, oleic: 69)
-        ing.category = IngredientCategory(name: IngredientCategory.Name.oils)
-        let stats = try #require(IngredientDetailViewModel(ingredient: ing).chemistryStats)
-        let profile = try #require(ing.fattyAcidProfile)
-        let expected = FattyAcidProfile.ins(naOHSapFactor: 0.134, iodineValue: profile.iodineValue)
-        #expect(abs(try #require(stats.ins) - expected) < 0.0001)
-    }
-
-    /// An oil with SAP but no profile still yields stats — the SAP & INS rows
-    /// stand alone while the composition is replaced by a note.
-    @Test func chemistryStats_OilWithoutProfile_StillReportsSAPAndINS() throws {
-        let ing = Ingredient(name: "Custom Oil", unit: "g")
-        ing.sapValue = 0.19
-        ing.category = IngredientCategory(name: IngredientCategory.Name.oils)
-        let model = IngredientDetailViewModel(ingredient: ing)
-        let stats = try #require(model.chemistryStats)
-        #expect(model.hasFattyAcidProfile == false)
-        #expect(abs(try #require(stats.totalNaOHSap) - 0.19) < 0.0001)
-        // Iodine is zero without a profile, so INS collapses to SAP × 1402.5.
-        #expect(abs(try #require(stats.ins) - 0.19 * 1402.5) < 0.0001)
     }
 }

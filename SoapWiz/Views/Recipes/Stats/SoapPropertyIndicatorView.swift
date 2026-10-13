@@ -7,6 +7,7 @@ struct SoapPropertyIndicatorView: View {
     let scale: ClosedRange<Double>
     var infoTitle: String?
     var infoText: String?
+
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 

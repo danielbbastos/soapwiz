@@ -60,6 +60,58 @@ struct IngredientChemistryTests {
         #expect(sut.stats != nil)
     }
 
+    @Test func stats_ReproduceNaOHAndKOHSap() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let category = IngredientCategory(name: IngredientCategory.Name.oils)
+        let oil = Ingredient.mockOil(name: "Olive", naohSap: 0.134, kohSap: 0.188, oleic: 69)
+        oil.category = category
+        ctx.insert(category)
+        ctx.insert(oil)
+
+        let stats = try #require(IngredientChemistry(ingredient: oil).stats)
+
+        #expect(abs(try #require(stats.totalNaOHSap) - 0.134) < 0.0001)
+        #expect(abs(try #require(stats.totalKOHSap) - 0.188) < 0.0001)
+    }
+
+    @Test func stats_INSMatchesTheDerivedValue() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let category = IngredientCategory(name: IngredientCategory.Name.oils)
+        let oil = Ingredient.mockOil(name: "Olive", naohSap: 0.134, oleic: 69)
+        oil.category = category
+        ctx.insert(category)
+        ctx.insert(oil)
+
+        let stats = try #require(IngredientChemistry(ingredient: oil).stats)
+        let profile = try #require(oil.fattyAcidProfile)
+        let expected = FattyAcidProfile.ins(naOHSapFactor: 0.134, iodineValue: profile.iodineValue)
+
+        #expect(abs(try #require(stats.ins) - expected) < 0.0001)
+    }
+
+    /// An oil with SAP but no profile still yields stats: the SAP and INS rows
+    /// stand alone while the composition is replaced by a note.
+    @Test func stats_OilWithoutProfile_StillReportsSAPAndINS() throws {
+        let container = try makeContainer()
+        let ctx = container.mainContext
+        let category = IngredientCategory(name: IngredientCategory.Name.oils)
+        let oil = Ingredient(name: "Custom Oil", unit: "g")
+        oil.sapValue = 0.19
+        oil.category = category
+        ctx.insert(category)
+        ctx.insert(oil)
+
+        let sut = IngredientChemistry(ingredient: oil)
+        let stats = try #require(sut.stats)
+
+        #expect(sut.hasFattyAcidProfile == false)
+        #expect(abs(try #require(stats.totalNaOHSap) - 0.19) < 0.0001)
+        // Iodine is zero without a profile, so INS collapses to SAP x 1402.5.
+        #expect(abs(try #require(stats.ins) - 0.19 * 1402.5) < 0.0001)
+    }
+
     @Test func nonOil_ShowsNoChemistry() throws {
         let container = try makeContainer()
         let ctx = container.mainContext

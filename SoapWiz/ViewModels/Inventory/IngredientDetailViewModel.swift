@@ -68,12 +68,6 @@ final class IngredientDetailViewModel {
     /// See `IngredientChemistry.showsChemistry`.
     var showsChemistry: Bool { chemistry.showsChemistry }
 
-    /// See `IngredientChemistry.hasFattyAcidProfile`.
-    var hasFattyAcidProfile: Bool { chemistry.hasFattyAcidProfile }
-
-    /// See `IngredientChemistry.stats`.
-    var chemistryStats: RecipeStats? { chemistry.stats }
-
     func delete(at offsets: IndexSet, context: ModelContext) {
         let purchases = sortedPurchases
         for index in offsets {

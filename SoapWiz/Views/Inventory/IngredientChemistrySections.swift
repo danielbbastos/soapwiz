@@ -88,9 +88,11 @@ struct IngredientChemistrySections: View {
                 if !hasProfile {
                     sheetRow(2, of: rowCount) {
                         HoneyLedgerLabeledRow("INS") {
-                            Text.honeyLedgerFigure(
-                                (stats.ins ?? 0).formatted(.number.precision(.fractionLength(1)))
-                            )
+                            if let ins = stats.ins {
+                                Text.honeyLedgerFigure(ins.formatted(.number.precision(.fractionLength(1))))
+                            } else {
+                                notSpecifiedText
+                            }
                         }
                     }
                 }
@@ -199,10 +201,14 @@ struct IngredientChemistrySections: View {
                     unit: "g/g"
                 )
             } else {
-                Text("Not specified")
-                    .font(.body)
-                    .foregroundStyle(Color.inkSoft)
+                notSpecifiedText
             }
         }
+    }
+
+    private var notSpecifiedText: some View {
+        Text("Not specified")
+            .font(.body)
+            .foregroundStyle(Color.inkSoft)
     }
 }
