@@ -36,7 +36,13 @@ struct TourProgressTests {
     func shouldPresentAtLaunch_NoFlagAndAccountNotDefinitelyMissing_WaitsThenPresents(status: CKAccountStatus) async {
         let cloud = FakeFlagStore()
         let local = FakeFlagStore()
-        let sut = makeSUT(cloud: cloud, local: local, center: NotificationCenter(), timeout: .milliseconds(300), account: FakeAccount(status))
+        let sut = makeSUT(
+            cloud: cloud,
+            local: local,
+            center: NotificationCenter(),
+            timeout: .milliseconds(300),
+            account: FakeAccount(status)
+        )
         let clock = ContinuousClock()
         let start = clock.now
 
@@ -51,7 +57,13 @@ struct TourProgressTests {
 
     @Test func shouldPresentAtLaunch_SlowAccountCheck_ReturnsWithinTimeout() async {
         let cloud = FakeFlagStore()
-        let sut = makeSUT(cloud: cloud, local: FakeFlagStore(), center: NotificationCenter(), timeout: .milliseconds(100), account: FakeAccount(.noAccount, delay: .seconds(10)))
+        let sut = makeSUT(
+            cloud: cloud,
+            local: FakeFlagStore(),
+            center: NotificationCenter(),
+            timeout: .milliseconds(100),
+            account: FakeAccount(.noAccount, delay: .seconds(10))
+        )
         let clock = ContinuousClock()
         let start = clock.now
 
