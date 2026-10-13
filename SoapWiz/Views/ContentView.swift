@@ -4,6 +4,7 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(SettingsState.self) private var settings
+    @Environment(\.isTourSandbox) private var isTourSandbox
 
     @State private var navigation = AppNavigation()
     @State private var restore = RestoreCoordinator()
@@ -40,7 +41,7 @@ struct ContentView: View {
         // URLs are ours to open; the guard drops anything else the scene is
         // handed.
         .onOpenURL { url in
-            guard url.isFileURL else { return }
+            guard url.isFileURL, !isTourSandbox else { return }
             navigation.openRecipeFile(url)
         }
         .alert("Replace all data?", isPresented: presenting(\.pendingImport)) {
