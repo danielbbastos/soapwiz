@@ -15,11 +15,15 @@ struct CostBreakdownBarInset: ViewModifier {
     /// How far a frame may be from the screen's edges and still count as
     /// reaching them.
     private static let edgeTolerance: CGFloat = 1
+    /// The space kept between the top of the tab and a fully grown panel, so
+    /// it never reaches the navigation bar.
+    private static let topMargin: CGFloat = 16
 
     let model: RecipeFormViewModel
     let isShown: Bool
     @Binding var isExpanded: Bool
     let availableHeight: CGFloat
+    @Binding var extraHeight: CGFloat
     /// Whether the tab fills the window, so its bottom edge is the window's.
     /// Where a tab bar sits below it, the correction would push the bar
     /// behind that.
@@ -29,6 +33,7 @@ struct CostBreakdownBarInset: ViewModifier {
     @State private var editingStartCount = 0
     @State private var containerMaxY: CGFloat = 0
     @State private var barHeight: CGFloat = 0
+    @State private var containerSize: CGSize = .zero
     @State private var window: UIWindow?
     @State private var windowSafeMaxY: CGFloat?
 
@@ -68,6 +73,7 @@ struct CostBreakdownBarInset: ViewModifier {
                 containerMaxY = maxY
                 refreshWindowBottom()
             }
+            .onGeometryChange(for: CGSize.self) { $0.size } action: { containerSize = $0 }
             .overlay(alignment: .bottom) { overlayBar }
     }
 
@@ -77,7 +83,10 @@ struct CostBreakdownBarInset: ViewModifier {
                 CostBreakdownBarView(
                     model: model,
                     isExpanded: $isExpanded,
+                    extraHeight: $extraHeight,
                     availableHeight: availableHeight,
+                    maximumHeight: max(0, containerSize.height - Self.topMargin),
+                    isLandscape: containerSize.width > containerSize.height,
                     keyboardVisible: dockedKeyboard
                 )
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
@@ -132,6 +141,38 @@ struct CostBreakdownBarInset: ViewModifier {
     /// stays too.
     static func hidesCostBar(isEditing: Bool, dockedKeyboard: Bool, isExpanded: Bool) -> Bool {
         isEditing && dockedKeyboard && !isExpanded
+    }
+
+    private static let defaultFraction: CGFloat = 0.4
+    /// Shared by a docked keyboard, which leaves less to fill, and by an iPad
+    /// in landscape, whose tab is short and wide.
+    private static let reducedFraction: CGFloat = 0.3
+
+    /// The share of the tab's height the carousel takes by default. An iPhone
+    /// keeps the full share in both orientations.
+    static func defaultCarouselFraction(isRegular: Bool, isLandscape: Bool, keyboardVisible: Bool) -> CGFloat {
+        keyboardVisible || (isRegular && isLandscape) ? reducedFraction : defaultFraction
+    }
+
+    /// The tallest the carousel may grow: the room there is, or the height of
+    /// the pages' content if that is less, so no gap opens above the footer.
+    /// A content height of 0 means it isn't measured yet and caps nothing.
+    static func carouselUpperBound(maximum: CGFloat, contentHeight: CGFloat) -> CGFloat {
+        contentHeight > 0 ? min(maximum, contentHeight) : maximum
+    }
+
+    /// The expanded panel's carousel height: its default plus what the user
+    /// dragged, held to the upper bound. It never drops below the default,
+    /// even when the bound is smaller than that, and a negative drag counts as
+    /// none.
+    static func panelCarouselHeight(
+        defaultHeight: CGFloat,
+        extraHeight: CGFloat,
+        maximum: CGFloat,
+        contentHeight: CGFloat
+    ) -> CGFloat {
+        let bound = carouselUpperBound(maximum: maximum, contentHeight: contentHeight)
+        return max(defaultHeight, min(defaultHeight + max(0, extraHeight), bound))
     }
 
     /// How far to move the bar down from where its overlay puts it. A docked
@@ -225,11 +266,13 @@ private extension View {
 }
 
 extension View {
+    // swiftlint:disable:next function_parameter_count
     func costBreakdownBarInset(
         model: RecipeFormViewModel,
         isShown: Bool,
         isExpanded: Binding<Bool>,
         availableHeight: CGFloat,
+        extraHeight: Binding<CGFloat>,
         pinsToWindowBottom: Bool
     ) -> some View {
         modifier(CostBreakdownBarInset(
@@ -237,6 +280,7 @@ extension View {
             isShown: isShown,
             isExpanded: isExpanded,
             availableHeight: availableHeight,
+            extraHeight: extraHeight,
             pinsToWindowBottom: pinsToWindowBottom
         ))
     }

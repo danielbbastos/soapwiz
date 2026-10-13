@@ -6,10 +6,22 @@ struct CostBreakdownBarView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Bindable var model: RecipeFormViewModel
     @Binding var isExpanded: Bool
+    /// How far the carousel has been dragged past its default height.
+    @Binding var extraHeight: CGFloat
     var availableHeight: CGFloat = 0
+    /// The tallest the whole panel may be, or 0 while that isn't measured yet.
+    var maximumHeight: CGFloat = 0
+    /// Whether the tab is wider than it is tall.
+    var isLandscape = false
     var keyboardVisible = false
     @Query private var settingsRecords: [AppSettings]
     @State private var visibleCardID: AnyHashable?
+    @State private var headerHeight: CGFloat = 0
+    @State private var grabberHeight: CGFloat = 0
+    @State private var dotsHeight: CGFloat = 0
+    /// Each size page's card and footer heights, by size.
+    @State private var contentHeights: [UUID: CGFloat] = [:]
+    @State private var footerHeights: [UUID: CGFloat] = [:]
     /// A touch taller than anything a page's header holds, so the bar keeps
     /// one height as it pages between a plain title and a size's controls.
     @ScaledMetric(relativeTo: .subheadline) private var compactPageHeaderHeight: CGFloat = 22
@@ -18,6 +30,7 @@ struct CostBreakdownBarView: View {
     /// Narrower than the screens' readable width, so on iPad the bar reads as
     /// a floating summary rather than a second sheet.
     private static let maximumWidth: CGFloat = 640
+    private static let bottomPadding: CGFloat = 4
 
     private var isRegular: Bool { horizontalSizeClass == .regular }
     private var headlineFont: Font { isRegular ? .body : .subheadline }
@@ -31,12 +44,19 @@ struct CostBreakdownBarView: View {
         let canExpand = model.hasIngredients
         let expanded = isExpanded && canExpand
         VStack(spacing: 0) {
+            if expanded {
+                CostBarGrabber(extraHeight: $extraHeight, extraRoom: extraRoom)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { grabberHeight = $0 }
+                    .transition(.opacity)
+            }
             header(canExpand: canExpand, expanded: expanded, batch: batch)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { headerHeight = $0 }
 
             if expanded {
                 VStack(spacing: 0) {
                     carousel(batch: batch)
                     pageDots
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { dotsHeight = $0 }
                 }
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -44,7 +64,50 @@ struct CostBreakdownBarView: View {
         .modifier(CostBarSurface(shape: RoundedRectangle(cornerRadius: 18, style: .continuous)))
         .frame(maxWidth: Self.maximumWidth)
         .padding(.horizontal, 12)
-        .padding(.bottom, 4)
+        .padding(.bottom, Self.bottomPadding)
+    }
+
+    // MARK: - Resizing
+
+    private var defaultCarouselHeight: CGFloat {
+        let fraction = CostBreakdownBarInset.defaultCarouselFraction(
+            isRegular: isRegular, isLandscape: isLandscape, keyboardVisible: keyboardVisible
+        )
+        return availableHeight > 0 ? availableHeight * fraction : 350
+    }
+
+    /// What is left of the panel's maximum once the header, grabber and page
+    /// dots have taken their share, measured rather than assumed.
+    private var maximumCarouselHeight: CGFloat {
+        maximumHeight - headerHeight - grabberHeight - dotsHeight - Self.bottomPadding
+    }
+
+    /// The tallest size page, card and footer together, so the panel keeps one
+    /// height as it pages between sizes. Sizes that are gone don't count, and
+    /// the add-size page isn't a size. 0 until a page has been measured.
+    private var tallestContentHeight: CGFloat {
+        model.productDrafts
+            .map { (contentHeights[$0.id] ?? 0) + (footerHeights[$0.id] ?? 0) }
+            .max() ?? 0
+    }
+
+    private var carouselHeight: CGFloat {
+        CostBreakdownBarInset.panelCarouselHeight(
+            defaultHeight: defaultCarouselHeight,
+            extraHeight: extraHeight,
+            maximum: maximumCarouselHeight,
+            contentHeight: tallestContentHeight
+        )
+    }
+
+    /// The room between the default height and the upper bound. Zero where the
+    /// panel can't grow.
+    private var extraRoom: CGFloat {
+        let bound = CostBreakdownBarInset.carouselUpperBound(
+            maximum: maximumCarouselHeight,
+            contentHeight: tallestContentHeight
+        )
+        return max(0, bound - defaultCarouselHeight)
     }
 
     /// Collapsed, the batch cost and its RRP; expanded, the showing page's own
@@ -158,9 +221,7 @@ struct CostBreakdownBarView: View {
     }
 
     private func carousel(batch: ProductCostBreakdown) -> some View {
-        let fraction: CGFloat = keyboardVisible ? 0.3 : 0.4
-        let maxHeight: CGFloat = availableHeight > 0 ? availableHeight * fraction : 350
-        return ScrollViewReader { proxy in
+        ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 0) {
                     ForEach(model.productDrafts) { draft in
@@ -181,7 +242,7 @@ struct CostBreakdownBarView: View {
             }
             .scrollTargetBehavior(.paging)
             .scrollPosition(id: $visibleCardID)
-            .frame(maxHeight: maxHeight)
+            .frame(height: carouselHeight)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { _ in
                 // The cards resize with the width but the offset keeps its old
                 // point value, leaving two half pages after a rotation.
@@ -207,9 +268,16 @@ struct CostBreakdownBarView: View {
         return VStack(spacing: 0) {
             ScrollView(.vertical, showsIndicators: false) {
                 RecipeProductCardView(breakdown: breakdown, model: model)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+                        contentHeights[draft.id] = $0
+                    }
             }
             if breakdown.total > 0 {
                 productTotals(breakdown)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+                        footerHeights[draft.id] = $0
+                    }
+                    .onDisappear { footerHeights[draft.id] = nil }
             }
         }
     }
@@ -276,32 +344,5 @@ struct CostBreakdownBarView: View {
         .padding(.bottom, 12)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Page \(position) of \(pages.count)")
-    }
-}
-
-/// Liquid Glass made dense with a `paperRaised` tint, so the list behind reads
-/// only as a soft blur; solid `paperRaised` with Reduce Transparency.
-private struct CostBarSurface<S: InsettableShape>: ViewModifier {
-    let shape: S
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @Environment(\.colorScheme) private var colorScheme
-
-    func body(content: Content) -> some View {
-        fill(content)
-            .overlay(shape.strokeBorder(reduceTransparency ? Color.rule : Color.glassEdge, lineWidth: 1))
-            .shadow(color: Color.shadow.opacity(colorScheme == .dark ? 0.40 : 0.16), radius: 10, y: 6)
-    }
-
-    @ViewBuilder
-    private func fill(_ content: Content) -> some View {
-        if reduceTransparency {
-            content.background(Color.paperRaised, in: shape)
-        } else if #available(iOS 26, *) {
-            content
-                .background(Color.paperRaised.opacity(0.78), in: shape)
-                .glassEffect(.regular, in: shape)
-        } else {
-            content.background(.regularMaterial, in: shape)
-        }
     }
 }
