@@ -113,6 +113,10 @@ enum NotificationService {
     }
 
     static func syncIfEnabled(modelContext: ModelContext) async {
+        // Checked here rather than at the call sites, so it covers every caller,
+        // Settings and restore included: the tour's sample batch is curing, and
+        // a reminder for it would reach the user's real notification center.
+        guard !TourSandbox.isSandbox(modelContext) else { return }
         await serialized { await performSync(modelContext: modelContext) }
     }
 

@@ -34,7 +34,11 @@ nonisolated struct LyeSafetyAcknowledgment {
     }
 
     /// Only a soap recipe shows lye amounts, so only a soap recipe asks.
-    func shouldPresent(makesSoap: Bool) -> Bool {
-        makesSoap && !isAcknowledged
+    ///
+    /// Never inside the onboarding tour, whose sample recipe is a soap recipe:
+    /// the notice's one button records the user's acceptance on the device, and
+    /// that has to be a choice made in the real app.
+    func shouldPresent(makesSoap: Bool, isTourSandbox: Bool = false) -> Bool {
+        makesSoap && !isTourSandbox && !isAcknowledged
     }
 }
