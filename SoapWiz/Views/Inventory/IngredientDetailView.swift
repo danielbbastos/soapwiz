@@ -165,7 +165,10 @@ struct IngredientDetailView: View {
             }
 
             if tracksInventory {
-                FloatingActionButton { navigation.detailSheetRequest = .addPurchase(model.ingredient) }
+                FloatingActionButton(
+                    action: { navigation.detailSheetRequest = .addPurchase(model.ingredient) },
+                    tourAnchor: .addPurchaseButton
+                )
             }
         }
         // On appear for a merge that landed while this screen was pushed but not
@@ -196,6 +199,8 @@ struct IngredientDetailView: View {
                             NavigationLink(destination: PurchaseDetailView(purchase: purchase)) {
                                 PurchaseRowView(purchase: purchase, unit: model.ingredient.unit)
                             }
+                            // Only the newest is lit, so the tour has one card to find.
+                            .tourCardAnchor(index == 0 ? .purchaseCard : nil)
                         }
                     }
                     .onDelete { model.delete(at: $0, context: modelContext) }

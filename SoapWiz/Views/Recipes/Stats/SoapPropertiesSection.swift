@@ -26,6 +26,9 @@ struct SoapPropertiesSection: View {
     /// single row of its own, or keeps the system's grouped look.
     var drawsLedgerSheet: Bool = false
 
+    /// What the onboarding tour calls the qualities chart, where it points at it.
+    var chartTourAnchor: TourAnchorID?
+
     @Environment(\.displayScale) private var displayScale
 
     @State private var selectedQualityName: String?
@@ -71,6 +74,7 @@ struct SoapPropertiesSection: View {
                 )
             }
             .padding(.vertical, 4)
+            .tourCardAnchor(chartTourAnchor)
             .modifier(sheetRow(.chart))
         case .bars:
             ForEach(SoapQuality.allCases) { quality in

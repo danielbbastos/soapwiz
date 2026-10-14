@@ -8,10 +8,13 @@ struct IngredientListView: View {
     @Environment(SettingsState.self) private var settings
 
     @State private var model = IngredientListViewModel()
-    @State private var navigation = ListDetailNavigation<Ingredient>()
     /// The open ingredient's merge key, read when it opens: once a merge has
     /// deleted the row it can't be read off it. See `LiveIngredient`.
     @State private var selectedSlug = ""
+
+    /// Held by `AppNavigation` rather than here, so the onboarding tour can open
+    /// an ingredient from outside.
+    private var navigation: ListDetailNavigation<Ingredient> { nav.inventory }
 
     private var selectedIngredients: [Ingredient] {
         rows.ingredients.filter { model.selection.contains($0.persistentModelID) }
@@ -138,7 +141,7 @@ struct IngredientListView: View {
                     VStack(spacing: 0) {
                         // Nothing to search with an empty inventory.
                         if !ingredients.isEmpty {
-                            SearchField("Search ingredients", text: $model.searchText)
+                            SearchField("Search ingredients", text: $model.searchText, tourAnchor: .inventorySearch)
                                 .padding(.bottom, 12)
                         }
                         if !visibleCategories.isEmpty && model.editMode == .inactive {
@@ -189,7 +192,8 @@ struct IngredientListView: View {
                                 model.showingBulkImport = true
                             }
                         ],
-                        besideTabBar: navigation.fabBesideTabBar
+                        besideTabBar: navigation.fabBesideTabBar,
+                        tourAnchor: .inventoryAddButton
                     )
                 } else if !model.selection.isEmpty {
                     createRecipeButton
@@ -201,7 +205,9 @@ struct IngredientListView: View {
         .onChange(of: ingredients.filter(\.isHidden)) { _, hidden in
             navigation.close(ifShowingAnyOf: hidden)
         }
-        .onChange(of: navigation.selection) { _, selection in
+        // `initial`, since the selection lives on `AppNavigation` and can
+        // already be set when this view is built, which a change never reports.
+        .onChange(of: navigation.selection, initial: true) { _, selection in
             selectedSlug = selection?.librarySlug ?? ""
         }
         // Deletions made in this list close the detail before they happen.

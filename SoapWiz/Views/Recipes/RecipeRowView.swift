@@ -34,6 +34,8 @@ struct RecipeRowView: View {
             }
         }
         .padding(.vertical, 6)
+        // Only the tour's sample recipe is lit, so it has one row to find.
+        .tourCardAnchor(recipe.name == TourSample.recipeName ? .recipeRow : nil)
     }
 
     /// A recipe has no colour of its own, so the well's is derived from its

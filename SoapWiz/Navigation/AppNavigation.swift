@@ -29,13 +29,16 @@ struct RecipeFileImport: Hashable {
     let url: URL
 }
 
-/// Cross-tab navigation state: which tab is selected and the History tab's
-/// navigation. Lets flows that end in another tab (creating a batch from a
-/// recipe) land the user there directly.
+/// Cross-tab navigation state: which tab is selected and the navigation of the
+/// Inventory, Recipes and History tabs. Lets flows that end in another tab
+/// (creating a batch from a recipe) land the user there directly, and lets the
+/// onboarding tour drive each tab from outside.
 @Observable
 @MainActor
 final class AppNavigation {
     var selectedTab: AppTab = .inventory
+    let inventory = ListDetailNavigation<Ingredient>()
+    let recipes = ListDetailNavigation<Recipe>()
     let history = ListDetailNavigation<Batch>()
 
     /// Set by the inventory selection flow to request a seeded recipe; the

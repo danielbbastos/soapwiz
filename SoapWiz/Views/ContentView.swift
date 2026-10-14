@@ -6,8 +6,14 @@ struct ContentView: View {
     @Environment(SettingsState.self) private var settings
     @Environment(\.isTourSandbox) private var isTourSandbox
 
-    @State private var navigation = AppNavigation()
+    @State private var navigation: AppNavigation
     @State private var restore = RestoreCoordinator()
+
+    /// The navigation is handed in so the onboarding tour can drive the tabs
+    /// from outside; the app itself lets each launch make its own.
+    init(navigation: AppNavigation? = nil) {
+        _navigation = State(initialValue: navigation ?? AppNavigation())
+    }
 
     /// Presents an alert for as long as the coordinator holds a value at `keyPath`,
     /// and clears it again on dismissal. Every alert here is driven by a value that
@@ -128,6 +134,9 @@ struct ContentView: View {
         }
         .fontDesign(.rounded)
         .environment(\.horizontalSizeClass, .compact)
+        // Outside the TabView so the tab bar is dimmed too, and after the
+        // size class above so the caption card sees the real one.
+        .tourOverlayHost(.tabs)
     }
 
     /// An outline glyph in either state: the system fills the selected one.

@@ -17,6 +17,13 @@ struct SoapWizApp: App {
 
     @Environment(\.scenePhase) private var scenePhase
 
+    #if DEBUG
+    /// Opens the onboarding tour at a given step, for screenshots. Real
+    /// first-launch presentation is not wired up yet.
+    @State private var showsDebugTour = TourPhase.launchArgument != nil
+    private let debugTourPhase = TourPhase.launchArgument ?? .welcome
+    #endif
+
     init() {
         UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
         UITextField.disableNumberPadPopovers()
@@ -57,6 +64,20 @@ struct SoapWizApp: App {
             } message: {
                 Text(storeHost.errorMessage ?? "")
             }
+            #if DEBUG
+            // Outside `ContentView`, so the tour's navigation is its own.
+            .fullScreenCover(isPresented: Binding(
+                get: { showsDebugTour && storeHost.phase == .ready },
+                set: { if !$0 { showsDebugTour = false } }
+            )) {
+                TourCover(
+                    currencyCode: storeHost.settings.currencyCode,
+                    startingPhase: debugTourPhase
+                ) { _ in
+                    showsDebugTour = false
+                }
+            }
+            #endif
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     Signposts.foreground.emitEvent("Became active")

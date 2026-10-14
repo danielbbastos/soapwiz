@@ -43,7 +43,7 @@ struct TourPreviewScreen: View {
             Circle()
                 .fill(Color.amber)
                 .frame(width: 68, height: 68)
-                .tourAnchor(.addButton, cornerRadius: 34)
+                .tourAnchor(.inventoryAddButton, cornerRadius: 34)
                 .padding(20)
         }
         .overlay(alignment: .bottom) {
@@ -95,14 +95,14 @@ private extension TourOverlayStep {
         title: "Find what you have",
         body: "Your ingredient library is here. Search it, tap an ingredient to see its purchases, "
             + "and add new ones with the button.",
-        targets: [.inventorySearch, .addButton]
+        targets: [.inventorySearch, .inventoryAddButton]
     )
     static let previewPurchase = TourOverlayStep(
         index: 2,
         count: 10,
         title: "Record what you paid",
         body: "Each purchase keeps its own quantity, price and dates, so costs follow the stock you actually use.",
-        targets: [.purchaseCard, .addButton]
+        targets: [.purchaseCard, .inventoryAddButton]
     )
     static let previewLye = TourOverlayStep(
         index: 4,

@@ -44,6 +44,7 @@ struct RecipeConfigTabView: View {
         }
         .readableWidth()
         .scrollClipDisabled()
+        .scrollsForTour()
         .animation(.default, value: model.makesSoap)
         .sheet(isPresented: $showMoldCalculator) {
             MoldCalculatorView(oilWeightUnit: model.oilWeightUnit) { weight in
@@ -128,6 +129,8 @@ struct RecipeConfigTabView: View {
             let count = model.weightUnitIsPercentage ? 4 : 1
             sheetRow(0, of: count) {
                 unitMenu("Unit", units: weightUnits, selection: $model.weightUnit)
+                    .tourCardAnchor(.configOilsCard)
+                    .id(TourConfigScrollTarget.oilsCard)
             }
             if model.weightUnitIsPercentage {
                 sheetRow(1, of: count) {
@@ -154,6 +157,7 @@ struct RecipeConfigTabView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(.rect)
                     }
+                    .tourCardAnchor(.configOilsCard)
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }

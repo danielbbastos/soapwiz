@@ -11,10 +11,14 @@ struct SearchField: View {
     @Binding var text: String
     let prompt: LocalizedStringKey
 
+    /// What the onboarding tour calls this field, where it points at it.
+    let tourAnchor: TourAnchorID?
+
     @FocusState private var isFocused: Bool
 
-    init(_ prompt: LocalizedStringKey, text: Binding<String>) {
+    init(_ prompt: LocalizedStringKey, text: Binding<String>, tourAnchor: TourAnchorID? = nil) {
         self.prompt = prompt
+        self.tourAnchor = tourAnchor
         _text = text
     }
 
@@ -61,6 +65,7 @@ struct SearchField: View {
         // as it does on the system field.
         .onTapGesture { isFocused = true }
         .glassEffectInteractiveIOS26(in: .capsule)
+        .tourAnchor(tourAnchor, cornerRadius: 22)
         .frame(maxWidth: ReadableWidth.maximum)
         .padding(.horizontal)
     }

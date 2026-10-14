@@ -14,6 +14,7 @@ enum TourSample {
     private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "tour")
 
     static let recipeName = "Classic Bastille Bar"
+    static let oliveOilName = "Olive Oil"
     static let providerName = "Local supplier"
     static let lyeName = "Sodium Hydroxide (Lye)"
 
