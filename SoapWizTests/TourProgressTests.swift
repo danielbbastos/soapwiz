@@ -194,7 +194,7 @@ struct TourProgressTests {
     }
 }
 
-private struct FakeAccount: SyncAccountStatusProviding {
+struct FakeAccount: SyncAccountStatusProviding {
     let status: CKAccountStatus
     let delay: Duration?
 
@@ -211,7 +211,7 @@ private struct FakeAccount: SyncAccountStatusProviding {
 
 /// Reached from the poster task and the code under test, so reads and writes
 /// go through a lock.
-private final class FakeFlagStore: TourFlagStore, @unchecked Sendable {
+final class FakeFlagStore: TourFlagStore, @unchecked Sendable {
     private let lock = NSLock()
     private var values: [String: Bool] = [:]
     private var synchronizeCalls = 0
