@@ -4,6 +4,7 @@ import SwiftData
 struct RecipeListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
+    @Environment(TourLauncher.self) private var tourLauncher
     @Query(sort: \Recipe.name) private var recipes: [Recipe]
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
 
@@ -148,10 +149,13 @@ struct RecipeListView: View {
     /// Opens the import review for a file handed in from another app. A sheet
     /// can't go up over the full-screen form or a detail sheet, so while one is
     /// open the file stays pending and this runs again once it has closed;
-    /// either way its unsaved edits are left alone. Transient sheets are cleared
-    /// first so the import isn't blocked by one already up.
+    /// either way its unsaved edits are left alone. The tour cover is waited
+    /// out the same way, here rather than in `AppNavigation`, which doesn't know
+    /// the launcher; the tour's own sandbox list never has a file pending.
+    /// Transient sheets are cleared first so the import isn't blocked by one
+    /// already up.
     private func startPendingFileImport() {
-        guard let request = nav.takePendingRecipeFileImport() else { return }
+        guard !tourLauncher.isCoverOnScreen, let request = nav.takePendingRecipeFileImport() else { return }
         model.endSelecting()
         model.filingRecipe = nil
         model.exportFile = nil
@@ -383,12 +387,9 @@ struct RecipeListView: View {
         .onChange(of: nav.pendingRecipeFileImport, initial: true) {
             startPendingFileImport()
         }
-        .onChange(of: nav.recipeFormClosings) {
-            startPendingFileImport()
-        }
-        .onChange(of: nav.detailSheetClosings) {
-            startPendingFileImport()
-        }
+        .onChange(of: nav.recipeFormClosings) { startPendingFileImport() }
+        .onChange(of: nav.detailSheetClosings) { startPendingFileImport() }
+        .onChange(of: tourLauncher.isCoverOnScreen) { startPendingFileImport() }
         // A collection deleted here or merged away by `DuplicateMerger` would
         // otherwise leave a selection matching nothing, and an empty list with
         // no visible chip to explain it.
