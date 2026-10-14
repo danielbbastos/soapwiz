@@ -35,6 +35,7 @@ struct RecipeIngredientsTabView: View {
             RecipeExtraIngredientsSection(model: model)
         }
         .readableWidth()
+        .followsTourCostPanel($costBreakdownExpanded)
         .onChange(of: model.totalOilBatchWeight) {
             model.reconcileCreamSoapGlycerine(from: inventory)
         }
@@ -106,11 +107,13 @@ struct RecipeIngredientsTabView: View {
                 let weights = model.oilBatchWeightsByDraftID
                 ForEach(Array(model.oilDrafts.enumerated()), id: \.element.id) { index, draft in
                     baseRow(draft, batchWeight: weights[draft.id])
+                        .tourCardAnchor(index == 0 ? .oilsCard : nil)
                         .ledgerSheetRow(position: .position(index: index, count: count))
                 }
                 .onDelete(perform: deletingRows(in: .oils, model.removeOil))
                 .id(deletedRows[.oils, default: 0])
                 addButton("Add oil") { activePicker = .oils }
+                    .tourCardAnchor(.oilsCard)
                     .ledgerSheetRow(position: .position(index: count - 1, count: count))
             }
         } header: {

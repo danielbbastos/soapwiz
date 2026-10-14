@@ -72,17 +72,18 @@ final class RestoreCoordinator {
     /// teardown and switches to the restoring phase, which takes the interface down.
     ///
     /// `AppNavigation` is owned above the rebuilt tree and so survives it. Its
-    /// `history` can hold a `Batch` the wipe is about to delete, and a rebuilt
-    /// history tab would push straight back onto that detached model; `pendingRecipeSeed`
-    /// holds `Ingredient`s the same way, and the detail sheet a recipe or an
-    /// ingredient, which a rebuilt interface would present again over the
-    /// wiped store. The tab-local paths need no such handling —
-    /// they are discarded along with the views that own them.
+    /// `inventory`, `recipes` and `history` can each hold a model the wipe is
+    /// about to delete, and a rebuilt tab would push straight back onto that
+    /// detached model; `pendingRecipeSeed` holds `Ingredient`s the same way, and
+    /// the detail sheet a recipe or an ingredient, which a rebuilt interface
+    /// would present again over the wiped store.
     func begin(navigation: AppNavigation) {
         guard let backup = pendingImport else { return }
         pendingImport = nil
         stagedBackup = backup
 
+        navigation.inventory.reset()
+        navigation.recipes.reset()
         navigation.history.reset()
         navigation.pendingRecipeSeed = nil
         navigation.discardRecipeForm()

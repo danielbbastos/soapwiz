@@ -2,6 +2,8 @@ import SwiftUI
 
 struct FloatingActionButton: View {
     let action: () -> Void
+    /// What the onboarding tour calls this button, where it points at it.
+    var tourAnchor: TourAnchorID?
 
     var body: some View {
         Button(action: action) {
@@ -10,6 +12,7 @@ struct FloatingActionButton: View {
                 .frame(width: 56, height: 56)
         }
         .modifier(FABStyle())
+        .tourAnchor(tourAnchor, cornerRadius: 34, outset: CGSize(width: 6, height: 6))
         .padding(.trailing, 20)
         .padding(.bottom, 20)
     }

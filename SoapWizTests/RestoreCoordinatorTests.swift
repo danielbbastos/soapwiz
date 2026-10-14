@@ -30,6 +30,8 @@ struct RestoreCoordinatorTests: RestoreTestCase {
 
         let navigation = AppNavigation()
         navigation.history.show(batch)
+        navigation.inventory.show(ingredient)
+        navigation.recipes.show(recipe)
         navigation.pendingRecipeSeed = RecipeSeed(ingredients: [ingredient])
         navigation.recipeFormRequest = .edit(recipe)
         navigation.detailSheetRequest = .createBatch(recipe)
@@ -40,6 +42,10 @@ struct RestoreCoordinatorTests: RestoreTestCase {
 
         #expect(navigation.history.path.isEmpty)
         #expect(navigation.history.selection == nil)
+        #expect(navigation.inventory.path.isEmpty)
+        #expect(navigation.inventory.selection == nil)
+        #expect(navigation.recipes.path.isEmpty)
+        #expect(navigation.recipes.selection == nil)
         #expect(navigation.pendingRecipeSeed == nil)
         #expect(navigation.recipeFormRequest == nil)
         #expect(navigation.isRecipeFormOnScreen == false)

@@ -31,6 +31,30 @@ extension TourSafeInsets {
     }
 }
 
+/// How a step change plays. Nothing slides: the spotlight and card that are
+/// leaving fade out where they are, the new spotlight fades in on its target
+/// wherever that is as it arrives, and the card fades in once the target has
+/// stopped moving.
+enum TourMotion {
+    /// The cost panel's own length and curve, which the tour opens and closes
+    /// it with.
+    static let duration: TimeInterval = 0.25
+
+    static var animation: Animation { .easeInOut(duration: duration) }
+
+    static let fadeOut: TimeInterval = 0.12
+    static let spotlightFadeIn: TimeInterval = 0.15
+    static let cardFadeIn: TimeInterval = 0.15
+
+    /// How long a target must have kept still before the card is placed by it.
+    /// Long enough to span the gaps between a screen being pushed and the form
+    /// then scrolling, which a shorter wait takes for the target having stopped.
+    static let quietPeriod: TimeInterval = 0.3
+
+    /// The longest the card waits for a target that never stops, or never comes.
+    static let longestWait: TimeInterval = 1.5
+}
+
 private struct TourOverlayLayer: View {
     let step: TourOverlayStep?
     let anchors: [TourAnchorID: TourAnchorTarget]
@@ -43,9 +67,18 @@ private struct TourOverlayLayer: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var cardSize: CGSize?
 
-    /// Whether the card has been placed once already. Its first placement
-    /// must not animate, or it would slide in from the corner it waits in.
-    @State private var hasPlacement = false
+    /// The step the three below belong to: what the overlay last settled on,
+    /// which lags `step` for the one pass between a step change and it being
+    /// noticed. What leaves is drawn from these.
+    @State private var shown: TourOverlayStep?
+    @State private var shownCutouts: [TourCutout] = []
+    @State private var shownPlacement: TourCardPlacement.Result?
+
+    /// When the targets or the card's placement last changed.
+    @State private var lastMoved = Date.distantPast
+
+    /// The step change under way, until its card has faded in.
+    @State private var change: TourChange?
 
     var body: some View {
         Group {
@@ -61,50 +94,154 @@ private struct TourOverlayLayer: View {
         .onChange(of: step?.index) { _, newIndex in
             if newIndex != nil {
                 AccessibilityNotification.ScreenChanged(nil).post()
+            } else {
+                // Another layer has the step now.
+                shown = nil
+                change = nil
             }
+        }
+        .task(id: change?.start) {
+            guard let change else { return }
+            while !Task.isCancelled, Date.now < settledAt(change).addingTimeInterval(TourMotion.cardFadeIn) {
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+            guard !Task.isCancelled else { return }
+            self.change = nil
         }
     }
 
     private func cutouts(for step: TourOverlayStep, in proxy: GeometryProxy) -> [TourCutout] {
         let resolved = step.targets.compactMap { id -> TourCutout? in
-            guard let target = anchors[id] else { return nil }
-            return TourCutout(rect: proxy[target.bounds], cornerRadius: target.cornerRadius)
+            guard let target = anchors[id], let first = target.bounds.first else { return nil }
+            let rect = target.bounds.dropFirst().reduce(proxy[first]) { $0.union(proxy[$1]) }
+            let grown = rect.insetBy(dx: -target.outset.width, dy: -target.outset.height)
+            return TourCutout(rect: grown, cornerRadius: target.cornerRadius)
         }
         return Array(resolved.prefix(2))
+    }
+
+    /// When the new card may start to fade in: once the targets have kept
+    /// still for a moment, and the old card has gone. Never while there are no
+    /// targets, which the card would be placed by the middle of the screen for.
+    private func settledAt(_ change: TourChange) -> Date {
+        let fadedOut = change.start.addingTimeInterval(change.leaving == nil ? 0 : TourMotion.fadeOut)
+        let still = shownCutouts.isEmpty ? .distantFuture : lastMoved.addingTimeInterval(TourMotion.quietPeriod)
+        return min(max(still, fadedOut), change.start.addingTimeInterval(TourMotion.longestWait))
+    }
+
+    /// What is drawn at `date`. The spotlights follow their targets exactly,
+    /// with no animation of their own, since a target can itself be moving (the
+    /// cost bar opening into its panel, a screen being pushed) and anything
+    /// laid over that would trail it.
+    private func frame(
+        for step: TourOverlayStep,
+        targets: [TourCutout],
+        placement: TourCardPlacement.Result?,
+        at date: Date,
+        isPending: Bool
+    ) -> TourFrame {
+        if shown == nil, change == nil {
+            // Before the overlay has noticed it is up: nothing drawn yet.
+            return TourFrame(cutouts: targets, hole: 1, ring: 0, cardStep: step, placement: placement, cardOpacity: 0)
+        }
+        let start: Date
+        let leaving: TourLeaving?
+        if isPending, let shown {
+            // The pass between the step changing and the change being noticed:
+            // still the old card and spotlight, so nothing flashes.
+            start = date
+            leaving = TourLeaving(step: shown, cutouts: shownCutouts, placement: shownPlacement)
+        } else if let change {
+            start = change.start
+            leaving = change.leaving
+        } else {
+            return TourFrame(cutouts: targets, hole: 0, ring: 1, cardStep: step, placement: placement, cardOpacity: 1)
+        }
+        let elapsed = date.timeIntervalSince(start)
+        if let leaving, elapsed < TourMotion.fadeOut {
+            let progress = elapsed / TourMotion.fadeOut
+            return TourFrame(
+                cutouts: leaving.cutouts,
+                hole: progress,
+                ring: 1 - progress,
+                cardStep: leaving.step,
+                placement: leaving.placement,
+                cardOpacity: 1 - progress
+            )
+        }
+        let arriving = elapsed - (leaving == nil ? 0 : TourMotion.fadeOut)
+        let spotlight = min(1, max(0, arriving / TourMotion.spotlightFadeIn))
+        let card = min(1, max(0, date.timeIntervalSince(settledAt(TourChange(start: start, leaving: leaving)))
+            / TourMotion.cardFadeIn))
+        return TourFrame(
+            cutouts: targets,
+            hole: 1 - spotlight,
+            ring: spotlight,
+            cardStep: step,
+            placement: placement,
+            cardOpacity: card
+        )
+    }
+
+    private func noticeChange(
+        from old: TourSpotlightKey,
+        to new: TourSpotlightKey,
+        step: TourOverlayStep
+    ) {
+        let isFirst = shown == nil
+        let startsChange = isFirst || old.index != new.index
+        var leaving: TourLeaving?
+        if !isFirst, old.index != new.index, let shown {
+            leaving = TourLeaving(step: shown, cutouts: old.cutouts, placement: old.placement)
+        }
+        shown = step
+        shownCutouts = new.cutouts
+        shownPlacement = new.placement
+        lastMoved = .now
+        if startsChange, !reduceMotion {
+            change = TourChange(start: .now, leaving: leaving)
+        }
     }
 
     /// `safeInsets` come from outside the `ignoresSafeArea` that lets the dim
     /// reach the screen's edges, since inside it the proxy reports none.
     private func content(for step: TourOverlayStep, in proxy: GeometryProxy, safeInsets: TourSafeInsets) -> some View {
-        let cutouts = cutouts(for: step, in: proxy)
+        let targets = cutouts(for: step, in: proxy)
         let placement = cardSize.map { size in
             TourCardPlacement.place(
                 container: proxy.size,
                 safeInsets: safeInsets,
-                cutouts: cutouts.map(\.rect),
+                cutouts: targets.map(\.rect),
                 cardSize: size,
                 allowsSide: horizontalSizeClass == .regular
             )
         }
-        let origin = placement?.origin ?? .zero
         let width = TourCardPlacement.cardWidth(for: proxy.size.width)
-        let animation: Animation? = reduceMotion ? nil : .smooth
+        let key = TourSpotlightKey(index: step.index, cutouts: targets, placement: placement)
+        let isPending = shown != nil && shown?.index != step.index
 
-        return ZStack(alignment: .topLeading) {
-            dim(cutouts: cutouts)
-            ForEach(Array(cutouts.enumerated()), id: \.offset) { _, cutout in
-                ring(for: cutout)
+        return TimelineView(.animation(paused: change == nil && !isPending)) { timeline in
+            let frame = frame(for: step, targets: targets, placement: placement, at: timeline.date, isPending: isPending)
+            let origin = frame.placement?.origin ?? .zero
+            ZStack(alignment: .topLeading) {
+                dim(cutouts: frame.cutouts, hole: frame.hole)
+                ForEach(Array(frame.cutouts.enumerated()), id: \.offset) { _, cutout in
+                    ring(for: cutout)
+                        .opacity(frame.ring)
+                }
+                card(for: frame.cardStep, width: width, placement: frame.placement, hasCutouts: !frame.cutouts.isEmpty)
+                    .offset(x: origin.x, y: origin.y)
+                    .opacity(frame.placement == nil ? 0 : frame.cardOpacity)
+                measuringCard(for: step, width: width)
             }
-            card(for: step, width: width, placement: placement, hasCutouts: !cutouts.isEmpty)
-                .offset(x: origin.x, y: origin.y)
-                .opacity(placement == nil ? 0 : 1)
-            measuringCard(for: step, width: width)
         }
         .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
-        .animation(hasPlacement ? animation : nil, value: placement)
-        .animation(animation, value: cutouts)
-        .onChange(of: placement != nil) { _, isPlaced in
-            hasPlacement = isPlaced
+        // Everything here is moved by the clock. The animation the cost panel
+        // opens with is in the transaction too, since its anchor drives this
+        // view, and would slide the card and fade it on its own curve.
+        .transaction { $0.animation = nil }
+        .onChange(of: key, initial: true) { old, new in
+            noticeChange(from: old, to: new, step: step)
         }
         .accessibilityAddTraits(.isModal)
     }
@@ -146,7 +283,9 @@ private struct TourOverlayLayer: View {
         .onGeometryChange(for: CGSize.self) { $0.size } action: { cardSize = $0 }
     }
 
-    private func dim(cutouts: [TourCutout]) -> some View {
+    /// The dim with a hole per cutout. A hole is closed again, to the degree
+    /// `hole` says, by laying the dim over it, which is how a spotlight fades.
+    private func dim(cutouts: [TourCutout], hole: Double) -> some View {
         let first = cutouts.first ?? TourCutout(rect: .zero, cornerRadius: 0)
         let second = cutouts.count > 1 ? cutouts[1] : TourCutout(rect: first.rect.centrePoint, cornerRadius: 0)
         return ZStack {
@@ -155,6 +294,16 @@ private struct TourOverlayLayer: View {
             if reduceTransparency {
                 TourDimShape(first: first, second: second)
                     .fill(Color.tourDim.opacity(0.7), style: FillStyle(eoFill: true))
+            }
+            if hole > 0 {
+                TourHoleShape(first: first, second: second)
+                    .fill(Color.tourDim)
+                    .opacity(hole)
+                if reduceTransparency {
+                    TourHoleShape(first: first, second: second)
+                        .fill(Color.tourDim.opacity(0.7))
+                        .opacity(hole)
+                }
             }
         }
         .contentShape(Rectangle())
@@ -173,65 +322,5 @@ private struct TourOverlayLayer: View {
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
-    }
-}
-
-private extension CGRect {
-    /// A zero-size rect at this one's centre, for a hole that isn't there yet.
-    var centrePoint: CGRect {
-        CGRect(x: midX, y: midY, width: 0, height: 0)
-    }
-}
-
-/// A spotlight's rounded rectangle, animatable so a step change glides.
-private struct TourCutout: Equatable, Animatable {
-    var rect: CGRect
-    var cornerRadius: CGFloat
-
-    var animatableData: AnimatablePair<CGRect.AnimatableData, CGFloat> {
-        get { AnimatablePair(rect.animatableData, cornerRadius) }
-        set {
-            rect.animatableData = newValue.first
-            cornerRadius = newValue.second
-        }
-    }
-}
-
-/// The whole container with a hole per cutout, for an even-odd fill.
-private struct TourDimShape: Shape {
-    var first: TourCutout
-    var second: TourCutout
-
-    var animatableData: AnimatablePair<TourCutout.AnimatableData, TourCutout.AnimatableData> {
-        get { AnimatablePair(first.animatableData, second.animatableData) }
-        set {
-            first.animatableData = newValue.first
-            second.animatableData = newValue.second
-        }
-    }
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path(rect)
-        for cutout in [first, second] where cutout.rect.width > 0 && cutout.rect.height > 0 {
-            path.addPath(RoundedRectangle(cornerRadius: cutout.cornerRadius, style: .continuous).path(in: cutout.rect))
-        }
-        return path
-    }
-}
-
-/// The cutout's outline pushed out by `outset`, so a stroke centred on it
-/// sits wholly outside the lit area.
-private struct TourRingShape: Shape {
-    var cutout: TourCutout
-    let outset: CGFloat
-
-    var animatableData: TourCutout.AnimatableData {
-        get { cutout.animatableData }
-        set { cutout.animatableData = newValue }
-    }
-
-    func path(in rect: CGRect) -> Path {
-        RoundedRectangle(cornerRadius: cutout.cornerRadius + outset, style: .continuous)
-            .path(in: cutout.rect.insetBy(dx: -outset, dy: -outset))
     }
 }

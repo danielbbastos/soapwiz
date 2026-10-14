@@ -13,7 +13,7 @@ struct RecipeStatsTabView: View {
     var body: some View {
         let stats = RecipeStats(oilDrafts: shownDrafts ?? model.oilDrafts, makesSoap: model.makesSoap)
         Form {
-            RecipeDetailStatsSections(stats: stats)
+            RecipeDetailStatsSections(stats: stats, chartTourAnchor: .qualityBars)
             if stats.makesSoap {
                 calculatedValuesSection(stats)
             }

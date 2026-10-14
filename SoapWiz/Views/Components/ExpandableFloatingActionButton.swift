@@ -21,6 +21,8 @@ struct ExpandableFloatingActionButton: View {
     /// Beside the tab bar rather than above it: centred on the tab bar, measured
     /// from the bottom of the screen instead of the safe area the tab bar adds.
     var besideTabBar = false
+    /// What the onboarding tour calls this button, where it points at it.
+    var tourAnchor: TourAnchorID?
 
     @State private var isExpanded = false
     /// Natural width of the labelled secondary buttons, measured so the capsule can
@@ -46,6 +48,7 @@ struct ExpandableFloatingActionButton: View {
             }
 
             control
+                .tourAnchor(tourAnchor, cornerRadius: diameter / 2 + 6, outset: CGSize(width: 6, height: 6))
                 .padding(.trailing, 20)
                 .padding(.bottom, besideTabBar ? ListDetailLayout.tabBarCentreLine - diameter / 2 : 20)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)

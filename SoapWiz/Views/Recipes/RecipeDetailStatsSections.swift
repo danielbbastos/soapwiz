@@ -18,11 +18,16 @@ struct RecipeDetailStatsSections: View {
 
     let stats: RecipeStats
 
+    /// What the onboarding tour calls the qualities chart. Set only by the
+    /// form's Stats tab: the recipe screen shows the same chart, and two
+    /// views tagged alike would leave the tour an arbitrary one.
+    var chartTourAnchor: TourAnchorID?
+
     var body: some View {
         if stats.makesSoap {
             Section {
                 if stats.hasOils {
-                    SoapPropertiesSection(stats: stats, drawsLedgerSheet: true)
+                    SoapPropertiesSection(stats: stats, drawsLedgerSheet: true, chartTourAnchor: chartTourAnchor)
                 } else {
                     inkSoftRow("Add oils to see soap properties")
                 }
