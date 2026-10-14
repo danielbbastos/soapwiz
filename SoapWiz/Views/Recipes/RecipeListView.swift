@@ -66,7 +66,8 @@ struct RecipeListView: View {
                 rowMenu(recipe)
             }
         }
-        .ledgerListDetailRow(isSelected: !model.isSelecting && navigation.isOpenBeside(recipe), position: position)    }
+        .ledgerListDetailRow(isSelected: !model.isSelecting && navigation.isOpenBeside(recipe), position: position)
+    }
 
     private func rows(_ recipes: [Recipe]) -> some View {
         ForEach(Array(recipes.enumerated()), id: \.element.id) { index, recipe in
@@ -355,11 +356,10 @@ struct RecipeListView: View {
                     ExpandableFloatingActionButton(
                         primaryAction: { openForm(.new()) },
                         secondaryActions: [
-                            FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") {
-                                importRequest = .manual
-                            }
+                            FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") { importRequest = .manual }
                         ],
-                        besideTabBar: navigation.fabBesideTabBar, tourAnchor: .recipeAddButton
+                        besideTabBar: navigation.fabBesideTabBar,
+                        tourAnchor: .recipeAddButton
                     )
                 }
             }

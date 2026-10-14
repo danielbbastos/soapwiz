@@ -205,7 +205,9 @@ struct IngredientListView: View {
         .onChange(of: ingredients.filter(\.isHidden)) { _, hidden in
             navigation.close(ifShowingAnyOf: hidden)
         }
-        .onChange(of: navigation.selection) { _, selection in
+        // `initial`, since the selection lives on `AppNavigation` and can
+        // already be set when this view is built, which a change never reports.
+        .onChange(of: navigation.selection, initial: true) { _, selection in
             selectedSlug = selection?.librarySlug ?? ""
         }
         // Deletions made in this list close the detail before they happen.

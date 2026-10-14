@@ -252,6 +252,11 @@ final class TourGuide {
             if !navigation.isRecipeFormOnScreen && !navigation.isDetailSheetOnScreen { return }
             try? await Task.sleep(for: Self.pollInterval)
         }
+        guard !Task.isCancelled else { return }
+        // Presents anyway; this is for tracing a later "none of its targets
+        // appeared" back to a presentation that was dropped.
+        let waited = Self.presentationTimeout.formatted(.units(allowed: [.milliseconds]))
+        Self.log.notice("Tour waited \(waited, privacy: .public) for a presentation to close; presenting anyway")
     }
 
     // MARK: - Sample rows
