@@ -5,6 +5,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(SettingsState.self) private var settings
     @Environment(\.isTourSandbox) private var isTourSandbox
+    @Environment(TourLauncher.self) private var tourLauncher
 
     @State private var navigation: AppNavigation
     @State private var restore = RestoreCoordinator()
@@ -48,7 +49,14 @@ struct ContentView: View {
         // handed.
         .onOpenURL { url in
             guard url.isFileURL, !isTourSandbox else { return }
+            tourLauncher.noteExternalOpen()
             navigation.openRecipeFile(url)
+        }
+        // The tour ran over a sandbox, so the real app is still wherever the
+        // user left it; Inventory is where the tour's story ends.
+        .onChange(of: tourLauncher.tourEnded) {
+            guard !isTourSandbox else { return }
+            navigation.selectedTab = .inventory
         }
         .alert("Replace all data?", isPresented: presenting(\.pendingImport)) {
             Button("Replace", role: .destructive) {

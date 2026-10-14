@@ -17,12 +17,7 @@ struct SoapWizApp: App {
 
     @Environment(\.scenePhase) private var scenePhase
 
-    #if DEBUG
-    /// Opens the onboarding tour at a given step, for screenshots. Real
-    /// first-launch presentation is not wired up yet.
-    @State private var showsDebugTour = TourPhase.launchArgument != nil
-    private let debugTourPhase = TourPhase.launchArgument ?? .welcome
-    #endif
+    @State private var tourLauncher = TourLauncher()
 
     init() {
         UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
@@ -42,6 +37,17 @@ struct SoapWizApp: App {
                         .environment(storeHost.inventoryRows)
                         .environment(storeHost.settings)
                         .modelContainer(storeHost.container)
+                        // Its own task: the launch decision can wait on iCloud
+                        // and shouldn't sit behind the seeding below.
+                        .task {
+                            #if DEBUG
+                            if let phase = TourPhase.launchArgument {
+                                tourLauncher.presentForDebug(at: phase)
+                                return
+                            }
+                            #endif
+                            await tourLauncher.presentAtLaunchIfDue()
+                        }
                         .task {
                             // After launch rather than with the rest of the
                             // seeding: whether the store syncs to an account
@@ -64,20 +70,22 @@ struct SoapWizApp: App {
             } message: {
                 Text(storeHost.errorMessage ?? "")
             }
-            #if DEBUG
+            .environment(tourLauncher)
             // Outside `ContentView`, so the tour's navigation is its own.
             .fullScreenCover(isPresented: Binding(
-                get: { showsDebugTour && storeHost.phase == .ready },
-                set: { if !$0 { showsDebugTour = false } }
+                get: { tourLauncher.isPresented && storeHost.phase == .ready },
+                set: { if !$0 && tourLauncher.isPresented { tourLauncher.close() } }
             )) {
                 TourCover(
                     currencyCode: storeHost.settings.currencyCode,
-                    startingPhase: debugTourPhase
+                    startingPhase: tourLauncher.presentation?.startingPhase ?? .welcome
                 ) { _ in
-                    showsDebugTour = false
+                    tourLauncher.close()
                 }
+                // A cover doesn't carry the root's environment into the
+                // sandbox's interface, which reads the launcher.
+                .environment(tourLauncher)
             }
-            #endif
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     Signposts.foreground.emitEvent("Became active")

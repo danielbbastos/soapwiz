@@ -10,6 +10,7 @@ struct SettingsView: View {
     @Environment(RestoreCoordinator.self) private var restore
     @Environment(\.currencyCode) private var currencyCode
     @Environment(\.isTourSandbox) private var isTourSandbox
+    @Environment(TourLauncher.self) private var tourLauncher
     @Environment(\.scenePhase) private var scenePhase
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
@@ -343,6 +344,15 @@ struct SettingsView: View {
                     .foregroundStyle(Color.inkSoft)
             }
             .ledgerSheetRow(position: .first)
+            // Not in the tour: replaying it from inside itself would nest covers.
+            if !isTourSandbox {
+                Button {
+                    tourLauncher.replay()
+                } label: {
+                    linkLabel("Show Tour", systemImage: "sparkles")
+                }
+                .ledgerSheetRow(position: .middle)
+            }
             NavigationLink(destination: LyeSafetyScreen()) {
                 linkLabel("Lye Safety", systemImage: "exclamationmark.triangle")
             }
