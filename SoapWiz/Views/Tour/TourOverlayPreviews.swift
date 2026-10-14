@@ -115,16 +115,16 @@ private extension TourOverlayStep {
     static let previewQualities = TourOverlayStep(
         index: 7,
         count: 10,
-        title: "Check the bar’s qualities",
-        body: "Beside your ingredients: hardness, cleansing, conditioning, lather and longevity, "
-            + "each against the range a good bar usually falls in.",
+        title: "How the bar will turn out",
+        body: "See how hard, bubbly and gentle it’ll be. The shaded bands show where a good bar usually sits.",
         targets: [.qualityBars]
     )
     static let previewBatch = TourOverlayStep(
         index: 8,
         count: 10,
         title: "Ready to make it",
-        body: "A saved recipe opens here, with every amount worked out. Tap Create Batch when you’re ready to make one.",
+        body: "Saved recipes open here with every amount calculated. "
+            + "When you’re ready to make soap, tap Create Batch.",
         targets: [.createBatchButton]
     )
 }

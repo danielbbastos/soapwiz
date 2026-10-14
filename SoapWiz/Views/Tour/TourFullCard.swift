@@ -85,20 +85,17 @@ struct TourFullCard: View {
     private var welcomeText: some View {
         VStack(alignment: .leading, spacing: 0) {
             title("Welcome to SoapWiz")
-            Text(
-                "A ledger for your soap making: what you have, what you make, and what it costs. "
-                    + "Here’s the usual flow, on a sample recipe."
-            )
+            Text("Let’s walk through a sample recipe, from the oils on your shelf to a bar on the curing rack.")
                 .font(.callout)
                 .foregroundStyle(Color.inkSoft)
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 14) {
-                numberedRow(1, name: "Inventory.", detail: " Your ingredients, and what you paid for them.")
-                numberedRow(2, name: "Recipes.", detail: " Lye, qualities and cost, worked out as you type.")
-                numberedRow(3, name: "Batches.", detail: " Stock goes down, and History keeps the record.")
+                numberedRow(1, name: "Inventory.", detail: " Keep track of what’s on your shelf and what you paid for it.")
+                numberedRow(2, name: "Recipes.", detail: " Build a recipe and the lye is calculated for you.")
+                numberedRow(3, name: "Batches.", detail: " Make a batch and your stock updates itself.")
             }
             .padding(.top, 20)
-            Text("Nothing in the tour is saved to your data.")
+            Text("This is all sample data. Your own stays untouched.")
                 .font(.footnote)
                 .foregroundStyle(Color.inkSoft)
                 .padding(.top, 18)
@@ -121,8 +118,8 @@ struct TourFullCard: View {
 
     private var finishText: some View {
         VStack(alignment: .leading, spacing: 0) {
-            title("Over to you")
-            Text("Your ingredient library is ready. Record what you have on hand, then write your first recipe.")
+            title("That’s the tour")
+            Text("Start by adding what’s on your shelf, then write your first recipe.")
                 .font(.callout)
                 .foregroundStyle(Color.inkSoft)
                 .fixedSize(horizontal: false, vertical: true)

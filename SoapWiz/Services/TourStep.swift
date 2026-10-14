@@ -53,48 +53,49 @@ enum TourStep: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .library: "Your ingredient library"
-        case .purchase: "Record a purchase"
+        case .library: "Start with your ingredients"
+        case .purchase: "Log what you buy"
         case .recipes: "Your recipes"
-        case .basics: "The recipe’s basics"
-        case .ingredients: "Add the ingredients"
+        case .basics: "Set up the basics"
+        case .ingredients: "Add your oils"
         case .cost: "See what it costs"
-        case .qualities: "Check the bar’s qualities"
+        case .qualities: "How the bar will turn out"
         case .ready: "Ready to make it"
         case .batch: "Make a batch"
-        case .record: "Your batch record"
+        case .record: "Every batch you make"
         }
     }
 
     var body: String {
         switch self {
         case .library:
-            "Over 200 oils, lyes and additives are already here, with their SAP values and fatty acids. "
-                + "Search for one, or tap + to add your own."
+            "We’ve already added over 200 oils, butters, lyes and additives, with their SAP values. "
+                + "Search for yours, or tap + to add something new."
         case .purchase:
-            "Each purchase keeps its quantity, price and dates. Stock is what’s left across them, "
-                + "and batches use the oldest first. Tap + to add one."
+            "Each time you buy more, add it here with the price. "
+                + "When you make soap, the oldest stock gets used first."
         case .recipes:
-            "Recipes you write or import live here. Tap + to start a new one."
+            "Recipes you write or import end up here. Tap + to start one."
         case .basics:
-            "We’ve filled in a sample recipe. Config holds its settings: oil weight, lye type and purity, "
-                + "water and superfat. SoapWiz works out the lye from them."
+            "Here’s a sample recipe we filled in. Set your oil weight, lye and superfat, "
+                + "and the lye amount is calculated for you."
         case .ingredients:
-            "Pick oils from your library and set them by percentage or weight. Lye and water update as you type."
+            "Pick oils from your library and set them by percentage or weight. The lye and water change as you go."
         case .cost:
             "Every ingredient is priced from your purchases, with a suggested retail price. "
                 + "Tap the bar to open it, and drag to see more."
         case .qualities:
-            "Hardness, cleansing, conditioning, lather and longevity, each against the range "
-                + "a good bar usually falls in."
+            "See how hard, bubbly and gentle it’ll be. "
+                + "The shaded bands show where a good bar usually sits."
         case .ready:
-            "A saved recipe opens here, with every amount worked out. Tap Create Batch when you’re ready to make one."
+            "Saved recipes open here with every amount calculated. "
+                + "When you’re ready to make soap, tap Create Batch."
         case .batch:
-            "Choose cold or hot process and SoapWiz suggests a cure time. "
-                + "Creating the batch takes its ingredients out of stock."
+            "Choose cold or hot process and you’ll get a suggested cure time. "
+                + "Making the batch takes the ingredients out of your stock."
         case .record:
-            "Every batch is kept here with its code, cost and cure countdown. "
-                + "Open one to add dated notes and photos."
+            "Each batch keeps its code, its cost and a countdown until it’s ready. "
+                + "Open one to add notes and photos while it cures."
         }
     }
 

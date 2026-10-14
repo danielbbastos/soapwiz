@@ -24,9 +24,9 @@ struct TourStepTests {
     }
 
     @Test func copy_BasicsStepIsTheConfigOverview() {
-        #expect(TourStep.basics.title == "The recipe’s basics")
-        #expect(TourStep.basics.body == "We’ve filled in a sample recipe. Config holds its settings: oil weight, "
-            + "lye type and purity, water and superfat. SoapWiz works out the lye from them.")
+        #expect(TourStep.basics.title == "Set up the basics")
+        #expect(TourStep.basics.body == "Here’s a sample recipe we filled in. Set your oil weight, lye and superfat, "
+            + "and the lye amount is calculated for you.")
     }
 
     @Test func overlayStep_CarriesTheStepsNumberCountAndTargets() {
