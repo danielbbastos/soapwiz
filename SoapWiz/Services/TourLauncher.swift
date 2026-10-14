@@ -47,6 +47,11 @@ final class TourLauncher {
     private var presentationID = 0
     private var appearanceTask: Task<Void, Never>?
 
+    /// True from the cover reaching the screen until it has finished leaving,
+    /// which outlasts `presentation`: the presentation clears as the cover starts
+    /// to go, and a sheet requested in that window is dropped.
+    private(set) var isCoverOnScreen = false
+
     var isPresented: Bool { presentation != nil }
 
     /// `isSceneActive` starts false in the app, which reports the real phase as
@@ -83,23 +88,31 @@ final class TourLauncher {
         presentLaunchIfPossible()
     }
 
+    /// A replay that lands on a first-launch showing still waiting to appear
+    /// keeps its origin, mirroring `presentLaunchIfPossible`: closing it must
+    /// still count as the first showing, or the tour comes back next launch.
     func replay() {
-        show(TourPresentation(startingPhase: .welcome, origin: .replay))
+        let origin: TourOrigin = presentation?.origin == .launch ? .launch : .replay
+        show(TourPresentation(startingPhase: .welcome, origin: origin))
     }
 
     /// The cover reports that it reached the screen. Without it the
     /// presentation is dropped after the timeout.
     func coverDidAppear() {
-        appearanceTask?.cancel()
-        appearanceTask = nil
+        isCoverOnScreen = true
+        cancelAppearanceTimer()
+    }
+
+    /// The cover's `onDismiss`, once it is fully off screen.
+    func coverDidDismiss() {
+        isCoverOnScreen = false
     }
 
     /// Skipping, finishing and a sandbox that failed to build all mark the flag:
     /// a broken sandbox shouldn't flash the cover on every launch, and Settings
     /// can still replay the tour.
     func close() {
-        appearanceTask?.cancel()
-        appearanceTask = nil
+        cancelAppearanceTimer()
         let wasLaunch = presentation?.origin == .launch
         if wasLaunch {
             progress.markFinished()
@@ -111,9 +124,16 @@ final class TourLauncher {
     }
 
     /// A recipe file opening the app shows an import review, and possibly the
-    /// lye notice, which must not stack with the cover. Dropped for this launch
-    /// only: the flag stays unset, so the tour shows next launch.
+    /// lye notice, which must not stack with the cover. A tour already up is
+    /// closed and one still due is dropped, for this launch only: the flag stays
+    /// unset, so the tour shows next launch. Nor does it count as an ended
+    /// launch tour, which would send the app to Inventory when the import needs
+    /// Recipes.
     func noteExternalOpen() {
+        if presentation != nil {
+            cancelAppearanceTimer()
+            presentation = nil
+        }
         if launchPending {
             launchPending = false
             return
@@ -140,6 +160,11 @@ final class TourLauncher {
         }
         launchPending = false
         show(TourPresentation(startingPhase: .welcome, origin: .launch))
+    }
+
+    private func cancelAppearanceTimer() {
+        appearanceTask?.cancel()
+        appearanceTask = nil
     }
 
     /// A presentation the cover never confirms is cleared without marking the

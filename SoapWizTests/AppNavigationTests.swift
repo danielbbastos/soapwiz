@@ -111,9 +111,21 @@ struct AppNavigationTests {
         sut.openRecipeFile(URL(fileURLWithPath: "/tmp/shared.soapwizrecipe"))
         let opened = try #require(sut.pendingRecipeFileImport)
 
-        #expect(sut.takePendingRecipeFileImport() == opened)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == opened)
         #expect(sut.pendingRecipeFileImport == nil)
-        #expect(sut.takePendingRecipeFileImport() == nil)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == nil)
+    }
+
+    @Test func takePendingRecipeFileImport_TourCoverOnScreen_HoldsTheFileUntilItLeaves() throws {
+        let sut = AppNavigation()
+        sut.openRecipeFile(URL(fileURLWithPath: "/tmp/shared.soapwizrecipe"))
+        let opened = try #require(sut.pendingRecipeFileImport)
+
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: true) == nil)
+        #expect(sut.pendingRecipeFileImport == opened)
+
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == opened)
+        #expect(sut.pendingRecipeFileImport == nil)
     }
 
     @Test func takePendingRecipeFileImport_FormOpen_HoldsTheFileUntilItCloses() throws {
@@ -122,13 +134,13 @@ struct AppNavigationTests {
         sut.openRecipeFile(URL(fileURLWithPath: "/tmp/shared.soapwizrecipe"))
         let opened = try #require(sut.pendingRecipeFileImport)
 
-        #expect(sut.takePendingRecipeFileImport() == nil)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == nil)
         #expect(sut.pendingRecipeFileImport == opened)
 
         sut.recipeFormRequest = nil
         sut.recipeFormDidClose()
 
-        #expect(sut.takePendingRecipeFileImport() == opened)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == opened)
     }
 
     /// The request clears as the cover starts to leave; the file must wait for
@@ -142,12 +154,12 @@ struct AppNavigationTests {
         sut.recipeFormRequest = nil
 
         #expect(sut.isRecipeFormOnScreen)
-        #expect(sut.takePendingRecipeFileImport() == nil)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == nil)
 
         sut.recipeFormDidClose()
 
         #expect(sut.isRecipeFormOnScreen == false)
-        #expect(sut.takePendingRecipeFileImport() == opened)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == opened)
     }
 
     @Test func discardRecipeForm_ClearsTheFormAtOnce() {
@@ -172,7 +184,7 @@ struct AppNavigationTests {
         sut.recipeFormRequest = nil
         sut.recipeFormDidClose()
 
-        #expect(sut.takePendingRecipeFileImport() == newest)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == newest)
     }
 
     @Test func recipeFormDidClose_CountsEachClosing() {

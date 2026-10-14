@@ -51,6 +51,8 @@ struct TourCover: View {
 
     private func build() {
         guard session == nil else { return }
+        let interval = Signposts.tour.beginInterval("Tour sandbox build")
+        defer { Signposts.tour.endInterval("Tour sandbox build", interval) }
         do {
             let sandbox = try TourSandbox(currencyCode: currencyCode)
             let guide = TourGuide(

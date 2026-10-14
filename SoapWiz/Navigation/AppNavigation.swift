@@ -120,11 +120,12 @@ final class AppNavigation {
     }
 
     /// Hands out the recipe file waiting to open, once: nil while the recipe
-    /// form or a detail sheet is on screen, closing included, since the import
-    /// review can't go up over either, and nil again after the file has been
-    /// taken.
-    func takePendingRecipeFileImport() -> RecipeFileImport? {
-        guard !isRecipeFormOnScreen, !isDetailSheetOnScreen,
+    /// form, a detail sheet or the tour cover is on screen, closing included,
+    /// since the import review can't go up over any of them, and nil again
+    /// after the file has been taken. The caller says whether the tour cover is
+    /// up, as this doesn't know the launcher.
+    func takePendingRecipeFileImport(tourCoverOnScreen: Bool) -> RecipeFileImport? {
+        guard !tourCoverOnScreen, !isRecipeFormOnScreen, !isDetailSheetOnScreen,
               let request = pendingRecipeFileImport else { return nil }
         pendingRecipeFileImport = nil
         return request

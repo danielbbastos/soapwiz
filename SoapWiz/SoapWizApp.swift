@@ -75,7 +75,9 @@ struct SoapWizApp: App {
             .fullScreenCover(isPresented: Binding(
                 get: { tourLauncher.isPresented && storeHost.phase == .ready },
                 set: { if !$0 && tourLauncher.isPresented { tourLauncher.close() } }
-            )) {
+            ), onDismiss: {
+                tourLauncher.coverDidDismiss()
+            }, content: {
                 TourCover(
                     currencyCode: storeHost.settings.currencyCode,
                     startingPhase: tourLauncher.presentation?.startingPhase ?? .welcome
@@ -86,7 +88,7 @@ struct SoapWizApp: App {
                 // sandbox's interface, which reads the launcher.
                 .environment(tourLauncher)
                 .onAppear { tourLauncher.coverDidAppear() }
-            }
+            })
             // Its own observer with `initial`, so the launcher learns the phase
             // the app started in without the handler below running at launch.
             .onChange(of: scenePhase, initial: true) { _, newPhase in

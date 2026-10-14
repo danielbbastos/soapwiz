@@ -218,12 +218,86 @@ struct TourLauncherTests {
         #expect(!sut.isPresented)
     }
 
-    @Test func noteExternalOpen_AfterDecision_KeepsTourOpen() async {
+    @Test func noteExternalOpen_AfterDecision_ClosesTour() async {
         let sut = makeSUT()
+        await sut.presentAtLaunchIfDue()
+        sut.coverDidAppear()
+
+        sut.noteExternalOpen()
+
+        #expect(sut.presentation == nil)
+        #expect(!sut.isPresented)
+    }
+
+    @Test func noteExternalOpen_LaunchShowing_LeavesFlagAndEndedCountAlone() async {
+        let cloud = FakeFlagStore()
+        let local = FakeFlagStore()
+        let sut = makeSUT(cloud: cloud, local: local)
         await sut.presentAtLaunchIfDue()
 
         sut.noteExternalOpen()
 
-        #expect(sut.isPresented)
+        #expect(sut.presentation == nil)
+        #expect(!local.bool(forKey: key))
+        #expect(!cloud.bool(forKey: key))
+        #expect(sut.launchTourEnded == 0)
+
+        let nextLaunch = makeSUT(cloud: cloud, local: local)
+        await nextLaunch.presentAtLaunchIfDue()
+        #expect(nextLaunch.isPresented)
+    }
+
+    @Test func noteExternalOpen_Replay_ClosesWithoutTouchingFlag() {
+        let cloud = FakeFlagStore()
+        let local = FakeFlagStore()
+        let sut = makeSUT(cloud: cloud, local: local)
+        sut.replay()
+
+        sut.noteExternalOpen()
+
+        #expect(sut.presentation == nil)
+        #expect(!local.bool(forKey: key))
+        #expect(!cloud.bool(forKey: key))
+        #expect(sut.launchTourEnded == 0)
+    }
+
+    @Test func isCoverOnScreen_FollowsAppearAndDismiss() {
+        let sut = makeSUT()
+        #expect(!sut.isCoverOnScreen)
+
+        sut.coverDidAppear()
+        #expect(sut.isCoverOnScreen)
+
+        sut.coverDidDismiss()
+        #expect(!sut.isCoverOnScreen)
+    }
+
+    @Test func isCoverOnScreen_OutlastsPresentation() {
+        let sut = makeSUT()
+        sut.replay()
+        sut.coverDidAppear()
+
+        sut.noteExternalOpen()
+
+        #expect(!sut.isPresented)
+        #expect(sut.isCoverOnScreen)
+    }
+
+    @Test func replay_WhileLaunchShowingPending_KeepsLaunchOrigin() async throws {
+        let cloud = FakeFlagStore()
+        let local = FakeFlagStore()
+        let sut = makeSUT(cloud: cloud, local: local)
+        await sut.presentAtLaunchIfDue()
+
+        sut.replay()
+
+        let presentation = try #require(sut.presentation)
+        #expect(presentation.origin == .launch)
+
+        sut.close()
+
+        #expect(local.bool(forKey: key))
+        #expect(cloud.bool(forKey: key))
+        #expect(sut.launchTourEnded == 1)
     }
 }
