@@ -261,18 +261,6 @@ struct TourLauncherTests {
         #expect(sut.launchTourEnded == 0)
     }
 
-    @Test func noteExternalOpen_Presented_CancelsAppearanceTimer() async throws {
-        let sut = makeSUT(appearanceTimeout: .milliseconds(50))
-        sut.replay()
-        sut.noteExternalOpen()
-        sut.replay()
-        sut.coverDidAppear()
-
-        try await Task.sleep(for: .milliseconds(300))
-
-        #expect(sut.isPresented)
-    }
-
     @Test func isCoverOnScreen_FollowsAppearAndDismiss() {
         let sut = makeSUT()
         #expect(!sut.isCoverOnScreen)

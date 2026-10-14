@@ -147,15 +147,12 @@ struct RecipeListView: View {
     }
 
     /// Opens the import review for a file handed in from another app. A sheet
-    /// can't go up over the full-screen form or a detail sheet, so while one is
-    /// open the file stays pending and this runs again once it has closed;
-    /// either way its unsaved edits are left alone. The tour cover is waited
-    /// out the same way, here rather than in `AppNavigation`, which doesn't know
-    /// the launcher; the tour's own sandbox list never has a file pending.
-    /// Transient sheets are cleared first so the import isn't blocked by one
-    /// already up.
+    /// can't go up over the full-screen form, a detail sheet or the tour cover,
+    /// so while one is open the file stays pending and this runs again once it
+    /// has closed; either way its unsaved edits are left alone. Transient
+    /// sheets are cleared first so the import isn't blocked by one already up.
     private func startPendingFileImport() {
-        guard !tourLauncher.isCoverOnScreen, let request = nav.takePendingRecipeFileImport() else { return }
+        guard let request = nav.takePendingRecipeFileImport(tourCoverOnScreen: tourLauncher.isCoverOnScreen) else { return }
         model.endSelecting()
         model.filingRecipe = nil
         model.exportFile = nil
