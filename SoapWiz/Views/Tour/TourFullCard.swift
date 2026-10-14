@@ -22,28 +22,31 @@ struct TourFullCard: View {
                     .contentShape(Rectangle())
                     .onTapGesture {}
                     .accessibilityHidden(true)
-                ScrollView {
-                    card
-                        .frame(width: width)
-                        .padding(.vertical, TourCardPlacement.margin)
-                        .frame(maxWidth: .infinity, minHeight: proxy.size.height)
+                // The card as it is when it fits; when it doesn't, the text
+                // scrolls and the buttons stay pinned, and the card takes the
+                // room it is given.
+                ViewThatFits(in: .vertical) {
+                    card(scrollsText: false)
+                    card(scrollsText: true)
                 }
-                .scrollBounceBehavior(.basedOnSize)
+                .frame(width: width)
+                .frame(maxHeight: max(0, proxy.size.height - 2 * TourCardPlacement.margin))
             }
         }
         .accessibilityAddTraits(.isModal)
     }
 
-    private var card: some View {
+    private func card(scrollsText: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            HoneyLedgerDiamondRule()
-                .accessibilityHidden(true)
-            switch kind {
-            case .welcome:
-                welcomeContent
-            case .finish:
-                finishContent
+            if scrollsText {
+                ScrollView {
+                    text
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            } else {
+                text
             }
+            buttons
         }
         .foregroundStyle(Color.ink)
         .padding(.top, 28)
@@ -55,7 +58,31 @@ struct TourFullCard: View {
         .accessibilityElement(children: .contain)
     }
 
-    private var welcomeContent: some View {
+    private var text: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HoneyLedgerDiamondRule()
+                .accessibilityHidden(true)
+            switch kind {
+            case .welcome:
+                welcomeText
+            case .finish:
+                finishText
+            }
+        }
+    }
+
+    private var buttons: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            switch kind {
+            case .welcome:
+                welcomeButtons
+            case .finish:
+                finishButtons
+            }
+        }
+    }
+
+    private var welcomeText: some View {
         VStack(alignment: .leading, spacing: 0) {
             title("Welcome to SoapWiz")
             Text(
@@ -75,6 +102,11 @@ struct TourFullCard: View {
                 .font(.footnote)
                 .foregroundStyle(Color.inkSoft)
                 .padding(.top, 18)
+        }
+    }
+
+    private var welcomeButtons: some View {
+        VStack(alignment: .leading, spacing: 0) {
             Button("Show me around", action: onPrimary)
                 .buttonStyle(.honeyLedgerPrimary)
                 .padding(.top, 20)
@@ -87,7 +119,7 @@ struct TourFullCard: View {
         }
     }
 
-    private var finishContent: some View {
+    private var finishText: some View {
         VStack(alignment: .leading, spacing: 0) {
             title("Over to you")
             Text("Your ingredient library is ready. Record what you have on hand, then write your first recipe.")
@@ -98,10 +130,13 @@ struct TourFullCard: View {
                 .font(.footnote)
                 .foregroundStyle(Color.inkSoft)
                 .padding(.top, 12)
-            Button("Start using SoapWiz", action: onPrimary)
-                .buttonStyle(.honeyLedgerPrimary)
-                .padding(.top, 28)
         }
+    }
+
+    private var finishButtons: some View {
+        Button("Start using SoapWiz", action: onPrimary)
+            .buttonStyle(.honeyLedgerPrimary)
+            .padding(.top, 28)
     }
 
     private func title(_ text: String) -> some View {

@@ -149,6 +149,7 @@ struct CreateBatchSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .honeyLedgerInlineTitle("Create Batch")
             .ledgerBackground()
+            .scrollsForTour(to: .cureSection)
             .task(id: existingCodes) {
                 model.suggestCode(existingCodes: existingCodes)
             }
@@ -241,5 +242,6 @@ struct CreateBatchSheet: View {
         } footer: {
             HoneyLedgerFooter(estimate.explanation)
         }
+        .id(TourScrollTarget.cureSection)
     }
 }

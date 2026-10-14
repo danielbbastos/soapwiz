@@ -19,8 +19,11 @@ import SwiftUI
 final class TourGuide {
     private static let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "tour")
 
-    /// How long a step waits for its targets before it is given up on.
-    nonisolated static let defaultAnchorTimeout: Duration = .seconds(1)
+    /// How long a step waits for its targets before it is given up on. The wait
+    /// starts when the step's screen is asked for, so for a step on a sheet it
+    /// includes the sheet coming up, nearly a second in a debug build, and the
+    /// form scrolling to the step's card.
+    nonisolated static let defaultAnchorTimeout: Duration = .seconds(2)
 
     /// How long a presentation waits for the one before it to finish leaving.
     private static let presentationTimeout: Duration = .seconds(1)
@@ -105,7 +108,7 @@ final class TourGuide {
     /// Puts the tour at `phase` without a move from anywhere, for a launch
     /// that opens mid-tour.
     func start(at phase: TourPhase = .welcome) {
-        run(toward: phase, direction: .forward)
+        run(toward: phase, direction: .forward, timing: Signposts.tour.beginInterval("Tour first step"))
     }
 
     func next() {
@@ -143,14 +146,26 @@ final class TourGuide {
         run(toward: target, direction: direction)
     }
 
-    private func run(toward target: TourPhase, direction: TourDirection) {
+    private func run(
+        toward target: TourPhase,
+        direction: TourDirection,
+        timing: OSSignpostIntervalState? = nil
+    ) {
         movement?.cancel()
-        movement = Task { await settle(on: target, direction: direction) }
+        movement = Task { await settle(on: target, direction: direction, timing: timing) }
     }
 
     /// Shows `target`, or the first step past it in `direction` that has
-    /// something to point at.
-    private func settle(on target: TourPhase, direction: TourDirection) async {
+    /// something to point at. Ends the `timing` interval when it returns,
+    /// cancelled or not.
+    private func settle(
+        on target: TourPhase,
+        direction: TourDirection,
+        timing: OSSignpostIntervalState? = nil
+    ) async {
+        defer {
+            if let timing { Signposts.tour.endInterval("Tour first step", timing) }
+        }
         var candidate = target
         while !Task.isCancelled {
             phase = candidate
