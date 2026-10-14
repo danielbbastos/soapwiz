@@ -17,7 +17,7 @@ struct SoapWizApp: App {
 
     @Environment(\.scenePhase) private var scenePhase
 
-    @State private var tourLauncher = TourLauncher()
+    @State private var tourLauncher = TourLauncher(isSceneActive: false)
 
     init() {
         UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
@@ -85,6 +85,12 @@ struct SoapWizApp: App {
                 // A cover doesn't carry the root's environment into the
                 // sandbox's interface, which reads the launcher.
                 .environment(tourLauncher)
+                .onAppear { tourLauncher.coverDidAppear() }
+            }
+            // Its own observer with `initial`, so the launcher learns the phase
+            // the app started in without the handler below running at launch.
+            .onChange(of: scenePhase, initial: true) { _, newPhase in
+                tourLauncher.sceneActivityChanged(isActive: newPhase == .active)
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {

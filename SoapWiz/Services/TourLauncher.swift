@@ -13,7 +13,10 @@ enum TourOrigin {
 /// One showing of the tour.
 struct TourPresentation {
     let startingPhase: TourPhase
-    let origin: TourOrigin
+
+    /// Upgraded to `.launch` when the launch decision comes back due while a
+    /// replay is already up, so closing that showing still counts as the first.
+    var origin: TourOrigin
 }
 
 /// Decides when the onboarding tour is on screen: once at first launch, again
@@ -26,19 +29,36 @@ struct TourPresentation {
 final class TourLauncher {
     private(set) var presentation: TourPresentation?
 
-    /// Bumped on every close, so the real app can switch to its first tab once
-    /// the tour is gone without the launcher knowing about navigation.
-    private(set) var tourEnded = 0
+    /// Bumped when the first-launch showing closes, so the real app can switch
+    /// to its first tab once the tour is gone without the launcher knowing
+    /// about navigation. A replay leaves the app where the user was.
+    private(set) var launchTourEnded = 0
 
     private let progress: TourProgress
+    private let appearanceTimeout: Duration
     private var hasDecidedAtLaunch = false
     private var hasStartedLaunchDecision = false
     private var externalOpenNoted = false
+    private var isSceneActive: Bool
+    private var launchPending = false
+
+    /// Tells a timer which showing it was started for, so one that outlives its
+    /// presentation can't clear a later one.
+    private var presentationID = 0
+    private var appearanceTask: Task<Void, Never>?
 
     var isPresented: Bool { presentation != nil }
 
-    init(progress: TourProgress = TourProgress()) {
+    /// `isSceneActive` starts false in the app, which reports the real phase as
+    /// soon as the root appears.
+    init(
+        progress: TourProgress = TourProgress(),
+        appearanceTimeout: Duration = .seconds(3),
+        isSceneActive: Bool = true
+    ) {
         self.progress = progress
+        self.appearanceTimeout = appearanceTimeout
+        self.isSceneActive = isSceneActive
     }
 
     /// Runs at most once per launcher: the app root rebuilds `ContentView` after
@@ -50,36 +70,90 @@ final class TourLauncher {
         let due = await progress.shouldPresentAtLaunch()
         hasDecidedAtLaunch = true
 
-        guard due, !externalOpenNoted, presentation == nil else { return }
-        presentation = TourPresentation(startingPhase: .welcome, origin: .launch)
+        guard due, !externalOpenNoted else { return }
+        presentLaunchIfPossible()
+    }
+
+    /// SwiftUI can't present a cover while the app isn't active, so a launch
+    /// decision that lands early waits here rather than leaving a presentation
+    /// that never appears.
+    func sceneActivityChanged(isActive: Bool) {
+        isSceneActive = isActive
+        guard isActive, launchPending, !externalOpenNoted else { return }
+        presentLaunchIfPossible()
     }
 
     func replay() {
-        presentation = TourPresentation(startingPhase: .welcome, origin: .replay)
+        show(TourPresentation(startingPhase: .welcome, origin: .replay))
+    }
+
+    /// The cover reports that it reached the screen. Without it the
+    /// presentation is dropped after the timeout.
+    func coverDidAppear() {
+        appearanceTask?.cancel()
+        appearanceTask = nil
     }
 
     /// Skipping, finishing and a sandbox that failed to build all mark the flag:
     /// a broken sandbox shouldn't flash the cover on every launch, and Settings
     /// can still replay the tour.
     func close() {
-        if presentation?.origin == .launch {
+        appearanceTask?.cancel()
+        appearanceTask = nil
+        let wasLaunch = presentation?.origin == .launch
+        if wasLaunch {
             progress.markFinished()
         }
         presentation = nil
-        tourEnded += 1
+        if wasLaunch {
+            launchTourEnded += 1
+        }
     }
 
     /// A recipe file opening the app shows an import review, and possibly the
     /// lye notice, which must not stack with the cover. Dropped for this launch
     /// only: the flag stays unset, so the tour shows next launch.
     func noteExternalOpen() {
+        if launchPending {
+            launchPending = false
+            return
+        }
         guard !hasDecidedAtLaunch else { return }
         externalOpenNoted = true
     }
 
     #if DEBUG
     func presentForDebug(at phase: TourPhase) {
-        presentation = TourPresentation(startingPhase: phase, origin: .debug)
+        show(TourPresentation(startingPhase: phase, origin: .debug))
     }
     #endif
+
+    private func presentLaunchIfPossible() {
+        if presentation != nil {
+            launchPending = false
+            presentation?.origin = .launch
+            return
+        }
+        guard isSceneActive else {
+            launchPending = true
+            return
+        }
+        launchPending = false
+        show(TourPresentation(startingPhase: .welcome, origin: .launch))
+    }
+
+    /// A presentation the cover never confirms is cleared without marking the
+    /// flag or counting as an ended tour: the user never saw it.
+    private func show(_ newPresentation: TourPresentation) {
+        appearanceTask?.cancel()
+        presentationID += 1
+        let id = presentationID
+        presentation = newPresentation
+        appearanceTask = Task {
+            try? await Task.sleep(for: appearanceTimeout)
+            guard !Task.isCancelled, presentationID == id else { return }
+            presentation = nil
+            appearanceTask = nil
+        }
+    }
 }

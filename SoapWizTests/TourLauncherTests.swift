@@ -8,14 +8,23 @@ import Foundation
 struct TourLauncherTests {
     private let key = "tour.finished"
 
-    private func makeSUT(cloud: FakeFlagStore = FakeFlagStore(), local: FakeFlagStore = FakeFlagStore()) -> TourLauncher {
-        TourLauncher(progress: TourProgress(
-            cloud: cloud,
-            local: local,
-            notificationCenter: NotificationCenter(),
-            timeout: .milliseconds(100),
-            account: FakeAccount(.noAccount)
-        ))
+    private func makeSUT(
+        cloud: FakeFlagStore = FakeFlagStore(),
+        local: FakeFlagStore = FakeFlagStore(),
+        appearanceTimeout: Duration = .seconds(30),
+        isSceneActive: Bool = true
+    ) -> TourLauncher {
+        TourLauncher(
+            progress: TourProgress(
+                cloud: cloud,
+                local: local,
+                notificationCenter: NotificationCenter(),
+                timeout: .milliseconds(100),
+                account: FakeAccount(.noAccount)
+            ),
+            appearanceTimeout: appearanceTimeout,
+            isSceneActive: isSceneActive
+        )
     }
 
     @Test func presentAtLaunchIfDue_FreshInstall_PresentsFromWelcome() async throws {
@@ -80,16 +89,106 @@ struct TourLauncherTests {
         #expect(!sut.isPresented)
     }
 
-    @Test func tourEnded_EveryClose_Increments() {
+    @Test func launchTourEnded_LaunchClose_Increments() async {
         let sut = makeSUT()
-        #expect(sut.tourEnded == 0)
+        #expect(sut.launchTourEnded == 0)
+        await sut.presentAtLaunchIfDue()
+
+        sut.close()
+
+        #expect(sut.launchTourEnded == 1)
+    }
+
+    @Test func launchTourEnded_ReplayClose_DoesNotIncrement() {
+        let sut = makeSUT()
 
         sut.replay()
         sut.close()
         sut.replay()
         sut.close()
 
-        #expect(sut.tourEnded == 2)
+        #expect(sut.launchTourEnded == 0)
+    }
+
+    @Test func presentAtLaunchIfDue_SceneInactive_WaitsForActivation() async throws {
+        let sut = makeSUT(isSceneActive: false)
+
+        await sut.presentAtLaunchIfDue()
+        #expect(!sut.isPresented)
+
+        sut.sceneActivityChanged(isActive: true)
+
+        let presentation = try #require(sut.presentation)
+        #expect(presentation.origin == .launch)
+    }
+
+    @Test func sceneActivityChanged_AfterExternalOpenWhilePending_DoesNotPresent() async {
+        let sut = makeSUT(isSceneActive: false)
+        await sut.presentAtLaunchIfDue()
+
+        sut.noteExternalOpen()
+        sut.sceneActivityChanged(isActive: true)
+
+        #expect(!sut.isPresented)
+    }
+
+    @Test func presentation_NotConfirmedInTime_ClearsWithoutMarkingFlag() async throws {
+        let cloud = FakeFlagStore()
+        let local = FakeFlagStore()
+        let sut = makeSUT(cloud: cloud, local: local, appearanceTimeout: .milliseconds(20))
+        await sut.presentAtLaunchIfDue()
+        #expect(sut.isPresented)
+
+        try await Task.sleep(for: .milliseconds(400))
+
+        #expect(!sut.isPresented)
+        #expect(!local.bool(forKey: key))
+        #expect(!cloud.bool(forKey: key))
+        #expect(sut.launchTourEnded == 0)
+
+        sut.replay()
+        #expect(sut.isPresented)
+    }
+
+    @Test func presentation_ConfirmedInTime_StaysPresented() async throws {
+        let sut = makeSUT(appearanceTimeout: .milliseconds(20))
+        sut.replay()
+
+        sut.coverDidAppear()
+        try await Task.sleep(for: .milliseconds(400))
+
+        #expect(sut.isPresented)
+    }
+
+    @Test func presentation_StaleTimerFromClosedPresentation_DoesNotClearNewerOne() async throws {
+        let sut = makeSUT(appearanceTimeout: .milliseconds(100))
+        sut.replay()
+        sut.close()
+        sut.replay()
+        sut.coverDidAppear()
+
+        try await Task.sleep(for: .milliseconds(500))
+
+        #expect(sut.isPresented)
+    }
+
+    @Test func presentAtLaunchIfDue_ReplayAlreadyOpen_UpgradesOriginToLaunch() async throws {
+        let cloud = FakeFlagStore()
+        let local = FakeFlagStore()
+        let sut = makeSUT(cloud: cloud, local: local)
+        sut.replay()
+
+        await sut.presentAtLaunchIfDue()
+
+        let presentation = try #require(sut.presentation)
+        #expect(presentation.origin == .launch)
+        #expect(presentation.startingPhase == .welcome)
+
+        sut.close()
+
+        #expect(local.bool(forKey: key))
+        #expect(cloud.bool(forKey: key))
+        #expect(sut.launchTourEnded == 1)
     }
 
     @Test func noteExternalOpen_BeforeDecisionCompletes_SuppressesLaunchTourOnly() async {

@@ -53,8 +53,9 @@ struct ContentView: View {
             navigation.openRecipeFile(url)
         }
         // The tour ran over a sandbox, so the real app is still wherever the
-        // user left it; Inventory is where the tour's story ends.
-        .onChange(of: tourLauncher.tourEnded) {
+        // user left it; Inventory is where the first-launch story ends. A
+        // replay or debug showing leaves the app where it was.
+        .onChange(of: tourLauncher.launchTourEnded) {
             guard !isTourSandbox else { return }
             navigation.selectedTab = .inventory
         }
