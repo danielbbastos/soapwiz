@@ -210,9 +210,8 @@ final class RecipeFormViewModel {
             displayWeightUnit: displayWeightUnit,
             useCFM: useCFM,
             cfmNeutralizer: cfmNeutralizer,
-            // A recipe switched to non-soap keeps its stored cream-soap flag so
-            // switching back is lossless, so the kind has to veto it here.
-            isCreamSoap: makesSoap && isCreamSoap,
+            // `creamSoapActive` vetoes the stored flag for non-soap and solid recipes.
+            isCreamSoap: creamSoapActive,
             producesLye: makesSoap
         )
     }
@@ -279,6 +278,11 @@ final class RecipeFormViewModel {
             lyeType: lyeType
         )
     }
+
+    /// Whether the cream soap additions actually apply. The stored `isCreamSoap`
+    /// flag survives a recipe switched to non-soap or to a solid NaOH bar so
+    /// switching back is lossless, so the kind and the soap type veto it here.
+    var creamSoapActive: Bool { makesSoap && isCreamSoap && soapType != .solid }
 
     // MARK: - Cost / breakdown (delegated to RecipeCostCalculator)
 
