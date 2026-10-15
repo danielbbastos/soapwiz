@@ -9,9 +9,9 @@ extension RecipeFormViewModel {
         RecipeExtrasBuilder(
             lye: lyeCalculator,
             fragranceTargetPercentage: fragranceTargetPercentage,
-            // A recipe switched to non-soap keeps its stored cream-soap flag so
-            // switching back is lossless, so the kind has to veto it here.
-            isCreamSoap: makesSoap && isCreamSoap
+            // A non-soap or solid-soap recipe keeps its stored cream-soap flag so
+            // switching back is lossless, so `creamSoapActive` vetoes it here.
+            isCreamSoap: creamSoapActive
         )
     }
 
@@ -88,10 +88,10 @@ extension RecipeFormViewModel {
     /// only while `creamSoapGlycerinePending`, so a glycerine the user has since
     /// removed is never silently re-added.
     func reconcileCreamSoapGlycerine(from inventory: [Ingredient]) {
-        // `makesSoap &&` mirrors the builders' veto: a recipe switched to non-soap
-        // keeps its stored cream flag, but must not gain cream-soap glycerine — and
-        // this fires from the ingredients tab's oil-weight change for any kind.
-        guard makesSoap, isCreamSoap, creamSoapGlycerinePending,
+        // `creamSoapActive` mirrors the builders' veto: a recipe switched to non-soap
+        // or to a solid bar keeps its stored cream flag, but must not gain cream-soap
+        // glycerine — and this fires from the ingredients tab's oil-weight change for any kind.
+        guard creamSoapActive, creamSoapGlycerinePending,
               let glycerine = matchedExtraIngredient(
                   label: LyeCalculator.creamSoapGlycerineLabel, in: inventory
               )
