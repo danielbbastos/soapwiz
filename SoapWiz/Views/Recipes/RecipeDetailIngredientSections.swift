@@ -206,18 +206,17 @@ struct RecipeDetailIngredientSections: View {
     }
 
     /// A total is set semibold; its darker hairline is tinted by the caller.
-    /// An optional note sits under the whole row at full width.
     private func calculatedRow(_ row: CalculatedAmountRow) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HoneyLedgerLabeledRow(row.label) {
-                Text.ledgerAmount(weightAmount(row.weight), figureWeight: row.isSummary ? .semibold : .medium)
-            }
+        HoneyLedgerLabeledRow(row.label) {
+            Text.ledgerAmount(weightAmount(row.weight), figureWeight: row.isSummary ? .semibold : .medium)
+        } below: {
             if let note = row.note {
-                CalculatedAmountNote(text: note)
+                Text(note)
+                    .font(.footnote)
+                    .foregroundStyle(Color.inkSoft)
             }
         }
         .fontWeight(row.isSummary ? .semibold : nil)
-        .accessibilityElement(children: .combine)
     }
 }
 

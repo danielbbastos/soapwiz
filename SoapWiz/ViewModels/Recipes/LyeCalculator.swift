@@ -47,10 +47,6 @@ struct LyeCalculator {
     /// glycerine suggestion carry the same timing warning.
     static let creamSoapAdditionNote = "Add after saponification, for dilution"
 
-    /// Advisory shown under the batch total of a liquid soap recipe.
-    static let liquidSoapDilutionNote = "Liquid soap is a thick paste after the cook. "
-        + "Dilute it with water before use, and add fragrance after diluting."
-
     /// Fraction of the soap weight dosed as the Failor neutraliser solution
     /// (¾ oz per lb of soap = 0.75/16).
     static let cfmNeutralizerSolutionFraction = 0.75 / 16
@@ -76,11 +72,6 @@ struct LyeCalculator {
     var soapType: SoapType {
         SoapType.classify(useHybrid: useHybrid, naohPercentage: naohPercentage, lyeType: lyeType)
     }
-
-    /// Whether the liquid soap dilution note applies. The cream soap additions toggle is
-    /// separate: a KOH recipe with it on already shows the cream dilution
-    /// water row, so the liquid note would contradict it.
-    var showsLiquidSoapDilutionNote: Bool { producesLye && soapType == .liquid && !isCreamSoap }
 
     /// Whether the Catherine Failor method is in effect: requested, the recipe
     /// makes soap, and the soap isn't a solid bar.
@@ -367,10 +358,7 @@ struct LyeCalculator {
             label: "Water (\(PercentageFormatter.string(waterParts)):1)",
             weight: totalWater, pct: batchPct(totalWater), isSummary: false
         ))
-        rows.append(CalculatedAmountRow(
-            label: "Batch total", weight: batchTotal, pct: 100, isSummary: true,
-            note: showsLiquidSoapDilutionNote ? Self.liquidSoapDilutionNote : nil
-        ))
+        rows.append(CalculatedAmountRow(label: "Batch total", weight: batchTotal, pct: 100, isSummary: true))
 
         // Cream-soap dilution water, whipped in after the cook. It sits *below*
         // the batch total, uncosted and with no percentage, because it isn't part

@@ -275,7 +275,6 @@ struct RecipeKindCalculationTests: RecipeFormTestHelpers {
 
     @Test func creamSoapAdditions_SoapRecipe_StillBuilt() {
         let model = makeModelWithOils()
-        model.lyeType = "KOH"
         model.isCreamSoap = true
 
         let water = model.calculatedAmountRows?.first { $0.label.contains("Additional Water for Cream Soap") }

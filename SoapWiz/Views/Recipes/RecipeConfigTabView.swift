@@ -38,9 +38,7 @@ struct RecipeConfigTabView: View {
             weightSection
             if model.makesSoap {
                 lyeSection
-                if model.soapType != .solid {
-                    soapMethodSection
-                }
+                soapMethodSection
             }
             fragranceSection
         }
@@ -48,7 +46,6 @@ struct RecipeConfigTabView: View {
         .scrollClipDisabled()
         .scrollsForTour(to: .oilsCard)
         .animation(.default, value: model.makesSoap)
-        .animation(.default, value: model.soapType)
         .sheet(isPresented: $showMoldCalculator) {
             MoldCalculatorView(oilWeightUnit: model.oilWeightUnit) { weight in
                 model.totalOilWeight = weight
@@ -224,11 +221,6 @@ struct RecipeConfigTabView: View {
             sheetRow(count - 1, of: count) { percentRow("Super Fat", value: $model.superFat, prompt: "5") }
         } header: {
             HoneyLedgerSectionLabel("Lye configuration")
-        } footer: {
-            if model.soapType == .solid {
-                HoneyLedgerFooter("Cream soap additions and the Catherine Failor method appear when the recipe makes a liquid "
-                       + "or cream soap. Switch to KOH or dual lye to use them.")
-            }
         }
         .animation(.default, value: model.useHybrid)
     }
@@ -239,10 +231,11 @@ struct RecipeConfigTabView: View {
 
     private var soapMethodSection: some View {
         Section {
-            let count = model.useCFM ? 4 : 2
+            let showsCFM = model.soapType != .solid
+            let count = 1 + (showsCFM ? 1 : 0) + (showsCFM && model.useCFM ? 2 : 0)
             sheetRow(0, of: count) {
                 infoToggleRow(
-                    "Cream soap additions",
+                    "Cream soap method",
                     explanation: creamSoapExplanation,
                     isOn: Binding(
                         get: { model.isCreamSoap },
@@ -250,31 +243,39 @@ struct RecipeConfigTabView: View {
                     )
                 )
             }
-            sheetRow(1, of: count) {
-                infoToggleRow("Catherine Failor method", explanation: cfmExplanation, isOn: $model.useCFM)
-            }
-            if model.useCFM {
-                sheetRow(2, of: count) {
-                    HoneyLedgerSegmented(
-                        "Neutraliser",
-                        selection: Binding(
-                            get: { model.cfmNeutralizer },
-                            set: { model.setCFMNeutralizer($0, from: additiveIngredients) }
-                        ),
-                        options: CFMNeutralizer.allCases.map { ($0, $0.displayName) }
-                    )
+            // The Catherine Failor method only makes sense for non-solid soaps
+            // (single KOH or dual lye), so it's hidden for a solid NaOH bar.
+            if showsCFM {
+                sheetRow(1, of: count) {
+                    infoToggleRow("Catherine Failor method", explanation: cfmExplanation, isOn: $model.useCFM)
                 }
-                sheetRow(3, of: count) { neutralizerIngredientRow }
+                if model.useCFM {
+                    sheetRow(2, of: count) {
+                        HoneyLedgerSegmented(
+                            "Neutraliser",
+                            selection: Binding(
+                                get: { model.cfmNeutralizer },
+                                set: { model.setCFMNeutralizer($0, from: additiveIngredients) }
+                            ),
+                            options: CFMNeutralizer.allCases.map { ($0, $0.displayName) }
+                        )
+                    }
+                    sheetRow(3, of: count) { neutralizerIngredientRow }
+                }
             }
         } header: {
             HoneyLedgerSectionLabel("Soap method")
         } footer: {
-            if model.useCFM && model.neutralizerIngredient == nil {
+            if model.soapType == .solid {
+                HoneyLedgerFooter("The Catherine Failor liquid-soap method appears when the recipe makes a liquid "
+                       + "or cream soap — switch to KOH or dual lye.")
+            } else if model.useCFM && model.neutralizerIngredient == nil {
                 HoneyLedgerFooter("The neutraliser dose is shown in the amounts table, but without an ingredient "
                        + "it isn't costed or deducted from inventory when you make a batch.")
             }
         }
         .animation(.default, value: model.useCFM)
+        .animation(.default, value: model.soapType)
     }
 
     private func toggleRow(_ title: String, isOn: Binding<Bool>) -> some View {

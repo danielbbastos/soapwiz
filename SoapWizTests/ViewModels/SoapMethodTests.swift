@@ -226,7 +226,7 @@ struct SoapMethodTests {
         #expect(isClose(model.calculatedKOHLyeAmount, 184.14))
     }
 
-    // MARK: - Cream soap additions toggle (auto-adding glycerine)
+    // MARK: - Cream soap method toggle (auto-adding glycerine)
 
     private func glycerineDraft(_ model: RecipeFormViewModel) -> IngredientAmountDraft? {
         model.additiveDrafts.first { $0.ingredient.name.localizedCaseInsensitiveContains("glycerin") }
@@ -278,7 +278,6 @@ struct SoapMethodTests {
         // Toggle the method on an empty recipe: nothing to size the dose yet.
         let model = RecipeFormViewModel()
         model.weightUnit = "g"
-        model.lyeType = "KOH"
         let glycerine = Ingredient(name: "Glycerin", unit: "g")
         model.setCreamSoap(true, from: [glycerine])
         #expect(glycerineDraft(model) == nil)
@@ -301,7 +300,6 @@ struct SoapMethodTests {
         // Turn cream soap on while it's a soap recipe with no oils yet → pending.
         let model = RecipeFormViewModel()
         model.weightUnit = "g"
-        model.lyeType = "KOH"
         let glycerine = Ingredient(name: "Glycerin", unit: "g")
         model.setCreamSoap(true, from: [glycerine])
         #expect(model.creamSoapGlycerinePending)

@@ -90,7 +90,7 @@ enum RecipeTextExporter {
 
         var segments = [lyeSegment(model), "\(number(model.superFat))% superfat", "water \(number(model.waterParts)):1"]
         if model.useCFM { segments.append("Failor method (\(model.cfmNeutralizer.displayName.lowercased()))") }
-        if model.creamSoapActive { segments.append("cream soap additions") }
+        if model.isCreamSoap { segments.append("cream soap method") }
         return segments.joined(separator: " · ")
     }
 

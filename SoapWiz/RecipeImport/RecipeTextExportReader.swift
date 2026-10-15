@@ -268,7 +268,7 @@ enum RecipeTextExportReader {
     // MARK: - Settings
 
     /// `NaOH (99% pure) · 5% superfat · water 2,5:1 · Failor method (borax) ·
-    /// cream soap additions`, or `KOH/NaOH 70/30 (90%/99% pure)` in place of the lye.
+    /// cream soap method`, or `KOH/NaOH 70/30 (90%/99% pure)` in place of the lye.
     private static func readSettings(_ line: String, into draft: inout RecipeImportDraft) -> Bool {
         let segments = line.components(separatedBy: settingsSeparator)
         guard let lye = segments.first else { return false }
@@ -305,7 +305,7 @@ enum RecipeTextExportReader {
             }
             return draft.cfmNeutralizer != nil
         }
-        guard segment == "cream soap additions" else { return false }
+        guard segment == "cream soap method" else { return false }
         draft.isCreamSoap = true
         return true
     }

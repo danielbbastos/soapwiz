@@ -66,34 +66,27 @@ struct RecipeCalculatedAmountsSection: View {
     /// name in `ink` and the figures beside it in `inkSoft`.
     /// At accessibility text sizes the figures move under the name, since
     /// three columns no longer fit beside it.
-    /// A row's optional note sits under the whole row, spanning the name and
-    /// figure columns rather than wrapping inside the name column.
     @ViewBuilder
     private func amountRow(_ row: CalculatedAmountRow) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Group {
-                if dynamicTypeSize.isAccessibilitySize {
-                    VStack(alignment: .leading, spacing: 4) {
-                        label(row)
-                        HStack(spacing: 12) {
-                            weight(row)
-                            percent(row)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                } else {
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        label(row)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 4) {
+                    label(row)
+                    HStack(spacing: 12) {
                         weight(row)
-                            .frame(width: weightColumnWidth, alignment: .trailing)
                         percent(row)
-                            .frame(width: percentColumnWidth, alignment: .trailing)
                     }
                 }
-            }
-            if let note = row.note {
-                CalculatedAmountNote(text: note)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    label(row)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    weight(row)
+                        .frame(width: weightColumnWidth, alignment: .trailing)
+                    percent(row)
+                        .frame(width: percentColumnWidth, alignment: .trailing)
+                }
             }
         }
         .font(.subheadline)
@@ -103,8 +96,15 @@ struct RecipeCalculatedAmountsSection: View {
     }
 
     private func label(_ row: CalculatedAmountRow) -> some View {
-        Text(row.label)
-            .foregroundStyle(Color.ink)
+        VStack(alignment: .leading, spacing: 2) {
+            Text(row.label)
+                .foregroundStyle(Color.ink)
+            if let note = row.note {
+                Text(note)
+                    .font(.footnote)
+                    .foregroundStyle(Color.inkSoft)
+            }
+        }
     }
 
     private func weight(_ row: CalculatedAmountRow) -> some View {

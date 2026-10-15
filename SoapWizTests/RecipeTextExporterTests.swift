@@ -281,25 +281,14 @@ struct RecipeTextExporterTests {
         #expect(RecipeTextExporter.text(for: recipe).contains("Collections: Gifts, \"Kids, Sensitive Skin\""))
     }
 
-    @Test func text_CreamSoapRecipe_AppendsTheAdditions() throws {
-        let (container, ctx) = try makeContext()
-        _ = container
-        let recipe = seedRecipe(ctx)
-        recipe.lyeType = "KOH"
-        recipe.isCreamSoap = true
-        try ctx.save()
-
-        #expect(RecipeTextExporter.text(for: recipe).contains("· cream soap additions"))
-    }
-
-    @Test func text_SolidSoapWithCreamFlag_OmitsTheAdditions() throws {
+    @Test func text_CreamSoapRecipe_AppendsTheMethod() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let recipe = seedRecipe(ctx)
         recipe.isCreamSoap = true
         try ctx.save()
 
-        #expect(!RecipeTextExporter.text(for: recipe).contains("cream soap additions"))
+        #expect(RecipeTextExporter.text(for: recipe).contains("· cream soap method"))
     }
 
     @Test func text_PlainRecipe_HasNeitherMethodOnTheSettingsLine() throws {
@@ -310,7 +299,7 @@ struct RecipeTextExporterTests {
         let text = RecipeTextExporter.text(for: recipe)
 
         #expect(!text.contains("Failor method"))
-        #expect(!text.contains("cream soap additions"))
+        #expect(!text.contains("cream soap method"))
     }
 
     @Test func text_SoapRecipeWithNoOils_OmitsTheSettingsLine() throws {
