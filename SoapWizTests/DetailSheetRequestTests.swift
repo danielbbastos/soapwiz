@@ -261,17 +261,17 @@ struct DetailSheetRequestTests {
         sut.openRecipeFile(URL(fileURLWithPath: "/tmp/shared.soapwizrecipe"))
         let opened = try #require(sut.pendingRecipeFileImport)
 
-        #expect(sut.takePendingRecipeFileImport() == nil)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == nil)
 
         sut.detailSheetRequest = nil
         #expect(sut.isDetailSheetOnScreen)
-        #expect(sut.takePendingRecipeFileImport() == nil)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == nil)
 
         sut.detailSheetDidClose()
 
         #expect(sut.isDetailSheetOnScreen == false)
         #expect(sut.detailSheetClosings == 1)
-        #expect(sut.takePendingRecipeFileImport() == opened)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == opened)
     }
 
     /// Reopened during the closing animation: the first sheet's dismissal
@@ -290,7 +290,7 @@ struct DetailSheetRequestTests {
         sut.detailSheetDidClose()
 
         #expect(sut.isDetailSheetOnScreen)
-        #expect(sut.takePendingRecipeFileImport() == nil)
+        #expect(sut.takePendingRecipeFileImport(tourCoverOnScreen: false) == nil)
     }
 
     @Test func discardDetailSheet_ClearsTheSheetAtOnce() throws {

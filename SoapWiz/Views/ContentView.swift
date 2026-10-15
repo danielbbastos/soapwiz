@@ -4,9 +4,17 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(SettingsState.self) private var settings
+    @Environment(\.isTourSandbox) private var isTourSandbox
+    @Environment(TourLauncher.self) private var tourLauncher
 
-    @State private var navigation = AppNavigation()
+    @State private var navigation: AppNavigation
     @State private var restore = RestoreCoordinator()
+
+    /// The navigation is handed in so the onboarding tour can drive the tabs
+    /// from outside; the app itself lets each launch make its own.
+    init(navigation: AppNavigation? = nil) {
+        _navigation = State(initialValue: navigation ?? AppNavigation())
+    }
 
     /// Presents an alert for as long as the coordinator holds a value at `keyPath`,
     /// and clears it again on dismissal. Every alert here is driven by a value that
@@ -40,8 +48,16 @@ struct ContentView: View {
         // URLs are ours to open; the guard drops anything else the scene is
         // handed.
         .onOpenURL { url in
-            guard url.isFileURL else { return }
+            guard url.isFileURL, !isTourSandbox else { return }
+            tourLauncher.noteExternalOpen()
             navigation.openRecipeFile(url)
+        }
+        // The tour ran over a sandbox, so the real app is still wherever the
+        // user left it; Inventory is where the first-launch story ends. A
+        // replay or debug showing leaves the app where it was.
+        .onChange(of: tourLauncher.launchTourEnded) {
+            guard !isTourSandbox else { return }
+            navigation.selectedTab = .inventory
         }
         .alert("Replace all data?", isPresented: presenting(\.pendingImport)) {
             Button("Replace", role: .destructive) {
@@ -127,6 +143,9 @@ struct ContentView: View {
         }
         .fontDesign(.rounded)
         .environment(\.horizontalSizeClass, .compact)
+        // Outside the TabView so the tab bar is dimmed too, and after the
+        // size class above so the caption card sees the real one.
+        .tourOverlayHost(.tabs)
     }
 
     /// An outline glyph in either state: the system fills the selected one.

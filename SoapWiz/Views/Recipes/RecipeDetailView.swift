@@ -72,6 +72,7 @@ struct RecipeDetailView: View {
             }
             .glassButtonStyleIOS26()
             .controlSize(.large)
+            .tourAnchor(.createBatchButton, cornerRadius: 26)
             .padding(.bottom, 8)
         }
         // No text input here, so the button never needs to avoid the keyboard. One

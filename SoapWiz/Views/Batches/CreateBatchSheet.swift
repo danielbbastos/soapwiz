@@ -149,6 +149,7 @@ struct CreateBatchSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .honeyLedgerInlineTitle("Create Batch")
             .ledgerBackground()
+            .scrollsForTour(to: .cureSection)
             .task(id: existingCodes) {
                 model.suggestCode(existingCodes: existingCodes)
             }
@@ -216,6 +217,7 @@ struct CreateBatchSheet: View {
                     selection: $model.process,
                     options: SoapProcess.allCases.map { ($0, $0.label) }
                 )
+                .tourCardAnchor(.cureCard)
             }
             sheetRow(1, of: 3) {
                 HoneyLedgerLabeledRow("Recommended") {
@@ -233,11 +235,13 @@ struct CreateBatchSheet: View {
                     )
                 }
                 .accessibilityValue(CureLengthText.text(days: model.cureDays))
+                .tourCardAnchor(.cureCard)
             }
         } header: {
             HoneyLedgerSectionLabel("Cure")
         } footer: {
             HoneyLedgerFooter(estimate.explanation)
         }
+        .id(TourScrollTarget.cureSection)
     }
 }

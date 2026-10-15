@@ -9,6 +9,8 @@ struct SettingsView: View {
     /// that follows it live on `ContentView`. This screen only stages the file.
     @Environment(RestoreCoordinator.self) private var restore
     @Environment(\.currencyCode) private var currencyCode
+    @Environment(\.isTourSandbox) private var isTourSandbox
+    @Environment(TourLauncher.self) private var tourLauncher
     @Environment(\.scenePhase) private var scenePhase
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
@@ -41,14 +43,18 @@ struct SettingsView: View {
                 recipesSection
                 if let settings {
                     // Expiry reminders are about recorded stock, so they go with it.
-                    if settings.tracksInventory {
+                    // Not in the tour: reminders would reach the real notification center.
+                    if settings.tracksInventory, !isTourSandbox {
                         notificationsSection(settings)
                     }
                     pricingSection(settings)
                 }
-                recipeImportSection
-                ICloudSettingsSection()
-                backupSection
+                // Not in the tour: import, iCloud, restore and reset all act on the real app.
+                if !isTourSandbox {
+                    recipeImportSection
+                    ICloudSettingsSection()
+                    backupSection
+                }
                 aboutSection
             }
             .readableWidth()
@@ -217,6 +223,9 @@ struct SettingsView: View {
                     // `SettingsState` reads the settings when the context saves,
                     // so the other tabs follow the toggle at once.
                     modelContext.saveLoggingFailure()
+                    // Cancelling takes no context, so it would clear the user's
+                    // real expiry reminders from inside the tour.
+                    guard !isTourSandbox else { return }
                     Task {
                         if tracks {
                             await NotificationService.syncIfEnabled(modelContext: modelContext)
@@ -335,6 +344,15 @@ struct SettingsView: View {
                     .foregroundStyle(Color.inkSoft)
             }
             .ledgerSheetRow(position: .first)
+            // Not in the tour: replaying it from inside itself would nest covers.
+            if !isTourSandbox {
+                Button {
+                    tourLauncher.replay()
+                } label: {
+                    linkLabel("Show Tour", systemImage: "sparkles")
+                }
+                .ledgerSheetRow(position: .middle)
+            }
             NavigationLink(destination: LyeSafetyScreen()) {
                 linkLabel("Lye Safety", systemImage: "exclamationmark.triangle")
             }

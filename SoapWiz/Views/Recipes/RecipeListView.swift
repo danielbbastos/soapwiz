@@ -4,11 +4,12 @@ import SwiftData
 struct RecipeListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
+    @Environment(TourLauncher.self) private var tourLauncher
     @Query(sort: \Recipe.name) private var recipes: [Recipe]
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
 
     @State private var model = RecipeListViewModel()
-    @State private var navigation = ListDetailNavigation<Recipe>()
+    private var navigation: ListDetailNavigation<Recipe> { nav.recipes }
     @State private var importRequest: RecipeImportRequest?
     /// An import confirmed in the import sheet, waiting for that sheet to go
     /// before its form can cover the screen.
@@ -146,12 +147,12 @@ struct RecipeListView: View {
     }
 
     /// Opens the import review for a file handed in from another app. A sheet
-    /// can't go up over the full-screen form or a detail sheet, so while one is
-    /// open the file stays pending and this runs again once it has closed;
-    /// either way its unsaved edits are left alone. Transient sheets are cleared
-    /// first so the import isn't blocked by one already up.
+    /// can't go up over the full-screen form, a detail sheet or the tour cover,
+    /// so while one is open the file stays pending and this runs again once it
+    /// has closed; either way its unsaved edits are left alone. Transient
+    /// sheets are cleared first so the import isn't blocked by one already up.
     private func startPendingFileImport() {
-        guard let request = nav.takePendingRecipeFileImport() else { return }
+        guard let request = nav.takePendingRecipeFileImport(tourCoverOnScreen: tourLauncher.isCoverOnScreen) else { return }
         model.endSelecting()
         model.filingRecipe = nil
         model.exportFile = nil
@@ -356,11 +357,10 @@ struct RecipeListView: View {
                     ExpandableFloatingActionButton(
                         primaryAction: { openForm(.new()) },
                         secondaryActions: [
-                            FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") {
-                                importRequest = .manual
-                            }
+                            FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") { importRequest = .manual }
                         ],
-                        besideTabBar: navigation.fabBesideTabBar
+                        besideTabBar: navigation.fabBesideTabBar,
+                        tourAnchor: .recipeAddButton
                     )
                 }
             }
@@ -384,12 +384,9 @@ struct RecipeListView: View {
         .onChange(of: nav.pendingRecipeFileImport, initial: true) {
             startPendingFileImport()
         }
-        .onChange(of: nav.recipeFormClosings) {
-            startPendingFileImport()
-        }
-        .onChange(of: nav.detailSheetClosings) {
-            startPendingFileImport()
-        }
+        .onChange(of: nav.recipeFormClosings) { startPendingFileImport() }
+        .onChange(of: nav.detailSheetClosings) { startPendingFileImport() }
+        .onChange(of: tourLauncher.isCoverOnScreen) { startPendingFileImport() }
         // A collection deleted here or merged away by `DuplicateMerger` would
         // otherwise leave a selection matching nothing, and an empty list with
         // no visible chip to explain it.

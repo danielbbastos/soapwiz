@@ -92,6 +92,7 @@ struct CostBreakdownBarInset: ViewModifier {
                     keyboardVisible: dockedKeyboard
                 )
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
+                .tourAnchor(.costPanel, cornerRadius: 24, outset: CGSize(width: 6, height: 6))
                 .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }

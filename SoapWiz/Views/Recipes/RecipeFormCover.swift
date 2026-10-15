@@ -28,5 +28,6 @@ struct RecipeFormCover: View {
                 RecipeFormView(recipe: recipe, incomingFile: incomingFile)
             }
         }
+        .tourOverlayHost(.form)
     }
 }

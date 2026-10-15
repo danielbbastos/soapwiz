@@ -19,7 +19,9 @@ struct BatchListView: View {
     /// A `Button` rather than a `NavigationLink(value:)`, so every open goes
     /// through `show(_:)` and the selection survives a width change. The
     /// chevron a link would draw is left out, as on the other lists.
-    private func row(_ batch: Batch, position: LedgerSheetPosition) -> some View {
+    ///
+    /// `isTourTarget` marks the newest batch, the one the onboarding tour lights.
+    private func row(_ batch: Batch, position: LedgerSheetPosition, isTourTarget: Bool) -> some View {
         Button {
             navigation.history.show(batch)
         } label: {
@@ -27,6 +29,7 @@ struct BatchListView: View {
                 .contentShape(Rectangle())
         }
         .ledgerListDetailRow(isSelected: navigation.history.isOpenBeside(batch), position: position)
+        .tourCardAnchor(isTourTarget ? .batchRow : nil)
     }
 
     var body: some View {
@@ -53,7 +56,11 @@ struct BatchListView: View {
                         ForEach(displayed) { section in
                             Section {
                                 ForEach(Array(section.batches.enumerated()), id: \.element.id) { index, batch in
-                                    row(batch, position: .position(index: index, count: section.batches.count))
+                                    row(
+                                        batch,
+                                        position: .position(index: index, count: section.batches.count),
+                                        isTourTarget: index == 0 && section.id == displayed.first?.id
+                                    )
                                 }
                             } header: {
                                 HoneyLedgerSectionLabel(section.title)

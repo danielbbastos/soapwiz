@@ -15,12 +15,13 @@ extension View {
 private struct LyeSafetyAcknowledgmentModifier: ViewModifier {
     let isRequired: Bool
 
+    @Environment(\.isTourSandbox) private var isTourSandbox
     @State private var isPresented = false
 
     func body(content: Content) -> some View {
         content
             .onChange(of: isRequired, initial: true) { _, required in
-                if LyeSafetyAcknowledgment().shouldPresent(makesSoap: required) {
+                if LyeSafetyAcknowledgment().shouldPresent(makesSoap: required, isTourSandbox: isTourSandbox) {
                     isPresented = true
                 }
             }

@@ -29,13 +29,16 @@ struct RecipeFileImport: Hashable {
     let url: URL
 }
 
-/// Cross-tab navigation state: which tab is selected and the History tab's
-/// navigation. Lets flows that end in another tab (creating a batch from a
-/// recipe) land the user there directly.
+/// Cross-tab navigation state: which tab is selected and the navigation of the
+/// Inventory, Recipes and History tabs. Lets flows that end in another tab
+/// (creating a batch from a recipe) land the user there directly, and lets the
+/// onboarding tour drive each tab from outside.
 @Observable
 @MainActor
 final class AppNavigation {
     var selectedTab: AppTab = .inventory
+    let inventory = ListDetailNavigation<Ingredient>()
+    let recipes = ListDetailNavigation<Recipe>()
     let history = ListDetailNavigation<Batch>()
 
     /// Set by the inventory selection flow to request a seeded recipe; the
@@ -117,11 +120,12 @@ final class AppNavigation {
     }
 
     /// Hands out the recipe file waiting to open, once: nil while the recipe
-    /// form or a detail sheet is on screen, closing included, since the import
-    /// review can't go up over either, and nil again after the file has been
-    /// taken.
-    func takePendingRecipeFileImport() -> RecipeFileImport? {
-        guard !isRecipeFormOnScreen, !isDetailSheetOnScreen,
+    /// form, a detail sheet or the tour cover is on screen, closing included,
+    /// since the import review can't go up over any of them, and nil again
+    /// after the file has been taken. The caller says whether the tour cover is
+    /// up, as this doesn't know the launcher.
+    func takePendingRecipeFileImport(tourCoverOnScreen: Bool) -> RecipeFileImport? {
+        guard !tourCoverOnScreen, !isRecipeFormOnScreen, !isDetailSheetOnScreen,
               let request = pendingRecipeFileImport else { return nil }
         pendingRecipeFileImport = nil
         return request

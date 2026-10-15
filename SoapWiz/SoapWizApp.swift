@@ -17,6 +17,8 @@ struct SoapWizApp: App {
 
     @Environment(\.scenePhase) private var scenePhase
 
+    @State private var tourLauncher = TourLauncher(isSceneActive: false)
+
     init() {
         UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
         UITextField.disableNumberPadPopovers()
@@ -35,6 +37,17 @@ struct SoapWizApp: App {
                         .environment(storeHost.inventoryRows)
                         .environment(storeHost.settings)
                         .modelContainer(storeHost.container)
+                        // Its own task: the launch decision can wait on iCloud
+                        // and shouldn't sit behind the seeding below.
+                        .task {
+                            #if DEBUG
+                            if let phase = TourPhase.launchArgument {
+                                tourLauncher.presentForDebug(at: phase)
+                                return
+                            }
+                            #endif
+                            await tourLauncher.presentAtLaunchIfDue()
+                        }
                         .task {
                             // After launch rather than with the rest of the
                             // seeding: whether the store syncs to an account
@@ -56,6 +69,30 @@ struct SoapWizApp: App {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(storeHost.errorMessage ?? "")
+            }
+            .environment(tourLauncher)
+            // Outside `ContentView`, so the tour's navigation is its own.
+            .fullScreenCover(isPresented: Binding(
+                get: { tourLauncher.isPresented && storeHost.phase == .ready },
+                set: { if !$0 && tourLauncher.isPresented { tourLauncher.close() } }
+            ), onDismiss: {
+                tourLauncher.coverDidDismiss()
+            }, content: {
+                TourCover(
+                    currencyCode: storeHost.settings.currencyCode,
+                    startingPhase: tourLauncher.presentation?.startingPhase ?? .welcome
+                ) { _ in
+                    tourLauncher.close()
+                }
+                // A cover doesn't carry the root's environment into the
+                // sandbox's interface, which reads the launcher.
+                .environment(tourLauncher)
+                .onAppear { tourLauncher.coverDidAppear() }
+            })
+            // Its own observer with `initial`, so the launcher learns the phase
+            // the app started in without the handler below running at launch.
+            .onChange(of: scenePhase, initial: true) { _, newPhase in
+                tourLauncher.sceneActivityChanged(isActive: newPhase == .active)
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {

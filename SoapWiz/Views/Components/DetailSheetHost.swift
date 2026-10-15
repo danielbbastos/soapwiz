@@ -8,7 +8,17 @@ import SwiftData
 struct DetailSheetHost: View {
     let request: DetailSheetRequest
 
+    @Environment(\.isTourSandbox) private var isTourSandbox
+
     var body: some View {
+        sheet
+            .tourOverlayHost(.sheet)
+            // The tour's sheet closes with its Next and Back, not a swipe.
+            .interactiveDismissDisabled(isTourSandbox)
+    }
+
+    @ViewBuilder
+    private var sheet: some View {
         switch request.kind {
         case .createBatch(let recipe):
             StoredModelGate(filter: DetailSheetRequest.recipe(id: request.targetID), requestID: request.id) {

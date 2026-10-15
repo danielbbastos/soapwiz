@@ -23,6 +23,8 @@ struct RecipeFormView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isTourSandbox) private var isTourSandbox
+    @Environment(\.tourGuide) private var tourGuide
     @Query(filter: lyesPredicate)
     private var lyeIngredients: [Ingredient]
     @Query(filter: additivesPredicate)
@@ -59,15 +61,22 @@ struct RecipeFormView: View {
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 tabPicker
+                    .tourAnchor(.formTabs, cornerRadius: 24, outset: CGSize(width: 6, height: 6))
                     .shadow(color: Color.shadow.opacity(0.12), radius: 4, y: 1)
                     // Readable width in every layout; the wide columns below are wider.
                     .frame(maxWidth: ReadableWidth.maximum)
                     .padding(.horizontal)
                     .padding(.bottom, 8)
             }
-            .navigationTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
+            .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .honeyLedgerInlineTitle(recipe == nil ? "New Recipe" : "Edit Recipe")
+            .honeyLedgerInlineTitle(title)
+            // The tour steps through the form's tabs for the user. `initial`
+            // so a form opened mid-tour starts on the step's tab.
+            .onChange(of: tourGuide?.formTab, initial: true) { _, tab in
+                guard let tab else { return }
+                selectedTab = tab.adapted(isWide: isWide)
+            }
             .task(id: recipe?.persistentModelID) {
                 // Runs again when the form reappears after a pushed picker (lye,
                 // neutraliser) is popped, not only on first appearance. Loading a
@@ -130,6 +139,12 @@ struct RecipeFormView: View {
                 guard let file else { return }
                 attemptDismiss(for: .fileImport(file.url))
             }
+    }
+
+    /// "New Recipe" in the tour, which edits its sample recipe: the tour is
+    /// about writing one, and "Edit" would say the opposite.
+    private var title: String {
+        recipe == nil || isTourSandbox ? String(localized: "New Recipe") : String(localized: "Edit Recipe")
     }
 
     private func attemptDismiss(for reason: RecipeFormCloseReason = .cancel) {
