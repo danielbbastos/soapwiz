@@ -19,11 +19,18 @@ struct SoapWizApp: App {
 
     @State private var tourLauncher = TourLauncher(isSceneActive: false)
 
+    @State private var proStore: ProStore
+
     init() {
         UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
         UITextField.disableNumberPadPopovers()
         UIWindow.dismissKeyboardOnTapOutsideFields()
         _storeHost = State(initialValue: StoreHost())
+        // Started here, not from a view's task: the listener lives for the app,
+        // not for a window or a store regeneration.
+        let proStore = ProStore()
+        proStore.start()
+        _proStore = State(initialValue: proStore)
     }
 
     var body: some Scene {
@@ -71,6 +78,7 @@ struct SoapWizApp: App {
                 Text(storeHost.errorMessage ?? "")
             }
             .environment(tourLauncher)
+            .environment(proStore)
             // Outside `ContentView`, so the tour's navigation is its own.
             .fullScreenCover(isPresented: Binding(
                 get: { tourLauncher.isPresented && storeHost.phase == .ready },
