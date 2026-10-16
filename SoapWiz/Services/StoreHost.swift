@@ -31,9 +31,6 @@ final class StoreHost {
     /// Why this launch opened the store without iCloud; `nil` when it mirrors.
     let localCause: ModelContainerFactory.LocalStoreCause?
 
-    /// Whether this launch opened the store without iCloud.
-    var isOffline: Bool { localCause != nil }
-
     /// Whether the user wants sync off, which the next launch applies.
     var prefersOffline: Bool {
         didSet { preference.usesOffline = prefersOffline }

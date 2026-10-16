@@ -155,6 +155,8 @@ struct SoapWizApp: App {
     /// can't be chosen before StoreKit replies, so the window shows the paper
     /// until it does or the timeout passes.
     private func openStoreAfterEntitlement() async {
+        // A re-run placeholder task must never open a second ModelContainer on the same file.
+        guard storeHost == nil else { return }
         let launchHint = ProEntitlementHint().storedValue
         let clock = ContinuousClock()
         let start = clock.now
@@ -166,6 +168,8 @@ struct SoapWizApp: App {
         Self.log.notice(
             "Launch entitlement took \(elapsed, privacy: .public), timed out: \(timedOut, privacy: .public)"
         )
+        // Checked again: another run may have finished while this one waited.
+        guard storeHost == nil else { return }
         storeHost = StoreHost(isPro: StoreSelection.launchIsPro(answer: answer, hint: launchHint))
     }
 

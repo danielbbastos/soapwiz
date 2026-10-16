@@ -97,7 +97,7 @@ struct ICloudSettingsSection: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             // About the store open now, not a choice waiting for a relaunch.
-            Text(AppReset.confirmationMessage(syncIsOff: storeHost.isOffline))
+            Text(AppReset.confirmationMessage(localCause: storeHost.localCause))
         }
     }
 
