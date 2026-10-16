@@ -20,7 +20,7 @@ final class ProStore {
 
     private let backend: any ProStoreBackend
     private let hint: ProEntitlementHint
-    private var isStarted = false
+    private var listener: Task<Void, Never>?
 
     init(
         backend: any ProStoreBackend = StoreKitProBackend(),
@@ -31,22 +31,33 @@ final class ProStore {
         self.isPro = hint.isPro
     }
 
-    /// Reads the entitlement and price, then follows entitlement changes for as
-    /// long as the calling task lives. A second call returns at once.
-    func start() async {
-        guard !isStarted else { return }
-        isStarted = true
+    /// Reads the entitlement and price, then follows entitlement changes until
+    /// `stop()`. Idempotent: the listener belongs to the store, not to any view
+    /// or window, so a second call does nothing.
+    func start() {
+        guard listener == nil else { return }
         let changes = backend.entitlementChanges()
-        await refreshEntitlement()
-        displayPrice = await backend.displayPrice()
-        for await _ in changes {
-            await refreshEntitlement()
+        listener = Task { [weak self] in
+            await self?.refreshEntitlement()
+            self?.displayPrice = await self?.backend.displayPrice()
+            for await _ in changes {
+                await self?.refreshEntitlement()
+            }
         }
     }
 
+    /// Ends the listener, for tests and anything that must tear the store down.
+    func stop() {
+        listener?.cancel()
+        listener = nil
+    }
+
     func refreshEntitlement() async {
-        isPro = await backend.isEntitled()
-        hint.isPro = isPro
+        let entitled = await backend.isEntitled()
+        guard !Task.isCancelled else { return }
+        isPro = entitled
+        hint.isPro = entitled
+        if entitled { purchaseState = .idle }
     }
 
     func purchase() async -> ProPurchaseOutcome {

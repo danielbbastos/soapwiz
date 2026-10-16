@@ -61,9 +61,9 @@ struct ProStoreTests {
         backend.price = "19,99 €"
         let store = makeStore()
 
-        let task = Task { await store.start() }
+        store.start()
         await waitUntil { store.isPro && store.displayPrice != nil }
-        task.cancel()
+        store.stop()
 
         #expect(store.isPro)
         #expect(store.displayPrice == "19,99 €")
@@ -72,14 +72,14 @@ struct ProStoreTests {
     @Test func start_ChangeEmitted_Refund_ClearsIsProAndHint() async {
         backend.entitled = true
         let store = makeStore()
-        let task = Task { await store.start() }
+        store.start()
         await waitUntil { store.isPro }
         #expect(hint.isPro)
 
         backend.entitled = false
         backend.emitChange()
         await waitUntil { !store.isPro }
-        task.cancel()
+        store.stop()
 
         #expect(!store.isPro)
         #expect(!hint.isPro)
@@ -87,16 +87,73 @@ struct ProStoreTests {
 
     @Test func start_ChangeEmitted_Purchase_SetsIsPro() async {
         let store = makeStore()
-        let task = Task { await store.start() }
-        await waitUntil { backend.entitlementChangesCalls > 0 }
+        store.start()
 
         backend.entitled = true
         backend.emitChange()
         await waitUntil { store.isPro }
-        task.cancel()
+        store.stop()
 
         #expect(store.isPro)
         #expect(hint.isPro)
+    }
+
+    @Test func start_CalledTwice_ListensOnce() async {
+        let store = makeStore()
+
+        store.start()
+        store.start()
+        backend.entitled = true
+        backend.emitChange()
+        await waitUntil { store.isPro }
+        store.stop()
+
+        #expect(backend.entitlementChangesCalls == 1)
+        #expect(store.isPro)
+    }
+
+    @Test func start_AfterStop_ListensAgain() async {
+        let store = makeStore()
+        store.start()
+        await waitUntil { backend.entitlementChangesCalls == 1 }
+        store.stop()
+
+        store.start()
+        await waitUntil { backend.entitlementChangesCalls == 2 }
+        backend.entitled = true
+        backend.emitChange()
+        await waitUntil { store.isPro }
+        store.stop()
+
+        #expect(backend.entitlementChangesCalls == 2)
+        #expect(store.isPro)
+    }
+
+    @Test func refreshEntitlement_CancelledMidRead_KeepsIsProAndHint() async {
+        hint.isPro = true
+        let store = makeStore()
+        backend.entitled = false
+        var task: Task<Void, Never>?
+        backend.onIsEntitled = { task?.cancel() }
+
+        task = Task { await store.refreshEntitlement() }
+        await task?.value
+
+        #expect(store.isPro)
+        #expect(hint.isPro)
+    }
+
+    @Test func entitlementChange_AfterPendingPurchase_ClearsPendingState() async {
+        let store = makeStore()
+        backend.outcome = .pending
+        _ = await store.purchase()
+        #expect(store.purchaseState == .pending)
+
+        backend.entitled = true
+        await store.refreshEntitlement()
+
+        #expect(store.isPro)
+        #expect(store.purchaseState == .idle)
     }
 
     @Test func purchase_Purchased_RefreshesIsPro() async {
@@ -177,12 +234,16 @@ private final class FakeProBackend: ProStoreBackend {
     var price: String?
     var outcome: ProPurchaseOutcome = .purchased
     var syncError: (any Error)?
+    var onIsEntitled: (() -> Void)?
     private(set) var syncCalls = 0
     private(set) var entitlementChangesCalls = 0
 
     private var continuation: AsyncStream<Void>.Continuation?
 
-    func isEntitled() async -> Bool { entitled }
+    func isEntitled() async -> Bool {
+        onIsEntitled?()
+        return entitled
+    }
 
     func entitlementChanges() -> AsyncStream<Void> {
         entitlementChangesCalls += 1
