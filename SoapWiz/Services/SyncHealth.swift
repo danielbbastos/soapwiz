@@ -17,6 +17,11 @@ enum SyncHealth: Equatable {
     case notMirrored
     /// The user turned iCloud sync off on this device.
     case turnedOff
+    /// The user doesn't own SoapWiz Pro, which iCloud sync is part of.
+    case requiresPro
+    /// The user bought Pro after this launch opened the local store. Only ever
+    /// the displayed form of `requiresPro`; see `displayed(isPro:prefersOffline:)`.
+    case startsAfterRelaunch
     /// Mirroring was requested and refused before the store opened.
     case localFallback(reason: String)
     /// Mirrored, but no event has arrived yet to say how it is going.
@@ -26,10 +31,21 @@ enum SyncHealth: Equatable {
     case healthy
     case failed(SyncFailure)
 
-    /// Short status for the Settings row.
-    var statusText: String {
+    /// What the Settings row shows. The store is opened once per launch, so a
+    /// user who buys Pro mid-session is still on the store that asked them to
+    /// upgrade; telling them to upgrade again would read as a bug. Whether sync
+    /// then starts depends on the toggle, which the next launch applies.
+    func displayed(isPro: Bool, prefersOffline: Bool) -> SyncHealth {
+        guard self == .requiresPro, isPro else { return self }
+        return prefersOffline ? .turnedOff : .startsAfterRelaunch
+    }
+
+    /// Short status for the Settings row. `nil` where the symbol alone says it:
+    /// a free user doesn't need "Pro" spelled out beside the Upgrade row.
+    var statusText: String? {
         switch self {
-        case .notMirrored, .turnedOff: "Off"
+        case .notMirrored, .turnedOff, .startsAfterRelaunch: "Off"
+        case .requiresPro: nil
         case .localFallback: "Not Syncing"
         case .starting: "Checking…"
         case .syncing: "Syncing…"
@@ -39,9 +55,20 @@ enum SyncHealth: Equatable {
         }
     }
 
+    /// What VoiceOver reads for the row's value, which is never empty even
+    /// when no text is shown.
+    var accessibilityStatus: String {
+        statusText ?? "Not syncing"
+    }
+
+    /// The notice above the footer already says what `startsAfterRelaunch` would.
+    var showsSettingsFooter: Bool {
+        self != .startsAfterRelaunch
+    }
+
     var statusSymbol: String {
         switch self {
-        case .notMirrored, .turnedOff: "icloud.slash"
+        case .notMirrored, .turnedOff, .requiresPro, .startsAfterRelaunch: "icloud.slash"
         case .localFallback: "exclamationmark.icloud.fill"
         case .starting, .syncing: "arrow.triangle.2.circlepath.icloud"
         case .signedOut: "person.crop.circle.badge.questionmark"
@@ -56,7 +83,7 @@ enum SyncHealth: Equatable {
     var severity: SyncSeverity {
         switch self {
         case .healthy: .good
-        case .notMirrored, .turnedOff, .starting, .syncing: .info
+        case .notMirrored, .turnedOff, .requiresPro, .startsAfterRelaunch, .starting, .syncing: .info
         case .signedOut: .actionable
         case .localFallback: .fault
         case .failed(let failure): failure.severity
@@ -67,7 +94,7 @@ enum SyncHealth: Equatable {
     /// that were decided before the store opened and no event can change.
     var isMirroring: Bool {
         switch self {
-        case .notMirrored, .turnedOff, .localFallback: false
+        case .notMirrored, .turnedOff, .requiresPro, .startsAfterRelaunch, .localFallback: false
         case .starting, .syncing, .signedOut, .healthy, .failed: true
         }
     }
@@ -81,6 +108,11 @@ enum SyncHealth: Equatable {
         case .turnedOff:
             "iCloud sync is off, so everything is saved on this device only. Your other "
                 + "devices won't see changes made here until you turn it back on."
+        case .requiresPro:
+            "iCloud sync is part of SoapWiz Pro, so everything is saved on this device only. "
+                + "Upgrade to keep your ingredients, recipes and history on all your devices."
+        case .startsAfterRelaunch:
+            "iCloud sync starts the next time you open SoapWiz."
         case .localFallback(let reason):
             "SoapWiz could not reach iCloud when it started, so it is saving to this device only. "
                 + "Your data is safe, but it is not being copied to your other devices. "

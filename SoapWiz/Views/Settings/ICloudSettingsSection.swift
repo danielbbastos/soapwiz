@@ -9,23 +9,33 @@ import SwiftUI
 struct ICloudSettingsSection: View {
     @Environment(StoreHost.self) private var storeHost
     @Environment(SyncHealthMonitor.self) private var syncHealth
+    @Environment(ProStore.self) private var proStore
+    @Environment(ProUpgradePresenter.self) private var upgradePresenter
 
     @State private var showsResetConfirmation = false
     @State private var resetConfirmationText = ""
 
     var body: some View {
-        let health = syncHealth.health
+        let health = displayedHealth
         let lastSync = syncHealth.lastSuccessfulSync
-        // Last Synced and the toggle are conditional, so the sheet's shape
+        // Last Synced and the sync row are conditional, so the sheet's shape
         // follows which of them are shown.
         let lastSyncOffset = lastSync == nil ? 0 : 1
-        let shownToggle = health != .notMirrored
-        let count = 2 + lastSyncOffset + (shownToggle ? 1 : 0)
+        let shownSyncRow = health != .notMirrored
+        let count = 2 + lastSyncOffset + (shownSyncRow ? 1 : 0)
         Section {
             HoneyLedgerLabeledRow("Status") {
-                Label(health.statusText, systemImage: health.statusSymbol)
-                    .labelStyle(.titleAndIcon)
-                    .foregroundStyle(syncTint(for: health.severity))
+                Group {
+                    if let statusText = health.statusText {
+                        Label(statusText, systemImage: health.statusSymbol)
+                            .labelStyle(.titleAndIcon)
+                    } else {
+                        Image(systemName: health.statusSymbol)
+                    }
+                }
+                .foregroundStyle(syncTint(for: health.severity))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(health.accessibilityStatus)
             }
             .ledgerSheetRow(position: .position(index: 0, count: count))
             if let lastSync {
@@ -36,11 +46,22 @@ struct ICloudSettingsSection: View {
                 .ledgerSheetRow(position: .position(index: 1, count: count))
             }
             // A build without the iCloud entitlement can't sync either way.
-            if shownToggle {
-                Toggle("Sync with iCloud", isOn: syncToggle)
-                    .foregroundStyle(Color.ink)
-                    .tint(Color.amber)
+            if shownSyncRow {
+                if proStore.isPro {
+                    Toggle("Sync with iCloud", isOn: syncToggle)
+                        .foregroundStyle(Color.ink)
+                        .tint(Color.amber)
+                        .ledgerSheetRow(position: .position(index: 1 + lastSyncOffset, count: count))
+                } else {
+                    Button {
+                        upgradePresenter.present(reason: .sync)
+                    } label: {
+                        Text("Upgrade to Pro")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.amberText)
+                    }
                     .ledgerSheetRow(position: .position(index: 1 + lastSyncOffset, count: count))
+                }
             }
             Button(role: .destructive) {
                 resetConfirmationText = ""
@@ -54,12 +75,14 @@ struct ICloudSettingsSection: View {
             HoneyLedgerSectionLabel("iCloud")
         } footer: {
             VStack(alignment: .leading, spacing: 8) {
-                if storeHost.needsRelaunch {
-                    Label(relaunchNotice, systemImage: "arrow.clockwise.circle.fill")
+                if let relaunchNotice = storeHost.relaunchNotice(isPro: proStore.isPro) {
+                    Text("\(Image(systemName: "arrow.clockwise.circle.fill")) \(relaunchNotice)")
                         .font(.footnote)
                         .foregroundStyle(Color.warning)
                 }
-                HoneyLedgerFooter(syncFooter)
+                if let syncFooter {
+                    HoneyLedgerFooter(syncFooter)
+                }
             }
         }
         .alert("Reset Everything?", isPresented: $showsResetConfirmation) {
@@ -74,7 +97,7 @@ struct ICloudSettingsSection: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             // About the store open now, not a choice waiting for a relaunch.
-            Text(AppReset.confirmationMessage(syncIsOff: storeHost.isOffline))
+            Text(AppReset.confirmationMessage(localCause: storeHost.localCause))
         }
     }
 
@@ -85,18 +108,19 @@ struct ICloudSettingsSection: View {
         )
     }
 
-    /// The store is opened once per launch, so a change waits for the next one.
-    private var relaunchNotice: String {
-        let change = storeHost.prefersOffline ? "turn off iCloud sync" : "turn iCloud sync back on"
-        return "Close SoapWiz from the app switcher and open it again to \(change)."
+    private var displayedHealth: SyncHealth {
+        syncHealth.health.displayed(isPro: proStore.isPro, prefersOffline: storeHost.prefersOffline)
     }
 
-    private var syncFooter: String {
+    private var syncFooter: String? {
+        let health = displayedHealth
+        guard health.showsSettingsFooter else { return nil }
+        let footer = health.settingsFooter
         guard let fallback = syncHealth.unresolvedFallback else {
-            return syncHealth.health.settingsFooter
+            return footer
         }
         let when = fallback.formatted(date: .abbreviated, time: .shortened)
-        return syncHealth.health.settingsFooter
+        return footer
             + "\n\nSoapWiz could not reach iCloud on \(when). Anything changed since then may "
             + "still be only on this device — use Export Data below to keep your own copy."
     }

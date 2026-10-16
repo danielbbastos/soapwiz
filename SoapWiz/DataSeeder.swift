@@ -43,9 +43,12 @@ struct DataSeeder {
         #if DEBUG
         guard batchesDue else { return }
         batchesDue = false
-        // A store the user took offline is the same file that mirrors once
-        // they turn sync back on, so it's no safer than a mirrored one.
-        guard activeStore != .notMirrored, activeStore != .offlineByChoice else { return }
+        // A store the user took offline, or that Pro hasn't unlocked yet, is the
+        // same file that mirrors once sync is on, so it's no safer than a
+        // mirrored one.
+        guard activeStore != .notMirrored,
+              activeStore != .offlineByChoice,
+              activeStore != .requiresPro else { return }
         let account = account ?? CloudKitAccountStatusProvider(
             containerIdentifier: ModelContainerFactory.cloudKitContainerIdentifier
         )

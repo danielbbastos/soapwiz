@@ -132,7 +132,9 @@ struct SyncHealthReducerTests {
 
     /// Nothing is mirroring in either state, so nothing an event says about
     /// mirroring can be about this store.
-    @Test(arguments: [SyncHealth.notMirrored, .turnedOff, .localFallback(reason: "no container")])
+    @Test(arguments: [
+        SyncHealth.notMirrored, .turnedOff, .requiresPro, .localFallback(reason: "no container")
+    ])
     func reduce_WhenNotMirroring_IgnoresEvents(current: SyncHealth) {
         #expect(SyncHealth.reduce(current, with: .succeeded(.import)) == current)
         #expect(
@@ -159,6 +161,62 @@ struct SyncHealthPresentationTests {
         #expect(!SyncHealth.turnedOff.isMirroring)
     }
 
+    /// Not having bought Pro is a fact about the account, not a fault.
+    @Test func requiresPro_Presentation_IsAnInformationalLocalState() {
+        let health = SyncHealth.requiresPro
+        #expect(health.statusText == nil)
+        #expect(health.accessibilityStatus == "Not syncing")
+        #expect(health.statusSymbol == "icloud.slash")
+        #expect(health.severity == .info)
+        #expect(!health.isMirroring)
+        #expect(health.settingsFooter.contains("SoapWiz Pro"))
+        #expect(health.showsSettingsFooter)
+    }
+
+    @Test(arguments: [true, false])
+    func displayed_RequiresProAndNotPro_StaysRequiresPro(prefersOffline: Bool) {
+        #expect(SyncHealth.requiresPro.displayed(isPro: false, prefersOffline: prefersOffline) == .requiresPro)
+    }
+
+    /// Bought mid-session: the open store still says "upgrade", the row mustn't.
+    @Test func displayed_RequiresProAndProWithSyncOn_ShowsSyncStartingAfterRelaunch() {
+        let health = SyncHealth.requiresPro.displayed(isPro: true, prefersOffline: false)
+        #expect(health == .startsAfterRelaunch)
+        #expect(health.statusText == "Off")
+        #expect(health.accessibilityStatus == "Off")
+        #expect(health.statusSymbol == "icloud.slash")
+        #expect(health.severity == .info)
+        #expect(!health.isMirroring)
+        #expect(health.settingsFooter == "iCloud sync starts the next time you open SoapWiz.")
+    }
+
+    /// Sync won't start on relaunch if the user has switched it off since.
+    @Test func displayed_RequiresProAndProWithSyncOff_ShowsTurnedOff() {
+        #expect(SyncHealth.requiresPro.displayed(isPro: true, prefersOffline: true) == .turnedOff)
+    }
+
+    @Test(arguments: [true, false], [true, false])
+    func displayed_AnyOtherState_IsUnchanged(isPro: Bool, prefersOffline: Bool) {
+        let states: [SyncHealth] = [
+            .notMirrored, .turnedOff, .startsAfterRelaunch, .starting, .syncing, .signedOut,
+            .healthy, .localFallback(reason: "x"), .failed(.offline)
+        ]
+        for state in states {
+            #expect(state.displayed(isPro: isPro, prefersOffline: prefersOffline) == state)
+        }
+    }
+
+    @Test func showsSettingsFooter_OnlyHiddenWhenTheNoticeSaysIt() {
+        #expect(!SyncHealth.startsAfterRelaunch.showsSettingsFooter)
+        let others: [SyncHealth] = [
+            .notMirrored, .turnedOff, .requiresPro, .starting, .syncing, .signedOut,
+            .healthy, .localFallback(reason: "x"), .failed(.offline)
+        ]
+        for state in others {
+            #expect(state.showsSettingsFooter, "\(state) hides its footer")
+        }
+    }
+
     @Test func severity_Healthy_IsNotAlarming() {
         #expect(SyncHealth.healthy.severity == .good)
     }
@@ -173,6 +231,8 @@ struct SyncHealthPresentationTests {
         let states: [SyncHealth] = [
             .notMirrored,
             .turnedOff,
+            .requiresPro,
+            .startsAfterRelaunch,
             .localFallback(reason: "container unavailable"),
             .starting,
             .syncing,
@@ -183,7 +243,7 @@ struct SyncHealthPresentationTests {
         ]
         for state in states {
             #expect(!state.settingsFooter.isEmpty, "\(state) has no footer")
-            #expect(!state.statusText.isEmpty, "\(state) has no status text")
+            #expect(!state.accessibilityStatus.isEmpty, "\(state) has no status text")
             #expect(!state.statusSymbol.isEmpty, "\(state) has no symbol")
         }
     }

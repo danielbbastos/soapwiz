@@ -9,6 +9,7 @@ final class FakeProBackend: ProStoreBackend {
     var price: String?
     var outcome: ProPurchaseOutcome = .purchased
     var syncError: (any Error)?
+    var isEntitledDelay: Duration?
     var onIsEntitled: (() -> Void)?
     var onPurchase: (() -> Void)?
     var onSync: (() -> Void)?
@@ -23,6 +24,9 @@ final class FakeProBackend: ProStoreBackend {
     func isEntitled() async -> Bool {
         isEntitledCalls += 1
         onIsEntitled?()
+        if let isEntitledDelay {
+            try? await Task.sleep(for: isEntitledDelay)
+        }
         return entitled
     }
 

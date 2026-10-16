@@ -29,6 +29,7 @@ struct ProUpgradeView: View {
     @State private var restoreModel = ProRestoreModel()
     @State private var didPurchase = false
     @State private var containerWidth: CGFloat = 0
+    @State private var contentOverflows = false
 
     /// Decided by the sheet's own width: a form sheet on iPad reports a
     /// compact size class, so the size class can't tell it from a phone.
@@ -79,13 +80,31 @@ struct ProUpgradeView: View {
     }
 
     private var upgrade: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: scrolls ? 0 : 16) {
             if scrolls {
                 ScrollView { top.padding([.horizontal, .top], padding) }
                     .scrollBounceBehavior(.basedOnSize)
-                    .scrollClipDisabled()
+                    .onScrollGeometryChange(for: Bool.self) { geometry in
+                        geometry.contentSize.height > geometry.containerSize.height
+                    } action: { _, overflows in
+                        contentOverflows = overflows
+                    }
+                    .overlay(alignment: .bottom) {
+                        if contentOverflows {
+                            LinearGradient(
+                                colors: [Color.paper.opacity(0), Color.paper],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 16)
+                            .allowsHitTesting(false)
+                        }
+                    }
                 Spacer(minLength: 0)
-                bottom.padding([.horizontal, .bottom], padding)
+                bottom
+                    .padding([.horizontal, .bottom], padding)
+                    .padding(.top, 12)
+                    .background { HoneyLedgerPaper() }
             } else {
                 top
                 bottom

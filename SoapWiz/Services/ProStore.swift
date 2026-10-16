@@ -93,6 +93,18 @@ final class ProStore {
         listener = nil
     }
 
+    /// The entitlement if StoreKit answers within `timeout`, applied like any
+    /// refresh; `nil` otherwise, leaving the state as it was. The launch uses
+    /// this on a fresh install, where the store can't be chosen without an answer.
+    func entitlementAnswer(within timeout: Duration = StoreSelection.entitlementTimeout) async -> Bool? {
+        let backend = backend
+        let entitled = await StoreSelection.answer(within: timeout) { await backend.isEntitled() }
+        // A cancelled read can end early and report false, as in `refreshFromListener`.
+        guard let entitled, !Task.isCancelled else { return nil }
+        apply(entitled: entitled)
+        return entitled
+    }
+
     func refreshEntitlement() async {
         apply(entitled: await backend.isEntitled())
     }

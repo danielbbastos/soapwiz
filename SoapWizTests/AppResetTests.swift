@@ -142,22 +142,31 @@ struct AppResetTests: BackupTestHelpers {
     /// A reset with sync off reaches iCloud once sync is back on, so the
     /// message must not promise "this device only".
     @Test func confirmationMessage_SyncOff_SaysICloudIsErasedLater() {
-        let message = AppReset.confirmationMessage(syncIsOff: true)
+        let message = AppReset.confirmationMessage(localCause: .offlineByChoice)
 
         #expect(message.contains("once you turn sync back on"))
         #expect(!message.contains("only"))
     }
 
     @Test func confirmationMessage_SyncOn_SaysICloudIsErasedNow() {
-        let message = AppReset.confirmationMessage(syncIsOff: false)
+        let message = AppReset.confirmationMessage(localCause: nil)
 
         #expect(message.contains("in iCloud and on your other devices"))
         #expect(!message.contains("turn sync back on"))
     }
 
-    @Test(arguments: [true, false])
-    func confirmationMessage_EitherState_AsksForTheWord(_ syncIsOff: Bool) {
-        #expect(AppReset.confirmationMessage(syncIsOff: syncIsOff).contains(AppReset.confirmationWord))
+    /// A free user can't turn sync back on; it resumes when they buy Pro.
+    @Test func confirmationMessage_RequiresPro_SaysICloudIsErasedOnceProStartsSync() {
+        let message = AppReset.confirmationMessage(localCause: .requiresPro)
+
+        #expect(message.contains("This erases everything on this device now."))
+        #expect(message.contains("once you buy SoapWiz Pro and sync starts again"))
+        #expect(!message.contains("turn sync back on"))
+    }
+
+    @Test(arguments: [nil, ModelContainerFactory.LocalStoreCause.offlineByChoice, .requiresPro])
+    func confirmationMessage_EveryScope_AsksForTheWord(_ cause: ModelContainerFactory.LocalStoreCause?) {
+        #expect(AppReset.confirmationMessage(localCause: cause).contains(AppReset.confirmationWord))
     }
 
     @Test(arguments: ["DELETE", "delete", " Delete\n"])
