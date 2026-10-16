@@ -36,6 +36,9 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                if !isTourSandbox {
+                    ProSettingsSection()
+                }
                 if let settings {
                     stockTrackingSection(settings)
                 }
@@ -236,10 +239,13 @@ struct SettingsView: View {
                 }
                 .ledgerSheetRow(position: .only)
         } header: {
-            // The List's first-header inset leaves the ornament lower than
-            // centred; it clamps this negative padding to about 7pt up.
-            HoneyLedgerOrnament()
-                .padding(.top, -10)
+            // The Pro section carries the ornament; it is hidden in the tour.
+            if isTourSandbox {
+                // The List's first-header inset leaves the ornament lower than
+                // centred; it clamps this negative padding to about 7pt up.
+                HoneyLedgerOrnament()
+                    .padding(.top, -10)
+            }
         } footer: {
             HoneyLedgerFooter(
                 "Turn off to use SoapWiz without recording purchases: batches don't check "
@@ -308,33 +314,6 @@ struct SettingsView: View {
         } footer: {
             HoneyLedgerFooter("Prices are kept as amounts, so changing the currency relabels them without converting.")
         }
-    }
-
-    /// States why recipe import is or isn't on offer.
-    ///
-    /// The entry point on the Recipes tab stays hidden when the model can't run
-    /// — a button that fails on tap is worse than no button. But hiding it
-    /// silently leaves "Apple Intelligence is switched off" indistinguishable
-    /// from "this feature doesn't exist", so the reason lives here.
-    private var recipeImportSection: some View {
-        let availability = RecipeImportAvailability.current
-        return Section {
-            HoneyLedgerLabeledRow("Status") {
-                Label(availability.statusText, systemImage: availability.statusSymbol)
-                    .labelStyle(.titleAndIcon)
-                    .foregroundStyle(statusTint(for: availability))
-            }
-            .ledgerSheetRow(position: .only)
-        } header: {
-            HoneyLedgerSectionLabel("Recipe Import")
-        } footer: {
-            HoneyLedgerFooter(availability.settingsFooter)
-        }
-    }
-
-    private func statusTint(for availability: RecipeImportAvailability) -> Color {
-        if availability.isAvailable { return .success }
-        return availability.isActionable ? .warning : .inkSoft
     }
 
     private var aboutSection: some View {

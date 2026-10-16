@@ -7,6 +7,9 @@ struct ContentView: View {
     @Environment(\.isTourSandbox) private var isTourSandbox
     @Environment(TourLauncher.self) private var tourLauncher
 
+    /// Absent in the tour's sandbox, which has no upgrade sheet.
+    @Environment(ProUpgradePresenter.self) private var upgradePresenter: ProUpgradePresenter?
+
     @State private var navigation: AppNavigation
     @State private var restore = RestoreCoordinator()
 
@@ -51,6 +54,10 @@ struct ContentView: View {
             guard url.isFileURL, !isTourSandbox else { return }
             tourLauncher.noteExternalOpen()
             navigation.openRecipeFile(url)
+        }
+        .onChange(of: upgradePresenter?.settingsRequest) { _, request in
+            guard request != nil, !isTourSandbox else { return }
+            navigation.selectedTab = .settings
         }
         // The tour ran over a sandbox, so the real app is still wherever the
         // user left it; Inventory is where the first-launch story ends. A
