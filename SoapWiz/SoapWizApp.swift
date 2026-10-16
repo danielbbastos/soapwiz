@@ -21,6 +21,8 @@ struct SoapWizApp: App {
 
     @State private var proStore: ProStore
 
+    @State private var upgradePresenter = ProUpgradePresenter()
+
     init() {
         UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
         UITextField.disableNumberPadPopovers()
@@ -44,6 +46,13 @@ struct SoapWizApp: App {
                         .environment(storeHost.inventoryRows)
                         .environment(storeHost.settings)
                         .modelContainer(storeHost.container)
+                        .environment(upgradePresenter)
+                        .sheet(item: upgradeRequest) { request in
+                            ProUpgradeView(reason: request.reason)
+                                .environment(storeHost)
+                                .environment(proStore)
+                                .environment(upgradePresenter)
+                        }
                         // Its own task: the launch decision can wait on iCloud
                         // and shouldn't sit behind the seeding below.
                         .task {
@@ -116,6 +125,13 @@ struct SoapWizApp: App {
                 }
             }
         }
+    }
+
+    private var upgradeRequest: Binding<ProUpgradeRequest?> {
+        Binding(
+            get: { upgradePresenter.request },
+            set: { if $0 == nil { upgradePresenter.dismiss() } }
+        )
     }
 
     private var resetError: Binding<Bool> {

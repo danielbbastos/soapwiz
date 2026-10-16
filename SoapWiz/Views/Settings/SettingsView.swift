@@ -36,6 +36,9 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                if !isTourSandbox {
+                    ProSettingsSection()
+                }
                 if let settings {
                     stockTrackingSection(settings)
                 }
@@ -236,10 +239,13 @@ struct SettingsView: View {
                 }
                 .ledgerSheetRow(position: .only)
         } header: {
-            // The List's first-header inset leaves the ornament lower than
-            // centred; it clamps this negative padding to about 7pt up.
-            HoneyLedgerOrnament()
-                .padding(.top, -10)
+            // The Pro section carries the ornament; it is hidden in the tour.
+            if isTourSandbox {
+                // The List's first-header inset leaves the ornament lower than
+                // centred; it clamps this negative padding to about 7pt up.
+                HoneyLedgerOrnament()
+                    .padding(.top, -10)
+            }
         } footer: {
             HoneyLedgerFooter(
                 "Turn off to use SoapWiz without recording purchases: batches don't check "

@@ -46,6 +46,16 @@ final class ProStore {
         }
     }
 
+    /// Fetches the price when none is known, so a launch that missed it (no
+    /// connection) recovers when the user next opens a Pro screen. A failed
+    /// fetch never clears a price already known.
+    func loadPrice() async {
+        guard displayPrice == nil else { return }
+        if let price = await backend.displayPrice() {
+            displayPrice = price
+        }
+    }
+
     /// The only refresh that honours cancellation: `stop()` cancels the
     /// listener mid-read, and a cancelled `currentEntitlements` read can end
     /// early and report false. Purchase and restore run on a caller's task

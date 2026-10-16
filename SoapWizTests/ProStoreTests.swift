@@ -232,6 +232,48 @@ struct ProStoreTests {
         #expect(store.purchaseState == .failed)
     }
 
+    @Test func loadPrice_PriceAvailable_SetsDisplayPrice() async {
+        let store = makeStore()
+        backend.price = "19,99 €"
+
+        await store.loadPrice()
+
+        #expect(store.displayPrice == "19,99 €")
+    }
+
+    @Test func loadPrice_FetchFails_LeavesPriceNil() async {
+        let store = makeStore()
+        backend.price = nil
+
+        await store.loadPrice()
+
+        #expect(store.displayPrice == nil)
+    }
+
+    @Test func loadPrice_PriceKnown_DoesNotRefetchOrWipe() async {
+        let store = makeStore()
+        backend.price = "19,99 €"
+        await store.loadPrice()
+        backend.price = nil
+
+        await store.loadPrice()
+
+        #expect(store.displayPrice == "19,99 €")
+        #expect(backend.displayPriceCalls == 1)
+    }
+
+    @Test func loadPrice_RetriesAfterFailure() async {
+        let store = makeStore()
+        backend.price = nil
+        await store.loadPrice()
+        backend.price = "9,99 €"
+
+        await store.loadPrice()
+
+        #expect(store.displayPrice == "9,99 €")
+        #expect(backend.displayPriceCalls == 2)
+    }
+
     @Test func restore_SyncsThenRefreshes() async throws {
         let store = makeStore()
         backend.entitled = true
@@ -257,7 +299,7 @@ struct ProStoreTests {
 }
 
 @MainActor
-private final class FakeProBackend: ProStoreBackend {
+final class FakeProBackend: ProStoreBackend {
     struct SyncFailure: Error {}
 
     var entitled = false
@@ -269,6 +311,7 @@ private final class FakeProBackend: ProStoreBackend {
     var onSync: (() -> Void)?
     private(set) var isEntitledCalls = 0
     private(set) var syncCalls = 0
+    private(set) var displayPriceCalls = 0
     private(set) var entitlementChangesCalls = 0
 
     private var continuation: AsyncStream<Void>.Continuation?
@@ -290,7 +333,10 @@ private final class FakeProBackend: ProStoreBackend {
         continuation?.yield()
     }
 
-    func displayPrice() async -> String? { price }
+    func displayPrice() async -> String? {
+        displayPriceCalls += 1
+        return price
+    }
 
     func purchase() async -> ProPurchaseOutcome {
         onPurchase?()
