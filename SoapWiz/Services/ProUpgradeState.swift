@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import StoreKit
 
 /// What the thank-you screen says about iCloud sync.
 enum ProSyncOutcome: Equatable {
@@ -28,12 +29,16 @@ enum ProUpgradeButton {
         return "\(verb) · \(price)"
     }
 
-    static func isEnabled(price: String?, state: ProPurchaseState) -> Bool {
-        guard price != nil else { return false }
+    static func isEnabled(price: String?, state: ProPurchaseState, isRestoring: Bool = false) -> Bool {
+        guard price != nil, !isRestoring else { return false }
         switch state {
         case .idle, .failed: return true
         case .purchasing, .pending: return false
         }
+    }
+
+    static func canRestore(isRestoring: Bool, state: ProPurchaseState) -> Bool {
+        !isRestoring && state != .purchasing
     }
 }
 
@@ -80,6 +85,8 @@ final class ProRestoreModel {
             } else if announcesSuccess {
                 alert = .restored
             }
+        } catch StoreKitError.userCancelled {
+            // The user backed out of the sign-in prompt; nothing to report.
         } catch {
             alert = .failed(error.localizedDescription)
         }

@@ -58,21 +58,23 @@ struct ProSettingsSection: View {
         } footer: {
             HoneyLedgerFooter(proStore.isPro ? Self.proFooter : Self.freeFooter)
         }
-        .proRestoreAlert(restoreModel)
-        .task { await proStore.loadPrice() }
-        .task { refreshCounts() }
-        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
-            refreshCounts()
-        }
     }
 
     static let freeFooter = "One payment, no subscription. Pro adds unlimited recipes and custom "
         + "ingredients, iCloud sync, collections and reminders."
     static let proFooter = "Bought once. Yours on every device signed in to the same Apple Account."
 
+    /// Always present, so it alone carries the modifiers that must run once
+    /// for the section; on the `Section` they would fan out to every row.
     private func statusRow(word: String, tone: StatusStampTone, glyph: String?) -> some View {
         HoneyLedgerLabeledRow("Status") {
             StatusStamp(word: word, tone: tone, glyph: glyph)
+        }
+        .proRestoreAlert(restoreModel)
+        .task { await proStore.loadPrice() }
+        .task { refreshCounts() }
+        .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
+            refreshCounts()
         }
     }
 
@@ -97,7 +99,10 @@ struct ProSettingsSection: View {
                 }
             }
         }
-        .disabled(restoreModel.isRestoring)
+        .disabled(!ProUpgradeButton.canRestore(
+            isRestoring: restoreModel.isRestoring,
+            state: proStore.purchaseState
+        ))
     }
 
     private func refreshCounts() {

@@ -17,6 +17,9 @@ final class ProStore {
     private(set) var isPro: Bool
     private(set) var displayPrice: String?
     private(set) var purchaseState: ProPurchaseState = .idle
+    /// True when the last price fetch finished without a price (offline).
+    private(set) var priceLoadFailed = false
+    private var isLoadingPrice = false
 
     private let backend: any ProStoreBackend
     private let hint: ProEntitlementHint
@@ -39,7 +42,7 @@ final class ProStore {
         let changes = backend.entitlementChanges()
         listener = Task { [weak self] in
             await self?.refreshFromListener()
-            self?.displayPrice = await self?.backend.displayPrice()
+            await self?.loadPrice()
             for await _ in changes {
                 await self?.refreshFromListener()
             }
@@ -50,10 +53,21 @@ final class ProStore {
     /// connection) recovers when the user next opens a Pro screen. A failed
     /// fetch never clears a price already known.
     func loadPrice() async {
-        guard displayPrice == nil else { return }
+        guard displayPrice == nil, !isLoadingPrice else { return }
+        isLoadingPrice = true
+        defer { isLoadingPrice = false }
         if let price = await backend.displayPrice() {
             displayPrice = price
+            priceLoadFailed = false
+        } else {
+            priceLoadFailed = true
         }
+    }
+
+    /// Forgets a failed purchase, so a reopened sheet doesn't greet the user
+    /// with last time's error. A purchase waiting for approval stays.
+    func clearFailure() {
+        if purchaseState == .failed { purchaseState = .idle }
     }
 
     /// The only refresh that honours cancellation: `stop()` cancels the

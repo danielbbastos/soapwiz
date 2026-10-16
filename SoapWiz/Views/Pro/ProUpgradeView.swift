@@ -46,12 +46,19 @@ struct ProUpgradeView: View {
             }
         }
         .id(usesGrid)
+        // Hidden, not removed, until the width is known: the first frame would
+        // otherwise flash the phone layout, and the fitted sheet still needs
+        // the content to measure.
+        .opacity(containerWidth > 0 ? 1 : 0)
         .frame(maxWidth: .infinity, maxHeight: scrolls ? .infinity : nil)
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { containerWidth = $0 }
         .presentationBackground { HoneyLedgerPaper() }
         .presentationSizing(.form.fitted(horizontal: false, vertical: true))
         .proRestoreAlert(restoreModel)
-        .task { await proStore.loadPrice() }
+        .task {
+            proStore.clearFailure()
+            await proStore.loadPrice()
+        }
     }
 
     private var thankYou: some View {
@@ -137,6 +144,19 @@ struct ProUpgradeView: View {
             case .idle, .purchasing:
                 EmptyView()
             }
+            if proStore.priceLoadFailed, proStore.displayPrice == nil {
+                HStack {
+                    Text("Couldn’t load the price. Check your connection.")
+                        .font(.footnote)
+                        .foregroundStyle(Color.inkSoft)
+                    Spacer(minLength: 8)
+                    Button("Try again") {
+                        Task { await proStore.loadPrice() }
+                    }
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.amberText)
+                }
+            }
             Button {
                 Task {
                     if await proStore.purchase() == .purchased { didPurchase = true }
@@ -147,7 +167,8 @@ struct ProUpgradeView: View {
             .buttonStyle(.honeyLedgerPrimary)
             .disabled(!ProUpgradeButton.isEnabled(
                 price: proStore.displayPrice,
-                state: proStore.purchaseState
+                state: proStore.purchaseState,
+                isRestoring: restoreModel.isRestoring
             ))
             Button {
                 Task { await restoreModel.restore(using: proStore, announcesSuccess: false) }
@@ -159,7 +180,10 @@ struct ProUpgradeView: View {
                 }
             }
             .foregroundStyle(Color.amberText)
-            .disabled(restoreModel.isRestoring)
+            .disabled(!ProUpgradeButton.canRestore(
+                isRestoring: restoreModel.isRestoring,
+                state: proStore.purchaseState
+            ))
         }
     }
 
@@ -168,7 +192,7 @@ struct ProUpgradeView: View {
         let title = ProUpgradeButton.title(price: proStore.displayPrice, state: proStore.purchaseState)
         if proStore.purchaseState == .purchasing {
             ProgressView()
-        } else if proStore.displayPrice == nil {
+        } else if proStore.displayPrice == nil, !proStore.priceLoadFailed {
             HStack(spacing: 8) {
                 Text(title)
                 ProgressView()

@@ -274,6 +274,59 @@ struct ProStoreTests {
         #expect(backend.displayPriceCalls == 2)
     }
 
+    @Test func loadPrice_FetchFails_SetsFailedFlag() async {
+        let store = makeStore()
+        backend.price = nil
+
+        await store.loadPrice()
+
+        #expect(store.priceLoadFailed)
+    }
+
+    @Test func loadPrice_RetryAfterFailure_SucceedsAndClearsFlag() async {
+        let store = makeStore()
+        backend.price = nil
+        await store.loadPrice()
+        backend.price = "9,99 €"
+
+        await store.loadPrice()
+
+        #expect(store.displayPrice == "9,99 €")
+        #expect(!store.priceLoadFailed)
+    }
+
+    @Test func loadPrice_Concurrent_FetchesOnce() async {
+        let store = makeStore()
+        backend.price = "9,99 €"
+
+        async let first: Void = store.loadPrice()
+        async let second: Void = store.loadPrice()
+        _ = await (first, second)
+
+        #expect(backend.displayPriceCalls == 1)
+        #expect(store.displayPrice == "9,99 €")
+    }
+
+    @Test func clearFailure_Failed_ReturnsToIdle() async {
+        let store = makeStore()
+        backend.outcome = .failed
+        _ = await store.purchase()
+
+        store.clearFailure()
+
+        #expect(store.purchaseState == .idle)
+    }
+
+    @Test func clearFailure_Pending_StaysPending() async {
+        let store = makeStore()
+        backend.outcome = .pending
+        _ = await store.purchase()
+
+        store.clearFailure()
+
+        #expect(store.purchaseState == .pending)
+    }
+
     @Test func restore_SyncsThenRefreshes() async throws {
         let store = makeStore()
         backend.entitled = true
@@ -295,57 +348,5 @@ struct ProStoreTests {
         }
 
         #expect(!store.isPro)
-    }
-}
-
-@MainActor
-final class FakeProBackend: ProStoreBackend {
-    struct SyncFailure: Error {}
-
-    var entitled = false
-    var price: String?
-    var outcome: ProPurchaseOutcome = .purchased
-    var syncError: (any Error)?
-    var onIsEntitled: (() -> Void)?
-    var onPurchase: (() -> Void)?
-    var onSync: (() -> Void)?
-    private(set) var isEntitledCalls = 0
-    private(set) var syncCalls = 0
-    private(set) var displayPriceCalls = 0
-    private(set) var entitlementChangesCalls = 0
-
-    private var continuation: AsyncStream<Void>.Continuation?
-
-    func isEntitled() async -> Bool {
-        isEntitledCalls += 1
-        onIsEntitled?()
-        return entitled
-    }
-
-    func entitlementChanges() -> AsyncStream<Void> {
-        entitlementChangesCalls += 1
-        let (stream, continuation) = AsyncStream.makeStream(of: Void.self)
-        self.continuation = continuation
-        return stream
-    }
-
-    func emitChange() {
-        continuation?.yield()
-    }
-
-    func displayPrice() async -> String? {
-        displayPriceCalls += 1
-        return price
-    }
-
-    func purchase() async -> ProPurchaseOutcome {
-        onPurchase?()
-        return outcome
-    }
-
-    func sync() async throws {
-        syncCalls += 1
-        onSync?()
-        if let syncError { throw syncError }
     }
 }

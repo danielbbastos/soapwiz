@@ -1,5 +1,6 @@
 import Testing
 import Foundation
+import StoreKit
 @testable import SoapWiz
 
 @Suite("Pro upgrade presenter")
@@ -84,6 +85,17 @@ struct ProUpgradeCopyTests {
         #expect(!ProUpgradeButton.isEnabled(price: nil, state: .idle))
     }
 
+    @Test func isEnabled_WhileRestoring_Disabled() {
+        #expect(!ProUpgradeButton.isEnabled(price: "X", state: .idle, isRestoring: true))
+    }
+
+    @Test func canRestore_PerState() {
+        #expect(ProUpgradeButton.canRestore(isRestoring: false, state: .idle))
+        #expect(ProUpgradeButton.canRestore(isRestoring: false, state: .pending))
+        #expect(!ProUpgradeButton.canRestore(isRestoring: false, state: .purchasing))
+        #expect(!ProUpgradeButton.canRestore(isRestoring: true, state: .idle))
+    }
+
     @Test func isEnabled_PerState() {
         #expect(ProUpgradeButton.isEnabled(price: "X", state: .idle))
         #expect(ProUpgradeButton.isEnabled(price: "X", state: .failed))
@@ -153,6 +165,17 @@ struct ProRestoreModelTests {
         await sut.restore(using: store)
 
         #expect(sut.alert == .nothingFound)
+    }
+
+    @Test func restore_UserCancelled_StaysSilent() async {
+        let store = ProStore(backend: backend, hint: hint)
+        let sut = ProRestoreModel()
+        backend.syncError = StoreKitError.userCancelled
+
+        await sut.restore(using: store)
+
+        #expect(sut.alert == nil)
+        #expect(!sut.isRestoring)
     }
 
     @Test func restore_SyncThrows_AlertsFailure() async {
