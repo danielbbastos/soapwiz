@@ -157,7 +157,6 @@ struct SoapWizApp: App {
     private func openStoreAfterEntitlement() async {
         // A re-run placeholder task must never open a second ModelContainer on the same file.
         guard storeHost == nil else { return }
-        let launchHint = ProEntitlementHint().storedValue
         let clock = ContinuousClock()
         let start = clock.now
         let signpost = Signposts.entitlement.beginInterval("Launch entitlement")
@@ -170,7 +169,9 @@ struct SoapWizApp: App {
         )
         // Checked again: another run may have finished while this one waited.
         guard storeHost == nil else { return }
-        storeHost = StoreHost(isPro: StoreSelection.launchIsPro(answer: answer, hint: launchHint))
+        // Read now, not before the wait: the purchase listener may have written the hint meanwhile.
+        let hint = ProEntitlementHint().storedValue
+        storeHost = StoreHost(isPro: StoreSelection.launchIsPro(answer: answer, hint: hint))
     }
 
     private var upgradeRequest: Binding<ProUpgradeRequest?> {
