@@ -33,7 +33,7 @@ struct ProBenefit: Identifiable {
             detail: "Before an ingredient expires, and when a batch has cured."
         ),
         ProBenefit(
-            symbol: "sparkles",
+            symbol: "gift",
             title: "Future Pro features",
             detail: "Pro features added in later updates are included."
         )

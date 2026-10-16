@@ -23,4 +23,11 @@ nonisolated struct ProEntitlementHint {
         get { defaults.bool(forKey: Key.isPro) }
         nonmutating set { defaults.set(newValue, forKey: Key.isPro) }
     }
+
+    /// `nil` until StoreKit has answered once on this device. `isPro` can't tell
+    /// that from a "no", and a fresh install is the one launch that has to wait
+    /// for the answer instead of guessing.
+    var storedValue: Bool? {
+        defaults.object(forKey: Key.isPro) as? Bool
+    }
 }

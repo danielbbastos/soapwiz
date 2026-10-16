@@ -26,6 +26,21 @@ enum ModelContainerFactory {
         case notMirrored
         /// The user turned iCloud sync off on this device; see `SyncPreference`.
         case offlineByChoice
+        /// The user doesn't own SoapWiz Pro, which iCloud sync is part of.
+        case requiresPro
+    }
+
+    /// Why a launch opens the local store without trying to mirror.
+    enum LocalStoreCause: Equatable {
+        case requiresPro
+        case offlineByChoice
+
+        var activeStore: ActiveStore {
+            switch self {
+            case .requiresPro: .requiresPro
+            case .offlineByChoice: .offlineByChoice
+            }
+        }
     }
 
     /// `nil` until `makeProduction()` runs. In-memory test containers never set it.
@@ -81,9 +96,10 @@ enum ModelContainerFactory {
     /// release builds — the store may hold the user's only copy of data that
     /// has not finished syncing.
     ///
-    /// `offline` skips the mirrored attempt. Both attempts open the same file,
-    /// so turning sync off or back on keeps everything already on the device.
-    static func makeProduction(offline: Bool) -> ModelContainer {
+    /// A `localCause` skips the mirrored attempt and records why. Both attempts
+    /// open the same file, so turning sync off or on, or buying Pro, keeps
+    /// everything already on the device.
+    static func makeProduction(localCause: LocalStoreCause?) -> ModelContainer {
         // `LOCAL_ONLY_STORE` is for builds signed without the iCloud
         // entitlement — a free personal team cannot carry that capability, and
         // asking for mirroring anyway is fatal rather than recoverable:
@@ -110,9 +126,14 @@ enum ModelContainerFactory {
         log.notice("Built without CloudKit; using a local store.")
         activeStore = .notMirrored
         #else
-        if offline {
-            log.notice("iCloud sync is turned off; using a local store.")
-            activeStore = .offlineByChoice
+        if let localCause {
+            switch localCause {
+            case .requiresPro:
+                log.notice("SoapWiz Pro isn't owned; using a local store.")
+            case .offlineByChoice:
+                log.notice("iCloud sync is turned off; using a local store.")
+            }
+            activeStore = localCause.activeStore
         } else if let container = makeMirrored() {
             return container
         }

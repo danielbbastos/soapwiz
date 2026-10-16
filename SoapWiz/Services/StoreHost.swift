@@ -9,8 +9,10 @@ import SwiftData
 /// deleted. So `requestReset()` only records the request; the app then shows a
 /// placeholder, and the placeholder's task calls `performReset()`.
 ///
-/// Turning sync on or off takes effect on the next launch, not here. Opening a
-/// second container in the same session left open screens unaware of
+/// Which store opens follows `StoreSelection`: the mirrored one for Pro users
+/// who haven't turned sync off, the local one for everyone else. Buying Pro, a
+/// refund, or turning sync on or off takes effect on the next launch, not here.
+/// Opening a second container in the same session left open screens unaware of
 /// relationship changes — a purchase added to an ingredient on screen didn't
 /// show until the screen was reopened — so the store is only ever opened once.
 @MainActor
@@ -26,16 +28,23 @@ final class StoreHost {
     let container: ModelContainer
     let syncHealth: SyncHealthMonitor
 
+    /// Why this launch opened the store without iCloud; `nil` when it mirrors.
+    let localCause: ModelContainerFactory.LocalStoreCause?
+
     /// Whether this launch opened the store without iCloud.
-    let isOffline: Bool
+    var isOffline: Bool { localCause != nil }
 
     /// Whether the user wants sync off, which the next launch applies.
     var prefersOffline: Bool {
         didSet { preference.usesOffline = prefersOffline }
     }
 
-    /// The saved choice differs from the store this launch opened.
-    var needsRelaunch: Bool { prefersOffline != isOffline }
+    /// Non-nil when the store the user's choice and Pro status call for differs
+    /// from the one this launch opened. `isPro` is the live status, which can
+    /// change mid-session through a purchase or a refund.
+    func relaunchNotice(isPro: Bool) -> String? {
+        SyncRelaunchNotice.text(localCause: localCause, isPro: isPro, prefersOffline: prefersOffline)
+    }
 
     /// Bumped after every reset so the rebuilt interface starts fresh.
     private(set) var generation = 0
@@ -56,13 +65,15 @@ final class StoreHost {
     /// `RestoreCoordinator.settleDelay`.
     @ObservationIgnored private let settleDelay: Duration = .milliseconds(50)
 
-    init(preference: SyncPreference = SyncPreference()) {
+    /// `isPro` is the answer the launch settled on; see `StoreSelection.launchIsPro`.
+    init(isPro: Bool, preference: SyncPreference = SyncPreference()) {
         self.preference = preference
-        let offline = preference.usesOffline
-        isOffline = offline
-        prefersOffline = offline
+        let prefersOffline = preference.usesOffline
+        self.prefersOffline = prefersOffline
+        let cause = StoreSelection.localCause(isPro: isPro, prefersOffline: prefersOffline)
+        localCause = cause
 
-        let container = ModelContainerFactory.makeProduction(offline: offline)
+        let container = ModelContainerFactory.makeProduction(localCause: cause)
         // Straight after the store opens, so its import observer is registered
         // before the launch merge below: an import that finished in between
         // would otherwise go unmerged until the next one. Held for the app's
