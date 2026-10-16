@@ -19,6 +19,8 @@ struct SoapWizApp: App {
 
     @State private var tourLauncher = TourLauncher(isSceneActive: false)
 
+    @State private var proStore = ProStore()
+
     init() {
         UserDefaults.standard.register(defaults: ["UseFloatingTabBar": false])
         UITextField.disableNumberPadPopovers()
@@ -71,6 +73,10 @@ struct SoapWizApp: App {
                 Text(storeHost.errorMessage ?? "")
             }
             .environment(tourLauncher)
+            .environment(proStore)
+            // On the outer view so it lives as long as the app and a store
+            // regeneration doesn't restart it.
+            .task { await proStore.start() }
             // Outside `ContentView`, so the tour's navigation is its own.
             .fullScreenCover(isPresented: Binding(
                 get: { tourLauncher.isPresented && storeHost.phase == .ready },

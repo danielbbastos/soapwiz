@@ -24,6 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		644F86F33082122900798733 /* SoapWizPro.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = SoapWizPro.storekit; sourceTree = "<group>"; };
 		64F2A5702FB0D6CE00E5F783 /* SoapWiz.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SoapWiz.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		64F2A57F2FB0D6CF00E5F783 /* SoapWizTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SoapWizTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		64F2A5892FB0D6CF00E5F783 /* SoapWizUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SoapWizUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,6 +76,7 @@
 		64F2A5672FB0D6CE00E5F783 = {
 			isa = PBXGroup;
 			children = (
+				644F86F33082122900798733 /* SoapWizPro.storekit */,
 				64F2A5722FB0D6CE00E5F783 /* SoapWiz */,
 				64F2A5822FB0D6CF00E5F783 /* SoapWizTests */,
 				64F2A58C2FB0D6CF00E5F783 /* SoapWizUITests */,
