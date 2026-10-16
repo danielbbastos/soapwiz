@@ -295,6 +295,21 @@ struct ProStoreTests {
         #expect(!store.priceLoadFailed)
     }
 
+    @Test func loadPrice_RetryInFlight_ClearsFlagThenSetsItAgainOnFailure() async {
+        let store = makeStore()
+        backend.price = nil
+        await store.loadPrice()
+        #expect(store.priceLoadFailed)
+
+        var failedWhileInFlight: Bool?
+        backend.onDisplayPrice = { failedWhileInFlight = store.priceLoadFailed }
+
+        await store.loadPrice()
+
+        #expect(failedWhileInFlight == false)
+        #expect(store.priceLoadFailed)
+    }
+
     @Test func loadPrice_Concurrent_FetchesOnce() async {
         let store = makeStore()
         backend.price = "9,99 €"

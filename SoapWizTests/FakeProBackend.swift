@@ -12,6 +12,7 @@ final class FakeProBackend: ProStoreBackend {
     var onIsEntitled: (() -> Void)?
     var onPurchase: (() -> Void)?
     var onSync: (() -> Void)?
+    var onDisplayPrice: (() -> Void)?
     private(set) var isEntitledCalls = 0
     private(set) var syncCalls = 0
     private(set) var displayPriceCalls = 0
@@ -38,6 +39,7 @@ final class FakeProBackend: ProStoreBackend {
 
     func displayPrice() async -> String? {
         displayPriceCalls += 1
+        onDisplayPrice?()
         await Task.yield()
         return price
     }

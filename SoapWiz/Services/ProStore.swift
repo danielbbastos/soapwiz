@@ -55,6 +55,7 @@ final class ProStore {
     func loadPrice() async {
         guard displayPrice == nil, !isLoadingPrice else { return }
         isLoadingPrice = true
+        priceLoadFailed = false
         defer { isLoadingPrice = false }
         if let price = await backend.displayPrice() {
             displayPrice = price
