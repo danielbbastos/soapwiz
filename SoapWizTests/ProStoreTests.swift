@@ -129,14 +129,44 @@ struct ProStoreTests {
         #expect(store.isPro)
     }
 
-    @Test func refreshEntitlement_CancelledMidRead_KeepsIsProAndHint() async {
-        hint.isPro = true
+    @Test func start_StoppedMidRead_KeepsIsProAndHint() async {
+        backend.entitled = true
         let store = makeStore()
+        store.start()
+        await waitUntil { backend.isEntitledCalls == 1 && store.isPro }
         backend.entitled = false
-        var task: Task<Void, Never>?
-        backend.onIsEntitled = { task?.cancel() }
+        backend.onIsEntitled = { store.stop() }
 
-        task = Task { await store.refreshEntitlement() }
+        backend.emitChange()
+        await waitUntil { backend.isEntitledCalls == 2 }
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(store.isPro)
+        #expect(hint.isPro)
+    }
+
+    @Test func purchase_CallerCancelled_StillUnlocks() async {
+        let store = makeStore()
+        backend.outcome = .purchased
+        var task: Task<ProPurchaseOutcome, Never>?
+        backend.onPurchase = { task?.cancel() }
+
+        task = Task { await store.purchase() }
+        let outcome = await task?.value
+
+        #expect(outcome == .purchased)
+        #expect(store.isPro)
+        #expect(hint.isPro)
+        #expect(store.purchaseState == .idle)
+    }
+
+    @Test func restore_CallerCancelled_StillApplies() async {
+        let store = makeStore()
+        backend.entitled = true
+        var task: Task<Void, Never>?
+        backend.onSync = { task?.cancel() }
+
+        task = Task { try? await store.restore() }
         await task?.value
 
         #expect(store.isPro)
@@ -235,12 +265,16 @@ private final class FakeProBackend: ProStoreBackend {
     var outcome: ProPurchaseOutcome = .purchased
     var syncError: (any Error)?
     var onIsEntitled: (() -> Void)?
+    var onPurchase: (() -> Void)?
+    var onSync: (() -> Void)?
+    private(set) var isEntitledCalls = 0
     private(set) var syncCalls = 0
     private(set) var entitlementChangesCalls = 0
 
     private var continuation: AsyncStream<Void>.Continuation?
 
     func isEntitled() async -> Bool {
+        isEntitledCalls += 1
         onIsEntitled?()
         return entitled
     }
@@ -258,10 +292,14 @@ private final class FakeProBackend: ProStoreBackend {
 
     func displayPrice() async -> String? { price }
 
-    func purchase() async -> ProPurchaseOutcome { outcome }
+    func purchase() async -> ProPurchaseOutcome {
+        onPurchase?()
+        return outcome
+    }
 
     func sync() async throws {
         syncCalls += 1
+        onSync?()
         if let syncError { throw syncError }
     }
 }

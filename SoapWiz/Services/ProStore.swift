@@ -38,12 +38,28 @@ final class ProStore {
         guard listener == nil else { return }
         let changes = backend.entitlementChanges()
         listener = Task { [weak self] in
-            await self?.refreshEntitlement()
+            await self?.refreshFromListener()
             self?.displayPrice = await self?.backend.displayPrice()
             for await _ in changes {
-                await self?.refreshEntitlement()
+                await self?.refreshFromListener()
             }
         }
+    }
+
+    /// The only refresh that honours cancellation: `stop()` cancels the
+    /// listener mid-read, and a cancelled `currentEntitlements` read can end
+    /// early and report false. Purchase and restore run on a caller's task
+    /// that may be cancelled after the user has paid, so they always apply.
+    private func refreshFromListener() async {
+        let entitled = await backend.isEntitled()
+        guard !Task.isCancelled else { return }
+        apply(entitled: entitled)
+    }
+
+    private func apply(entitled: Bool) {
+        isPro = entitled
+        hint.isPro = entitled
+        if entitled { purchaseState = .idle }
     }
 
     /// Ends the listener, for tests and anything that must tear the store down.
@@ -53,11 +69,7 @@ final class ProStore {
     }
 
     func refreshEntitlement() async {
-        let entitled = await backend.isEntitled()
-        guard !Task.isCancelled else { return }
-        isPro = entitled
-        hint.isPro = entitled
-        if entitled { purchaseState = .idle }
+        apply(entitled: await backend.isEntitled())
     }
 
     func purchase() async -> ProPurchaseOutcome {
@@ -65,8 +77,7 @@ final class ProStore {
         let outcome = await backend.purchase()
         switch outcome {
         case .purchased:
-            await refreshEntitlement()
-            purchaseState = .idle
+            apply(entitled: true)
         case .pending:
             purchaseState = .pending
         case .cancelled:
