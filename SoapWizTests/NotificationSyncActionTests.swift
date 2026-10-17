@@ -37,9 +37,53 @@ struct NotificationSyncActionTests {
         settings.expiryNotificationsEnabled = testCase.remindersOn
         settings.tracksInventory = testCase.tracksInventory
 
-        let action = NotificationService.syncAction(for: settings, authorization: testCase.authorization)
+        let action = NotificationService.syncAction(for: settings, authorization: testCase.authorization, isPro: true)
 
         #expect(action == testCase.expected)
+    }
+
+    struct FreeCase: CustomTestStringConvertible, Sendable {
+        let expiryOn: Bool
+        let cureOn: Bool
+        let tracksInventory: Bool
+        let authorization: UNAuthorizationStatus
+        var testDescription: String {
+            "expiry \(expiryOn), cure \(cureOn), tracking \(tracksInventory), authorization \(authorization.rawValue)"
+        }
+    }
+
+    private static let freeCases: [FreeCase] = {
+        let statuses: [UNAuthorizationStatus] = [.notDetermined, .denied, .authorized, .provisional, .ephemeral]
+        return statuses.flatMap { status in
+            [true, false].flatMap { expiry in
+                [true, false].flatMap { cure in
+                    [true, false].map { tracks in
+                        FreeCase(expiryOn: expiry, cureOn: cure, tracksInventory: tracks, authorization: status)
+                    }
+                }
+            }
+        }
+    }()
+
+    /// Reminders are part of Pro: whatever the stored flags and this device's
+    /// permission say, a free user has nothing scheduled.
+    @Test(arguments: freeCases)
+    func syncAction_FreeUser_AlwaysCancels(_ testCase: FreeCase) {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = testCase.expiryOn
+        settings.cureNotificationsEnabled = testCase.cureOn
+        settings.tracksInventory = testCase.tracksInventory
+
+        let action = NotificationService.syncAction(for: settings, authorization: testCase.authorization, isPro: false)
+
+        #expect(action == .cancel)
+    }
+
+    @Test func deviceMayNotNotify_FreeUserWithRemindersOnAndRefused_ShowsNoNote() {
+        let settings = AppSettings()
+        settings.expiryNotificationsEnabled = true
+
+        #expect(!NotificationService.deviceMayNotNotify(for: settings, authorization: .denied, isPro: false))
     }
 
     struct NoteCase: CustomTestStringConvertible, Sendable {
@@ -72,7 +116,11 @@ struct NotificationSyncActionTests {
         settings.expiryNotificationsEnabled = testCase.remindersOn
         settings.tracksInventory = testCase.tracksInventory
 
-        let showsNote = NotificationService.deviceMayNotNotify(for: settings, authorization: testCase.authorization)
+        let showsNote = NotificationService.deviceMayNotNotify(
+            for: settings,
+            authorization: testCase.authorization,
+            isPro: true
+        )
 
         #expect(showsNote == testCase.showsNote)
     }
@@ -193,7 +241,7 @@ struct NotificationCureSyncActionTests {
         settings.cureNotificationsEnabled = testCase.cureOn
         settings.tracksInventory = testCase.tracksInventory
 
-        let action = NotificationService.syncAction(for: settings, authorization: testCase.authorization)
+        let action = NotificationService.syncAction(for: settings, authorization: testCase.authorization, isPro: true)
 
         #expect(action == testCase.expected)
     }
@@ -248,6 +296,6 @@ struct NotificationCureSyncActionTests {
         let settings = AppSettings()
         settings.cureNotificationsEnabled = true
 
-        #expect(NotificationService.deviceMayNotNotify(for: settings, authorization: .denied))
+        #expect(NotificationService.deviceMayNotNotify(for: settings, authorization: .denied, isPro: true))
     }
 }

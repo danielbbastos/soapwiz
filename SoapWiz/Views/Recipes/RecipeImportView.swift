@@ -33,6 +33,12 @@ struct RecipeImportView: View {
 
     var onConfirm: ((PreparedRecipeImport) -> Void)?
 
+    /// A free user's import leaves collection names unmatched, so nothing it
+    /// brings in gets filed.
+    private var fileableCollections: [RecipeCollection] {
+        freeTier.gate.allows(.collections) ? collections : []
+    }
+
     /// Called with the recipes an exact import added, so the caller can dismiss
     /// and show them.
     var onImported: (([Recipe]) -> Void)?
@@ -86,7 +92,7 @@ struct RecipeImportView: View {
         .presentationSizing(.page)
         .proUpgradeHost()
         .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
-            model.resolveMergedRows(in: modelContext)
+            model.resolveMergedRows(in: modelContext, filesIntoCollections: freeTier.gate.allows(.collections))
         }
         // A handed-in file opens itself, once, skipping the input screen. The
         // guard survives the re-runs SwiftUI may make of this task; `openFile`
@@ -94,7 +100,7 @@ struct RecipeImportView: View {
         .task {
             guard let fileURL, !hasOpenedFile else { return }
             hasOpenedFile = true
-            model.openFile(at: fileURL, inventory: inventory, collections: collections, recipes: recipes)
+            model.openFile(at: fileURL, inventory: inventory, collections: fileableCollections, recipes: recipes)
             ReceivedFileInbox.removeIfReceived(fileURL)
         }
         .onChange(of: photoItem) { _, item in
@@ -107,7 +113,7 @@ struct RecipeImportView: View {
         ) { result in
             switch result {
             case .success(let url):
-                model.openFile(at: url, inventory: inventory, collections: collections, recipes: recipes)
+                model.openFile(at: url, inventory: inventory, collections: fileableCollections, recipes: recipes)
             case .failure:
                 readingProblem = "Couldn’t open that file. Try again."
             }
@@ -176,7 +182,7 @@ struct RecipeImportView: View {
                     Task {
                         await model.extract(
                             inventory: inventory,
-                            collections: collections,
+                            collections: fileableCollections,
                             recipes: recipes,
                             context: modelContext
                         )

@@ -233,7 +233,7 @@ struct RecipeListCollectionFilterTests: RecipeCollectionTestHelpers {
         let cinnamon = try seeded.recipe(named: "Cinnamon Bar")
         let model = RecipeListViewModel()
 
-        let copy = model.duplicate(cinnamon, among: seeded.recipes, context: ctx)
+        let copy = model.duplicate(cinnamon, among: seeded.recipes, copiesCollections: true, context: ctx)
         try ctx.save()
 
         #expect(copy.name == "Cinnamon Bar (copy)")

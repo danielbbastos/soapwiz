@@ -12,6 +12,7 @@ struct SettingsView: View {
     @Environment(\.isTourSandbox) private var isTourSandbox
     @Environment(TourLauncher.self) private var tourLauncher
     @Environment(\.scenePhase) private var scenePhase
+    @FreeTierGateEnvironment private var freeTier
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
     @Query private var providers: [Provider]
@@ -97,8 +98,9 @@ struct SettingsView: View {
     }
 
     private func notificationsSection(_ settings: AppSettings) -> some View {
+        let includesReminders = freeTier.gate.allows(.reminders)
         let mayNotNotify = notificationAuthorization.map {
-            NotificationService.deviceMayNotNotify(for: settings, authorization: $0)
+            NotificationService.deviceMayNotNotify(for: settings, authorization: $0, isPro: includesReminders)
         } ?? false
         return Section {
             reminderRow(
@@ -114,24 +116,14 @@ struct SettingsView: View {
             )
             .ledgerSheetRow(position: .last)
         } header: {
-            HoneyLedgerSectionLabel("Notifications")
-        } footer: {
-            // The setting is shared across devices and the permission isn't,
-            // so this one can show reminders on while none arrive here.
-            if mayNotNotify {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label(
-                        "Notifications are turned off for SoapWiz on this device, "
-                            + "so reminders won't arrive here.",
-                        systemImage: "exclamationmark.triangle.fill"
-                    )
-                    .font(.footnote)
-                    .foregroundStyle(Color.warning)
-                    Button("Open Settings", action: openAppSettings)
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Color.amberText)
+            HStack(spacing: 8) {
+                HoneyLedgerSectionLabel("Notifications")
+                if !includesReminders {
+                    ProBadge()
                 }
             }
+        } footer: {
+            notificationsFooter(includesReminders: includesReminders, mayNotNotify: mayNotNotify)
         }
         // However the setting changed, from a tap, another device or a restore,
         // this device schedules, cancels or skips its own reminders to match,
@@ -148,6 +140,28 @@ struct SettingsView: View {
         } message: {
             Text("SoapWiz needs notification permission to send reminders. "
                  + "You can enable it in Settings.")
+        }
+    }
+
+    @ViewBuilder
+    private func notificationsFooter(includesReminders: Bool, mayNotNotify: Bool) -> some View {
+        if !includesReminders {
+            HoneyLedgerFooter("Reminders are part of SoapWiz Pro. Your choices are kept for when you upgrade.")
+        } else if mayNotNotify {
+            // The setting is shared across devices and the permission isn't,
+            // so this one can show reminders on while none arrive here.
+            VStack(alignment: .leading, spacing: 8) {
+                Label(
+                    "Notifications are turned off for SoapWiz on this device, "
+                        + "so reminders won't arrive here.",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.footnote)
+                .foregroundStyle(Color.warning)
+                Button("Open Settings", action: openAppSettings)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.amberText)
+            }
         }
     }
 
@@ -173,11 +187,16 @@ struct SettingsView: View {
             .tint(Color.amber)
     }
 
-    private func countRow(_ title: String, count: Int) -> some View {
+    private func countRow(_ title: String, count: Int, showsProBadge: Bool = false) -> some View {
         HoneyLedgerLabeledRow(title) {
-            Text("\(count)")
-                .foregroundStyle(Color.inkSoft)
-                .monospacedDigit()
+            HStack(spacing: 8) {
+                if showsProBadge {
+                    ProBadge()
+                }
+                Text("\(count)")
+                    .foregroundStyle(Color.inkSoft)
+                    .monospacedDigit()
+            }
         }
     }
 
@@ -198,13 +217,15 @@ struct SettingsView: View {
         of settings: AppSettings
     ) -> Binding<Bool> {
         Binding(
-            get: { settings[keyPath: setting] },
+            get: { freeTier.gate.allows(.reminders) && settings[keyPath: setting] },
             set: { newValue in
-                Task {
-                    showNotificationDenied = await NotificationService.applyToggle(newValue, setting: setting) {
-                        AppSettings.resolve(in: modelContext)
+                freeTier.ifAvailable(.reminders) {
+                    Task {
+                        showNotificationDenied = await NotificationService.applyToggle(newValue, setting: setting) {
+                            AppSettings.resolve(in: modelContext)
+                        }
+                        await refreshNotificationAuthorization()
                     }
-                    await refreshNotificationAuthorization()
                 }
             }
         )
@@ -280,7 +301,7 @@ struct SettingsView: View {
     private var recipesSection: some View {
         Section {
             NavigationLink(destination: RecipeCollectionListView()) {
-                countRow("Collections", count: collections.count)
+                countRow("Collections", count: collections.count, showsProBadge: !freeTier.gate.allows(.collections))
             }
             .ledgerSheetRow(position: .only, navigates: true)
         } header: {

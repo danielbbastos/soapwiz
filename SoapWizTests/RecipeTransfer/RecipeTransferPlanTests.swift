@@ -106,6 +106,19 @@ struct RecipeTransferPlanTests {
         #expect(plan.unmatchedCollectionNames == ["Gifts"])
     }
 
+    /// A free user's import is built with no collections to match, so even a
+    /// collection they already have is left unmatched and nothing gets filed.
+    @Test func plan_NoCollectionsOffered_MatchesNoneAndFilesNothing() {
+        let plan = RecipeTransferPlan(
+            payload: fixture.payload([fixture.populatedRecipe()]),
+            inventory: [],
+            collections: []
+        )
+
+        #expect(plan.matchedCollections.isEmpty)
+        #expect(plan.unmatchedCollectionNames.sorted() == ["Christmas", "Gifts"])
+    }
+
     // MARK: - Names that collide with the library
 
     @Test func plan_NameNotInTheLibrary_IsKept() {

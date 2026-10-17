@@ -14,6 +14,15 @@ enum FreeTierSlot {
     }
 }
 
+extension ProFeature {
+    var upgradeReason: ProUpgradeReason {
+        switch self {
+        case .collections: .collections
+        case .reminders: .reminders
+        }
+    }
+}
+
 /// A `FreeTierGate` together with the presenter that opens the upgrade sheet,
 /// for views that act on the answer. The gate stays a plain value for the
 /// view models and tests; the presenter is optional because the tour's
@@ -33,6 +42,26 @@ struct FreeTierAccess {
             action()
         } else {
             presentUpgrade(for: slot.limitReason)
+        }
+    }
+
+    /// Runs `action` when the feature is included, otherwise opens the upgrade
+    /// sheet naming it.
+    func ifAvailable(_ feature: ProFeature, perform action: () -> Void) {
+        if gate.allows(feature) {
+            action()
+        } else {
+            presentUpgrade(for: feature.upgradeReason)
+        }
+    }
+
+    /// Runs `action` for a filing change the free tier allows (unfiling always),
+    /// otherwise opens the upgrade sheet for collections.
+    func ifMayToggleCollection(isFiled: Bool, perform action: () -> Void) {
+        if gate.mayToggleCollection(isFiled: isFiled) {
+            action()
+        } else {
+            presentUpgrade(for: ProFeature.collections.upgradeReason)
         }
     }
 

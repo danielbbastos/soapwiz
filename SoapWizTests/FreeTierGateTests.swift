@@ -34,6 +34,36 @@ struct FreeTierGateTests {
         try context.save()
     }
 
+    // MARK: Pro features
+
+    @Test(arguments: [ProFeature.collections, .reminders])
+    func allows_FreeUser_ReturnsFalse(feature: ProFeature) {
+        #expect(!free.allows(feature))
+    }
+
+    @Test(arguments: [ProFeature.collections, .reminders])
+    func allows_ProUser_ReturnsTrue(feature: ProFeature) {
+        #expect(FreeTierGate(isPro: true).allows(feature))
+    }
+
+    @Test(arguments: [ProFeature.collections, .reminders])
+    func allows_TourSandbox_ReturnsTrue(feature: ProFeature) {
+        #expect(FreeTierGate(isPro: false, isTourSandbox: true).allows(feature))
+    }
+
+    @Test func mayToggleCollection_FreeUserFiling_ReturnsFalse() {
+        #expect(!free.mayToggleCollection(isFiled: false))
+    }
+
+    @Test func mayToggleCollection_FreeUserUnfiling_ReturnsTrue() {
+        #expect(free.mayToggleCollection(isFiled: true))
+    }
+
+    @Test(arguments: [true, false])
+    func mayToggleCollection_ProUser_ReturnsTrue(isFiled: Bool) {
+        #expect(FreeTierGate(isPro: true).mayToggleCollection(isFiled: isFiled))
+    }
+
     // MARK: Recipes
 
     @Test(arguments: [0, 1, 2])

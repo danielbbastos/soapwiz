@@ -16,6 +16,7 @@ struct RecipeTransferReviewView: View {
     var onConfirm: () -> Void
     var onCancel: () -> Void
 
+    @FreeTierGateEnvironment private var freeTier
     @State private var pickingEntry: RecipeTransferIngredientPlan?
 
     var body: some View {
@@ -240,7 +241,15 @@ struct RecipeTransferReviewView: View {
         } header: {
             HoneyLedgerSectionLabel("Collections Not Added")
         } footer: {
-            HoneyLedgerFooter("You don’t have these collections, so the recipes arrive unfiled. Nothing new is created.")
+            HoneyLedgerFooter(collectionsFooter)
+        }
+    }
+
+    private var collectionsFooter: String {
+        if freeTier.gate.allows(.collections) {
+            "You don’t have these collections, so the recipes arrive unfiled. Nothing new is created."
+        } else {
+            "Collections are part of SoapWiz Pro, so the recipes arrive unfiled."
         }
     }
 
