@@ -19,7 +19,35 @@ final class DataTransferViewModel {
     /// backup that silently stopped including photos is the worse surprise.
     var includesPhotos = true
 
+    private(set) var lastExportDate: Date?
+
+    private let nudgeState: BackupNudgeState
+
+    init(nudgeState: BackupNudgeState = BackupNudgeState()) {
+        self.nudgeState = nudgeState
+        self.lastExportDate = nudgeState.lastExportDate
+    }
+
+    var lastExportedLine: String {
+        Self.lastExportedLine(
+            hasCloudCopy: BackupNudgePolicy.hasCloudCopy(ModelContainerFactory.activeStore),
+            lastExport: lastExportDate
+        )
+    }
+
+    static func lastExportedLine(hasCloudCopy: Bool, lastExport: Date?) -> String {
+        guard !hasCloudCopy else { return "" }
+        guard let lastExport else { return "\nLast exported: never" }
+        return "\nLast exported: \(lastExport.formatted(date: .abbreviated, time: .omitted))"
+    }
+
     // MARK: - Export
+
+    func shareFinished(completed: Bool, at date: Date = .now) {
+        guard completed else { return }
+        nudgeState.lastExportDate = date
+        lastExportDate = date
+    }
 
     func export(from context: ModelContext) {
         do {

@@ -63,7 +63,9 @@ struct SettingsView: View {
             }
             .readableWidth()
             .sheet(item: $dataTransfer.exportFile) { file in
-                ShareSheet(items: [file.url])
+                ShareSheet(items: [file.url]) { completed in
+                    dataTransfer.shareFinished(completed: completed)
+                }
             }
             .fileImporter(
                 isPresented: $dataTransfer.isImporterPresented,
@@ -390,6 +392,7 @@ struct SettingsView: View {
                     + "Leaving photos out makes a much smaller file, but importing it brings "
                     + "everything back without them. "
                     + "Importing a file replaces everything currently in the app."
+                    + dataTransfer.lastExportedLine
             )
         }
     }
