@@ -10,6 +10,8 @@ struct ProUpgradePresenterTests {
     private let sut = ProUpgradePresenter()
 
     @Test func present_NoReason_SetsRequestWithoutReason() {
+        sut.registerHost(UUID())
+
         sut.present()
 
         #expect(sut.request != nil)
@@ -17,12 +19,51 @@ struct ProUpgradePresenterTests {
     }
 
     @Test func present_WithReason_KeepsReason() {
+        sut.registerHost(UUID())
+
         sut.present(reason: .sync)
 
         #expect(sut.request?.reason == .sync)
     }
 
+    @Test func present_NoHost_StoresNoRequest() {
+        sut.present(reason: .recipeLimit)
+
+        #expect(sut.request == nil)
+    }
+
+    @Test func present_NoHost_DoesNotSurfaceWhenAHostRegistersLater() {
+        sut.present(reason: .recipeLimit)
+
+        sut.registerHost(UUID())
+
+        #expect(sut.request == nil)
+    }
+
+    @Test func unregisterHost_LastHostWithPendingRequest_ClearsRequest() {
+        let root = UUID()
+        sut.registerHost(root)
+        sut.present(reason: .reminders)
+
+        sut.unregisterHost(root)
+
+        #expect(sut.request == nil)
+    }
+
+    @Test func unregisterHost_OneOfTwoHostsWithPendingRequest_KeepsRequest() {
+        let root = UUID()
+        let sheet = UUID()
+        sut.registerHost(root)
+        sut.registerHost(sheet)
+        sut.present(reason: .reminders)
+
+        sut.unregisterHost(sheet)
+
+        #expect(sut.request != nil)
+    }
+
     @Test func dismiss_ClearsRequest() {
+        sut.registerHost(UUID())
         sut.present(reason: .reminders)
 
         sut.dismiss()
@@ -31,6 +72,7 @@ struct ProUpgradePresenterTests {
     }
 
     @Test func present_Twice_ReplacesRequestWithNewId() throws {
+        sut.registerHost(UUID())
         sut.present(reason: .collections)
         let first = try #require(sut.request)
 
@@ -41,6 +83,7 @@ struct ProUpgradePresenterTests {
     }
 
     @Test func dismissToSettings_ClearsRequestAndSignalsSettings() {
+        sut.registerHost(UUID())
         sut.present()
         let before = sut.settingsRequest
 

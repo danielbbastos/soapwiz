@@ -61,6 +61,7 @@ final class ProUpgradePresenter {
     /// above it is still up, and the ones above stay.
     func unregisterHost(_ id: UUID) {
         hostIDs.removeAll { $0 == id }
+        if hostIDs.isEmpty { request = nil }
     }
 
     func isTopHost(_ id: UUID) -> Bool {
@@ -73,7 +74,10 @@ final class ProUpgradePresenter {
         hostIDs.first == id
     }
 
+    /// Ignored while no host is registered: nothing could show the sheet, and
+    /// a request kept for later would surface over an unrelated screen.
     func present(reason: ProUpgradeReason? = nil) {
+        guard !hostIDs.isEmpty else { return }
         request = ProUpgradeRequest(reason: reason)
     }
 
