@@ -106,6 +106,22 @@ struct AppResetTests: BackupTestHelpers {
         #expect(!LyeSafetyAcknowledgment(defaults: defaults).isAcknowledged)
     }
 
+    @Test func clearDeviceState_BackupReminderDates_AreCleared() throws {
+        let temp = try TemporaryDefaults(prefix: "AppResetTests")
+        defer { temp.remove() }
+        let defaults = temp.defaults
+        let state = BackupNudgeState(defaults: defaults)
+        state.lastExportDate = .now
+        state.lastDismissDate = .now
+        state.firstEligibleDate = .now
+
+        AppReset.clearDeviceState(defaults: defaults, rollbackDirectory: nil)
+
+        #expect(state.lastExportDate == nil)
+        #expect(state.lastDismissDate == nil)
+        #expect(state.firstEligibleDate == nil)
+    }
+
     /// The sync choice describes the device, not the user's data.
     @Test func clearDeviceState_SyncTurnedOff_StaysOff() throws {
         let temp = try TemporaryDefaults(prefix: "AppResetTests")

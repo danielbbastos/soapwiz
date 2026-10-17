@@ -8,7 +8,37 @@ struct BatchListView: View {
     @Query private var batches: [Batch]
     @Environment(AppNavigation.self) private var navigation
 
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.isTourSandbox) private var isTourSandbox
+
     @State private var searchText = ""
+    @State private var dataTransfer = DataTransferViewModel()
+    @State private var showsBackupNudge = false
+
+    private let nudgeState = BackupNudgeState()
+
+    private var exportError: Binding<Bool> {
+        Binding(
+            get: { dataTransfer.errorMessage != nil },
+            set: { if !$0 { dataTransfer.errorMessage = nil } }
+        )
+    }
+
+    private func refreshBackupNudge() {
+        let now = Date.now
+        let context = BackupNudgePolicy.Context(
+            hasCloudCopy: BackupNudgePolicy.hasCloudCopy(ModelContainerFactory.activeStore),
+            isTourSandbox: isTourSandbox,
+            batchCount: batches.count
+        )
+        BackupNudgePolicy.recordFirstEligibleIfNeeded(context, state: nudgeState, now: now)
+        showsBackupNudge = BackupNudgePolicy.shouldShow(context, state: nudgeState, now: now, calendar: .current)
+    }
+
+    private func dismissBackupNudge() {
+        nudgeState.lastDismissDate = .now
+        withAnimation { showsBackupNudge = false }
+    }
 
     private var displayedSections: [BatchMonthSection] {
         BatchHistoryViewModel.monthSections(
@@ -53,6 +83,15 @@ struct BatchListView: View {
                     ContentUnavailableView.search(text: searchText)
                 } else {
                     List {
+                        if showsBackupNudge {
+                            Section {
+                                BackupNudgeCard(
+                                    onExport: { dataTransfer.export(from: modelContext) },
+                                    onDismiss: dismissBackupNudge
+                                )
+                                .ledgerSheetRow(position: .only)
+                            }
+                        }
                         ForEach(displayed) { section in
                             Section {
                                 ForEach(Array(section.batches.enumerated()), id: \.element.id) { index, batch in
@@ -70,6 +109,17 @@ struct BatchListView: View {
                 }
             }
             .readableWidth()
+            .sheet(item: $dataTransfer.exportFile) { file in
+                ShareSheet(items: [file.url]) { completed in
+                    dataTransfer.shareFinished(completed: completed)
+                    if completed { withAnimation { showsBackupNudge = false } }
+                }
+            }
+            .alert("Something went wrong", isPresented: exportError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(dataTransfer.errorMessage ?? "")
+            }
             .navigationTitle("History")
             .navigationBarTitleDisplayMode(.large)
             .ledgerLargeTitle(subtitle: BatchCountSummary(counting: batches).line)
@@ -90,5 +140,7 @@ struct BatchListView: View {
         .onChange(of: batches) {
             navigation.history.prune(keeping: batches)
         }
+        .onAppear { refreshBackupNudge() }
+        .onChange(of: batches.isEmpty) { refreshBackupNudge() }
     }
 }
