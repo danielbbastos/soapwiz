@@ -34,6 +34,12 @@ nonisolated struct BackupNudgeState {
         nonmutating set { store(newValue, forKey: Key.firstEligibleDate) }
     }
 
+    func reset() {
+        lastExportDate = nil
+        lastDismissDate = nil
+        firstEligibleDate = nil
+    }
+
     private func date(forKey key: String) -> Date? {
         defaults.object(forKey: key) as? Date
     }

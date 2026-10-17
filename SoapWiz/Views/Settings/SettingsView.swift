@@ -82,6 +82,7 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.large)
             .ledgerLargeTitle()
             .ledgerBackground()
+            .onAppear { dataTransfer.refreshLastExportDate() }
             .task(id: scenePhase) {
                 guard scenePhase == .active else { return }
                 await refreshNotificationAuthorization()

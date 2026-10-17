@@ -43,6 +43,10 @@ final class DataTransferViewModel {
 
     // MARK: - Export
 
+    func refreshLastExportDate() {
+        lastExportDate = nudgeState.lastExportDate
+    }
+
     func shareFinished(completed: Bool, at date: Date = .now) {
         guard completed else { return }
         nudgeState.lastExportDate = date

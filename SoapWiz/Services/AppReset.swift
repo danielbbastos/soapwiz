@@ -68,12 +68,14 @@ enum AppReset {
     }
 
     /// Clears what this device keeps outside the store: the lye safety
-    /// acknowledgment and any rollback files a restore left in `directory`.
+    /// acknowledgment, the backup reminder dates, and any rollback files a
+    /// restore left in `directory`.
     ///
     /// The sync preference and sync status stay. They describe this device's
     /// connection to iCloud, not the user's data.
     static func clearDeviceState(defaults: UserDefaults = .standard, rollbackDirectory: URL?) {
         LyeSafetyAcknowledgment(defaults: defaults).reset()
+        BackupNudgeState(defaults: defaults).reset()
         guard let rollbackDirectory else { return }
         let files = (try? FileManager.default.contentsOfDirectory(
             at: rollbackDirectory,

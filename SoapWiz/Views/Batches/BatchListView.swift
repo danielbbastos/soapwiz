@@ -112,7 +112,7 @@ struct BatchListView: View {
             .sheet(item: $dataTransfer.exportFile) { file in
                 ShareSheet(items: [file.url]) { completed in
                     dataTransfer.shareFinished(completed: completed)
-                    if completed { refreshBackupNudge() }
+                    if completed { withAnimation { showsBackupNudge = false } }
                 }
             }
             .alert("Something went wrong", isPresented: exportError) {

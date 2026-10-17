@@ -75,6 +75,29 @@ struct BackupNudgeTests {
         }
     }
 
+    @Test func state_Reset_ClearsAllThreeKeys() throws {
+        try withState { state in
+            state.lastExportDate = base
+            state.lastDismissDate = base
+            state.firstEligibleDate = base
+            state.reset()
+            #expect(state.lastExportDate == nil)
+            #expect(state.lastDismissDate == nil)
+            #expect(state.firstEligibleDate == nil)
+        }
+    }
+
+    @Test func refreshLastExportDate_PicksUpDateWrittenByAnotherViewModel() throws {
+        try withState { state in
+            let first = DataTransferViewModel(nudgeState: state)
+            let second = DataTransferViewModel(nudgeState: state)
+            first.shareFinished(completed: true, at: base)
+            #expect(second.lastExportDate == nil)
+            second.refreshLastExportDate()
+            #expect(second.lastExportDate == base)
+        }
+    }
+
     @Test func state_SettingNil_ClearsValue() throws {
         try withState { state in
             state.lastExportDate = base
