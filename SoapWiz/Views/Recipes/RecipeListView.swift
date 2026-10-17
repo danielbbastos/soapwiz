@@ -96,13 +96,23 @@ struct RecipeListView: View {
     @ViewBuilder
     private func rowMenu(_ recipe: Recipe) -> some View {
         Button {
-            model.filingRecipe = recipe
+            // The picker has nothing to offer a free user with no collections.
+            if collections.isEmpty {
+                freeTier.ifAvailable(.collections) { model.filingRecipe = recipe }
+            } else {
+                model.filingRecipe = recipe
+            }
         } label: {
             Label("Collections…", systemImage: "square.stack")
         }
         Button {
             freeTier.ifAllowed(.recipe, in: modelContext) {
-                model.duplicate(recipe, among: recipes, context: modelContext)
+                model.duplicate(
+                    recipe,
+                    among: recipes,
+                    copiesCollections: freeTier.gate.allows(.collections),
+                    context: modelContext
+                )
             }
         } label: {
             Label("Duplicate", systemImage: "plus.square.on.square")

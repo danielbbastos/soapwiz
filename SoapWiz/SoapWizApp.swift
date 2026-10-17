@@ -102,6 +102,16 @@ struct SoapWizApp: App {
                     )
                 }
             }
+            // A purchase schedules the reminders at once, and a refund cancels
+            // them, without waiting for the next foreground.
+            .onChange(of: proStore.isPro) {
+                guard let storeHost, storeHost.phase == .ready else { return }
+                Task {
+                    await NotificationService.syncIfEnabled(
+                        modelContext: storeHost.container.mainContext
+                    )
+                }
+            }
         }
     }
 

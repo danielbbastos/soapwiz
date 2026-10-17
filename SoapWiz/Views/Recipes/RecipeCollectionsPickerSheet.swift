@@ -17,6 +17,7 @@ struct RecipeCollectionsPickerSheet: View {
     let onToggle: (RecipeCollection) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @FreeTierGateEnvironment private var freeTier
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
 
     @State private var showingNewCollection = false
@@ -32,7 +33,7 @@ struct RecipeCollectionsPickerSheet: View {
                             description: "Group recipes into themes like \"Christmas\" or \"Gifts\"."
                         )
                         .fixedSize(horizontal: false, vertical: true)
-                        Button("New Collection") { showingNewCollection = true }
+                        Button("New Collection", action: newCollection)
                             .fontWeight(.semibold)
                             .foregroundStyle(Color.amberText)
                     }
@@ -41,7 +42,9 @@ struct RecipeCollectionsPickerSheet: View {
                     List {
                         ForEach(Array(collections.enumerated()), id: \.element.id) { index, collection in
                             Button {
-                                onToggle(collection)
+                                freeTier.ifMayToggleCollection(isFiled: recipe.isFiled(under: collection)) {
+                                    onToggle(collection)
+                                }
                             } label: {
                                 row(collection)
                             }
@@ -59,7 +62,7 @@ struct RecipeCollectionsPickerSheet: View {
             .ledgerBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("New Collection", systemImage: "plus") { showingNewCollection = true }
+                    Button("New Collection", systemImage: "plus", action: newCollection)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -72,6 +75,11 @@ struct RecipeCollectionsPickerSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .proUpgradeHost()
+    }
+
+    private func newCollection() {
+        freeTier.ifAvailable(.collections) { showingNewCollection = true }
     }
 
     private func row(_ collection: RecipeCollection) -> some View {

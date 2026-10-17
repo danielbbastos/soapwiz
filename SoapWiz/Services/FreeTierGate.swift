@@ -13,6 +13,16 @@ struct FreeTierGate: Equatable {
         isUnlimited = isPro || isTourSandbox
     }
 
+    func allows(_ feature: ProFeature) -> Bool {
+        isUnlimited || FreeTierLimits.isAvailable(feature, isPro: false)
+    }
+
+    /// Unfiling is always allowed; filing is part of Pro, so a free user can
+    /// still empty out collections they made before.
+    func mayToggleCollection(isFiled: Bool) -> Bool {
+        isFiled || allows(.collections)
+    }
+
     func canCreateRecipe(in context: ModelContext) -> Bool {
         guard !isUnlimited else { return true }
         let count = (try? FreeTierLimits.recipeCount(in: context)) ?? 0

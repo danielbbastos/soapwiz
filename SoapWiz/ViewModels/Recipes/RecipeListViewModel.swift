@@ -301,9 +301,14 @@ final class RecipeListViewModel {
     }
 
     @discardableResult
-    func duplicate(_ recipe: Recipe, among recipes: [Recipe], context: ModelContext) -> Recipe {
+    func duplicate(
+        _ recipe: Recipe,
+        among recipes: [Recipe],
+        copiesCollections: Bool,
+        context: ModelContext
+    ) -> Recipe {
         let copy = withAnimation {
-            RecipeDuplicator.duplicate(recipe, among: recipes, into: context)
+            RecipeDuplicator.duplicate(recipe, among: recipes, copiesCollections: copiesCollections, into: context)
         }
         context.saveLoggingFailure()
         return copy

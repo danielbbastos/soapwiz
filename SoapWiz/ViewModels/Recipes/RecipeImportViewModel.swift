@@ -337,9 +337,11 @@ final class RecipeImportViewModel {
     /// matches collections and recipes as well as ingredients. The known
     /// collections are re-read for the same reason: `prepared` reads every
     /// name, and the merge collapses collections too.
-    func resolveMergedRows(in context: ModelContext) {
+    func resolveMergedRows(in context: ModelContext, filesIntoCollections: Bool = true) {
         rows = rows.map { $0.resolvedAfterMerge(in: context) }
-        let collections = (try? context.fetch(FetchDescriptor<RecipeCollection>())) ?? []
+        let collections = filesIntoCollections
+            ? (try? context.fetch(FetchDescriptor<RecipeCollection>())) ?? []
+            : []
         knownCollections = collections
         guard let plan = transferPlan else { return }
         var rebuilt = RecipeTransferPlan(

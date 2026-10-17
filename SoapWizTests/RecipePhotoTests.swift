@@ -159,7 +159,7 @@ struct RecipePhotoTests: RecipeFormTestHelpers {
         _ = container
         let recipe = try await photographedRecipe(ctx)
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
 
         #expect(copy.imageData == recipe.imageData)
         #expect(copy.thumbnailData == recipe.thumbnailData)
@@ -171,7 +171,7 @@ struct RecipePhotoTests: RecipeFormTestHelpers {
         let recipe = Recipe(name: "Castile")
         ctx.insert(recipe)
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
 
         #expect(copy.imageData == nil)
         #expect(copy.thumbnailData == nil)
