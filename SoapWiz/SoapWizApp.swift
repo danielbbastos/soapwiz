@@ -116,12 +116,7 @@ struct SoapWizApp: App {
                 .environment(storeHost.settings)
                 .modelContainer(storeHost.container)
                 .environment(upgradePresenter)
-                .sheet(item: upgradeRequest) { request in
-                    ProUpgradeView(reason: request.reason)
-                        .environment(storeHost)
-                        .environment(proStore)
-                        .environment(upgradePresenter)
-                }
+                .proUpgradeHost()
                 // Its own task: the launch decision can wait on iCloud
                 // and shouldn't sit behind the seeding below.
                 .task {
@@ -172,13 +167,6 @@ struct SoapWizApp: App {
         // Read now, not before the wait: the purchase listener may have written the hint meanwhile.
         let hint = ProEntitlementHint().storedValue
         storeHost = StoreHost(isPro: StoreSelection.launchIsPro(answer: answer, hint: hint))
-    }
-
-    private var upgradeRequest: Binding<ProUpgradeRequest?> {
-        Binding(
-            get: { upgradePresenter.request },
-            set: { if $0 == nil { upgradePresenter.dismiss() } }
-        )
     }
 
     private var resetError: Binding<Bool> {

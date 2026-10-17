@@ -50,6 +50,97 @@ struct ProUpgradePresenterTests {
         #expect(sut.settingsRequest != nil)
         #expect(sut.settingsRequest != before)
     }
+
+    // MARK: Hosts
+
+    @Test func topHost_NoHosts_IsNil() {
+        #expect(sut.topHostID == nil)
+    }
+
+    @Test func registerHost_LatestRegisteredIsTopmost() {
+        let root = UUID()
+        let sheet = UUID()
+
+        sut.registerHost(root)
+        sut.registerHost(sheet)
+
+        #expect(sut.isTopHost(sheet))
+        #expect(!sut.isTopHost(root))
+    }
+
+    @Test func registerHost_SameHostTwice_IsStoredOnce() {
+        let root = UUID()
+
+        sut.registerHost(root)
+        sut.registerHost(root)
+
+        #expect(sut.hostIDs == [root])
+    }
+
+    @Test func unregisterHost_TopHost_PopsToTheOneBelow() {
+        let root = UUID()
+        let sheet = UUID()
+        sut.registerHost(root)
+        sut.registerHost(sheet)
+
+        sut.unregisterHost(sheet)
+
+        #expect(sut.isTopHost(root))
+        #expect(sut.hostIDs == [root])
+    }
+
+    @Test func unregisterHost_OutOfOrder_KeepsTheTopmostOnTop() {
+        let root = UUID()
+        let middle = UUID()
+        let top = UUID()
+        sut.registerHost(root)
+        sut.registerHost(middle)
+        sut.registerHost(top)
+
+        sut.unregisterHost(middle)
+
+        #expect(sut.hostIDs == [root, top])
+        #expect(sut.isTopHost(top))
+    }
+
+    @Test func unregisterHost_Unknown_ChangesNothing() {
+        let root = UUID()
+        sut.registerHost(root)
+
+        sut.unregisterHost(UUID())
+
+        #expect(sut.hostIDs == [root])
+    }
+
+    @Test func unregisterHost_LastHost_LeavesNoTop() {
+        let root = UUID()
+        sut.registerHost(root)
+
+        sut.unregisterHost(root)
+
+        #expect(sut.topHostID == nil)
+    }
+
+    @Test func isRootHost_OnlyTheBottomOne() {
+        let root = UUID()
+        let sheet = UUID()
+        sut.registerHost(root)
+        sut.registerHost(sheet)
+
+        #expect(sut.isRootHost(root))
+        #expect(!sut.isRootHost(sheet))
+    }
+
+    @Test func isRootHost_AfterTheRootLeaves_NextBecomesRoot() {
+        let root = UUID()
+        let sheet = UUID()
+        sut.registerHost(root)
+        sut.registerHost(sheet)
+
+        sut.unregisterHost(root)
+
+        #expect(sut.isRootHost(sheet))
+    }
 }
 
 @Suite("Pro upgrade copy")

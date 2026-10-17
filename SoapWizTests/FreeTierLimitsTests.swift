@@ -188,4 +188,130 @@ struct FreeTierLimitsTests {
 
         #expect(try FreeTierLimits.recipeCount(in: context) == 2)
     }
+
+    // MARK: Rename
+
+    @Test func renameNeedsSlot_LibraryNameToOwnName_ReturnsTrue() {
+        #expect(FreeTierLimits.renameNeedsSlot(
+            librarySlug: entry.slug,
+            oldName: entry.name,
+            newName: entry.name + " from the farm"
+        ))
+    }
+
+    @Test func renameNeedsSlot_UnchangedName_ReturnsFalse() {
+        #expect(!FreeTierLimits.renameNeedsSlot(librarySlug: entry.slug, oldName: entry.name, newName: entry.name))
+    }
+
+    @Test func renameNeedsSlot_CaseAndWhitespaceOnly_ReturnsFalse() {
+        #expect(!FreeTierLimits.renameNeedsSlot(
+            librarySlug: entry.slug,
+            oldName: entry.name,
+            newName: " \(entry.name.uppercased()) "
+        ))
+    }
+
+    @Test func renameNeedsSlot_RenamedBackToCatalogName_ReturnsFalse() {
+        #expect(!FreeTierLimits.renameNeedsSlot(
+            librarySlug: entry.slug,
+            oldName: entry.name + " from the farm",
+            newName: entry.name
+        ))
+    }
+
+    @Test func renameNeedsSlot_AlreadyRenamedRow_ReturnsFalse() {
+        #expect(!FreeTierLimits.renameNeedsSlot(
+            librarySlug: entry.slug,
+            oldName: entry.name + " from the farm",
+            newName: entry.name + " from the market"
+        ))
+    }
+
+    @Test func renameNeedsSlot_EmptySlug_ReturnsFalse() {
+        #expect(!FreeTierLimits.renameNeedsSlot(librarySlug: "", oldName: "Mine", newName: "Still mine"))
+    }
+
+    @Test func renameNeedsSlot_UnknownSlug_ReturnsFalse() {
+        #expect(!FreeTierLimits.renameNeedsSlot(librarySlug: "no-such-slug", oldName: "Old", newName: "New"))
+    }
+
+    // MARK: Import fit
+
+    private func fit(
+        recipes: Int = 0,
+        customs: Int = 0,
+        incomingRecipes: Int = 0,
+        incomingCustoms: Int = 0,
+        isPro: Bool = false
+    ) -> FreeTierImportFit {
+        FreeTierLimits.importFit(
+            existingRecipes: recipes,
+            existingCustomIngredients: customs,
+            incomingRecipes: incomingRecipes,
+            incomingCustomIngredients: incomingCustoms,
+            isPro: isPro
+        )
+    }
+
+    @Test func importFit_ExactlyAtBothCaps_Fits() {
+        let result = fit(
+            recipes: 1,
+            customs: 2,
+            incomingRecipes: FreeTierLimits.recipeCap - 1,
+            incomingCustoms: FreeTierLimits.customIngredientCap - 2
+        )
+
+        #expect(result.fits)
+        #expect(result.upgradeReason == nil)
+        #expect(result.explanations.isEmpty)
+    }
+
+    @Test func importFit_OneRecipeOverCap_ExceedsRecipesOnly() {
+        let result = fit(recipes: 1, incomingRecipes: FreeTierLimits.recipeCap)
+
+        #expect(!result.fits)
+        #expect(result.exceedsRecipes)
+        #expect(!result.exceedsCustomIngredients)
+        #expect(result.upgradeReason == .recipeLimit)
+        #expect(result.explanations.count == 1)
+    }
+
+    @Test func importFit_OneCustomOverCap_ExceedsIngredientsOnly() {
+        let result = fit(customs: FreeTierLimits.customIngredientCap, incomingCustoms: 1)
+
+        #expect(!result.fits)
+        #expect(!result.exceedsRecipes)
+        #expect(result.exceedsCustomIngredients)
+        #expect(result.upgradeReason == .customIngredientLimit)
+    }
+
+    @Test func importFit_BothOver_ReportsBothAndNamesRecipesFirst() {
+        let result = fit(incomingRecipes: 10, incomingCustoms: 10)
+
+        #expect(result.exceedsRecipes)
+        #expect(result.exceedsCustomIngredients)
+        #expect(result.upgradeReason == .recipeLimit)
+        #expect(result.explanations.count == 2)
+    }
+
+    @Test func importFit_AlreadyOverCapWithNothingIncoming_Fits() {
+        #expect(fit(recipes: 9, customs: 9).fits)
+    }
+
+    @Test func importFit_OverCapExistingAndIncoming_DoesNotFit() {
+        #expect(!fit(recipes: 9, incomingRecipes: 1).fits)
+    }
+
+    @Test func importFit_Pro_AlwaysFits() {
+        #expect(fit(recipes: 100, customs: 100, incomingRecipes: 100, incomingCustoms: 100, isPro: true).fits)
+    }
+
+    @Test func importFit_Explanation_NamesIncomingCapAndExisting() {
+        let result = fit(recipes: 1, incomingRecipes: 5)
+
+        let line = result.explanations.first
+        #expect(line?.contains("5") == true)
+        #expect(line?.contains("\(FreeTierLimits.recipeCap)") == true)
+        #expect(line?.contains("1") == true)
+    }
 }

@@ -220,7 +220,7 @@ struct RecipeImportDuplicateMergeTests {
         #expect(plan.matchedCollections["Gifts"] === keepGifts)
 
         let categories = try ctx.fetch(FetchDescriptor<IngredientCategory>())
-        let imported = try #require(model.confirmExactImport(context: ctx, categories: categories))
+        let imported = try #require(model.confirmExactImport(context: ctx, categories: categories, gate: FreeTierGate(isPro: true)))
         let recipe = try #require(imported.first)
         #expect(recipe.ingredients.compactMap(\.ingredient) == [keepOil])
         #expect(recipe.collections == [keepGifts])

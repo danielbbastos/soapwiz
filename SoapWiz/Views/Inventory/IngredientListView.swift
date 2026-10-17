@@ -6,6 +6,7 @@ struct IngredientListView: View {
     @Environment(AppNavigation.self) private var nav
     @Environment(InventoryRows.self) private var rows
     @Environment(SettingsState.self) private var settings
+    @FreeTierGateEnvironment private var freeTier
 
     @State private var model = IngredientListViewModel()
     /// The open ingredient's merge key, read when it opens: once a merge has
@@ -186,7 +187,7 @@ struct IngredientListView: View {
 
                 if model.editMode == .inactive {
                     ExpandableFloatingActionButton(
-                        primaryAction: { model.showingAddIngredient = true },
+                        primaryAction: addIngredient,
                         secondaryActions: ingredients.isEmpty ? [] : [
                             FABAction(label: "Bulk Import", systemImage: "shippingbox") {
                                 model.showingBulkImport = true
@@ -267,6 +268,12 @@ struct IngredientListView: View {
         .sheet(isPresented: $model.showingFilters) {
             InventoryFilterView(model: model)
         }
+    }
+
+    /// Opens the new-ingredient form, or the upgrade sheet when the free tier's
+    /// custom ingredients are used up.
+    private func addIngredient() {
+        freeTier.ifAllowed(.customIngredient, in: modelContext) { model.showingAddIngredient = true }
     }
 
     /// Shown while in select mode, floating above the tab bar (a `.bottomBar`

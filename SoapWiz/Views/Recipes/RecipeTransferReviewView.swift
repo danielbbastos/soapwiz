@@ -10,12 +10,20 @@ import SwiftData
 /// chemistry.
 struct RecipeTransferReviewView: View {
     let plan: RecipeTransferPlan
+    let fit: FreeTierImportFit
+    var onUpgrade: (ProUpgradeReason) -> Void
+    var onUseExisting: (Int, Ingredient) -> Void
     var onConfirm: () -> Void
     var onCancel: () -> Void
+
+    @State private var pickingEntry: RecipeTransferIngredientPlan?
 
     var body: some View {
         Form {
             recipesSection
+            if !fit.fits {
+                limitSection
+            }
             if !plan.ingredientsToCreate.isEmpty {
                 newIngredientsSection
             }
@@ -28,6 +36,44 @@ struct RecipeTransferReviewView: View {
             confirmSection
         }
         .environment(\.defaultMinListRowHeight, 48)
+        .sheet(item: $pickingEntry) { entry in
+            IngredientPickerView(
+                config: .useExisting,
+                addedIDs: [],
+                allowedRoles: [entry.role],
+                isSinglePick: true
+            ) { picked in
+                guard let ingredient = picked.first else { return }
+                onUseExisting(entry.id, ingredient)
+            }
+        }
+    }
+
+    // MARK: - Free limit
+
+    /// Why the file can't be added as it is, and the way past it. All or
+    /// nothing: a file with some of its recipes would leave the rest pointing
+    /// at ingredients that were never made.
+    private var limitSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(fit.explanations, id: \.self) { line in
+                    HoneyLedgerFieldNote(line, tint: .warning)
+                }
+            }
+            .padding(.vertical, 4)
+            .ledgerSheetRow(position: .first)
+            HoneyLedgerActionRow("Upgrade to SoapWiz Pro", systemImage: "sparkles") {
+                if let reason = fit.upgradeReason { onUpgrade(reason) }
+            }
+            .ledgerSheetRow(position: .last)
+        } header: {
+            HoneyLedgerSectionLabel("Over the Free Limit")
+        } footer: {
+            if fit.exceedsCustomIngredients {
+                HoneyLedgerFooter("Use ingredients you already have in place of the new ones below, or upgrade to add them all.")
+            }
+        }
     }
 
     // MARK: - Recipes
@@ -88,8 +134,16 @@ struct RecipeTransferReviewView: View {
     private var newIngredientsSection: some View {
         Section {
             ForEach(Array(plan.ingredientsToCreate.enumerated()), id: \.element.id) { index, entry in
-                ingredientRow(entry.name, detail: chemistryText(entry.incoming))
-                    .ledgerSheetRow(position: .position(index: index, count: plan.ingredientsToCreate.count))
+                HStack(spacing: 12) {
+                    ingredientRow(entry.name, detail: chemistryText(entry.incoming))
+                    if fit.exceedsCustomIngredients, entry.countsAsCustomIngredient {
+                        Spacer(minLength: 0)
+                        Button("Use Existing…") { pickingEntry = entry }
+                            .buttonStyle(.borderless)
+                            .foregroundStyle(Color.amberText)
+                    }
+                }
+                .ledgerSheetRow(position: .position(index: index, count: plan.ingredientsToCreate.count))
             }
         } header: {
             HoneyLedgerSectionLabel("Will Be Added to Your Inventory")
@@ -195,11 +249,19 @@ struct RecipeTransferReviewView: View {
     private var confirmSection: some View {
         Section {
             HoneyLedgerActionRow(confirmTitle) { onConfirm() }
+                .disabled(!fit.fits)
                 .ledgerSheetRow(position: .first)
             HoneyLedgerActionRow("Cancel", isPrimary: false) { onCancel() }
                 .ledgerSheetRow(position: .last)
         } footer: {
-            HoneyLedgerFooter("Nothing is added until you tap \(confirmTitle).")
+            if fit.fits {
+                HoneyLedgerFooter("Nothing is added until you tap \(confirmTitle).")
+            } else {
+                HoneyLedgerFooter(
+                    "\(confirmTitle) is off because this file is over the free limit, "
+                    + "and nothing is added until all of it fits."
+                )
+            }
         }
     }
 

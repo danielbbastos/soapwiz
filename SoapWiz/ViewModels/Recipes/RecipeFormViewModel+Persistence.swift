@@ -70,6 +70,14 @@ extension RecipeFormViewModel {
         reconcileFragranceUnit()
     }
 
+    /// The free-tier limit saving would pass, or `nil` when it may go ahead.
+    /// Only a new recipe takes a slot: editing one is never blocked, however
+    /// many the store holds.
+    func limitReached(gate: FreeTierGate, in context: ModelContext) -> ProUpgradeReason? {
+        guard editingRecipe == nil else { return nil }
+        return gate.canCreateRecipe(in: context) ? nil : .recipeLimit
+    }
+
     @discardableResult
     func save(context: ModelContext) -> Recipe {
         let recipe = editingRecipe ?? {

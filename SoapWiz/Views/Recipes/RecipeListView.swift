@@ -5,6 +5,7 @@ struct RecipeListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
     @Environment(TourLauncher.self) private var tourLauncher
+    @FreeTierGateEnvironment private var freeTier
     @Query(sort: \Recipe.name) private var recipes: [Recipe]
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
 
@@ -100,7 +101,9 @@ struct RecipeListView: View {
             Label("Collections…", systemImage: "square.stack")
         }
         Button {
-            model.duplicate(recipe, among: recipes, context: modelContext)
+            freeTier.ifAllowed(.recipe, in: modelContext) {
+                model.duplicate(recipe, among: recipes, context: modelContext)
+            }
         } label: {
             Label("Duplicate", systemImage: "plus.square.on.square")
         }
@@ -131,13 +134,30 @@ struct RecipeListView: View {
     /// where a push would return to a recipe it was opened over: the cover has
     /// no way to tell the two apart, and landing on the list is the safer miss.
     /// Beside the list, the detail closes too, for the same reason.
+    ///
+    /// A new recipe (blank, seeded or imported) first asks the free tier; an
+    /// edit never does.
     private func openForm(_ request: RecipeFormRequest) {
+        if request.createsRecipe {
+            freeTier.ifAllowed(.recipe, in: modelContext) { showForm(request) }
+        } else {
+            showForm(request)
+        }
+    }
+
+    private func showForm(_ request: RecipeFormRequest) {
         if RecipeFormRequest.opensFullScreen {
             navigation.reset()
             nav.recipeFormRequest = request
         } else {
             navigation.path.append(request.route)
         }
+    }
+
+    /// Opens the paste-and-import sheet, unless the free tier's recipes are
+    /// used up and nothing could come of it.
+    private func openImport() {
+        freeTier.ifAllowed(.recipe, in: modelContext) { importRequest = .manual }
     }
 
     private func presentFormAfterImport() {
@@ -157,53 +177,6 @@ struct RecipeListView: View {
         model.filingRecipe = nil
         model.exportFile = nil
         importRequest = .file(request)
-    }
-
-    /// Entering the mode, and leaving it with or without sharing or deleting.
-    ///
-    /// Laid out to match the Inventory tab: the bulk action leading, Select and
-    /// Done trailing. Two lists that both offer a selection mode should not put
-    /// the way out of it in different corners.
-    ///
-    /// How many recipes are selected is shown in the navigation title rather
-    /// than on the button, since a compact toolbar draws the button as its icon
-    /// alone and any count in its label would never be seen.
-    @ToolbarContentBuilder
-    private func selectionToolbar() -> some ToolbarContent {
-        if model.isSelecting {
-            ToolbarItemGroup(placement: .topBarLeading) {
-                Button {
-                    // Every selected recipe, not just the ones on screen. A
-                    // collection chip tapped mid-selection changes what is
-                    // displayed, and exporting only the survivors would send
-                    // fewer recipes than the title says are selected.
-                    model.exportSelection(from: recipes)
-                } label: {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                }
-                .accessibilityLabel(model.exportButtonTitle)
-                .disabled(!model.hasSelection)
-
-                Button(role: .destructive) {
-                    model.requestDeleteSelection(from: recipes)
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-                .accessibilityLabel(model.deleteButtonTitle)
-                .disabled(!model.hasSelection)
-            }
-        }
-        if !recipes.isEmpty {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(model.isSelecting ? "Done" : "Select") {
-                    if model.isSelecting {
-                        model.endSelecting()
-                    } else {
-                        model.beginSelecting()
-                    }
-                }
-            }
-        }
     }
 
     var body: some View {
@@ -258,7 +231,7 @@ struct RecipeListView: View {
                 .navigationBarTitleDisplayMode(.large)
                 .ledgerLargeTitle(subtitle: model.isSelecting ? nil : RecipeCountSummary(counting: recipes).line)
                 .ledgerBackground(sunken: navigation.isWide)
-                .toolbar { selectionToolbar() }
+                .toolbar { RecipeSelectionToolbar(model: model, recipes: recipes) }
                 .sheet(item: $model.exportFile) { file in
                     ShareSheet(items: [file.url])
                 }
@@ -357,7 +330,7 @@ struct RecipeListView: View {
                     ExpandableFloatingActionButton(
                         primaryAction: { openForm(.new()) },
                         secondaryActions: [
-                            FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") { importRequest = .manual }
+                            FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") { openImport() }
                         ],
                         besideTabBar: navigation.fabBesideTabBar,
                         tourAnchor: .recipeAddButton

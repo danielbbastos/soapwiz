@@ -4,6 +4,7 @@ import SwiftData
 struct IngredientFormView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @FreeTierGateEnvironment private var freeTier
 
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
     @Query private var allIngredients: [Ingredient]
@@ -157,16 +158,23 @@ struct IngredientFormView: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(model.isEditing ? "Save" : "Add") {
-                        if model.changesLibraryChemistry {
-                            showingChemistryConfirmation = true
-                        } else {
-                            commit()
-                        }
-                    }
+                    Button(model.isEditing ? "Save" : "Add") { attemptSave() }
                     .disabled(!model.isValid || model.codeHasDuplicate(among: allIngredients))
                 }
             }
+        }
+        .proUpgradeHost()
+    }
+
+    /// Asks the free tier before anything else, so a blocked save neither
+    /// raises the custom-chemistry question nor writes.
+    private func attemptSave() {
+        if let reason = model.limitReached(gate: freeTier.gate, in: modelContext) {
+            freeTier.presentUpgrade(for: reason)
+        } else if model.changesLibraryChemistry {
+            showingChemistryConfirmation = true
+        } else {
+            commit()
         }
     }
 
