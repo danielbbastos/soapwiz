@@ -49,6 +49,13 @@ struct RecipeTransferPlan {
         ingredients.filter(\.willBeCreated)
     }
 
+    /// The ingredients to create that count against the free tier's custom
+    /// limit. One the catalog ships under the name it arrives with is the
+    /// library's own and takes no slot.
+    var customIngredientsToCreate: [RecipeTransferIngredientPlan] {
+        ingredientsToCreate.filter(\.countsAsCustomIngredient)
+    }
+
     var matchedIngredients: [RecipeTransferIngredientPlan] {
         ingredients.filter { !$0.willBeCreated }
     }
@@ -109,6 +116,33 @@ struct RecipeTransferPlan {
         }
         matchedCollections = matched
         unmatchedCollectionNames = unmatched
+    }
+
+    private init(
+        payload: RecipeTransferData,
+        ingredients: [RecipeTransferIngredientPlan],
+        matchedCollections: [String: RecipeCollection],
+        unmatchedCollectionNames: [String],
+        recipeSummaries: [RecipeTransferRecipeSummary]
+    ) {
+        self.payload = payload
+        self.ingredients = ingredients
+        self.matchedCollections = matchedCollections
+        self.unmatchedCollectionNames = unmatchedCollectionNames
+        self.recipeSummaries = recipeSummaries
+    }
+
+    /// This plan with one entry matched to an ingredient the user chose, so it
+    /// is no longer created. Everything else is carried over untouched; the
+    /// entry's chemistry conflict is worked out again against the new match.
+    func matching(_ entryID: Int, to ingredient: Ingredient) -> RecipeTransferPlan {
+        RecipeTransferPlan(
+            payload: payload,
+            ingredients: ingredients.map { $0.id == entryID ? $0.matched(to: ingredient) : $0 },
+            matchedCollections: matchedCollections,
+            unmatchedCollectionNames: unmatchedCollectionNames,
+            recipeSummaries: recipeSummaries
+        )
     }
 
     /// Works out what each incoming recipe will be called, and whether the
@@ -241,63 +275,6 @@ struct RecipeTransferPlan {
     }
 }
 
-/// One incoming recipe, as the review screen lists it.
-@MainActor
-struct RecipeTransferRecipeSummary: Identifiable {
-    let id: Int
-    let recipe: RecipeTransferRecipe
-
-    /// The name it will actually be saved under, which differs from the one it
-    /// arrived with when the library already has that name.
-    let resolvedName: String
-
-    /// The identity it will actually be saved under: the sender's when it is
-    /// new here, a fresh one when the library already holds it. Decided once
-    /// when the plan is built, so the screen and the importer cannot disagree
-    /// about which recipe was written.
-    let resolvedUUID: UUID
-
-    /// The library recipe this one *is*, matched on the payload's uuid, or
-    /// `nil` when it is new here or arrived without an identity.
-    let knownRecipe: Recipe?
-
-    /// Whether the library has seen this exact recipe before.
-    var isKnownRecipe: Bool { knownRecipe != nil }
-
-    /// What the user's own copy is called now, which is the name they will
-    /// recognise — the payload's name may be the one the sender changed.
-    var knownRecipeName: String {
-        guard let name = knownRecipe?.name.trimmingCharacters(in: .whitespaces), !name.isEmpty else {
-            return "Untitled Recipe"
-        }
-        return name
-    }
-
-    /// Whether it had to be renamed to avoid colliding with a recipe the user
-    /// already has.
-    var isRenamed: Bool {
-        resolvedName.lookupKey != recipe.name.trimmingCharacters(in: .whitespaces).lookupKey
-    }
-
-    var displayName: String {
-        resolvedName.isEmpty ? "Untitled Recipe" : resolvedName
-    }
-
-    /// What the sender called it, for the line explaining the rename.
-    var incomingName: String {
-        let name = recipe.name.trimmingCharacters(in: .whitespaces)
-        return name.isEmpty ? "Untitled Recipe" : name
-    }
-
-    /// Kind and size, so a list of fifteen is scannable and a non-soap recipe
-    /// is recognisable as one before it is imported.
-    var detail: String {
-        let kind = recipe.kind == .soap ? "Soap" : "Non-soap"
-        let count = recipe.ingredients.count
-        return "\(kind) · \(count) \(count == 1 ? "ingredient" : "ingredients")"
-    }
-}
-
 /// One incoming ingredient and what will become of it.
 @MainActor
 struct RecipeTransferIngredientPlan: Identifiable {
@@ -342,6 +319,23 @@ struct RecipeTransferIngredientPlan: Identifiable {
     var name: String { incoming.name }
 
     var willBeCreated: Bool { existing == nil }
+
+    /// Whether creating it would use one of the free tier's custom slots.
+    var countsAsCustomIngredient: Bool {
+        FreeTierLimits.isCustomIngredient(librarySlug: adoptableSlug ?? "", name: incoming.name)
+    }
+
+    /// This entry matched to an ingredient the user picked. Not a slug match,
+    /// so a pick whose chemistry differs from the sender's is reported.
+    func matched(to ingredient: Ingredient) -> RecipeTransferIngredientPlan {
+        RecipeTransferIngredientPlan(
+            id: id,
+            incoming: incoming,
+            role: role,
+            existing: ingredient,
+            matchedBySlug: false
+        )
+    }
 
     /// The category a created ingredient is filed under, by name.
     var suggestedCategoryName: String {

@@ -25,6 +25,7 @@ struct RecipeFormView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isTourSandbox) private var isTourSandbox
     @Environment(\.tourGuide) private var tourGuide
+    @FreeTierGateEnvironment private var freeTier
     @Query(filter: lyesPredicate)
     private var lyeIngredients: [Ingredient]
     @Query(filter: additivesPredicate)
@@ -115,6 +116,13 @@ struct RecipeFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
+                        // The form stays open with its work when the free
+                        // tier is full: it was allowed to open when a slot
+                        // was free, and another device may have taken it.
+                        if let reason = model.limitReached(gate: freeTier.gate, in: modelContext) {
+                            freeTier.presentUpgrade(for: reason)
+                            return
+                        }
                         let recipe = model.save(context: modelContext)
                         onSave?(recipe)
                         dismiss()

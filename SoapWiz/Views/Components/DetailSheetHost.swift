@@ -13,6 +13,7 @@ struct DetailSheetHost: View {
     var body: some View {
         sheet
             .tourOverlayHost(.sheet)
+            .proUpgradeHost()
             // The tour's sheet closes with its Next and Back, not a swipe.
             .interactiveDismissDisabled(isTourSandbox)
     }

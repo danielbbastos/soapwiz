@@ -26,6 +26,10 @@ struct ProUpgradeView: View {
 
     let reason: ProUpgradeReason?
 
+    /// Whether the thank-you can take the user to Settings. Off for a sheet
+    /// over another sheet, which that would close.
+    var offersSettings = true
+
     @State private var restoreModel = ProRestoreModel()
     @State private var didPurchase = false
     @State private var containerWidth: CGFloat = 0
@@ -66,7 +70,7 @@ struct ProUpgradeView: View {
         let view = ProThankYouView(
             syncOutcome: ProSyncOutcome(prefersOffline: storeHost.prefersOffline),
             onDone: { presenter.dismiss() },
-            onGoToSettings: { presenter.dismissToSettings() }
+            onGoToSettings: offersSettings ? { presenter.dismissToSettings() } : nil
         )
         return Group {
             if scrolls {

@@ -1,6 +1,14 @@
 import Foundation
 import SwiftData
 
+/// An ingredient the user chose in place of one the file would create, and
+/// the slug it carried when chosen: a merge can delete the row, and a deleted
+/// row can't be asked.
+private struct ManualMatch {
+    let ingredient: Ingredient
+    let slug: String
+}
+
 enum RecipeImportPhase: Equatable {
     case input
     case extracting
@@ -39,6 +47,11 @@ final class RecipeImportViewModel {
 
     /// What an exact payload would do, once one has been read.
     private(set) var transferPlan: RecipeTransferPlan?
+
+    /// The user's choices by plan entry, so a plan rebuilt after a merge keeps
+    /// them.
+    @ObservationIgnored
+    private var manualMatches: [Int: ManualMatch] = [:]
 
     /// The collections the last read was given, for matching the names a
     /// SoapWiz copy files its recipe under.
@@ -88,29 +101,10 @@ final class RecipeImportViewModel {
 
     // MARK: - Derived state
 
-    var canExtract: Bool {
-        !rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && phase != .extracting
-    }
-
     /// Whether the on-device model can be used at all. The exact path needs it
     /// for nothing, so it decides what the input screen offers rather than
     /// whether the screen exists.
     var canReadFreeText: Bool { modelIsUsable }
-
-    /// Whether the text in the box is an exact payload.
-    ///
-    /// Lets the input screen say what will happen before the user commits to it:
-    /// pasting a SoapWiz recipe is about to be read exactly, not interpreted.
-    var textCarriesExactPayload: Bool {
-        if case .payload = RecipeTransferDecoder.scan(text: rawText) { return true }
-        return false
-    }
-
-    /// Whether the text in the box is SoapWiz's own readable copy, which is
-    /// read without the model.
-    var textIsSoapWizCopy: Bool { RecipeTextExportReader.read(rawText) != nil }
-
-    var isExtracting: Bool { phase == .extracting }
 
     /// A short line naming the current step, so an empty early snapshot still
     /// says something. Driven by how far `streamingDraft` has filled in, so it
@@ -120,27 +114,6 @@ final class RecipeImportViewModel {
             return waitHints.current ?? "Reading the text\u{2026}"
         }
         return streamingDraft.statesLyeSettings ? "Checking amounts\u{2026}" : "Finding ingredients\u{2026}"
-    }
-
-    var unresolvedCount: Int { rows.count { !$0.isResolved } }
-
-    var canConfirm: Bool {
-        phase == .review && unresolvedCount == 0 && rows.contains { $0.role == .oil && $0.ingredient != nil }
-    }
-
-    /// The reason confirming isn't possible yet, or `nil` when it is. An import
-    /// with no resolved oil would produce a recipe with nothing to saponify.
-    var confirmBlocker: String? {
-        guard phase == .review else { return nil }
-        if unresolvedCount > 0 {
-            return unresolvedCount == 1
-                ? "One ingredient still needs to be created or skipped."
-                : "\(unresolvedCount) ingredients still need to be created or skipped."
-        }
-        if !rows.contains(where: { $0.role == .oil && $0.ingredient != nil }) {
-            return "A recipe needs at least one oil from your inventory."
-        }
-        return nil
     }
 
     var prepared: PreparedRecipeImport? {
@@ -220,6 +193,7 @@ final class RecipeImportViewModel {
             return
         }
         transferPlan = plan
+        manualMatches = [:]
         phase = .exactReview
     }
 
@@ -351,6 +325,7 @@ final class RecipeImportViewModel {
     func returnToInput() {
         phase = .input
         transferPlan = nil
+        manualMatches = [:]
     }
 
     /// Moves both review screens off rows the duplicate merge deleted. Each
@@ -367,21 +342,44 @@ final class RecipeImportViewModel {
         let collections = (try? context.fetch(FetchDescriptor<RecipeCollection>())) ?? []
         knownCollections = collections
         guard let plan = transferPlan else { return }
-        transferPlan = RecipeTransferPlan(
+        var rebuilt = RecipeTransferPlan(
             payload: plan.payload,
             inventory: (try? context.fetch(FetchDescriptor<Ingredient>())) ?? [],
             collections: collections,
             recipes: (try? context.fetch(FetchDescriptor<Recipe>())) ?? []
         )
+        // The user's own matches are decisions the payload and the store can't
+        // reproduce. Followed onto the survivor of a merge, and dropped when
+        // the ingredient has gone altogether.
+        for (entryID, match) in manualMatches {
+            guard let entry = rebuilt.ingredients.first(where: { $0.id == entryID }), entry.willBeCreated,
+                  let live = LiveIngredient.resolve(match.ingredient, slug: match.slug, in: context)
+            else {
+                manualMatches[entryID] = nil
+                continue
+            }
+            rebuilt = rebuilt.matching(entryID, to: live)
+        }
+        transferPlan = rebuilt
+    }
+
+    /// Matches an ingredient the file would create to one the user already has,
+    /// so it takes no custom slot. Remembered so a rebuilt plan keeps it.
+    func useExisting(_ entryID: Int, _ ingredient: Ingredient) {
+        guard let plan = transferPlan else { return }
+        manualMatches[entryID] = ManualMatch(ingredient: ingredient, slug: ingredient.librarySlug)
+        transferPlan = plan.matching(entryID, to: ingredient)
     }
 
     /// Writes the reviewed payload into the library.
     ///
-    /// Returns the recipes created, or `nil` if the save failed. The context is
-    /// rolled back on failure so a half-written import — recipes without their
-    /// line items, ingredients nothing references — never survives.
-    func confirmExactImport(context: ModelContext, categories: [IngredientCategory]) -> [Recipe]? {
+    /// Returns the recipes created, or `nil` if nothing was written: the file
+    /// doesn't fit the free tier, or the save failed. The context is rolled
+    /// back on failure so a half-written import — recipes without their line
+    /// items, ingredients nothing references — never survives.
+    func confirmExactImport(context: ModelContext, categories: [IngredientCategory], gate: FreeTierGate) -> [Recipe]? {
         guard let transferPlan else { return nil }
+        guard gate.importFit(for: transferPlan, in: context).fits else { return nil }
         let recipes = RecipeTransferImporter.apply(transferPlan, into: context, categories: categories)
         do {
             try context.save()

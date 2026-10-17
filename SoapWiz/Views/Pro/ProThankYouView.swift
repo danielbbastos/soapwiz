@@ -4,7 +4,7 @@ import SwiftUI
 struct ProThankYouView: View {
     let syncOutcome: ProSyncOutcome
     let onDone: () -> Void
-    let onGoToSettings: () -> Void
+    let onGoToSettings: (() -> Void)?
 
     private static let readyRow = ProBenefit(
         symbol: "checkmark",
@@ -52,7 +52,7 @@ struct ProThankYouView: View {
             VStack(spacing: 12) {
                 Button("Done", action: onDone)
                     .buttonStyle(.honeyLedgerPrimary)
-                if syncOutcome == .isOff {
+                if syncOutcome == .isOff, let onGoToSettings {
                     Button("Go to iCloud settings", action: onGoToSettings)
                         .foregroundStyle(Color.amberText)
                 }

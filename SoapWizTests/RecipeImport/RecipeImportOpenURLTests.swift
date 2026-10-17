@@ -34,7 +34,7 @@ struct RecipeImportOpenURLTests {
 
         let categories = try destination.context.fetch(FetchDescriptor<IngredientCategory>())
         let imported = try #require(
-            model.confirmExactImport(context: destination.context, categories: categories)
+            model.confirmExactImport(context: destination.context, categories: categories, gate: FreeTierGate(isPro: true))
         )
         #expect(imported.count == 1)
         #expect(imported.first?.name == "Shared Bar")

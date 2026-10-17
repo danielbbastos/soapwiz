@@ -32,7 +32,12 @@ struct ProUpgradeRequest: Identifiable, Equatable {
     let reason: ProUpgradeReason?
 }
 
-/// Lets any screen open the one upgrade sheet attached at the root.
+/// Lets any screen open the upgrade sheet.
+///
+/// A sheet can't present over another sheet's presenter, so the sheet is
+/// attached by hosts: the root, and every sheet or cover an upgrade can be
+/// asked from. Hosts register in the order they appear and only the topmost
+/// one binds the sheet, so it comes up over whatever is open.
 @Observable
 @MainActor
 final class ProUpgradePresenter {
@@ -41,6 +46,32 @@ final class ProUpgradePresenter {
     /// Changes each time the sheet asks to take the user to Settings, which
     /// `ContentView` follows by switching tab.
     private(set) var settingsRequest: UUID?
+
+    /// The registered hosts, bottom first.
+    private(set) var hostIDs: [UUID] = []
+
+    var topHostID: UUID? { hostIDs.last }
+
+    func registerHost(_ id: UUID) {
+        hostIDs.removeAll { $0 == id }
+        hostIDs.append(id)
+    }
+
+    /// Removes the host wherever it sits: a lower host can leave while one
+    /// above it is still up, and the ones above stay.
+    func unregisterHost(_ id: UUID) {
+        hostIDs.removeAll { $0 == id }
+    }
+
+    func isTopHost(_ id: UUID) -> Bool {
+        topHostID == id
+    }
+
+    /// Only the root host can take the user to Settings: from a sheet over a
+    /// form, closing the sheet to switch tabs would throw the form away.
+    func isRootHost(_ id: UUID) -> Bool {
+        hostIDs.first == id
+    }
 
     func present(reason: ProUpgradeReason? = nil) {
         request = ProUpgradeRequest(reason: reason)
