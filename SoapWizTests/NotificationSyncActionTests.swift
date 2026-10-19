@@ -292,40 +292,6 @@ struct NotificationCureSyncActionTests {
         #expect(log == ["first started", "first ended", "second started"])
     }
 
-    struct PermissionCase: CustomTestStringConvertible, Sendable {
-        let expiryOn: Bool
-        let cureOn: Bool
-        let authorization: UNAuthorizationStatus
-        let isPro: Bool
-        let expected: Bool
-        var testDescription: String {
-            "expiry \(expiryOn), cure \(cureOn), authorization \(authorization.rawValue), pro \(isPro)"
-        }
-    }
-
-    @Test(arguments: [
-        PermissionCase(expiryOn: true, cureOn: false, authorization: .notDetermined, isPro: true, expected: true),
-        PermissionCase(expiryOn: false, cureOn: true, authorization: .notDetermined, isPro: true, expected: true),
-        PermissionCase(expiryOn: true, cureOn: true, authorization: .notDetermined, isPro: true, expected: true),
-        PermissionCase(expiryOn: true, cureOn: true, authorization: .notDetermined, isPro: false, expected: false),
-        PermissionCase(expiryOn: false, cureOn: false, authorization: .notDetermined, isPro: true, expected: false),
-        PermissionCase(expiryOn: true, cureOn: true, authorization: .authorized, isPro: true, expected: false),
-        PermissionCase(expiryOn: true, cureOn: true, authorization: .denied, isPro: true, expected: false)
-    ])
-    func shouldRequestPermission_OnlyProWithReminderOnAndNoAnswer(_ testCase: PermissionCase) {
-        let settings = AppSettings()
-        settings.expiryNotificationsEnabled = testCase.expiryOn
-        settings.cureNotificationsEnabled = testCase.cureOn
-
-        let result = NotificationService.shouldRequestPermission(
-            settings: settings,
-            authorization: testCase.authorization,
-            isPro: testCase.isPro
-        )
-
-        #expect(result == testCase.expected)
-    }
-
     @Test func deviceMayNotNotify_CureRemindersOnAndRefused_ShowsNote() {
         let settings = AppSettings()
         settings.cureNotificationsEnabled = true

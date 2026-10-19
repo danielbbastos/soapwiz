@@ -96,7 +96,7 @@ struct SoapWizApp: App {
                 // Not while a reset is under way: the placeholder is up and the
                 // store is the reset's until it finishes.
                 guard newPhase == .active else { return }
-                Task { await proStore.refreshIfStale() }
+                Task { await proStore.refreshEntitlementHonouringCancellation() }
                 guard let storeHost, storeHost.phase == .ready else { return }
                 Task {
                     await NotificationService.syncIfEnabled(
@@ -119,7 +119,7 @@ struct SoapWizApp: App {
             // nil): launch syncs by itself. A duplicate run after a toggle is
             // harmless, since syncs are serialized and permission is asked once.
             .onChange(of: storeHost?.settings.reminders) { old, new in
-                guard old != nil, new != nil, old != new else { return }
+                guard old != nil, new != nil else { return }
                 guard let storeHost, storeHost.phase == .ready else { return }
                 Task {
                     await NotificationService.syncIfEnabled(

@@ -41,11 +41,11 @@ final class ProStore {
         guard listener == nil else { return }
         let changes = backend.entitlementChanges()
         listener = Task { [weak self] in
-            await self?.refreshFromListener()
+            await self?.refreshEntitlementHonouringCancellation()
             let priceLoad = Task { [weak self] in await self?.loadPrice() }
             defer { priceLoad.cancel() }
             for await _ in changes {
-                await self?.refreshFromListener()
+                await self?.refreshEntitlementHonouringCancellation()
             }
         }
     }
@@ -72,22 +72,18 @@ final class ProStore {
         if purchaseState == .failed { purchaseState = .idle }
     }
 
-    /// The only refresh that honours cancellation: `stop()` cancels the
-    /// listener mid-read, and a cancelled `currentEntitlements` read can end
-    /// early and report false. Purchase and restore run on a caller's task
+    /// Re-reads the entitlement and skips applying the answer if the task was
+    /// cancelled. The only refresh that honours cancellation: `stop()` cancels
+    /// the listener mid-read, and a cancelled `currentEntitlements` read can
+    /// end early and report false. Purchase and restore run on a caller's task
     /// that may be cancelled after the user has paid, so they always apply.
-    private func refreshFromListener() async {
+    /// Used by the listener and as the safety net for a change it missed (an
+    /// approved Ask to Buy purchase) when the app returns to the foreground or
+    /// a Pro screen appears.
+    func refreshEntitlementHonouringCancellation() async {
         let entitled = await backend.isEntitled()
         guard !Task.isCancelled else { return }
         apply(entitled: entitled)
-    }
-
-    /// The safety net for a change the listener missed (an approved Ask to Buy
-    /// purchase): re-reads the entitlement when the app returns to the
-    /// foreground or a Pro screen appears. Driven by view tasks and scene
-    /// changes, so it honours cancellation like the listener does.
-    func refreshIfStale() async {
-        await refreshFromListener()
     }
 
     private func apply(entitled: Bool) {
@@ -108,7 +104,7 @@ final class ProStore {
     func entitlementAnswer(within timeout: Duration = StoreSelection.entitlementTimeout) async -> Bool? {
         let backend = backend
         let entitled = await StoreSelection.answer(within: timeout) { await backend.isEntitled() }
-        // A cancelled read can end early and report false, as in `refreshFromListener`.
+        // A cancelled read can end early and report false, as in `refreshEntitlementHonouringCancellation`.
         guard let entitled, !Task.isCancelled else { return nil }
         apply(entitled: entitled)
         return entitled

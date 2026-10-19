@@ -10,7 +10,7 @@ struct ContentView: View {
     /// Absent in the tour's sandbox, which has no upgrade sheet.
     @Environment(ProUpgradePresenter.self) private var upgradePresenter: ProUpgradePresenter?
 
-    @Environment(ProStore.self) private var proStore: ProStore?
+    @FreeTierGateEnvironment private var freeTier
 
     @State private var navigation: AppNavigation
     @State private var restore = RestoreCoordinator()
@@ -40,7 +40,7 @@ struct ContentView: View {
                     .task {
                         await restore.perform(
                             in: modelContext,
-                            isPro: FreeTierGate(isPro: proStore?.isPro ?? false, isTourSandbox: isTourSandbox).isUnlimited
+                            isPro: freeTier.gate.isUnlimited
                         )
                     }
             } else {

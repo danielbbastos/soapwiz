@@ -42,23 +42,23 @@ struct ProStorePendingTests {
         #expect(store.purchaseState == .idle)
     }
 
-    @Test func refreshIfStale_PendingNowEntitled_UnlocksAndLeavesPending() async {
+    @Test func refreshEntitlementHonouringCancellation_PendingNowEntitled_UnlocksAndLeavesPending() async {
         let store = makeStore()
         _ = await store.purchase()
         backend.entitled = true
 
-        await store.refreshIfStale()
+        await store.refreshEntitlementHonouringCancellation()
 
         #expect(store.isPro)
         #expect(hint.isPro)
         #expect(store.purchaseState == .idle)
     }
 
-    @Test func refreshIfStale_StillPending_StaysPending() async {
+    @Test func refreshEntitlementHonouringCancellation_StillPending_StaysPending() async {
         let store = makeStore()
         _ = await store.purchase()
 
-        await store.refreshIfStale()
+        await store.refreshEntitlementHonouringCancellation()
 
         #expect(!store.isPro)
         #expect(store.purchaseState == .pending)

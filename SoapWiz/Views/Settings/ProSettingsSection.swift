@@ -72,7 +72,7 @@ struct ProSettingsSection: View {
         }
         .proRestoreAlert(restoreModel)
         .task {
-            await proStore.refreshIfStale()
+            await proStore.refreshEntitlementHonouringCancellation()
             await proStore.loadPrice()
         }
         .task { refreshCounts() }

@@ -8,13 +8,9 @@ struct ReminderSettingsSnapshot: Equatable {
     var expiryNotificationsEnabled: Bool
     var cureNotificationsEnabled: Bool
     var tracksInventory: Bool
+}
 
-    init(expiryNotificationsEnabled: Bool, cureNotificationsEnabled: Bool, tracksInventory: Bool) {
-        self.expiryNotificationsEnabled = expiryNotificationsEnabled
-        self.cureNotificationsEnabled = cureNotificationsEnabled
-        self.tracksInventory = tracksInventory
-    }
-
+extension ReminderSettingsSnapshot {
     init(settings: AppSettings) {
         self.init(
             expiryNotificationsEnabled: settings.expiryNotificationsEnabled,
