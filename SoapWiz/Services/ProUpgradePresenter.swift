@@ -5,6 +5,8 @@ import Observation
 enum ProUpgradeReason: Hashable {
     case recipeLimit
     case customIngredientLimit
+    case recipeImportLimit
+    case customIngredientImportLimit
     case sync
     case collections
     case reminders
@@ -12,9 +14,14 @@ enum ProUpgradeReason: Hashable {
     var message: String {
         switch self {
         case .recipeLimit:
-            "You have \(FreeTierLimits.recipeCap) recipes, the most the free version keeps. Pro removes the limit."
+            "You’ve reached the free version’s limit of \(FreeTierLimits.recipeCap) recipes. Pro removes the limit."
         case .customIngredientLimit:
-            "You have \(FreeTierLimits.customIngredientCap) custom ingredients, the most the free version keeps. Pro removes the limit."
+            "You’ve reached the free version’s limit of \(FreeTierLimits.customIngredientCap) custom ingredients. Pro removes the limit."
+        case .recipeImportLimit:
+            "Importing this file would take you past the free version’s \(FreeTierLimits.recipeCap) recipes. Pro removes the limit."
+        case .customIngredientImportLimit:
+            "Importing this file would take you past the free version’s "
+                + "\(FreeTierLimits.customIngredientCap) custom ingredients. Pro removes the limit."
         case .sync:
             "iCloud sync is part of SoapWiz Pro."
         case .collections:
@@ -61,6 +68,7 @@ final class ProUpgradePresenter {
     /// above it is still up, and the ones above stay.
     func unregisterHost(_ id: UUID) {
         hostIDs.removeAll { $0 == id }
+        if hostIDs.isEmpty { request = nil }
     }
 
     func isTopHost(_ id: UUID) -> Bool {
@@ -73,7 +81,10 @@ final class ProUpgradePresenter {
         hostIDs.first == id
     }
 
+    /// Ignored while no host is registered: nothing could show the sheet, and
+    /// a request kept for later would surface over an unrelated screen.
     func present(reason: ProUpgradeReason? = nil) {
+        guard !hostIDs.isEmpty else { return }
         request = ProUpgradeRequest(reason: reason)
     }
 

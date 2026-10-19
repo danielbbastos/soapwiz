@@ -15,8 +15,8 @@ struct FreeTierImportFit: Equatable {
     /// The limit the upgrade sheet should name: recipes first, as the file is
     /// made of them.
     var upgradeReason: ProUpgradeReason? {
-        if exceedsRecipes { return .recipeLimit }
-        if exceedsCustomIngredients { return .customIngredientLimit }
+        if exceedsRecipes { return .recipeImportLimit }
+        if exceedsCustomIngredients { return .customIngredientImportLimit }
         return nil
     }
 

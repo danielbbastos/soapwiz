@@ -272,7 +272,7 @@ struct FreeTierLimitsTests {
         #expect(!result.fits)
         #expect(result.exceedsRecipes)
         #expect(!result.exceedsCustomIngredients)
-        #expect(result.upgradeReason == .recipeLimit)
+        #expect(result.upgradeReason == .recipeImportLimit)
         #expect(result.explanations.count == 1)
     }
 
@@ -282,7 +282,7 @@ struct FreeTierLimitsTests {
         #expect(!result.fits)
         #expect(!result.exceedsRecipes)
         #expect(result.exceedsCustomIngredients)
-        #expect(result.upgradeReason == .customIngredientLimit)
+        #expect(result.upgradeReason == .customIngredientImportLimit)
     }
 
     @Test func importFit_BothOver_ReportsBothAndNamesRecipesFirst() {
@@ -290,7 +290,7 @@ struct FreeTierLimitsTests {
 
         #expect(result.exceedsRecipes)
         #expect(result.exceedsCustomIngredients)
-        #expect(result.upgradeReason == .recipeLimit)
+        #expect(result.upgradeReason == .recipeImportLimit)
         #expect(result.explanations.count == 2)
     }
 

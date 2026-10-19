@@ -20,6 +20,7 @@ struct RecipeImportView: View {
     @State private var textRevision = 0
     @State private var readingProblem: String?
     @State private var hasOpenedFile = false
+    @State private var confirmedFit: FreeTierImportFit?
     @State private var textBoxHeight = Self.minimumTextBoxHeight
 
     /// About seven lines. Below this the box stops shrinking and the form
@@ -57,7 +58,7 @@ struct RecipeImportView: View {
                     if let plan = model.transferPlan {
                         RecipeTransferReviewView(
                             plan: plan,
-                            fit: freeTier.gate.importFit(for: plan, in: modelContext),
+                            fit: confirmedFit ?? freeTier.gate.importFit(for: plan, in: modelContext),
                             onUpgrade: freeTier.presentUpgrade,
                             onUseExisting: model.useExisting,
                             onConfirm: confirmExactImport,
@@ -320,11 +321,15 @@ struct RecipeImportView: View {
     /// Writes the payload and leaves. Unlike the text path, this does not open
     /// the recipe form: the recipes are already exactly what the sender had.
     private func confirmExactImport() {
+        confirmedFit = model.transferPlan.map { freeTier.gate.importFit(for: $0, in: modelContext) }
         guard let recipes = model.confirmExactImport(
             context: modelContext,
             categories: categories,
             gate: freeTier.gate
-        ) else { return }
+        ) else {
+            confirmedFit = nil
+            return
+        }
         onImported?(recipes)
         dismiss()
     }

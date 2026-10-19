@@ -120,13 +120,13 @@ struct SoapWizApp: App {
         if storeHost.phase == .ready {
             ContentView()
                 .id(storeHost.generation)
+                .proUpgradeHost()
                 .environment(storeHost)
                 .environment(storeHost.syncHealth)
                 .environment(storeHost.inventoryRows)
                 .environment(storeHost.settings)
                 .modelContainer(storeHost.container)
                 .environment(upgradePresenter)
-                .proUpgradeHost()
                 // Its own task: the launch decision can wait on iCloud
                 // and shouldn't sit behind the seeding below.
                 .task {
