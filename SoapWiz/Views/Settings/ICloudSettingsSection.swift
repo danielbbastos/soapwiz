@@ -47,18 +47,26 @@ struct ICloudSettingsSection: View {
             }
             // A build without the iCloud entitlement can't sync either way.
             if shownSyncRow {
+                let relaunchNotice = storeHost.relaunchNotice(isPro: proStore.isPro)
                 if proStore.isPro {
-                    Toggle("Sync with iCloud", isOn: syncToggle)
-                        .foregroundStyle(Color.ink)
-                        .tint(Color.amber)
-                        .ledgerSheetRow(position: .position(index: 1 + lastSyncOffset, count: count))
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle("Sync with iCloud", isOn: syncToggle)
+                            .foregroundStyle(Color.ink)
+                            .tint(Color.amber)
+                        relaunchNoticeView(relaunchNotice)
+                    }
+                    .ledgerSheetRow(position: .position(index: 1 + lastSyncOffset, count: count))
                 } else {
                     Button {
                         upgradePresenter.present(reason: .sync)
                     } label: {
-                        Text("Upgrade to Pro")
-                            .fontWeight(.semibold)
-                            .foregroundStyle(Color.amberText)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Upgrade to Pro")
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.amberText)
+                            relaunchNoticeView(relaunchNotice)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .ledgerSheetRow(position: .position(index: 1 + lastSyncOffset, count: count))
                 }
@@ -74,15 +82,8 @@ struct ICloudSettingsSection: View {
         } header: {
             HoneyLedgerSectionLabel("iCloud")
         } footer: {
-            VStack(alignment: .leading, spacing: 8) {
-                if let relaunchNotice = storeHost.relaunchNotice(isPro: proStore.isPro) {
-                    Text("\(Image(systemName: "arrow.clockwise.circle.fill")) \(relaunchNotice)")
-                        .font(.footnote)
-                        .foregroundStyle(Color.warning)
-                }
-                if let syncFooter {
-                    HoneyLedgerFooter(syncFooter)
-                }
+            if let syncFooter {
+                HoneyLedgerFooter(syncFooter)
             }
         }
         .alert("Reset Everything?", isPresented: $showsResetConfirmation) {
@@ -98,6 +99,16 @@ struct ICloudSettingsSection: View {
         } message: {
             // About the store open now, not a choice waiting for a relaunch.
             Text(AppReset.confirmationMessage(localCause: storeHost.localCause))
+        }
+    }
+
+    @ViewBuilder
+    private func relaunchNoticeView(_ notice: String?) -> some View {
+        if let notice {
+            Text("\(Image(systemName: "arrow.clockwise.circle.fill")) \(notice)")
+                .font(.footnote)
+                .foregroundStyle(Color.warning)
+                .multilineTextAlignment(.leading)
         }
     }
 
