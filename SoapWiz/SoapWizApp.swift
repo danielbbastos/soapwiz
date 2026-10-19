@@ -95,7 +95,9 @@ struct SoapWizApp: App {
                 }
                 // Not while a reset is under way: the placeholder is up and the
                 // store is the reset's until it finishes.
-                guard newPhase == .active, let storeHost, storeHost.phase == .ready else { return }
+                guard newPhase == .active else { return }
+                Task { await proStore.refreshIfStale() }
+                guard let storeHost, storeHost.phase == .ready else { return }
                 Task {
                     await NotificationService.syncIfEnabled(
                         modelContext: storeHost.container.mainContext

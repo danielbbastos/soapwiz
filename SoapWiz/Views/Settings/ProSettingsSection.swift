@@ -71,7 +71,10 @@ struct ProSettingsSection: View {
             StatusStamp(word: word, tone: tone, glyph: glyph)
         }
         .proRestoreAlert(restoreModel)
-        .task { await proStore.loadPrice() }
+        .task {
+            await proStore.refreshIfStale()
+            await proStore.loadPrice()
+        }
         .task { refreshCounts() }
         .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
             refreshCounts()

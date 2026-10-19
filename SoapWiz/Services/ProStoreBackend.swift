@@ -43,6 +43,9 @@ struct StoreKitProBackend: ProStoreBackend {
                     switch result {
                     case .verified(let transaction):
                         await transaction.finish()
+                        if transaction.productID == Self.productID {
+                            await settle(toEntitled: transaction.revocationDate == nil)
+                        }
                     case .unverified(_, let error):
                         Self.log.error("Unverified transaction update: \(error.localizedDescription)")
                     }
@@ -51,6 +54,16 @@ struct StoreKitProBackend: ProStoreBackend {
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    /// `currentEntitlements` can trail the update that announced a change, so
+    /// the store would read the old answer and never look again.
+    private func settle(toEntitled expected: Bool) async {
+        for _ in 0..<10 {
+            if await isEntitled() == expected { return }
+            try? await Task.sleep(for: .milliseconds(300))
+            if Task.isCancelled { return }
         }
     }
 

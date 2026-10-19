@@ -58,6 +58,17 @@ enum NotificationService {
         }
     }
 
+    /// Whether a sync asks for this device's notification permission: Pro, a
+    /// reminder kind active (switched on by a restore or another device while
+    /// the user was free) and no answer given yet. Never changes the settings.
+    static func shouldRequestPermission(
+        settings: AppSettings,
+        authorization: UNAuthorizationStatus,
+        isPro: Bool
+    ) -> Bool {
+        syncAction(for: settings, authorization: authorization, isPro: isPro) == .requestPermission
+    }
+
     /// Whether Settings should say that this device won't deliver reminders
     /// that are switched on: exactly when a sync skips it (SW-187). The setting
     /// syncs and the permission doesn't, so without the note a device that
@@ -150,16 +161,18 @@ enum NotificationService {
         // nothing scheduled, and the first sync after a refund cancels the
         // reminders still pending.
         let isPro = ProEntitlementHint().isPro
+        if shouldRequestPermission(settings: settings, authorization: status, isPro: isPro) {
+            if await requestAuthorization() {
+                await syncNotifications(modelContext: modelContext)
+            }
+            return
+        }
         switch syncAction(for: settings, authorization: status, isPro: isPro) {
         case .cancel:
             await cancelPendingReminders(withPrefixes: allPrefixes)
         case .schedule:
             await syncNotifications(modelContext: modelContext)
-        case .requestPermission:
-            if await requestAuthorization() {
-                await syncNotifications(modelContext: modelContext)
-            }
-        case .skip:
+        case .requestPermission, .skip:
             break
         }
     }

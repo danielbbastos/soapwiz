@@ -42,7 +42,8 @@ final class ProStore {
         let changes = backend.entitlementChanges()
         listener = Task { [weak self] in
             await self?.refreshFromListener()
-            await self?.loadPrice()
+            let priceLoad = Task { [weak self] in await self?.loadPrice() }
+            defer { priceLoad.cancel() }
             for await _ in changes {
                 await self?.refreshFromListener()
             }
@@ -79,6 +80,14 @@ final class ProStore {
         let entitled = await backend.isEntitled()
         guard !Task.isCancelled else { return }
         apply(entitled: entitled)
+    }
+
+    /// The safety net for a change the listener missed (an approved Ask to Buy
+    /// purchase): re-reads the entitlement when the app returns to the
+    /// foreground or a Pro screen appears. Driven by view tasks and scene
+    /// changes, so it honours cancellation like the listener does.
+    func refreshIfStale() async {
+        await refreshFromListener()
     }
 
     private func apply(entitled: Bool) {
