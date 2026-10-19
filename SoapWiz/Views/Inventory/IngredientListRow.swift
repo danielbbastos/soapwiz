@@ -52,9 +52,13 @@ struct IngredientListRow: View {
                         }
                         .tint(Color.warning)
                     } else {
-                        Button("Delete", role: .destructive) {
+                        // No destructive role: that makes the list animate the
+                        // row away itself, even when the delete is blocked or
+                        // only asks for confirmation.
+                        Button("Delete") {
                             model.delete(ingredient)
                         }
+                        .tint(Color.danger)
                     }
                 }
                 // The sheet's row style would otherwise reach the swipe
