@@ -270,4 +270,76 @@ struct SettingsStateTests {
 
         #expect(sut.currencyCode == "USD")
     }
+
+    // MARK: - Reminder settings
+
+    @Test func init_NoRecord_RemindersAreDefaults() throws {
+        let container = try makeContainer()
+
+        let sut = SettingsState(context: container.mainContext, locale: locale)
+
+        #expect(sut.reminders == ReminderSettingsSnapshot(records: []))
+    }
+
+    @Test func handle_FinishedImport_ReminderSettingChange_UpdatesRemindersAndInvalidates() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        _ = try makeRecord(in: context)
+        let sut = SettingsState(context: context, locale: locale)
+        try changeRemotely(in: container) {
+            $0.expiryNotificationsEnabled = true
+            $0.cureNotificationsEnabled = true
+        }
+
+        let invalidated = invalidates(
+            reading: { _ = sut.reminders },
+            after: { sut.handle(SyncEvent(kind: .import, endDate: .now, succeeded: true, error: nil)) }
+        )
+
+        #expect(invalidated)
+        #expect(sut.reminders.expiryNotificationsEnabled)
+        #expect(sut.reminders.cureNotificationsEnabled)
+    }
+
+    @Test func refresh_ImportedTracksInventoryChange_UpdatesReminders() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        _ = try makeRecord(tracksInventory: false, in: context)
+        let sut = SettingsState(context: context, locale: locale)
+        try changeRemotely(in: container) { $0.tracksInventory = true }
+
+        sut.refresh()
+
+        #expect(sut.reminders.tracksInventory)
+    }
+
+    @Test func save_OwnReminderToggle_UpdatesReminders() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let record = try makeRecord(in: context)
+        let sut = SettingsState(context: context, locale: locale)
+
+        record.cureNotificationsEnabled = true
+        try context.save()
+
+        #expect(sut.reminders.cureNotificationsEnabled)
+    }
+
+    @Test func save_UnrelatedSettingChange_DoesNotInvalidateReminders() throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let record = try makeRecord(in: context)
+        let sut = SettingsState(context: context, locale: locale)
+
+        let invalidated = try invalidates(
+            reading: { _ = sut.reminders },
+            after: {
+                record.currencyCode = "GBP"
+                record.pvpFactor += 1
+                try context.save()
+            }
+        )
+
+        #expect(!invalidated)
+    }
 }

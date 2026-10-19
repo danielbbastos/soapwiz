@@ -114,6 +114,19 @@ struct SoapWizApp: App {
                     )
                 }
             }
+            // A reminder setting that arrives from another device or a restore
+            // is scheduled at once. Not when the store first appears (`old` is
+            // nil): launch syncs by itself. A duplicate run after a toggle is
+            // harmless, since syncs are serialized and permission is asked once.
+            .onChange(of: storeHost?.settings.reminders) { old, new in
+                guard old != nil, new != nil, old != new else { return }
+                guard let storeHost, storeHost.phase == .ready else { return }
+                Task {
+                    await NotificationService.syncIfEnabled(
+                        modelContext: storeHost.container.mainContext
+                    )
+                }
+            }
         }
     }
 
