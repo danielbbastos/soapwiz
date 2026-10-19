@@ -20,6 +20,7 @@ struct RecipeConfigTabView: View {
         return #Predicate { $0.category?.name == name && !$0.isHidden }
     }()
 
+    @FreeTierGateEnvironment private var freeTier
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
     @Query(filter: RecipeConfigTabView.additivesPredicate) private var additiveIngredients: [Ingredient]
     /// All ingredients, unfiltered — the cream-soap toggle resolves its glycerine
@@ -97,14 +98,22 @@ struct RecipeConfigTabView: View {
             Button {
                 // See `UIApplication.endEditing()`.
                 UIApplication.shared.endEditing()
-                showNewCollection = true
+                freeTier.ifAvailable(.collections) { showNewCollection = true }
             } label: {
-                Label("New Collection", systemImage: "plus")
+                if freeTier.gate.allows(.collections) {
+                    Label("New Collection", systemImage: "plus")
+                } else {
+                    Label("New Collection (Pro)", systemImage: "plus")
+                }
             }
             if !collections.isEmpty {
                 Divider()
                 ForEach(collections) { collection in
-                    Button { model.toggleCollection(collection) } label: {
+                    Button {
+                        freeTier.ifMayToggleCollection(isFiled: model.isSelected(collection)) {
+                            model.toggleCollection(collection)
+                        }
+                    } label: {
                         MenuSelectionLabel(collection.name, isSelected: model.isSelected(collection))
                     }
                 }

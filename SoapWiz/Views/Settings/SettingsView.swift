@@ -12,6 +12,7 @@ struct SettingsView: View {
     @Environment(\.isTourSandbox) private var isTourSandbox
     @Environment(TourLauncher.self) private var tourLauncher
     @Environment(\.scenePhase) private var scenePhase
+    @FreeTierGateEnvironment private var freeTier
     @Query private var categories: [IngredientCategory]
     @Query private var locations: [StorageLocation]
     @Query private var providers: [Provider]
@@ -36,6 +37,9 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                if !isTourSandbox {
+                    ProSettingsSection()
+                }
                 if let settings {
                     stockTrackingSection(settings)
                 }
@@ -59,13 +63,20 @@ struct SettingsView: View {
             }
             .readableWidth()
             .sheet(item: $dataTransfer.exportFile) { file in
-                ShareSheet(items: [file.url])
+                ShareSheet(items: [file.url]) { completed in
+                    dataTransfer.shareFinished(completed: completed)
+                }
             }
             .fileImporter(
                 isPresented: $dataTransfer.isImporterPresented,
                 allowedContentTypes: [.json]
             ) { result in
-                dataTransfer.handleImportSelection(result, into: restore)
+                dataTransfer.handleImportSelection(
+                    result,
+                    into: restore,
+                    isPro: freeTier.gate.isUnlimited,
+                    onOverLimit: { freeTier.presentUpgrade(for: .backupLimit) }
+                )
             }
             .alert("Something went wrong", isPresented: importError) {
                 Button("OK", role: .cancel) {}
@@ -76,6 +87,7 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.large)
             .ledgerLargeTitle()
             .ledgerBackground()
+            .onAppear { dataTransfer.refreshLastExportDate() }
             .task(id: scenePhase) {
                 guard scenePhase == .active else { return }
                 await refreshNotificationAuthorization()
@@ -94,8 +106,9 @@ struct SettingsView: View {
     }
 
     private func notificationsSection(_ settings: AppSettings) -> some View {
+        let includesReminders = freeTier.gate.allows(.reminders)
         let mayNotNotify = notificationAuthorization.map {
-            NotificationService.deviceMayNotNotify(for: settings, authorization: $0)
+            NotificationService.deviceMayNotNotify(for: settings, authorization: $0, isPro: includesReminders)
         } ?? false
         return Section {
             reminderRow(
@@ -111,24 +124,14 @@ struct SettingsView: View {
             )
             .ledgerSheetRow(position: .last)
         } header: {
-            HoneyLedgerSectionLabel("Notifications")
-        } footer: {
-            // The setting is shared across devices and the permission isn't,
-            // so this one can show reminders on while none arrive here.
-            if mayNotNotify {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label(
-                        "Notifications are turned off for SoapWiz on this device, "
-                            + "so reminders won't arrive here.",
-                        systemImage: "exclamationmark.triangle.fill"
-                    )
-                    .font(.footnote)
-                    .foregroundStyle(Color.warning)
-                    Button("Open Settings", action: openAppSettings)
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Color.amberText)
+            HStack(spacing: 8) {
+                HoneyLedgerSectionLabel("Notifications")
+                if !includesReminders {
+                    ProBadge()
                 }
             }
+        } footer: {
+            notificationsFooter(includesReminders: includesReminders, mayNotNotify: mayNotNotify)
         }
         // However the setting changed, from a tap, another device or a restore,
         // this device schedules, cancels or skips its own reminders to match,
@@ -145,6 +148,28 @@ struct SettingsView: View {
         } message: {
             Text("SoapWiz needs notification permission to send reminders. "
                  + "You can enable it in Settings.")
+        }
+    }
+
+    @ViewBuilder
+    private func notificationsFooter(includesReminders: Bool, mayNotNotify: Bool) -> some View {
+        if !includesReminders {
+            HoneyLedgerFooter("Reminders are part of SoapWiz Pro. Your choices are kept for when you upgrade.")
+        } else if mayNotNotify {
+            // The setting is shared across devices and the permission isn't,
+            // so this one can show reminders on while none arrive here.
+            VStack(alignment: .leading, spacing: 8) {
+                Label(
+                    "Notifications are turned off for SoapWiz on this device, "
+                        + "so reminders won't arrive here.",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.footnote)
+                .foregroundStyle(Color.warning)
+                Button("Open Settings", action: openAppSettings)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Color.amberText)
+            }
         }
     }
 
@@ -170,11 +195,16 @@ struct SettingsView: View {
             .tint(Color.amber)
     }
 
-    private func countRow(_ title: String, count: Int) -> some View {
+    private func countRow(_ title: String, count: Int, showsProBadge: Bool = false) -> some View {
         HoneyLedgerLabeledRow(title) {
-            Text("\(count)")
-                .foregroundStyle(Color.inkSoft)
-                .monospacedDigit()
+            HStack(spacing: 8) {
+                if showsProBadge {
+                    ProBadge()
+                }
+                Text("\(count)")
+                    .foregroundStyle(Color.inkSoft)
+                    .monospacedDigit()
+            }
         }
     }
 
@@ -195,13 +225,15 @@ struct SettingsView: View {
         of settings: AppSettings
     ) -> Binding<Bool> {
         Binding(
-            get: { settings[keyPath: setting] },
+            get: { freeTier.gate.allows(.reminders) && settings[keyPath: setting] },
             set: { newValue in
-                Task {
-                    showNotificationDenied = await NotificationService.applyToggle(newValue, setting: setting) {
-                        AppSettings.resolve(in: modelContext)
+                freeTier.ifAvailable(.reminders) {
+                    Task {
+                        showNotificationDenied = await NotificationService.applyToggle(newValue, setting: setting) {
+                            AppSettings.resolve(in: modelContext)
+                        }
+                        await refreshNotificationAuthorization()
                     }
-                    await refreshNotificationAuthorization()
                 }
             }
         )
@@ -236,10 +268,13 @@ struct SettingsView: View {
                 }
                 .ledgerSheetRow(position: .only)
         } header: {
-            // The List's first-header inset leaves the ornament lower than
-            // centred; it clamps this negative padding to about 7pt up.
-            HoneyLedgerOrnament()
-                .padding(.top, -10)
+            // The Pro section carries the ornament; it is hidden in the tour.
+            if isTourSandbox {
+                // The List's first-header inset leaves the ornament lower than
+                // centred; it clamps this negative padding to about 7pt up.
+                HoneyLedgerOrnament()
+                    .padding(.top, -10)
+            }
         } footer: {
             HoneyLedgerFooter(
                 "Turn off to use SoapWiz without recording purchases: batches don't check "
@@ -274,7 +309,7 @@ struct SettingsView: View {
     private var recipesSection: some View {
         Section {
             NavigationLink(destination: RecipeCollectionListView()) {
-                countRow("Collections", count: collections.count)
+                countRow("Collections", count: collections.count, showsProBadge: !freeTier.gate.allows(.collections))
             }
             .ledgerSheetRow(position: .only, navigates: true)
         } header: {
@@ -308,33 +343,6 @@ struct SettingsView: View {
         } footer: {
             HoneyLedgerFooter("Prices are kept as amounts, so changing the currency relabels them without converting.")
         }
-    }
-
-    /// States why recipe import is or isn't on offer.
-    ///
-    /// The entry point on the Recipes tab stays hidden when the model can't run
-    /// — a button that fails on tap is worse than no button. But hiding it
-    /// silently leaves "Apple Intelligence is switched off" indistinguishable
-    /// from "this feature doesn't exist", so the reason lives here.
-    private var recipeImportSection: some View {
-        let availability = RecipeImportAvailability.current
-        return Section {
-            HoneyLedgerLabeledRow("Status") {
-                Label(availability.statusText, systemImage: availability.statusSymbol)
-                    .labelStyle(.titleAndIcon)
-                    .foregroundStyle(statusTint(for: availability))
-            }
-            .ledgerSheetRow(position: .only)
-        } header: {
-            HoneyLedgerSectionLabel("Recipe Import")
-        } footer: {
-            HoneyLedgerFooter(availability.settingsFooter)
-        }
-    }
-
-    private func statusTint(for availability: RecipeImportAvailability) -> Color {
-        if availability.isAvailable { return .success }
-        return availability.isActionable ? .warning : .inkSoft
     }
 
     private var aboutSection: some View {
@@ -385,12 +393,7 @@ struct SettingsView: View {
         } header: {
             HoneyLedgerSectionLabel("Backup")
         } footer: {
-            HoneyLedgerFooter(
-                "Export saves all your ingredients, recipes, and history to a single file. "
-                    + "Leaving photos out makes a much smaller file, but importing it brings "
-                    + "everything back without them. "
-                    + "Importing a file replaces everything currently in the app."
-            )
+            HoneyLedgerFooter(dataTransfer.backupFooter)
         }
     }
 }

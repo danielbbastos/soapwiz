@@ -29,5 +29,6 @@ struct RecipeFormCover: View {
             }
         }
         .tourOverlayHost(.form)
+        .proUpgradeHost()
     }
 }

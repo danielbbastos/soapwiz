@@ -19,6 +19,14 @@ enum RecipeFormRequest: Identifiable {
         }
     }
 
+    /// Whether saving the form adds a recipe, which the free tier counts.
+    var createsRecipe: Bool {
+        switch self {
+        case .new, .seeded, .imported: true
+        case .edit: false
+        }
+    }
+
     /// The value pushed for this request where the form is a push. Unchanged
     /// from before SW-89, so the existing destinations still route it.
     ///

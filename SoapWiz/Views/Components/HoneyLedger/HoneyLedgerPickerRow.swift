@@ -23,17 +23,21 @@ struct HoneyLedgerPickerRow: View {
     let name: String
     let state: HoneyLedgerPickerRowState
 
+    /// Off for a picker that takes one row, where an empty circle would
+    /// suggest several can be ticked.
+    var showsMarker = true
+
     var body: some View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 4) {
-                    circle
+                    if showsMarker { circle }
                     nameText
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 HStack(spacing: 12) {
-                    circle
+                    if showsMarker { circle }
                     nameText
                     Spacer()
                 }

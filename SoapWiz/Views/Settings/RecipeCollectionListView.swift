@@ -4,6 +4,7 @@ import SwiftData
 struct RecipeCollectionListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.editMode) private var editMode
+    @FreeTierGateEnvironment private var freeTier
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
 
     @State private var model = RecipeCollectionListViewModel()
@@ -22,14 +23,16 @@ struct RecipeCollectionListView: View {
                     HoneyLedgerEmptyState(
                         "No Collections",
                         systemImage: "square.stack",
-                        description: "Tap + to group your recipes into themes."
+                        description: freeTier.gate.allows(.collections)
+                            ? "Tap + to group your recipes into themes."
+                            : "Collections are part of SoapWiz Pro."
                     )
                 } else {
                     List {
                         Section {
                             ForEach(Array(collections.enumerated()), id: \.element.id) { index, collection in
                                 Button {
-                                    model.collectionToEdit = collection
+                                    freeTier.ifAvailable(.collections) { model.collectionToEdit = collection }
                                 } label: {
                                     row(collection)
                                 }
@@ -52,7 +55,9 @@ struct RecipeCollectionListView: View {
             .ledgerBackground()
 
             if editMode?.wrappedValue != .active {
-                FloatingActionButton { model.showingAddCollection = true }
+                FloatingActionButton {
+                    freeTier.ifAvailable(.collections) { model.showingAddCollection = true }
+                }
             }
         }
         .sheet(isPresented: $model.showingAddCollection) {

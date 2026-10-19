@@ -110,7 +110,7 @@ struct RecipeDuplicatorTests {
         _ = container
         let recipe = seedRecipe(ctx)
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(copy.name == "Castile (copy)")
@@ -133,7 +133,7 @@ struct RecipeDuplicatorTests {
         _ = container
         let recipe = seedRecipe(ctx)
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(copy.uuid != recipe.uuid)
@@ -144,8 +144,8 @@ struct RecipeDuplicatorTests {
         _ = container
         let recipe = seedRecipe(ctx)
 
-        let first = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
-        let second = RecipeDuplicator.duplicate(recipe, among: [recipe, first], into: ctx)
+        let first = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
+        let second = RecipeDuplicator.duplicate(recipe, among: [recipe, first], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(Set([recipe.uuid, first.uuid, second.uuid]).count == 3)
@@ -157,7 +157,7 @@ struct RecipeDuplicatorTests {
         let recipe = seedRecipe(ctx)
         recipe.recipeKind = RecipeKind.general.rawValue
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(copy.recipeKind == RecipeKind.general.rawValue)
@@ -168,7 +168,7 @@ struct RecipeDuplicatorTests {
         _ = container
         let recipe = seedRecipe(ctx)
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(copy.ingredients.count == 4)
@@ -188,7 +188,7 @@ struct RecipeDuplicatorTests {
         _ = container
         let recipe = seedRecipe(ctx)
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         let oils = copy.ingredients.filter { $0.ingredientRole == .oil }
@@ -204,7 +204,7 @@ struct RecipeDuplicatorTests {
         _ = container
         let recipe = seedRecipe(ctx)
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(copy.products.count == 1)
@@ -217,12 +217,27 @@ struct RecipeDuplicatorTests {
         _ = container
         let recipe = seedRecipe(ctx)
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(copy.collections.map(\.name) == ["Gifts"])
         let gifts = try #require(try ctx.fetch(FetchDescriptor<RecipeCollection>()).first)
         #expect(gifts.recipes.count == 2)
+    }
+
+    /// Filing is part of Pro, so a free user's copy must not arrive filed.
+    @Test func duplicate_NotCopyingCollections_LeavesTheCopyUnfiledAndTheOriginalAlone() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = seedRecipe(ctx)
+
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: false, into: ctx)
+        try ctx.save()
+
+        #expect(copy.collections.isEmpty)
+        #expect(recipe.collections.map(\.name) == ["Gifts"])
+        let gifts = try #require(try ctx.fetch(FetchDescriptor<RecipeCollection>()).first)
+        #expect(gifts.recipes.count == 1)
     }
 
     /// A batch is a record of a run that happened, and it happened to the
@@ -235,7 +250,7 @@ struct RecipeDuplicatorTests {
         ctx.insert(batch)
         try ctx.save()
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(copy.batches.isEmpty)
@@ -252,7 +267,7 @@ struct RecipeDuplicatorTests {
         recipe.isFavorite = true
         try ctx.save()
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(copy.isFavorite == false)
@@ -269,7 +284,7 @@ struct RecipeDuplicatorTests {
         try ctx.save()
 
         let before = Date()
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         let after = Date()
         try ctx.save()
 
@@ -288,7 +303,7 @@ struct RecipeDuplicatorTests {
         ctx.insert(orphan)
         try ctx.save()
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(copy.ingredients.count == 1)
@@ -303,7 +318,7 @@ struct RecipeDuplicatorTests {
         ctx.insert(recipe)
         try ctx.save()
 
-        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let copy = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(copy.name == "Blank (copy)")
@@ -317,10 +332,10 @@ struct RecipeDuplicatorTests {
         _ = container
         let recipe = seedRecipe(ctx)
 
-        let first = RecipeDuplicator.duplicate(recipe, among: [recipe], into: ctx)
+        let first = RecipeDuplicator.duplicate(recipe, among: [recipe], copiesCollections: true, into: ctx)
         try ctx.save()
         let all = try ctx.fetch(FetchDescriptor<Recipe>())
-        let second = RecipeDuplicator.duplicate(recipe, among: all, into: ctx)
+        let second = RecipeDuplicator.duplicate(recipe, among: all, copiesCollections: true, into: ctx)
         try ctx.save()
 
         #expect(first.name == "Castile (copy)")

@@ -7,6 +7,11 @@ struct ContentView: View {
     @Environment(\.isTourSandbox) private var isTourSandbox
     @Environment(TourLauncher.self) private var tourLauncher
 
+    /// Absent in the tour's sandbox, which has no upgrade sheet.
+    @Environment(ProUpgradePresenter.self) private var upgradePresenter: ProUpgradePresenter?
+
+    @FreeTierGateEnvironment private var freeTier
+
     @State private var navigation: AppNavigation
     @State private var restore = RestoreCoordinator()
 
@@ -32,7 +37,12 @@ struct ContentView: View {
         Group {
             if restore.phase == .restoring {
                 RestoreProgressView()
-                    .task { await restore.perform(in: modelContext) }
+                    .task {
+                        await restore.perform(
+                            in: modelContext,
+                            isPro: freeTier.gate.isUnlimited
+                        )
+                    }
             } else {
                 // The `if` is what gives the rebuilt tabs a fresh identity; `.id` is
                 // insurance, so the history tab gets a brand-new `NavigationStack`
@@ -51,6 +61,10 @@ struct ContentView: View {
             guard url.isFileURL, !isTourSandbox else { return }
             tourLauncher.noteExternalOpen()
             navigation.openRecipeFile(url)
+        }
+        .onChange(of: upgradePresenter?.settingsRequest) { _, request in
+            guard request != nil, !isTourSandbox else { return }
+            navigation.selectedTab = .settings
         }
         // The tour ran over a sandbox, so the real app is still wherever the
         // user left it; Inventory is where the first-launch story ends. A

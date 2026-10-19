@@ -41,7 +41,15 @@ enum NotificationService {
     /// A missing permission never turns the setting off: the setting syncs, the
     /// permission is this device's alone, and switching it off here would cancel
     /// the reminders on every other device.
-    static func syncAction(for settings: AppSettings, authorization: UNAuthorizationStatus) -> SyncAction {
+    ///
+    /// Reminders are part of Pro: a free user gets nothing scheduled, and the
+    /// stored settings are left as they are for when they upgrade.
+    static func syncAction(
+        for settings: AppSettings,
+        authorization: UNAuthorizationStatus,
+        isPro: Bool
+    ) -> SyncAction {
+        guard isPro else { return .cancel }
         guard expiryRemindersActive(for: settings) || cureRemindersActive(for: settings) else { return .cancel }
         switch authorization {
         case .authorized: return .schedule
@@ -54,8 +62,12 @@ enum NotificationService {
     /// that are switched on: exactly when a sync skips it (SW-187). The setting
     /// syncs and the permission doesn't, so without the note a device that
     /// refused notifications shows reminders on while none ever arrive there.
-    static func deviceMayNotNotify(for settings: AppSettings, authorization: UNAuthorizationStatus) -> Bool {
-        syncAction(for: settings, authorization: authorization) == .skip
+    static func deviceMayNotNotify(
+        for settings: AppSettings,
+        authorization: UNAuthorizationStatus,
+        isPro: Bool
+    ) -> Bool {
+        syncAction(for: settings, authorization: authorization, isPro: isPro) == .skip
     }
 
     /// A tap on a reminders toggle, writing `setting`. Turning reminders on asks
@@ -132,7 +144,13 @@ enum NotificationService {
         let settings = AppSettings.resolve(in: modelContext)
         let status = await authorizationStatus()
 
-        switch syncAction(for: settings, authorization: status) {
+        // `ProStore` rewrites this hint on every entitlement change, so reading
+        // it here covers every caller (Settings, restore, launch, the batch
+        // screens) without threading the store through. A free user gets
+        // nothing scheduled, and the first sync after a refund cancels the
+        // reminders still pending.
+        let isPro = ProEntitlementHint().isPro
+        switch syncAction(for: settings, authorization: status, isPro: isPro) {
         case .cancel:
             await cancelPendingReminders(withPrefixes: allPrefixes)
         case .schedule:

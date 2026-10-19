@@ -19,7 +19,49 @@ final class DataTransferViewModel {
     /// backup that silently stopped including photos is the worse surprise.
     var includesPhotos = true
 
+    private(set) var lastExportDate: Date?
+
+    private let nudgeState: BackupNudgeState
+
+    init(nudgeState: BackupNudgeState = BackupNudgeState()) {
+        self.nudgeState = nudgeState
+        self.lastExportDate = nudgeState.lastExportDate
+    }
+
+    var lastExportedLine: String {
+        Self.lastExportedLine(
+            hasCloudCopy: BackupNudgePolicy.hasCloudCopy(ModelContainerFactory.activeStore),
+            lastExport: lastExportDate
+        )
+    }
+
+    var backupFooter: String {
+        "Export saves all your ingredients, recipes, and history to a single file. "
+            + "Leaving photos out makes a much smaller file, but importing it brings "
+            + "everything back without them. "
+            + "Importing a file replaces everything currently in the app. "
+            + "The free version restores backups of up to \(FreeTierLimits.recipeCap) recipes "
+            + "and \(FreeTierLimits.customIngredientCap) custom ingredients; Pro restores any size."
+            + lastExportedLine
+    }
+
+    static func lastExportedLine(hasCloudCopy: Bool, lastExport: Date?) -> String {
+        guard !hasCloudCopy else { return "" }
+        guard let lastExport else { return "\nLast exported: never" }
+        return "\nLast exported: \(lastExport.formatted(date: .abbreviated, time: .omitted))"
+    }
+
     // MARK: - Export
+
+    func refreshLastExportDate() {
+        lastExportDate = nudgeState.lastExportDate
+    }
+
+    func shareFinished(completed: Bool, at date: Date = .now) {
+        guard completed else { return }
+        nudgeState.lastExportDate = date
+        lastExportDate = date
+    }
 
     func export(from context: ModelContext) {
         do {
@@ -47,14 +89,23 @@ final class DataTransferViewModel {
 
     /// Reads and validates the chosen file, then stages it on `coordinator` so the
     /// user can confirm before anything is overwritten.
-    func handleImportSelection(_ result: Result<URL, Error>, into coordinator: RestoreCoordinator) {
+    /// `onOverLimit` runs instead when a free user's backup is over the free
+    /// limits, with nothing staged.
+    func handleImportSelection(
+        _ result: Result<URL, Error>,
+        into coordinator: RestoreCoordinator,
+        isPro: Bool,
+        onOverLimit: () -> Void
+    ) {
         switch result {
         case let .success(url):
             let didScope = url.startAccessingSecurityScopedResource()
             defer { if didScope { url.stopAccessingSecurityScopedResource() } }
             do {
                 let data = try Data(contentsOf: url)
-                coordinator.stage(try BackupService.decode(data))
+                if !coordinator.stage(try BackupService.decode(data), isPro: isPro) {
+                    onOverLimit()
+                }
             } catch let error as BackupError {
                 errorMessage = error.errorDescription
             } catch {

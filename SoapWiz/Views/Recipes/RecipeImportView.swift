@@ -6,6 +6,7 @@ import PhotosUI
 struct RecipeImportView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @FreeTierGateEnvironment private var freeTier
     @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
@@ -19,6 +20,7 @@ struct RecipeImportView: View {
     @State private var textRevision = 0
     @State private var readingProblem: String?
     @State private var hasOpenedFile = false
+    @State private var confirmedFit: FreeTierImportFit?
     @State private var textBoxHeight = Self.minimumTextBoxHeight
 
     /// About seven lines. Below this the box stops shrinking and the form
@@ -31,6 +33,12 @@ struct RecipeImportView: View {
     var fileURL: URL?
 
     var onConfirm: ((PreparedRecipeImport) -> Void)?
+
+    /// A free user's import leaves collection names unmatched, so nothing it
+    /// brings in gets filed.
+    private var fileableCollections: [RecipeCollection] {
+        freeTier.gate.allows(.collections) ? collections : []
+    }
 
     /// Called with the recipes an exact import added, so the caller can dismiss
     /// and show them.
@@ -50,6 +58,9 @@ struct RecipeImportView: View {
                     if let plan = model.transferPlan {
                         RecipeTransferReviewView(
                             plan: plan,
+                            fit: confirmedFit ?? freeTier.gate.importFit(for: plan, in: modelContext),
+                            onUpgrade: freeTier.presentUpgrade,
+                            onUseExisting: model.useExisting,
                             onConfirm: confirmExactImport,
                             onCancel: { model.returnToInput() }
                         )
@@ -80,8 +91,9 @@ struct RecipeImportView: View {
         // content is a Form, which has no finite intrinsic height, so fitting
         // to it collapses the sheet to almost nothing.
         .presentationSizing(.page)
+        .proUpgradeHost()
         .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
-            model.resolveMergedRows(in: modelContext)
+            model.resolveMergedRows(in: modelContext, filesIntoCollections: freeTier.gate.allows(.collections))
         }
         // A handed-in file opens itself, once, skipping the input screen. The
         // guard survives the re-runs SwiftUI may make of this task; `openFile`
@@ -89,7 +101,7 @@ struct RecipeImportView: View {
         .task {
             guard let fileURL, !hasOpenedFile else { return }
             hasOpenedFile = true
-            model.openFile(at: fileURL, inventory: inventory, collections: collections, recipes: recipes)
+            model.openFile(at: fileURL, inventory: inventory, collections: fileableCollections, recipes: recipes)
             ReceivedFileInbox.removeIfReceived(fileURL)
         }
         .onChange(of: photoItem) { _, item in
@@ -102,7 +114,7 @@ struct RecipeImportView: View {
         ) { result in
             switch result {
             case .success(let url):
-                model.openFile(at: url, inventory: inventory, collections: collections, recipes: recipes)
+                model.openFile(at: url, inventory: inventory, collections: fileableCollections, recipes: recipes)
             case .failure:
                 readingProblem = "Couldn’t open that file. Try again."
             }
@@ -171,7 +183,7 @@ struct RecipeImportView: View {
                     Task {
                         await model.extract(
                             inventory: inventory,
-                            collections: collections,
+                            collections: fileableCollections,
                             recipes: recipes,
                             context: modelContext
                         )
@@ -297,15 +309,27 @@ struct RecipeImportView: View {
 
     // MARK: - Actions
 
+    /// Stays on the review when the free tier's recipes are used up, rather
+    /// than closing it to a form that can't be saved.
     private func confirm(_ prepared: PreparedRecipeImport) {
-        onConfirm?(prepared)
-        dismiss()
+        freeTier.ifAllowed(.recipe, in: modelContext) {
+            onConfirm?(prepared)
+            dismiss()
+        }
     }
 
     /// Writes the payload and leaves. Unlike the text path, this does not open
     /// the recipe form: the recipes are already exactly what the sender had.
     private func confirmExactImport() {
-        guard let recipes = model.confirmExactImport(context: modelContext, categories: categories) else { return }
+        confirmedFit = model.transferPlan.map { freeTier.gate.importFit(for: $0, in: modelContext) }
+        guard let recipes = model.confirmExactImport(
+            context: modelContext,
+            categories: categories,
+            gate: freeTier.gate
+        ) else {
+            confirmedFit = nil
+            return
+        }
         onImported?(recipes)
         dismiss()
     }
@@ -372,25 +396,5 @@ struct RecipeImportView: View {
         model.rawText = newValue
         textRevision += 1
         readingProblem = nil
-    }
-}
-
-/// The ledger's unselected chip, with a glyph where the chip's dot would be.
-/// Fades to `inkFaint` while disabled, since its colours are its own and a
-/// plain button style won't dim them.
-private struct RecipeImportSourceChip: View {
-    @Environment(\.isEnabled) private var isEnabled
-
-    let title: String
-    let systemImage: String
-
-    var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(.subheadline)
-            .foregroundStyle(isEnabled ? Color.inkSoft : Color.inkFaint)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color.paperRaised, in: .capsule)
-            .overlay(Capsule().strokeBorder(isEnabled ? Color.ruleStrong : Color.rule, lineWidth: 1))
     }
 }

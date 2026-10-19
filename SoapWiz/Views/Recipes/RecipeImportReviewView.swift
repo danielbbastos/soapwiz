@@ -12,6 +12,8 @@ struct RecipeImportReviewView: View {
     var onConfirm: (PreparedRecipeImport) -> Void
 
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
+    @Environment(\.modelContext) private var modelContext
+    @FreeTierGateEnvironment private var freeTier
     @State private var creatingRow: RecipeImportRow?
 
     var body: some View {
@@ -74,7 +76,7 @@ struct RecipeImportReviewView: View {
                     RecipeImportRowView(
                         row: row,
                         amountText: draftSummary.amountText(for: row.imported, role: row.role),
-                        onCreate: { creatingRow = row },
+                        onCreate: { create(row) },
                         onSkip: { model.skip(row.id) },
                         onUnskip: { model.unskip(row.id) }
                     )
@@ -113,6 +115,14 @@ struct RecipeImportReviewView: View {
         Saponification values come from your own inventory, never from the imported text. \
         Nothing is saved until you press Save on the recipe.
         """
+
+    // MARK: - Actions
+
+    /// Opens the form to create the row's ingredient, or the upgrade sheet when
+    /// the free tier's custom ingredients are used up.
+    private func create(_ row: RecipeImportRow) {
+        freeTier.ifAllowed(.customIngredient, in: modelContext) { creatingRow = row }
+    }
 
     // MARK: - Helpers
 

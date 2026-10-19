@@ -37,7 +37,7 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         navigation.detailSheetRequest = .createBatch(recipe)
 
         let coordinator = makeCoordinator()
-        coordinator.stage(try BackupService.makeBackup(from: ctx))
+        coordinator.stage(try BackupService.makeBackup(from: ctx), isPro: true)
         coordinator.begin(navigation: navigation)
 
         #expect(navigation.history.path.isEmpty)
@@ -59,7 +59,7 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         seedStore(ctx, ingredientName: "Olive Oil")
 
         let coordinator = makeCoordinator()
-        coordinator.stage(try BackupService.makeBackup(from: ctx))
+        coordinator.stage(try BackupService.makeBackup(from: ctx), isPro: true)
         coordinator.begin(navigation: AppNavigation())
 
         #expect(coordinator.phase == .restoring)
@@ -83,6 +83,50 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         #expect(coordinator.generation == 1)
     }
 
+    /// The alert raised over the placeholder is dismissed again when the rebuilt
+    /// interface mounts, so it may only appear once the placeholder is gone.
+    @Test func perform_OnSuccess_RaisesTheRollbackAlertOnlyAfterTheInterfaceIsRebuilt() async throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedStore(ctx, ingredientName: "Olive Oil")
+        let directory = try makeRollbackDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+
+        let coordinator = makeCoordinator()
+        coordinator.rollbackDirectory = directory
+        var phaseWhenRaised: RestoreCoordinator.Phase?
+        withObservationTracking {
+            _ = coordinator.rollbackFile
+        } onChange: {
+            MainActor.assumeIsolated { phaseWhenRaised = coordinator.phase }
+        }
+
+        await restore(try BackupService.makeBackup(from: ctx), with: coordinator, into: ctx)
+
+        #expect(coordinator.rollbackFile != nil)
+        #expect(phaseWhenRaised == .idle)
+    }
+
+    @Test func perform_OnFailure_RaisesTheErrorOnlyAfterTheInterfaceIsRebuilt() async throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        seedStore(ctx, ingredientName: "Olive Oil")
+
+        let coordinator = makeCoordinator()
+        coordinator.rollbackDirectory = try makeUnwritableDirectory()
+        var phaseWhenRaised: RestoreCoordinator.Phase?
+        withObservationTracking {
+            _ = coordinator.errorMessage
+        } onChange: {
+            MainActor.assumeIsolated { phaseWhenRaised = coordinator.phase }
+        }
+
+        await restore(try BackupService.makeBackup(from: ctx), with: coordinator, into: ctx)
+
+        #expect(coordinator.errorMessage != nil)
+        #expect(phaseWhenRaised == .idle)
+    }
+
     @Test func perform_WhenRollbackCannotBeWritten_StillRebuildsTheInterface() async throws {
         let (container, ctx) = try makeContext()
         _ = container
@@ -104,8 +148,8 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         seedStore(ctx, ingredientName: "Olive Oil")
 
         let coordinator = makeCoordinator()
-        coordinator.stage(try BackupService.makeBackup(from: ctx))
-        await coordinator.perform(in: ctx)
+        coordinator.stage(try BackupService.makeBackup(from: ctx), isPro: true)
+        await coordinator.perform(in: ctx, isPro: true)
 
         #expect(coordinator.generation == 0)
         #expect(coordinator.rollbackFile == nil)

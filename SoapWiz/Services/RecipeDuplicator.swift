@@ -13,7 +13,12 @@ import SwiftData
 enum RecipeDuplicator {
 
     @discardableResult
-    static func duplicate(_ recipe: Recipe, among existing: [Recipe], into context: ModelContext) -> Recipe {
+    static func duplicate(
+        _ recipe: Recipe,
+        among existing: [Recipe],
+        copiesCollections: Bool,
+        into context: ModelContext
+    ) -> Recipe {
         let copy = Recipe(name: copyName(of: recipe.name, among: existing), desc: recipe.desc)
         // Copied rather than re-derived: the thumbnail is already the small copy
         // of this exact image, so there is nothing to recompute.
@@ -39,7 +44,9 @@ enum RecipeDuplicator {
         copy.cfmNeutralizer = recipe.cfmNeutralizer
         copy.lyeIngredient = recipe.lyeIngredient
         copy.kohLyeIngredient = recipe.kohLyeIngredient
-        copy.collections = recipe.collections
+        if copiesCollections {
+            copy.collections = recipe.collections
+        }
         context.insert(copy)
 
         // Line items whose ingredient hasn't synced yet are copied as they are.

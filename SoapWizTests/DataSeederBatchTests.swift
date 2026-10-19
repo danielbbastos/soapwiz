@@ -104,6 +104,18 @@ struct DataSeederBatchTests {
         #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 0)
     }
 
+    /// A free user's store is the file that mirrors once they buy Pro, so it
+    /// is held to the same rule as a store with sync turned off.
+    @Test(arguments: [CKAccountStatus.noAccount, .available])
+    func launch_FreshStoreThatRequiresPro_MakesNoBatches(_ status: CKAccountStatus) async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+
+        await launch(ctx, store: .requiresPro, account: status)
+
+        #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 0)
+    }
+
     /// Signed in, or not known to be signed out: the store may sync, so no
     /// batches.
     @Test(arguments: [CKAccountStatus.available, .couldNotDetermine, .temporarilyUnavailable, .restricted])

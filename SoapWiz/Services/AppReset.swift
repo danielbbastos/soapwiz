@@ -19,11 +19,21 @@ enum AppReset {
     /// a history of every change made while sync is off and uploads it when
     /// sync comes back on, the deletions included. Seen on two devices for
     /// SW-220, so the message says so rather than promising "this device only".
-    static func confirmationMessage(syncIsOff: Bool) -> String {
-        let scope = syncIsOff
-            ? "iCloud sync is off, so this erases everything on this device now, and in iCloud "
+    /// A free user's store is the same case with a different way back: sync
+    /// resumes when they buy Pro, not when they flip a switch.
+    static func confirmationMessage(localCause: ModelContainerFactory.LocalStoreCause?) -> String {
+        let scope: String
+        switch localCause {
+        case nil:
+            scope = "This erases everything on this device, in iCloud and on your other devices."
+        case .offlineByChoice:
+            scope = "iCloud sync is off, so this erases everything on this device now, and in iCloud "
                 + "and on your other devices once you turn sync back on."
-            : "This erases everything on this device, in iCloud and on your other devices."
+        case .requiresPro:
+            scope = "This erases everything on this device now. If you synced with iCloud before, "
+                + "it is also erased in iCloud and on your other devices once you buy SoapWiz Pro "
+                + "and sync starts again."
+        }
         return "\(scope) Your ingredients, purchases, recipes and history are deleted, and "
             + "settings go back to their defaults. This can’t be undone. "
             + "Type \(confirmationWord) to confirm."
@@ -58,12 +68,14 @@ enum AppReset {
     }
 
     /// Clears what this device keeps outside the store: the lye safety
-    /// acknowledgment and any rollback files a restore left in `directory`.
+    /// acknowledgment, the backup reminder dates, and any rollback files a
+    /// restore left in `directory`.
     ///
     /// The sync preference and sync status stay. They describe this device's
     /// connection to iCloud, not the user's data.
     static func clearDeviceState(defaults: UserDefaults = .standard, rollbackDirectory: URL?) {
         LyeSafetyAcknowledgment(defaults: defaults).reset()
+        BackupNudgeState(defaults: defaults).reset()
         guard let rollbackDirectory else { return }
         let files = (try? FileManager.default.contentsOfDirectory(
             at: rollbackDirectory,

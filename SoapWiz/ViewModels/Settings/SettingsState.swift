@@ -27,6 +27,7 @@ import SwiftData
 final class SettingsState {
     private(set) var currencyCode: String
     private(set) var tracksInventory: Bool
+    private(set) var reminders: ReminderSettingsSnapshot
 
     @ObservationIgnored private let context: ModelContext
     @ObservationIgnored private let cursor: StoreHistoryCursor
@@ -47,6 +48,7 @@ final class SettingsState {
         cursor = StoreHistoryCursor(context: context)
         currencyCode = AppSettings.currencyCode(from: [], locale: locale)
         tracksInventory = AppSettings.tracksInventory(from: [])
+        reminders = ReminderSettingsSnapshot(records: [])
         reload()
         observe()
     }
@@ -99,6 +101,8 @@ final class SettingsState {
         if code != currencyCode { currencyCode = code }
         let tracks = AppSettings.tracksInventory(from: records)
         if tracks != tracksInventory { tracksInventory = tracks }
+        let snapshot = ReminderSettingsSnapshot(records: records)
+        if snapshot != reminders { reminders = snapshot }
     }
 
     private func observe() {

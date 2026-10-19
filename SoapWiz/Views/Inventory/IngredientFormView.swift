@@ -4,6 +4,7 @@ import SwiftData
 struct IngredientFormView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @FreeTierGateEnvironment private var freeTier
 
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
     @Query private var allIngredients: [Ingredient]
@@ -140,12 +141,12 @@ struct IngredientFormView: View {
                 model.captureSnapshot()
             }
             .interactiveDismissDisabled(model.isDirty)
-            .alert("Make This a Custom Ingredient?", isPresented: $showingChemistryConfirmation) {
-                Button("Save as Custom") { commit() }
+            .alert("Save Your Own Chemistry?", isPresented: $showingChemistryConfirmation) {
+                Button("Save Changes") { commit() }
                 Button("Cancel", role: .cancel) { }
             } message: {
                 Text("\"\(model.trimmedName)\" comes from the built-in ingredient library. "
-                     + "Saving different chemistry makes it your own, marked Custom in its details.")
+                     + "Saving different values keeps it there with your chemistry, noted in its details.")
             }
             .sheet(isPresented: $showingNewCategory) {
                 CategoryFormView { newCategory in
@@ -157,16 +158,23 @@ struct IngredientFormView: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(model.isEditing ? "Save" : "Add") {
-                        if model.changesLibraryChemistry {
-                            showingChemistryConfirmation = true
-                        } else {
-                            commit()
-                        }
-                    }
+                    Button(model.isEditing ? "Save" : "Add") { attemptSave() }
                     .disabled(!model.isValid || model.codeHasDuplicate(among: allIngredients))
                 }
             }
+        }
+        .proUpgradeHost()
+    }
+
+    /// Asks the free tier before anything else, so a blocked save neither
+    /// raises the custom-chemistry question nor writes.
+    private func attemptSave() {
+        if let reason = model.limitReached(gate: freeTier.gate, in: modelContext) {
+            freeTier.presentUpgrade(for: reason)
+        } else if model.changesLibraryChemistry {
+            showingChemistryConfirmation = true
+        } else {
+            commit()
         }
     }
 
