@@ -15,7 +15,8 @@ struct ProBenefit: Identifiable {
             title: "Unlimited recipes and ingredients",
             detail: "Free keeps \(FreeTierLimits.recipeCap) recipes and "
                 + "\(FreeTierLimits.customIngredientCap) custom ingredients. "
-                + "The 230+ library ingredients are always free."
+                + "The 230+ library ingredients are always free. "
+                + "Restoring a bigger backup needs Pro."
         ),
         ProBenefit(
             symbol: "icloud",
@@ -39,7 +40,7 @@ struct ProBenefit: Identifiable {
         )
     ]
 
-    static let alwaysFreeNote = "Batches, inventory, calculations, recipe import, sharing and backups"
+    static let alwaysFreeNote = "Batches, inventory, calculations, recipe import, sharing and exporting backups"
 
     static let alwaysFree = ProBenefit(
         symbol: "checkmark",

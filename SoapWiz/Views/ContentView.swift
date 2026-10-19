@@ -10,6 +10,8 @@ struct ContentView: View {
     /// Absent in the tour's sandbox, which has no upgrade sheet.
     @Environment(ProUpgradePresenter.self) private var upgradePresenter: ProUpgradePresenter?
 
+    @Environment(ProStore.self) private var proStore: ProStore?
+
     @State private var navigation: AppNavigation
     @State private var restore = RestoreCoordinator()
 
@@ -35,7 +37,12 @@ struct ContentView: View {
         Group {
             if restore.phase == .restoring {
                 RestoreProgressView()
-                    .task { await restore.perform(in: modelContext) }
+                    .task {
+                        await restore.perform(
+                            in: modelContext,
+                            isPro: FreeTierGate(isPro: proStore?.isPro ?? false, isTourSandbox: isTourSandbox).isUnlimited
+                        )
+                    }
             } else {
                 // The `if` is what gives the rebuilt tabs a fresh identity; `.id` is
                 // insurance, so the history tab gets a brand-new `NavigationStack`

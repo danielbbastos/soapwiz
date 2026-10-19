@@ -37,6 +37,7 @@ extension RestoreTestCase {
     func makeCoordinator() -> RestoreCoordinator {
         let coordinator = RestoreCoordinator()
         coordinator.settleDelay = .zero
+        coordinator.presentationDelay = .zero
         coordinator.ingredientLibrary = IngredientLibrary(entries: [])
         return coordinator
     }
@@ -45,11 +46,13 @@ extension RestoreTestCase {
     func restore(
         _ backup: BackupData,
         with coordinator: RestoreCoordinator,
-        into ctx: ModelContext
+        into ctx: ModelContext,
+        isPro: Bool = true
     ) async {
-        coordinator.stage(backup)
+        coordinator.stage(backup, isPro: isPro)
         coordinator.begin(navigation: AppNavigation())
-        await coordinator.perform(in: ctx)
+        await coordinator.perform(in: ctx, isPro: isPro)
+        await coordinator.outcomeTask?.value
     }
 
     /// An empty directory of its own, so a test sees only the files it put there.

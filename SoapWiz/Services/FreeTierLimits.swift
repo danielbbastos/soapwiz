@@ -49,8 +49,9 @@ enum ProFeature {
 /// What the free tier allows.
 ///
 /// Creating is blocked while the count is at or over the cap. Items already
-/// over it (a backup restore, a refund, a device that synced before a refund)
-/// are never touched: this only answers "may another one be made".
+/// over it (a refund, a device that synced before a refund) are never
+/// touched: this only answers "may another one be made". A backup restore is
+/// the exception that is checked up front, since it would bring them all in.
 enum FreeTierLimits {
     static let recipeCap = 3
     static let customIngredientCap = 3
@@ -115,6 +116,27 @@ enum FreeTierLimits {
             exceedsCustomIngredients: !isPro && incomingCustomIngredients > 0
                 && existingCustomIngredients + incomingCustomIngredients > customIngredientCap
         )
+    }
+
+    /// Whether a backup may replace the store. A restore replaces everything,
+    /// so the backup's own counts are compared with the caps, not added to
+    /// what the store holds.
+    static func restoreFits(recipes: Int, customIngredients: Int, isPro: Bool) -> Bool {
+        isPro || (recipes <= recipeCap && customIngredients <= customIngredientCap)
+    }
+
+    static func restoreFits(_ backup: BackupData, isPro: Bool) -> Bool {
+        restoreFits(
+            recipes: backup.recipes.count,
+            customIngredients: customIngredientCount(in: backup),
+            isPro: isPro
+        )
+    }
+
+    /// The backup's custom ingredients, by the rule the app counts its own: an
+    /// ingredient written before the library existed has no slug and is custom.
+    static func customIngredientCount(in backup: BackupData) -> Int {
+        backup.ingredients.count { isCustomIngredient(librarySlug: $0.librarySlug ?? "", name: $0.name) }
     }
 
     static func recipeCount(in context: ModelContext) throws -> Int {

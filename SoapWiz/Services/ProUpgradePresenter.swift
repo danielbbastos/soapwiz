@@ -7,6 +7,7 @@ enum ProUpgradeReason: Hashable {
     case customIngredientLimit
     case recipeImportLimit
     case customIngredientImportLimit
+    case backupLimit
     case sync
     case collections
     case reminders
@@ -22,6 +23,9 @@ enum ProUpgradeReason: Hashable {
         case .customIngredientImportLimit:
             "Importing this file would take you past the free version’s "
                 + "\(FreeTierLimits.customIngredientCap) custom ingredients. Pro removes the limit."
+        case .backupLimit:
+            "This backup has more than the free version’s \(FreeTierLimits.recipeCap) recipes or "
+                + "\(FreeTierLimits.customIngredientCap) custom ingredients. Pro restores all of it."
         case .sync:
             "iCloud sync is part of SoapWiz Pro."
         case .collections:

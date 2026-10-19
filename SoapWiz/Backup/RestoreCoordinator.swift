@@ -56,12 +56,26 @@ final class RestoreCoordinator {
 
     private static let rollbackPrefix = "SoapWiz-Rollback-"
 
+    /// How long the rebuilt interface gets to mount before the outcome alert is raised.
+    var presentationDelay: Duration = .milliseconds(400)
+
+    /// The pending presentation of the outcome, for tests to wait on.
+    private(set) var outcomeTask: Task<Void, Never>?
+
     private var stagedBackup: BackupData?
+    private var queuedErrorMessage: String?
+    private var queuedRollbackFile: ExportFile?
 
     // MARK: - Staging
 
-    func stage(_ backup: BackupData) {
+    /// Stages the backup for confirmation. Returns `false`, staging nothing, when
+    /// a free user's backup is over the free limits, so the caller can offer Pro
+    /// instead of the destructive confirmation.
+    @discardableResult
+    func stage(_ backup: BackupData, isPro: Bool) -> Bool {
+        guard FreeTierLimits.restoreFits(backup, isPro: isPro) else { return false }
         pendingImport = backup
+        return true
     }
 
     func cancel() {
@@ -96,9 +110,16 @@ final class RestoreCoordinator {
 
     /// Runs the restore. Called from the placeholder's `.task`, which is what
     /// guarantees the interface holding the old models is already gone.
-    func perform(in context: ModelContext) async {
+    func perform(in context: ModelContext, isPro: Bool) async {
         guard phase == .restoring, let backup = stagedBackup else { return }
         stagedBackup = nil
+
+        guard FreeTierLimits.restoreFits(backup, isPro: isPro) else {
+            queuedErrorMessage = "This backup is larger than the free version allows, so nothing was changed. "
+                + "SoapWiz Pro restores backups of any size."
+            finish()
+            return
+        }
 
         await settle()
 
@@ -136,7 +157,7 @@ final class RestoreCoordinator {
     /// of the rollback is that a mis-tap is recoverable; restoring without one silently
     /// removes that guarantee at the exact moment the user is relying on it.
     private func failClosed() {
-        errorMessage = "Couldn’t save a copy of your current data, so nothing was "
+        queuedErrorMessage = "Couldn’t save a copy of your current data, so nothing was "
             + "changed. Export a backup first, then try importing again."
         finish()
     }
@@ -152,25 +173,45 @@ final class RestoreCoordinator {
             IngredientCodeBackfill.fillMissingCodesLoggingFailure(from: ingredientLibrary, in: context)
             // A file written before batches had codes restores them without one.
             BatchCodeBackfill.fillMissingCodesLoggingFailure(in: context)
-            rollbackFile = rollback.map(ExportFile.init(url:))
+            queuedRollbackFile = rollback.map(ExportFile.init(url:))
             // Only once the new snapshot is safely written and the restore has
             // actually happened. Pruning any earlier would trade a rollback the
             // user still has for one they might not get.
             pruneRollbacks(keeping: rollback)
         } catch let error as BackupError {
-            errorMessage = error.errorDescription
+            queuedErrorMessage = error.errorDescription
             discardRollback(rollback)
         } catch {
-            errorMessage = "Couldn’t restore this backup."
+            queuedErrorMessage = "Couldn’t restore this backup."
             discardRollback(rollback)
         }
     }
 
     /// Rebuilds the interface, whichever way the restore went. A failed import must
     /// not strand the user on the restoring placeholder.
+    ///
+    /// The outcome alert is held back until the rebuilt interface has had time to
+    /// mount. Raised any earlier it presents over the placeholder, and the rebuild
+    /// then dismisses it a moment after it appears. Its own task, not this one:
+    /// leaving `.restoring` cancels the task the placeholder owns, which would cut
+    /// the wait short.
     private func finish() {
         generation += 1
         phase = .idle
+
+        let error = queuedErrorMessage
+        let rollback = queuedRollbackFile
+        queuedErrorMessage = nil
+        queuedRollbackFile = nil
+        guard error != nil || rollback != nil else { return }
+
+        outcomeTask = Task {
+            if presentationDelay > .zero {
+                try? await Task.sleep(for: presentationDelay)
+            }
+            errorMessage = error
+            rollbackFile = rollback
+        }
     }
 
     /// Snapshots the current store to a file so a restore can be undone. Returns

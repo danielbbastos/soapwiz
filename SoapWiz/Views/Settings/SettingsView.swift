@@ -71,7 +71,12 @@ struct SettingsView: View {
                 isPresented: $dataTransfer.isImporterPresented,
                 allowedContentTypes: [.json]
             ) { result in
-                dataTransfer.handleImportSelection(result, into: restore)
+                dataTransfer.handleImportSelection(
+                    result,
+                    into: restore,
+                    isPro: freeTier.gate.isUnlimited,
+                    onOverLimit: { freeTier.presentUpgrade(for: .backupLimit) }
+                )
             }
             .alert("Something went wrong", isPresented: importError) {
                 Button("OK", role: .cancel) {}
@@ -388,13 +393,7 @@ struct SettingsView: View {
         } header: {
             HoneyLedgerSectionLabel("Backup")
         } footer: {
-            HoneyLedgerFooter(
-                "Export saves all your ingredients, recipes, and history to a single file. "
-                    + "Leaving photos out makes a much smaller file, but importing it brings "
-                    + "everything back without them. "
-                    + "Importing a file replaces everything currently in the app."
-                    + dataTransfer.lastExportedLine
-            )
+            HoneyLedgerFooter(dataTransfer.backupFooter)
         }
     }
 }
