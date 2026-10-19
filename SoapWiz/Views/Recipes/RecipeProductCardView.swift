@@ -109,6 +109,7 @@ struct RecipeProductCardView: View {
             Text("\(Self.amountFormatter.string(from: NSNumber(value: amount)) ?? "") \(unit)")
                 .foregroundStyle(Color.inkSoft)
                 .lineLimit(1)
+                .layoutPriority(1)
             // A price-less ingredient shows a dash where its price would be.
             Text(cost > 0 ? cost.formatted(.currency(code: currencyCode)) : "—")
                 .fontWeight(weight)
