@@ -86,7 +86,7 @@ struct ProUpgradeView: View {
     private var upgrade: some View {
         VStack(spacing: scrolls ? 0 : 16) {
             if scrolls {
-                ScrollView { top.padding([.horizontal, .top], padding) }
+                ScrollView { top.padding(padding) }
                     .scrollBounceBehavior(.basedOnSize)
                     .onScrollGeometryChange(for: Bool.self) { geometry in
                         geometry.contentSize.height > geometry.containerSize.height
