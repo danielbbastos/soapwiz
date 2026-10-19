@@ -89,36 +89,34 @@ struct RecipeProductCardView: View {
         )
     }
 
-    /// Name, amount and cost in three columns, the two figures right-aligned
-    /// so they line up down the page.
+    /// Name on the left, then the amount right-aligned against the cost column,
+    /// which keeps at least `columnWidth`. The info icon, when present, sits
+    /// just before the amount.
     private func line(
         name: String, amount: Double, unit: String, cost: Double,
         emphasized: Bool = false, note: String? = nil
     ) -> some View {
         let weight: Font.Weight = emphasized ? .semibold : .regular
         return HStack(alignment: .firstTextBaseline, spacing: 8) {
-            HStack(spacing: 2) {
-                Text(name)
-                    .fontWeight(weight)
-                    .foregroundStyle(Color.ink)
-                if let note {
-                    InfoPopoverIcon(text: note)
-                        .padding(.vertical, -6)
-                }
+            Text(name)
+                .fontWeight(weight)
+                .foregroundStyle(Color.ink)
+            Spacer(minLength: 4)
+            if let note {
+                InfoPopoverIcon(text: note)
+                    .padding(.vertical, -6)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
             Text("\(Self.amountFormatter.string(from: NSNumber(value: amount)) ?? "") \(unit)")
                 .foregroundStyle(Color.inkSoft)
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .frame(width: columnWidth, alignment: .trailing)
+                .layoutPriority(1)
             // A price-less ingredient shows a dash where its price would be.
             Text(cost > 0 ? cost.formatted(.currency(code: currencyCode)) : "—")
                 .fontWeight(weight)
                 .foregroundStyle(cost > 0 ? Color.ink : Color.inkSoft)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
-                .frame(width: columnWidth, alignment: .trailing)
+                .frame(minWidth: columnWidth, alignment: .trailing)
         }
         .font(lineFont)
         .monospacedDigit()
