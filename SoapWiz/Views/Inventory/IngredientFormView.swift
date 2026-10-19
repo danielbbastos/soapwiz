@@ -141,12 +141,12 @@ struct IngredientFormView: View {
                 model.captureSnapshot()
             }
             .interactiveDismissDisabled(model.isDirty)
-            .alert("Make This a Custom Ingredient?", isPresented: $showingChemistryConfirmation) {
-                Button("Save as Custom") { commit() }
+            .alert("Save Your Own Chemistry?", isPresented: $showingChemistryConfirmation) {
+                Button("Save Changes") { commit() }
                 Button("Cancel", role: .cancel) { }
             } message: {
                 Text("\"\(model.trimmedName)\" comes from the built-in ingredient library. "
-                     + "Saving different chemistry makes it your own, marked Custom in its details.")
+                     + "Saving different values keeps it there with your chemistry, noted in its details.")
             }
             .sheet(isPresented: $showingNewCategory) {
                 CategoryFormView { newCategory in
