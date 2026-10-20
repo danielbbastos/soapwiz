@@ -17,6 +17,23 @@ struct RecipeTextSettingsParserLyeBlendTests {
         #expect(RecipeTextSettingsParser.lyePurity(in: text) == nil)
     }
 
+    @Test(arguments: [
+        "90% NaOH, KOH for the rest",
+        "85% NaOH, 15% potash",
+        "90% NaOH / 10% potassium lye",
+        "75% NaOH, 90% pure KOH",
+        "purity: 98%\nNaOH and KOH blend",
+        "98% pure NaOH, 90% pure KOH"
+    ])
+    func lyePurity_BothLyesNamed_IsNilHoweverWorded(_ text: String) {
+        #expect(RecipeTextSettingsParser.lyePurity(in: text) == nil)
+    }
+
+    @Test func lyePurity_PotashAloneWithoutSodiumLye_IsNotABlend() {
+        #expect(RecipeTextSettingsParser.lyePurity(in: "90% potash") == nil)
+        #expect(RecipeTextSettingsParser.lyePurity(in: "90% KOH") == 90)
+    }
+
     @Test func lyePurity_SingleLyeWithPercentage_IsStillRead() {
         #expect(RecipeTextSettingsParser.lyePurity(in: "98% NaOH") == 98)
         #expect(RecipeTextSettingsParser.lyePurity(in: "KOH (90%)") == 90)

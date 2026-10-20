@@ -8,20 +8,23 @@ extension RecipeTextSettingsParser {
     ///
     /// Only a percentage touching the lye's own name or the word "purity"
     /// counts. "Lye concentration 90%" is a different setting that LyeCalc
-    /// prints beside the purity, and neither pattern reaches it. A text that
-    /// gives purities for both NaOH and KOH describes a hybrid lye, which a
-    /// single purity can't express, so it reads as none.
+    /// prints beside the purity, and neither pattern reaches it.
     ///
-    /// A percentage beside both a sodium and a potassium lye name, as in
-    /// "75% NaOH, 25% KOH", is a blend of the two lyes, not a purity. Read as one,
-    /// the 75 would have the form weigh the NaOH as needed ÷ 0.75, about a third
-    /// too much, so no bare match counts then. A written "pure" or "purity" still does.
+    /// A text that names both a sodium and a potassium lye describes a blend or
+    /// hybrid, which a single purity can't express, so it reads as none however
+    /// the number is worded. A share written beside only one of the lyes, as in
+    /// "90% NaOH, KOH for the rest" or "75% NaOH, 90% pure KOH", looks just like
+    /// a purity, and one purity applied to two lyes would have the form weigh
+    /// more lye than the oils need. Per-lye purities stay readable through
+    /// `weightPurity(of:in:)`.
     ///
     /// A bare "100% KOH" or "NaOH 100%" says the lye is the only one in the
     /// recipe, not that it is pure, so a 100 beside the lye's name alone is
     /// ignored. With "pure" or "purity" attached, as in "100% pure NaOH" or
     /// "purity: 100%", it is a purity.
     static func lyePurity(in text: String) -> Double? {
+        guard !namesBothLyes(text) else { return nil }
+
         let before = #/
             (\d+(?:[.,]\d+)?)\h*%\h*((?:pure|purity)\h+)?
             (naoh|koh|sodium\h+hydroxide|potassium\h+hydroxide|caustic\h+(?:soda|potash))\b
@@ -32,66 +35,43 @@ extension RecipeTextSettingsParser {
             /#.ignoresCase()
         let purityFirst = #/\bpurity\h*(?:of|:|=|is)?\h*(\d+(?:[.,]\d+)?)\h*%/#.ignoresCase()
 
-        let beforeMatches = text.matches(of: before)
-        let afterMatches = text.matches(of: after)
-        let isBlendShare = isBlend(
-            lyeNames: beforeMatches.map { String($0.output.3) } + afterMatches.map { String($0.output.1) }
-        )
-
         let found: [StatedPurity] =
             text.matches(of: weightAtPurity).compactMap { match in
-                purity(match.output.2).map {
-                    StatedPurity(
-                        position: match.range.lowerBound,
-                        value: $0,
-                        lye: ImportedIngredientName.lyeType(ofLye: String(match.output.1))
-                    )
-                }
+                statedPurity(at: match.range, value: purity(match.output.2))
             }
-            + beforeMatches.compactMap { match in
-                let bare = isBlendShare ? nil : bareLyePurity(match.output.1)
-                let value = match.output.2 == nil ? bare : purity(match.output.1)
-                return statedPurity(at: match.range, value: value, lyeName: match.output.3)
+            + text.matches(of: before).compactMap { match in
+                let value = match.output.2 == nil ? bareLyePurity(match.output.1) : purity(match.output.1)
+                return statedPurity(at: match.range, value: value)
             }
-            + afterMatches.compactMap { match in
-                let value = isBlendShare ? nil : bareLyePurity(match.output.2)
-                return statedPurity(at: match.range, value: value, lyeName: match.output.1)
+            + text.matches(of: after).compactMap { match in
+                statedPurity(at: match.range, value: bareLyePurity(match.output.2))
             }
             + text.matches(of: purityFirst).compactMap { match in
-                purity(match.output.1).map {
-                    StatedPurity(position: match.range.lowerBound, value: $0, lye: nil)
-                }
+                statedPurity(at: match.range, value: purity(match.output.1))
             }
 
-        let namedLyes = Set(found.compactMap(\.lye))
-        guard namedLyes.count < 2 else { return nil }
-        if found.contains(where: { $0.lye == nil }), text.contains(ImportedIngredientName.sodiumLye),
-           text.contains(ImportedIngredientName.potassiumLye) {
-            return nil
-        }
         return found.min { $0.position < $1.position }?.value
     }
 
-    /// Whether the lyes that have a percentage beside them include both a sodium
-    /// and a potassium one.
-    private static func isBlend(lyeNames: [String]) -> Bool {
-        Set(lyeNames.compactMap { ImportedIngredientName.lyeType(ofLye: $0) }).count == 2
+    /// A bare "potash" is counted as a potassium lye here only. As an
+    /// ingredient name it is ambiguous (wood ash, potassium carbonate), so it
+    /// isn't in `ImportedIngredientName.potassiumLye`; beside "NaOH" in a lye
+    /// line, though, it is the potassium lye. "Potassium lye" is also not in
+    /// that pattern, which only spells the hydroxide out.
+    private static let potassiumLyeWording = #/\b(?:potassium\h+lye|potash)\b/#.ignoresCase()
+
+    private static func namesBothLyes(_ text: String) -> Bool {
+        text.contains(ImportedIngredientName.sodiumLye)
+            && (text.contains(ImportedIngredientName.potassiumLye) || text.contains(potassiumLyeWording))
     }
 
-    private static func statedPurity(at range: Range<String.Index>, value: Double?, lyeName: Substring) -> StatedPurity? {
-        value.map {
-            StatedPurity(
-                position: range.lowerBound,
-                value: $0,
-                lye: ImportedIngredientName.lyeType(ofLye: String(lyeName))
-            )
-        }
+    private static func statedPurity(at range: Range<String.Index>, value: Double?) -> StatedPurity? {
+        value.map { StatedPurity(position: range.lowerBound, value: $0) }
     }
 
     private struct StatedPurity {
         let position: String.Index
         let value: Double
-        let lye: String?
     }
 
     private static func purity(_ token: Substring) -> Double? {
