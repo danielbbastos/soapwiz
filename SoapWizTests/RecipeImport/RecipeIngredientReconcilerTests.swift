@@ -155,6 +155,26 @@ struct RecipeIngredientReconcilerTests: RecipeImportTestHelpers {
         #expect(rows.filter { $0.role == .fragrance }.count == 1)
     }
 
+    @Test func reconcile_ModelDraftAdditiveWithFragranceWording_MovesToFragrances() {
+        let draft = RecipeImportDraft.mock(
+            oils: [ImportedIngredient(name: "Olive Oil", amount: 100, unit: nil)],
+            additives: [ImportedIngredient(name: "Scent fixative", amount: 2, unit: "g")]
+        )
+        let rows = RecipeIngredientReconciler.reconcile(draft, against: [])
+
+        #expect(rows.first { $0.imported.name == "Scent fixative" }?.role == .fragrance)
+    }
+
+    @Test func reconcile_StatedSections_KeepsUnmatchedFragranceWordedAdditive() {
+        let draft = RecipeImportDraft.mock(
+            oils: [ImportedIngredient(name: "Olive Oil", amount: 100, unit: nil)],
+            additives: [ImportedIngredient(name: "Scent fixative", amount: 2, unit: "g")]
+        )
+        let rows = RecipeIngredientReconciler.reconcile(draft, against: [], sectionsAreStated: true)
+
+        #expect(rows.first { $0.imported.name == "Scent fixative" }?.role == .additive)
+    }
+
     @Test func suggestedCategoryName_FollowsTheRow() {
         let imported = ImportedIngredient(name: "Kaolin Clay", amount: 10, unit: "g")
         #expect(RecipeImportRow(imported: imported, role: .oil, resolution: .unmatched)

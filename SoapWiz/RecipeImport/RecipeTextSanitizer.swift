@@ -73,7 +73,7 @@ enum RecipeTextSanitizer {
         var result: [String] = []
         for rawLine in text.components(separatedBy: .newlines) {
             let withoutURLs = RecipeTextMarkupStripper.removeURLs(rawLine)
-            let collapsed = collapseWhitespace(withoutURLs)
+            let collapsed = combiningPoundsAndOunces(in: collapseWhitespace(withoutURLs))
             guard !collapsed.isEmpty else { continue }
             guard !RecipeTextMarkupStripper.isBoilerplate(collapsed) else { continue }
             result.append(contentsOf: splitLongLine(collapsed))
@@ -83,6 +83,27 @@ enum RecipeTextSanitizer {
 
     private static func collapseWhitespace(_ line: String) -> String {
         line.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// "1 lb 4 oz" as "20 oz", so the model reads one amount rather than two.
+    ///
+    /// On device it read "1 lb 4 oz tallow" as nothing and returned 0. The
+    /// rewrite happens here, before the text reaches the model, and the draft
+    /// checker validates amounts against this same text, so the combined number
+    /// is one it finds stated. A lone "2 lb" has no ounces to join and stays as
+    /// written.
+    ///
+    /// Only whole pounds with fewer than 16 ounces are joined. A line such as
+    /// "Oils 2.205 lb 35.27 oz" states one amount in both units, and adding the
+    /// two would double it; so would "1 lb 16 oz", which is not a split amount.
+    private static func combiningPoundsAndOunces(in line: String) -> String {
+        let compound = #/(\d+(?:[.,]\d+)?)\h*(?:lbs?\.?|pounds?)\h*(?:,|and|&)?\h*(\d+(?:[.,]\d+)?)\h*(?:oz|ounces?)\b/#.ignoresCase()
+        return line.replacing(compound) { match in
+            guard let pounds = RecipeTextNumbers.decimal(match.output.1),
+                  let ounces = RecipeTextNumbers.decimal(match.output.2),
+                  pounds == pounds.rounded(), ounces < 16 else { return String(match.output.0) }
+            return String(format: "%g", pounds * 16 + ounces) + " oz"
+        }
     }
 
     private static func splitLongLine(_ line: String) -> [String] {

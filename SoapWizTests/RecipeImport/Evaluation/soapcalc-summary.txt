@@ -1,0 +1,41 @@
+Total oil weight	1000 g
+Water as percent of oil weight	27.82%
+Super Fat/Discount	5%
+Lye Concentration	33.333%
+Water : Lye Ratio	2.0000:1
+Sat : Unsat Ratio	35 : 65
+Iodine	65
+INS	143
+Fragrance Ratio	30
+Fragrance Weight	30 g
+Item	Pounds	Ounces	Grams
+Water	0.613	9.81	278.19
+Lye - NaOH	0.307	4.91	139.10
+Oils	2.205	35.27	1000.00
+Fragrance	0.066	1.06	30.00
+Soap weight before CP cure or HP cook	3.191	51.05	1447.29
+#	✓	Oil/Fat	%	Pounds	Ounces	Grams
+1		Olive Oil	40.00	0.882	14.11	400.00
+2		Coconut Oil, 76 deg	25.00	0.551	8.82	250.00
+3		Shea Butter	15.00	0.331	5.29	150.00
+4		Castor Oil	5.00	0.110	1.76	50.00
+5		Almond Oil, sweet	15.00	0.331	5.29	150.00
+		Totals	100.00	2.205	35.27	1000.00
+Soap Bar Quality	Range	Your Recipe
+Hardness	29 - 54	34
+Cleansing	12 - 22	17
+Conditioning	44 - 69	62
+Bubbly	14 - 46	21
+Creamy	16 - 48	22
+Iodine	41 - 70	65
+INS	136 - 165	143
+Lauric	12
+Myristic	5
+Palmitic	10
+Stearic	8
+Ricinoleic	5
+Oleic	48
+Linoleic	9
+Linolenic	0
+Additives
+Notes

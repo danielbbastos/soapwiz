@@ -11,11 +11,23 @@ import Foundation
 ///
 /// Anything that doesn't match exactly is surfaced to the user instead.
 enum RecipeIngredientReconciler {
-    static func reconcile(_ draft: RecipeImportDraft, against inventory: [Ingredient]) -> [RecipeImportRow] {
+    /// `sectionsAreStated` is for a draft `RecipeTextExportReader` read from a
+    /// SoapWiz copy, which names each row's section itself. The name guess that
+    /// refiles an unmatched row exists for model drafts, where the model sorts
+    /// rows by position; on a copy it can only be wrong, moving an additive
+    /// such as "Scent fixative" to the fragrances. It is a parameter rather
+    /// than a field on the draft so that a model's draft cannot claim it.
+    static func reconcile(
+        _ draft: RecipeImportDraft,
+        against inventory: [Ingredient],
+        sectionsAreStated: Bool = false
+    ) -> [RecipeImportRow] {
         let index = index(of: inventory)
         let slugIndex = slugIndex(of: inventory)
         return sections(of: draft).flatMap { imported, role in
-            imported.compactMap { row(for: $0, role: role, index: index, slugIndex: slugIndex) }
+            imported.compactMap {
+                row(for: $0, role: role, sectionsAreStated: sectionsAreStated, index: index, slugIndex: slugIndex)
+            }
         }
     }
 
@@ -55,13 +67,14 @@ enum RecipeIngredientReconciler {
     private static func row(
         for imported: ImportedIngredient,
         role: RecipeIngredientRole,
+        sectionsAreStated: Bool,
         index: [String: Ingredient],
         slugIndex: [String: Ingredient]
     ) -> RecipeImportRow? {
         guard let match = matched(imported.name, listedAsOil: role == .oil, index: index, slugIndex: slugIndex) else {
             return RecipeImportRow(
                 imported: imported,
-                role: ImportedIngredientName.evidentRole(of: imported.name) ?? role,
+                role: sectionsAreStated ? role : ImportedIngredientName.evidentRole(of: imported.name) ?? role,
                 resolution: .unmatched
             )
         }

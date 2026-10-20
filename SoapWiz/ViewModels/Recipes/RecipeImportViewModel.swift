@@ -200,7 +200,7 @@ final class RecipeImportViewModel {
     // MARK: - Extraction
 
     /// `context`, when given, is where the inventory is fetched again once the
-    /// model has answered: see `runExtraction`. The app always passes it; only
+    /// model has answered: see `finishExtraction`. The app always passes it; only
     /// tests that hold no store leave it out, and are matched against
     /// `inventory` as it was handed in.
     func extract(
@@ -228,32 +228,16 @@ final class RecipeImportViewModel {
         waitHints.start()
         defer { waitHints.stop() }
 
-        let names = inventory.map(\.name)
-        var budget = RecipeTextSanitizer.defaultCharacterBudget
-        var text = RecipeTextSanitizer.sanitize(rawText, knownIngredientNames: names, characterBudget: budget)
-        sanitized = text
-
-        guard !text.isEmpty else {
-            phase = .failed(.nothingRecognised)
-            return
-        }
-
         do {
-            try await runExtraction(extractor, on: text, inventory: inventory, context: context)
-        } catch RecipeImportError.inputTooLong {
-            // The character budget is an estimate — the model is the authority
-            // on what fits. When it says no, halve the budget and try the
-            // densest half rather than handing the failure straight to the user.
-            budget /= 2
-            text = RecipeTextSanitizer.sanitize(rawText, knownIngredientNames: names, characterBudget: budget)
-            sanitized = text
-            streamingDraft = nil
-            do {
-                try await runExtraction(extractor, on: text, inventory: inventory, context: context)
-            } catch {
-                streamingDraft = nil
-                phase = .failed(importError(from: error))
-            }
+            let extracted = try await RecipeImportExtraction.run(
+                rawText: rawText,
+                knownIngredientNames: inventory.map(\.name),
+                using: extractor,
+                onSanitized: { sanitized = $0 },
+                onRetry: { streamingDraft = nil },
+                onPartial: { streamingDraft = $0 }
+            )
+            finishExtraction(extracted, inventory: inventory, context: context)
         } catch {
             streamingDraft = nil
             phase = .failed(importError(from: error))
@@ -266,7 +250,7 @@ final class RecipeImportViewModel {
         guard let draft = RecipeTextExportReader.read(rawText) else { return false }
         sanitized = nil
         extractedDraft = draft
-        rows = RecipeIngredientReconciler.reconcile(draft, against: inventory)
+        rows = RecipeIngredientReconciler.reconcile(draft, against: inventory, sectionsAreStated: true)
         phase = .review
         return true
     }
@@ -277,15 +261,11 @@ final class RecipeImportViewModel {
     /// hold the copy it deleted, which traps when read (SW-209), and would lack
     /// the copy it kept when that one arrived during the wait — leaving the
     /// row unmatched and inviting a duplicate.
-    private func runExtraction(
-        _ extractor: RecipeDraftExtracting,
-        on text: SanitizedRecipeText,
+    private func finishExtraction(
+        _ extracted: RecipeImportDraft,
         inventory: [Ingredient],
         context: ModelContext?
-    ) async throws {
-        let extracted = try await extractor.extract(from: text) { [weak self] partial in
-            self?.streamingDraft = partial
-        }
+    ) {
         extractedDraft = extracted
         let current = context.map { (try? $0.fetch(FetchDescriptor<Ingredient>())) ?? [] } ?? inventory
         rows = RecipeIngredientReconciler.reconcile(extracted, against: current)

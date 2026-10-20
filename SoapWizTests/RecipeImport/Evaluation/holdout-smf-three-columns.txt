@@ -1,0 +1,9 @@
+Base Ingredients Grams Ounces Percentage
+Coconut Oil 270 gr. 9.524 oz. 30%
+Palm Oil 270 gr. 9.524 oz. 30%
+Olive Oil 270 gr. 9.524 oz. 30%
+Shea Butter 90 gr. 3.175 oz. 10%
+Distilled Water 326.07 gr. 11.502 oz.
+Lye 124.451 gr. 4.39 oz.
+
+Water as % of Oils = 36.23; Super Fat/Discount = 8%
