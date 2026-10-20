@@ -167,6 +167,49 @@ struct RecipeImportSoapWizCopyTests {
         #expect(prepared.collections.isEmpty)
     }
 
+    private func addAdditive(named name: String, to recipe: Recipe, in context: ModelContext) {
+        let ingredient = Ingredient(name: name, unit: "g")
+        context.insert(ingredient)
+        let line = RecipeIngredient(ingredient: ingredient, percentage: 0, role: .additive)
+        line.additiveAmount = 2
+        line.additiveUnit = "g"
+        line.recipe = recipe
+        context.insert(line)
+        try? context.save()
+    }
+
+    @Test func extract_SoapWizCopyWithFragranceWordedAdditives_KeepsThemAdditives() async throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = try makeRecipe(in: ctx)
+        addAdditive(named: "Scent fixative", to: recipe, in: ctx)
+        addAdditive(named: "Fragrance Stabilizer", to: recipe, in: ctx)
+        let text = RecipeTextExporter.text(for: recipe)
+
+        let model = RecipeImportViewModel(extractor: StubRecipeExtractor(draft: .mock()))
+        model.rawText = text
+        await model.extract(inventory: [])
+
+        let fixative = try #require(model.rows.first { $0.imported.name == "Scent fixative" })
+        let stabilizer = try #require(model.rows.first { $0.imported.name == "Fragrance Stabilizer" })
+        #expect(fixative.role == .additive)
+        #expect(stabilizer.role == .additive)
+    }
+
+    @Test func reconcile_SameCopyDraftWithoutStatedSections_MovesThemToFragrances() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = try makeRecipe(in: ctx)
+        addAdditive(named: "Scent fixative", to: recipe, in: ctx)
+        let draft = try #require(RecipeTextExportReader.read(RecipeTextExporter.text(for: recipe)))
+
+        let stated = RecipeIngredientReconciler.reconcile(draft, against: [], sectionsAreStated: true)
+        let guessed = RecipeIngredientReconciler.reconcile(draft, against: [])
+
+        #expect(try #require(stated.first { $0.imported.name == "Scent fixative" }).role == .additive)
+        #expect(try #require(guessed.first { $0.imported.name == "Scent fixative" }).role == .fragrance)
+    }
+
     private func amounts(_ pairs: [(String, Double)]) -> [String: Double] {
         Dictionary(pairs, uniquingKeysWith: +)
     }

@@ -16,6 +16,11 @@ struct ImportedIngredient: Identifiable, Equatable {
         lhs.id == rhs.id
     }
 
+    /// The unit with surrounding whitespace removed and lowercased.
+    var normalizedUnit: String? {
+        unit?.trimmingCharacters(in: .whitespaces).lowercased()
+    }
+
     /// Words a recipe groups its ingredients under, which the model sometimes
     /// reports as ingredients in their own right.
     static let sectionWords: Set<String> = [

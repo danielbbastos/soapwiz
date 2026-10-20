@@ -9,11 +9,11 @@ import Foundation
 /// and the form then opened with oils totalling 600%.
 extension RecipeImportDraftChecker {
     private static let statedShare = #/(\d(?:[\d\h.,']*\d)?)\h*%/#
-    private static let statedWeight = #/(?i)(\d(?:[\d\h.,']*\d)?)\h*(kg|g|oz|lb)\b/#
+    private static let statedWeight = #/(?i)(\d(?:[\d\h.,']*\d)?)\h*(kg|grams?|grs?|g|oz|lb)\b/#
 
     /// Shares that add up to this are a whole blend, allowing for rounding in
     /// the source.
-    private static let wholeBlend = 98.0...102.0
+    static let wholeBlend = 98.0...102.0
 
     /// The draft as a percentage recipe, when the text writes a percentage
     /// beside every oil; `nil` otherwise.
@@ -67,7 +67,7 @@ extension RecipeImportDraftChecker {
     static func matchingOilUnits(_ draft: RecipeImportDraft) -> RecipeImportDraft {
         let units = draft.oils
             .filter { $0.amount > 0 }
-            .map { $0.unit?.trimmingCharacters(in: .whitespaces).lowercased() }
+            .map(\.normalizedUnit)
         guard let unit = units.first ?? nil, units.allSatisfy({ $0 == unit }) else { return draft }
 
         var matched = draft
@@ -80,13 +80,77 @@ extension RecipeImportDraftChecker {
         return matched
     }
 
+    /// The draft as a percentage recipe, when its "weights" are really shares.
+    ///
+    /// A SoapCalc table prints its % column without a percent sign, and beside
+    /// a stated total oil weight the model has read "40" as 40 g. A weight
+    /// recipe whose oils add up to a whole blend while its batch size is
+    /// something else is that misread: real weights summing to about 100 are
+    /// only possible in a batch of about 100, and then the draft is left alone.
+    /// Needs a stated batch size to compare against; without one the amounts
+    /// can't be told from a small genuine recipe.
+    static func readingSharesAsPercentages(_ draft: RecipeImportDraft) -> RecipeImportDraft {
+        guard !draft.amountsArePercentages, let batchSize = draft.batchSize,
+              !wholeBlend.contains(batchSize),
+              wholeBlend.contains(draft.oils.map(\.amount).reduce(0, +)) else { return draft }
+
+        var recipe = draft
+        for index in recipe.oils.indices where recipe.oils[index].amount > 0 {
+            recipe.oils[index].unit = "%"
+        }
+        recipe.amountsArePercentages = true
+        return recipe
+    }
+
+    /// The draft without a batch size that doesn't describe its oils.
+    ///
+    /// A mould size ("5-Pound Wood Mold") is a number in the text, so the check
+    /// against the text keeps it, and the model has reported it as the batch
+    /// beside oils written in ounces. For a weight recipe, whose oils all share
+    /// one unit, a batch size that isn't their total to within 1% is cleared
+    /// and the review screen shows a gap instead. `matchingOilUnits` has
+    /// already put that shared unit on the draft.
+    static func clearingStaleBatchSize(_ draft: RecipeImportDraft) -> RecipeImportDraft {
+        guard !draft.amountsArePercentages, let batchSize = draft.batchSize else { return draft }
+        let weighed = draft.oils.filter { $0.amount > 0 }
+        let units = Set(weighed.map(\.normalizedUnit))
+        guard units.count == 1, let unit = units.first ?? nil,
+              RecipeImportDraft.supportedWeightUnits.contains(unit) else { return draft }
+
+        let total = weighed.map(\.amount).reduce(0, +)
+        guard abs(batchSize - total) > total * 0.01 else { return draft }
+        var recipe = draft
+        recipe.batchSize = nil
+        return recipe
+    }
+
     private static func statedOilAmount(in line: String) -> StatedOilAmount? {
         guard let share = line.firstMatch(of: statedShare).flatMap({ RecipeTextExportReader.decimal($0.output.1) }),
               (0...100).contains(share) else { return nil }
-        let weight = line.firstMatch(of: statedWeight).flatMap { match in
-            RecipeTextExportReader.decimal(match.output.1).map { StatedWeight(value: $0, unit: match.output.2.lowercased()) }
+        let weight = line.firstMatch(of: statedWeight).flatMap { match -> StatedWeight? in
+            let unit = weightUnit(match.output.2.lowercased())
+            return weightValue(match.output.1, unit: unit).map { StatedWeight(value: $0, unit: unit) }
         }
         return StatedOilAmount(share: share, weight: weight)
+    }
+
+    /// The supported unit a written weight unit stands for: "gr", "grs" and
+    /// "grams" are all grams.
+    private static func weightUnit(_ written: String) -> String {
+        written.hasPrefix("g") ? "g" : written
+    }
+
+    /// A weight's number in its unit.
+    ///
+    /// Ounce and pound amounts never use a thousands separator, so a lone dot or
+    /// comma there is the decimal point: "9.524 oz" is not 9524. Grams and
+    /// kilograms keep the exporter reading, where "1.000 g" is a thousand.
+    private static func weightValue(_ token: Substring, unit: String) -> Double? {
+        let separators = token.count { $0 == "." || $0 == "," }
+        if unit == "oz" || unit == "lb", separators == 1, let value = RecipeTextNumbers.decimal(token) {
+            return value
+        }
+        return RecipeTextExportReader.decimal(token)
     }
 }
 

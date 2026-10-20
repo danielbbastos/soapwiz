@@ -77,6 +77,15 @@ struct RecipeImportFormMappingTests: RecipeImportTestHelpers {
         #expect(model.lyePurity == RecipeFormViewModel.defaultKOHPurity)
     }
 
+    @Test func applyImport_StatedPurityWithKOH_SurvivesTheKOHDefault() {
+        var draft = RecipeImportDraft.mock(lyeType: "KOH")
+        draft.lyePurity = 85
+        let model = apply(draft)
+
+        #expect(model.lyeType == "KOH")
+        #expect(model.lyePurity == 85)
+    }
+
     /// A source that says nothing about superfat must not be read as saying 0%.
     @Test func applyImport_UnstatedSettings_KeepTheFormDefaults() {
         let defaults = RecipeFormViewModel()
@@ -263,6 +272,21 @@ struct RecipeImportFormMappingTests: RecipeImportTestHelpers {
     }
 
     // MARK: - Helpers
+
+    @Test func applyImport_HybridLyeDraft_TurnsOnHybridWithEachPurity() {
+        var draft = RecipeImportDraft.mock(lyeType: nil)
+        draft.kohPercentage = 75
+        draft.kohPurity = 90
+        draft.naohPurity = 99
+
+        let model = apply(draft)
+
+        #expect(model.useHybrid)
+        #expect(model.kohPercentage == 75)
+        #expect(model.naohPercentage == 25)
+        #expect(model.kohPurity == 90)
+        #expect(model.naohPurity == 99)
+    }
 
     private func apply(_ draft: RecipeImportDraft, inventory: [Ingredient]? = nil) -> RecipeFormViewModel {
         let rows = RecipeIngredientReconciler.reconcile(draft, against: inventory ?? self.inventory)

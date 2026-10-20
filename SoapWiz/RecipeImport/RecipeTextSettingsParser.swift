@@ -7,6 +7,10 @@ struct RecipeTextSettings: Equatable {
     var fragrancePercentage: Double?
     var lyeType: String?
     var cfmNeutralizer: CFMNeutralizer?
+    var lyePurity: Double?
+    var kohPercentage: Double?
+    var naohPurity: Double?
+    var kohPurity: Double?
 }
 
 /// Reads superfat, water ratio, fragrance load and lye type from the phrases
@@ -20,11 +24,13 @@ struct RecipeTextSettings: Equatable {
 /// Whitespace inside a pattern is horizontal only: a keyword on one line never
 /// claims a number from the next.
 enum RecipeTextSettingsParser {
-    static let superFatRange = 0.0...20.0
+    /// Wide enough for a salt bar, which is routinely made at 20-25%.
+    static let superFatRange = 0.0...30.0
+    static let lyePurityRange = 50.0...100.0
     static let waterPartsRange = 0.5...5.0
     static let fragrancePercentageRange = 0.0...15.0
 
-    static let superFatKeyword = #/\b(?:super\h*-?\h*fat(?:ting)?|lye\h+discount|sf)\b/#.ignoresCase()
+    static let superFatKeyword = #/\b(?:super\h*-?\h*fat(?:ting)?|lye\h+discount|sf|sobre\h*-?\h*engr?as(?:ado|e))\b/#.ignoresCase()
     static let fragranceKeyword = #/\b(?:fragrances?|scents?|essential\h+oils?|eos?|fos?)\b/#.ignoresCase()
 
     static func parse(_ text: String) -> RecipeTextSettings {
@@ -33,15 +39,28 @@ enum RecipeTextSettingsParser {
             waterParts: waterParts(in: text),
             fragrancePercentage: fragrancePercentage(in: text),
             lyeType: lyeType(in: text),
-            cfmNeutralizer: cfmNeutralizer(in: text)
+            cfmNeutralizer: cfmNeutralizer(in: text),
+            lyePurity: lyePurity(in: text),
+            kohPercentage: kohPercentage(in: text),
+            naohPurity: weightPurity(of: "NaOH", in: text),
+            kohPurity: weightPurity(of: "KOH", in: text)
         )
     }
 
     // MARK: - Superfat
 
     static func superFat(in text: String) -> Double? {
-        let after = #/\b(?:super\h*-?\h*fat(?:ting)?|lye\h+discount|sf)\b\h*(?:of|at|is|:|=|-|—)?\h*(\d+(?:[.,]\d+)?)/#
-        let before = #/(\d+(?:[.,]\d+)?)\h*%\h*(?:super\h*-?\h*fat(?:ting)?|lye\h+discount|sf)\b/#
+        let text = joiningLabelRows(text)
+        let after = #/
+            \b(?:
+                super\h*-?\h*fat(?:ting)?
+                |lye\h+discount
+                |sf
+                |sobre\h*-?\h*engr?as(?:ado|e)
+            )\b
+            \h*%?\h*(?:of|at|is|:|=|-|—)?\h*(\d+(?:[.,]\d+)?)
+            /#
+        let before = #/(\d+(?:[.,]\d+)?)\h*%\h*(?:super\h*-?\h*fat(?:ting)?|lye\h+discount|sf|sobre\h*-?\h*engr?as(?:ado|e))\b/#
         let value = earliest([
             text.firstMatch(of: after.ignoresCase()).map { ($0.range.lowerBound, RecipeTextNumbers.decimal($0.output.1)) },
             text.firstMatch(of: before.ignoresCase()).map { ($0.range.lowerBound, RecipeTextNumbers.decimal($0.output.1)) }
@@ -52,6 +71,7 @@ enum RecipeTextSettingsParser {
     // MARK: - Water
 
     static func waterParts(in text: String) -> Double? {
+        let text = joiningLabelRows(text)
         let waterToLye = #/\bwater\h*(?::|\/|to)\h*lye(?:\h+ratio)?\h*(?:of|is|:|=|-)?\h*(\d+(?:[.,]\d+)?)\h*:\h*(\d+(?:[.,]\d+)?)/#
         let lyeToWater = #/\blye\h*(?::|\/|to)\h*water(?:\h+ratio)?\h*(?:of|is|:|=|-)?\h*(\d+(?:[.,]\d+)?)\h*:\h*(\d+(?:[.,]\d+)?)/#
         let ratioFirst = #/(\d+(?:[.,]\d+)?)\h*:\h*(\d+(?:[.,]\d+)?)\h*water\h*(?::|\/|to)\h*lye\b/#
@@ -59,6 +79,13 @@ enum RecipeTextSettingsParser {
         let ratio = #/\bwater\h+ratio\h*(?::|=|of|is)?\h*(\d+(?:[.,]\d+)?)(?!\h*[:%\d])/#
         let concentration = #/\blye\h+(?:concentration|solution(?:\h+strength)?)\h*(?:of|at|is|:|=|-)?\h*(\d+(?:[.,]\d+)?)\h*%/#
         let concentrationFirst = #/(\d+(?:[.,]\d+)?)\h*%\h*lye\h+(?:concentration|solution)\b/#
+        // Spanish needs no "lye" before the word, since "concentración" alone is
+        // not a word English text uses. The English bare "concentration" stays
+        // unread: LyeCalc prints "Lye concentration 90%" meaning purity.
+        let concentracion = #/
+            \bconcentraci[oó]n(?:\h+de\h+(?:la\h+)?(?:lej[ií]a|sosa))?
+            \h*(?:de|of|at|is|:|=|-|—)?\h*(\d+(?:[.,]\d+)?)\h*%
+            /#
 
         let value = earliest([
             text.firstMatch(of: waterToLye.ignoresCase()).map { ($0.range.lowerBound, parts($0.output.1, per: $0.output.2)) },
@@ -67,7 +94,8 @@ enum RecipeTextSettingsParser {
             text.firstMatch(of: timesLye.ignoresCase()).map { ($0.range.lowerBound, RecipeTextNumbers.decimal($0.output.1)) },
             text.firstMatch(of: ratio.ignoresCase()).map { ($0.range.lowerBound, RecipeTextNumbers.decimal($0.output.1)) },
             text.firstMatch(of: concentration.ignoresCase()).map { ($0.range.lowerBound, partsFromConcentration($0.output.1)) },
-            text.firstMatch(of: concentrationFirst.ignoresCase()).map { ($0.range.lowerBound, partsFromConcentration($0.output.1)) }
+            text.firstMatch(of: concentrationFirst.ignoresCase()).map { ($0.range.lowerBound, partsFromConcentration($0.output.1)) },
+            text.firstMatch(of: concentracion.ignoresCase()).map { ($0.range.lowerBound, partsFromConcentration($0.output.1)) }
         ])
         return value.flatMap { waterPartsRange.contains($0) ? $0 : nil }
     }
@@ -94,6 +122,7 @@ enum RecipeTextSettingsParser {
     /// is two rows adding up to a load of 3%, and taking the first as the load
     /// would be wrong; those are left to the model and checked for proximity.
     static func fragrancePercentage(in text: String) -> Double? {
+        let text = joiningLabelRows(text)
         let after = #/\b(?:fragrance|scent)(?:\h+load)?\h*(?:of|at|is|:|=|-|—)?\h*(\d+(?:[.,]\d+)?)\h*%/#
         let before = #/(\d+(?:[.,]\d+)?)\h*%\h*(?:fragrance|scent)\b/#
         let value = earliest([

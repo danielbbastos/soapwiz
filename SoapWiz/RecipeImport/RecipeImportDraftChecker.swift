@@ -24,13 +24,20 @@ enum RecipeImportDraftChecker {
         checked.oils = ingredients(checked.oils, numbers: numbers)
         checked.additives = ingredients(checked.additives, numbers: numbers)
         checked.fragrances = ingredients(checked.fragrances, numbers: numbers)
+        // Before the oil sums that the batch size and percentage checks read,
+        // and duplicates after, so a repeat in the wrong section is found.
+        checked = removingDuplicates(movingMisplacedRows(checked))
         // After amounts are checked: a header the model gave an invented amount
         // only reads as a header once that amount is gone.
         checked = checked.droppingSectionHeaders()
         checked.batchSize = checked.batchSize.flatMap { RecipeTextNumbers.contains($0, in: numbers) ? $0 : nil }
         // After the batch size check: a batch size read from the oil weights is
         // their sum, which the text need not write anywhere.
-        checked = statedPercentageRecipe(checked, in: text) ?? matchingOilUnits(checked)
+        // A table's column headers say which number is which, so they come
+        // before the share-and-weight scan of single lines.
+        checked = oilTableRecipe(checked, in: text) ?? statedPercentageRecipe(checked, in: text) ?? matchingOilUnits(checked)
+        // Both read the unit and flag settled just above.
+        checked = clearingStaleBatchSize(readingSharesAsPercentages(checked))
 
         let stated = RecipeTextSettingsParser.parse(text)
         checked.superFat = stated.superFat ?? valueNear(
@@ -44,6 +51,16 @@ enum RecipeImportDraftChecker {
             checked.fragrancePercentage, keyword: RecipeTextSettingsParser.fragranceKeyword, in: text, requiringPercent: true
         )
         checked.lyeType = stated.lyeType ?? checked.lyeType ?? lyeTypeFromRows
+        if let lyePurity = stated.lyePurity { checked.lyePurity = lyePurity }
+        if let kohPercentage = stated.kohPercentage {
+            // A hybrid is described the way a SoapWiz copy's is: the shares and
+            // each lye's own purity, with no single lye type or purity.
+            checked.kohPercentage = kohPercentage
+            checked.kohPurity = stated.kohPurity
+            checked.naohPurity = stated.naohPurity
+            checked.lyeType = nil
+            checked.lyePurity = nil
+        }
 
         let neutralizer = failorNeutralizer(for: checked, statedInText: stated.cfmNeutralizer)
         checked.cfmNeutralizer = neutralizer
@@ -101,11 +118,14 @@ enum RecipeImportDraftChecker {
                   !ImportedIngredientName.isWater(ingredient.name),
                   !ImportedIngredientName.isSetting(ingredient.name) else { return nil }
             guard ingredient.amount != 0, !RecipeTextNumbers.contains(ingredient.amount, in: numbers) else {
-                return ingredient
+                // A water row with a note in place of a quantity — "Distilled
+                // water for dilution, as needed" — is not an ingredient to keep.
+                return ingredient.amount == 0 && ImportedIngredientName.isWaterWithNote(ingredient.name)
+                    ? nil : ingredient
             }
             var unstated = ingredient
             unstated.amount = 0
-            return unstated
+            return ImportedIngredientName.isWaterWithNote(unstated.name) ? nil : unstated
         }
     }
 }

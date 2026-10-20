@@ -1,0 +1,12 @@
+Ingredient	%	Grams
+Olive oil	45	360
+Coconut oil	25	200
+Palm oil	20	160
+Castor oil	5	40
+Avocado oil	5	40
+Total	100	800
+		
+Sodium hydroxide		113.6
+Water		240
+Superfat	5%	
+Lavender EO	3%	24

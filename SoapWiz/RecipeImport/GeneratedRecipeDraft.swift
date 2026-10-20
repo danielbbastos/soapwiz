@@ -67,7 +67,7 @@ struct GeneratedRecipeDraft {
            + "soap. Leave empty when the recipe doesn't saponify or doesn't say", .anyOf(["NaOH", "KOH"]))
     var lyeType: String?
 
-    @Guide(description: "Superfat, also called lye discount, as a percentage", .range(0.0...20.0))
+    @Guide(description: "Superfat, also called lye discount, as a percentage", .range(RecipeTextSettingsParser.superFatRange))
     var superFat: Double?
 
     @Guide(description: "Parts of water per part of lye. A 2:1 water to lye ratio is 2", .range(0.5...5.0))

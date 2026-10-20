@@ -1,0 +1,85 @@
+Liquid soap exp
+
+A solid soap
+
+Needed Ingredients
+Water + Lye
+4.18 oz Water
+2.09 oz 90% Purity KOH
+Oils
+2.24 oz Shea Fruit Butter
+2.24 oz Palm Oil
+2.24 oz Pomace Olive Oil
+2.80 oz Coconut Oil, 76 deg
+Additives + Additional Ingredients
+0.75 ounce Scent
+Soap Properties
+Highlighted gray ranges represent recommended ranges for each property.
+49.59
+Hardness
+19.94
+Cleansing
+46.71
+Condition
+19.94
+Bubbly
+29.65
+Creamy
+29.06
+Longevity
+INS: 161.76
+ideal
+Iodine: 49.06
+ideal
+Calculated Values for Oils and Preferences
+Superfat %	5%
+Saturated	4.66 Ounce(s)
+Mono-Unsaturated	3.80 Ounce(s)
+Poly-Unsaturated	0.74 Ounce(s)
+Saturated:Unsaturated Ratio	49.30:50.70
+Lye concentration	90%
+Weight Unit	Ounce(s)
+Soap type	Solid
+Fatty Acid Profile
+Oleic	39.88%
+Linoleic	7.29%
+Linolenic	0.47%
+Ricinoleic	0%
+Lauric	14.12%
+Myristic	5.82%
+Palmitic	17%
+Stearic	12.06%
+Recommended Additive Amounts
+For Advanced Soapmakers
+Sodium Lactate (60%)
+%1	%2	%3
+0.10 Ounce(s)	0.19 Ounce(s)	0.29 Ounce(s)
+Recommended Essential/Fragrance Oil	0.12 Ounce(s)
+Ascorbic Acid
+	0.10 Ounce(s)
+Extra Lye to Neutralize Ascorbic Acid
+KOH: 0.03 Ounce(s)
+Lactic Acid
+	0.07 Ounce(s)
+Extra Lye to Neutralize Lactic Acid
+KOH: 0.07 Ounce(s)
+Recommended Liquid Crothix
+	0.16 - 1.26 Ounce(s)
+Tetrasodium EDTA
+	0.08 Ounce(s)
+Sodium Citrate
+	0.12 - 0.37 Ounce(s)
+Potassium Citrate
+	0.15 - 0.46 Ounce(s)
+Rosemary Oleoresin (ROE)
+	0 - 0 Ounce(s)
+Citric Acid Powder
+%1	%2	%3
+0.10 Ounce(s)	0.19 Ounce(s)	0.29 Ounce(s)
+Extra Lye to Neutralize Citric Acid Powder
+Anhydrous
+Monohydrate
+%1	%2	%3
+KOH: 0.09 Ounce(s)
+KOH: 0.19 Ounce(s)
+KOH: 0.28 Ounce(s)
