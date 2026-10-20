@@ -36,7 +36,8 @@ enum ImportedIngredientName {
     static let borax = #/\b(?:borax|sodium\h+borate)\b/#.ignoresCase()
 
     private static let fragranceWording = #/\b(?:(?:essential|fragrance)\h+oils?|fragrances?|scents?|eos?|fos?|absolutes?)\b/#.ignoresCase()
-    private static let oilWording = #/\b(?:oils?|butters?|wax(?:es)?|tallow|lard|aceites?|mantecas?|ceras?)\b/#.ignoresCase()
+    private static let oilWording =
+        #/\b(?:oils?|butters?|(?:bees)?wax(?:es)?|carnauba|candelilla|tallow|lard|aceites?|mantecas?|ceras?)\b/#.ignoresCase()
     private static let additiveWords: Set<String> = [
         "clay", "clays", "salt", "salts", "sugar", "sugars", "honey", "oatmeal", "oats", "charcoal",
         "lactate", "citrate", "citric", "silk", "mica", "micas", "colorant", "colorants", "colourant",
@@ -78,13 +79,28 @@ enum ImportedIngredientName {
     /// dilution, as needed". The recipe derives its water from the ratio, and
     /// such a row carries no quantity worth keeping.
     ///
-    /// Only the start of the name counts, and only at a word boundary, so
-    /// "Rose Water" and "Waterlily Extract" are not taken for plain water.
+    /// Only the start of the name counts, and the rest must read as a note:
+    /// nothing, or wording such as "for", "as needed" or "if", or a bracket,
+    /// comma, dash or colon. "Rose Water", "Waterlily Extract", "Water Kefir"
+    /// and "Water Soluble Dye" are not taken for plain water.
     static func isWaterWithNote(_ name: String) -> Bool {
         let key = withoutParentheticals(name).lookupKey
         return waterNames.contains { water in
             guard key.hasPrefix(water) else { return false }
-            guard let next = key.dropFirst(water.count).first else { return true }
+            return readsAsNote(key.dropFirst(water.count))
+        }
+    }
+
+    private static let noteOpeners = ["for", "as needed", "as required", "to", "if"]
+    private static let notePunctuation: Set<Character> = [",", "(", "-", ":"]
+
+    private static func readsAsNote(_ rest: Substring) -> Bool {
+        let trimmed = rest.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard let first = trimmed.first else { return true }
+        if notePunctuation.contains(first) { return true }
+        return noteOpeners.contains { opener in
+            guard trimmed.hasPrefix(opener) else { return false }
+            guard let next = trimmed.dropFirst(opener.count).first else { return true }
             return !next.isLetter && !next.isNumber
         }
     }

@@ -27,7 +27,7 @@ extension RecipeImportDraftChecker {
         guard let headerIndex = lines.firstIndex(where: { OilTableColumns(header: $0) != nil }),
               let columns = OilTableColumns(header: lines[headerIndex]) else { return nil }
 
-        let rows = oilTableRows(in: lines[(headerIndex + 1)...])
+        let rows = oilTableRows(in: lines[(headerIndex + 1)...], kinds: columns.kinds)
         var found: [[Double]] = []
         for oil in draft.oils {
             let key = oil.name.lookupKey
@@ -58,7 +58,10 @@ extension RecipeImportDraftChecker {
 
     /// The table's rows: a name and the numbers that end its line, or end the
     /// line below when the name's own line has none. Reading stops at "Total".
-    private static func oilTableRows(in lines: ArraySlice<String>) -> [(name: String, numbers: [Double])] {
+    private static func oilTableRows(
+        in lines: ArraySlice<String>,
+        kinds: [OilTableColumns.Kind]
+    ) -> [(name: String, numbers: [Double])] {
         var rows: [(name: String, numbers: [Double])] = []
         let candidates = lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         var index = candidates.startIndex
@@ -68,11 +71,11 @@ extension RecipeImportDraftChecker {
             let firstWord = line.split(whereSeparator: \.isWhitespace).first?.lowercased()
             if firstWord == "total" || firstWord == "totals" { break }
 
-            let split = splitTrailingNumbers(line)
+            let split = splitTrailingNumbers(line, kinds: kinds)
             if !split.numbers.isEmpty {
                 rows.append(split)
             } else if index < candidates.endIndex {
-                let below = splitTrailingNumbers(candidates[index])
+                let below = splitTrailingNumbers(candidates[index], kinds: kinds)
                 if below.name.isEmpty, !below.numbers.isEmpty {
                     rows.append((name: split.name, numbers: below.numbers))
                     index += 1
@@ -86,16 +89,35 @@ extension RecipeImportDraftChecker {
 
     /// A line cut into its name and the run of numeric cells at its end. Cells
     /// are tab-separated when the line has tabs, else words.
-    private static func splitTrailingNumbers(_ line: String) -> (name: String, numbers: [Double]) {
+    ///
+    /// The cells are matched to the header's `kinds` from the right and each is
+    /// read by its column: a share or an ounce or pound weight takes a lone
+    /// mark as the decimal point, while a gram or kilogram weight reads "1,250"
+    /// as a thousand-ish value, as `weightValue` does. Extra cells on the left,
+    /// such as a row number, are columns of no kind and read as plain decimals.
+    private static func splitTrailingNumbers(
+        _ line: String,
+        kinds: [OilTableColumns.Kind]
+    ) -> (name: String, numbers: [Double]) {
         let separator: (Character) -> Bool = line.contains("\t") ? { $0 == "\t" } : { $0.isWhitespace }
         var cells = line.split(omittingEmptySubsequences: true, whereSeparator: separator)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
-        var numbers: [Double] = []
-        while let last = cells.last, last.wholeMatch(of: tableNumber) != nil,
-              let value = RecipeTextNumbers.decimal(Substring(last)) {
-            numbers.insert(value, at: 0)
+        var numberCells: [String] = []
+        while let last = cells.last, last.wholeMatch(of: tableNumber) != nil {
+            numberCells.insert(last, at: 0)
             cells.removeLast()
+        }
+        let firstKindIndex = numberCells.count - kinds.count
+        let numbers = numberCells.enumerated().compactMap { offset, cell -> Double? in
+            let token = Substring(cell)
+            guard offset >= firstKindIndex else { return RecipeTextNumbers.decimal(token) }
+            switch kinds[offset - firstKindIndex] {
+            case .share:
+                return RecipeTextNumbers.decimal(token)
+            case .weight(let unit):
+                return weightValue(token, unit: unit)
+            }
         }
         return (cells.joined(separator: " "), numbers)
     }

@@ -8,12 +8,22 @@ struct RecipeTextNumbersLeadingDecimalTests {
     @Test(arguments: [
         ("Canola .5 oz", 0.5),
         (".5 oz canola", 0.5),
-        ("Canola ,5 oz", 0.5),
         ("Canola (.25 oz)", 0.25),
         ("Olive 10 oz\nCanola .75 oz", 0.75)
     ])
     func contains_LeadingDecimal_IsReadAsLessThanOne(_ text: String, _ value: Double) {
         #expect(RecipeTextNumbers.contains(value, in: RecipeTextNumbers.values(in: text)))
+    }
+
+    @Test func values_LeadingPointOunces_ReadsHalf() {
+        #expect(RecipeTextNumbers.contains(0.5, in: RecipeTextNumbers.values(in: ".5 oz")))
+    }
+
+    @Test func values_LeadingCommaAfterASpace_IsNotALeadingDecimal() {
+        let values = RecipeTextNumbers.values(in: "Olive Oil ,200 g")
+
+        #expect(RecipeTextNumbers.contains(200, in: values))
+        #expect(!RecipeTextNumbers.contains(0.2, in: values))
     }
 
     @Test func contains_LeadingDecimal_IsNotAlsoReadAsAWholeNumber() {

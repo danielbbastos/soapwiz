@@ -13,11 +13,20 @@ struct RecipeTextSanitizerPoundsOuncesTests {
         ("1 lb, 4 oz tallow", "20 oz tallow"),
         ("1 lb. 4 oz. tallow", "20 oz. tallow"),
         ("1lb 4oz tallow", "20 oz tallow"),
-        ("2 LBS 8 OZ shea", "40 oz shea"),
-        ("1,5 lb 2 oz coconut", "26 oz coconut")
+        ("2 LBS 8 OZ shea", "40 oz shea")
     ])
     func cleanedLines_PoundsAndOunces_AreCombinedIntoOunces(_ line: String, _ expected: String) {
         #expect(RecipeTextSanitizer.cleanedLines(from: line) == [expected])
+    }
+
+    @Test(arguments: [
+        "Oils 2.205 lb 35.27 oz",
+        "1 lb 16 oz",
+        "1,5 lb 2 oz coconut",
+        "1 lb 20 oz tallow"
+    ])
+    func cleanedLines_OneAmountInBothUnitsOrNotSplit_IsUntouched(_ line: String) {
+        #expect(RecipeTextSanitizer.cleanedLines(from: line) == [line])
     }
 
     @Test(arguments: ["2 lb olive oil", "8 oz coconut oil", "1 lb of lard, 4 oz of tallow"])

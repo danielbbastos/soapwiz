@@ -92,11 +92,16 @@ enum RecipeTextSanitizer {
     /// checker validates amounts against this same text, so the combined number
     /// is one it finds stated. A lone "2 lb" has no ounces to join and stays as
     /// written.
+    ///
+    /// Only whole pounds with fewer than 16 ounces are joined. A line such as
+    /// "Oils 2.205 lb 35.27 oz" states one amount in both units, and adding the
+    /// two would double it; so would "1 lb 16 oz", which is not a split amount.
     private static func combiningPoundsAndOunces(in line: String) -> String {
         let compound = #/(\d+(?:[.,]\d+)?)\h*(?:lbs?\.?|pounds?)\h*(?:,|and|&)?\h*(\d+(?:[.,]\d+)?)\h*(?:oz|ounces?)\b/#.ignoresCase()
         return line.replacing(compound) { match in
             guard let pounds = RecipeTextNumbers.decimal(match.output.1),
-                  let ounces = RecipeTextNumbers.decimal(match.output.2) else { return String(match.output.0) }
+                  let ounces = RecipeTextNumbers.decimal(match.output.2),
+                  pounds == pounds.rounded(), ounces < 16 else { return String(match.output.0) }
             return String(format: "%g", pounds * 16 + ounces) + " oz"
         }
     }

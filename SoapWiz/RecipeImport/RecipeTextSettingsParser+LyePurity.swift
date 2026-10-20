@@ -11,9 +11,14 @@ extension RecipeTextSettingsParser {
     /// prints beside the purity, and neither pattern reaches it. A text that
     /// gives purities for both NaOH and KOH describes a hybrid lye, which a
     /// single purity can't express, so it reads as none.
+    ///
+    /// A bare "100% KOH" or "NaOH 100%" says the lye is the only one in the
+    /// recipe, not that it is pure, so a 100 beside the lye's name alone is
+    /// ignored. With "pure" or "purity" attached, as in "100% pure NaOH" or
+    /// "purity: 100%", it is a purity.
     static func lyePurity(in text: String) -> Double? {
         let before = #/
-            (\d+(?:[.,]\d+)?)\h*%\h*(?:(?:pure|purity)\h+)?
+            (\d+(?:[.,]\d+)?)\h*%\h*((?:pure|purity)\h+)?
             (naoh|koh|sodium\h+hydroxide|potassium\h+hydroxide|caustic\h+(?:soda|potash))\b
             /#.ignoresCase()
         let after = #/
@@ -33,16 +38,17 @@ extension RecipeTextSettingsParser {
                 }
             }
             + text.matches(of: before).compactMap { match in
-                purity(match.output.1).map {
+                let value = match.output.2 == nil ? bareLyePurity(match.output.1) : purity(match.output.1)
+                return value.map {
                     StatedPurity(
                         position: match.range.lowerBound,
                         value: $0,
-                        lye: ImportedIngredientName.lyeType(ofLye: String(match.output.2))
+                        lye: ImportedIngredientName.lyeType(ofLye: String(match.output.3))
                     )
                 }
             }
             + text.matches(of: after).compactMap { match in
-                purity(match.output.2).map {
+                bareLyePurity(match.output.2).map {
                     StatedPurity(
                         position: match.range.lowerBound,
                         value: $0,
@@ -73,6 +79,12 @@ extension RecipeTextSettingsParser {
 
     private static func purity(_ token: Substring) -> Double? {
         RecipeTextNumbers.decimal(token).flatMap { lyePurityRange.contains($0) ? $0 : nil }
+    }
+
+    /// A purity written beside a lye's name with no "pure" or "purity" word,
+    /// where 100 means the only lye rather than a pure one.
+    private static func bareLyePurity(_ token: Substring) -> Double? {
+        purity(token).flatMap { $0 == 100 ? nil : $0 }
     }
 
     /// Soapmaking Friend's totals: "NaOH Weight at 99 % Purity 14.67 oz".

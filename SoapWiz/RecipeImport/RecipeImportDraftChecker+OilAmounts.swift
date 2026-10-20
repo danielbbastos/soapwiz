@@ -89,10 +89,18 @@ extension RecipeImportDraftChecker {
     /// only possible in a batch of about 100, and then the draft is left alone.
     /// Needs a stated batch size to compare against; without one the amounts
     /// can't be told from a small genuine recipe.
-    static func readingSharesAsPercentages(_ draft: RecipeImportDraft) -> RecipeImportDraft {
+    ///
+    /// The batch size alone doesn't settle it: a genuine 100-ounce recipe whose
+    /// text also states the batch in another unit ("6.25 lb", "2834.95 g") has
+    /// a batch size other than 100 too. So the text decides first: if any oil
+    /// has a line where its amount is followed by a weight unit, the amounts
+    /// are weights and the draft is left alone. A SoapCalc table prints the
+    /// share bare, with the weights in other columns, and has no such line.
+    static func readingSharesAsPercentages(_ draft: RecipeImportDraft, in text: String) -> RecipeImportDraft {
         guard !draft.amountsArePercentages, let batchSize = draft.batchSize,
               !wholeBlend.contains(batchSize),
-              wholeBlend.contains(draft.oils.map(\.amount).reduce(0, +)) else { return draft }
+              wholeBlend.contains(draft.oils.map(\.amount).reduce(0, +)),
+              !draft.oils.contains(where: { statesAmountWithWeightUnit($0, in: text) }) else { return draft }
 
         var recipe = draft
         for index in recipe.oils.indices where recipe.oils[index].amount > 0 {
@@ -124,6 +132,22 @@ extension RecipeImportDraftChecker {
         return recipe
     }
 
+    /// Whether a line naming the oil writes the oil's amount followed by a
+    /// weight unit.
+    private static func statesAmountWithWeightUnit(_ oil: ImportedIngredient, in text: String) -> Bool {
+        let key = oil.name.lookupKey
+        guard !key.isEmpty, oil.amount > 0 else { return false }
+        return text.components(separatedBy: .newlines)
+            .filter { $0.lookupKey.contains(key) }
+            .contains { line in
+                line.matches(of: statedWeight).contains { match in
+                    let unit = weightUnit(match.output.2.lowercased())
+                    return weightValue(match.output.1, unit: unit)
+                        .map { RecipeTextNumbers.contains(oil.amount, in: [$0]) } ?? false
+                }
+            }
+    }
+
     private static func statedOilAmount(in line: String) -> StatedOilAmount? {
         guard let share = line.firstMatch(of: statedShare).flatMap({ RecipeTextExportReader.decimal($0.output.1) }),
               (0...100).contains(share) else { return nil }
@@ -145,7 +169,8 @@ extension RecipeImportDraftChecker {
     /// Ounce and pound amounts never use a thousands separator, so a lone dot or
     /// comma there is the decimal point: "9.524 oz" is not 9524. Grams and
     /// kilograms keep the exporter reading, where "1.000 g" is a thousand.
-    private static func weightValue(_ token: Substring, unit: String) -> Double? {
+    /// Oil table cells read their weight columns the same way.
+    static func weightValue(_ token: Substring, unit: String) -> Double? {
         let separators = token.count { $0 == "." || $0 == "," }
         if unit == "oz" || unit == "lb", separators == 1, let value = RecipeTextNumbers.decimal(token) {
             return value

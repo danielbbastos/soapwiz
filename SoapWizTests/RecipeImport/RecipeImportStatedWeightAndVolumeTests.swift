@@ -131,6 +131,11 @@ struct RecipeImportStatedWeightAndVolumeTests {
         #expect(ImportedIngredientName.evidentRole(of: name) == nil)
     }
 
+    @Test(arguments: ["Beeswax", "Beeswax pastilles", "Carnauba wax", "Carnauba", "Candelilla", "Candelilla wax"])
+    func hasOilWording_Waxes_IsTrue(_ name: String) {
+        #expect(ImportedIngredientName.hasOilWording(name))
+    }
+
     @Test func hasOilWording_NoOilWord_IsFalse() {
         #expect(!ImportedIngredientName.hasOilWording("Rose Water"))
         #expect(!ImportedIngredientName.hasOilWording("Glycerin"))

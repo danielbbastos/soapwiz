@@ -78,6 +78,23 @@ struct RecipeTextSettingsParserEvaluationTests {
         #expect(RecipeTextSettingsParser.lyePurity(in: text) == expected)
     }
 
+    @Test(arguments: ["100% KOH", "100% NaOH", "NaOH 100%", "NaOH (100%)", "100 % sodium hydroxide"])
+    func lyePurity_BareHundredBesideTheLye_IsNotPurity(_ text: String) {
+        #expect(RecipeTextSettingsParser.lyePurity(in: text) == nil)
+    }
+
+    @Test(arguments: [
+        ("100% pure NaOH", 100.0),
+        ("100% purity KOH", 100.0),
+        ("purity: 100%", 100.0),
+        ("99% NaOH", 99.0),
+        ("KOH 98%", 98.0),
+        ("90% KOH", 90.0)
+    ])
+    func lyePurity_PurityWordOrBelowHundred_IsRead(_ text: String, _ expected: Double) {
+        #expect(RecipeTextSettingsParser.lyePurity(in: text) == expected)
+    }
+
     @Test func lyePurity_LyeConcentration_IsNotPurity() {
         #expect(RecipeTextSettingsParser.lyePurity(in: "Lye concentration 90%\nSuperfat 5%") == nil)
     }

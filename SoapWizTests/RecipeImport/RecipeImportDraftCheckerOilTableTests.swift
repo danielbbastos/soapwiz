@@ -227,6 +227,51 @@ struct RecipeImportDraftCheckerOilTableTests {
         #expect(abs(batchSize - 2.205) < 0.001)
     }
 
+    // MARK: - Grams with a thousands mark
+
+    @Test func checked_GramsCellWithAThousandsComma_ReadsAThousandish() throws {
+        let text = """
+            Oil\t%\tOunces\tGrams
+            Olive Oil
+            \t50\t44.09\t1,250
+            Coconut Oil
+            \t50\t44.09\t1250
+            Total\t100\t88.18\t2,500
+            """
+        let draft = RecipeImportDraft.mock(
+            oils: [
+                ImportedIngredient(name: "Olive Oil", amount: 44.09, unit: "g"),
+                ImportedIngredient(name: "Coconut Oil", amount: 44.09, unit: "g")
+            ],
+            amountsArePercentages: false,
+            batchSize: nil,
+            batchUnit: "g"
+        )
+
+        let checked = try #require(RecipeImportDraftChecker.oilTableRecipe(draft, in: text))
+
+        #expect(checked.oils.map(\.amount) == [50, 50])
+        #expect(checked.batchUnit == "g")
+        #expect(checked.batchSize == 2500)
+    }
+
+    @Test func checked_OuncesCellWithALoneComma_StaysADecimal() throws {
+        let text = "Oil\t%\tOunces\tGrams\nOlive Oil\t50\t44,09\t1250\nCoconut Oil\t50\t44,09\t1250"
+        let draft = RecipeImportDraft.mock(
+            oils: [
+                ImportedIngredient(name: "Olive Oil", amount: 44, unit: "oz"),
+                ImportedIngredient(name: "Coconut Oil", amount: 44, unit: "oz")
+            ],
+            amountsArePercentages: false,
+            batchSize: nil,
+            batchUnit: "oz"
+        )
+
+        let checked = try #require(RecipeImportDraftChecker.oilTableRecipe(draft, in: text))
+
+        #expect(checked.batchSize == 88.18)
+    }
+
     // MARK: - Tables that do not apply
 
     @Test func oilTableRecipe_DraftOilMissingFromTheTable_IsNil() {

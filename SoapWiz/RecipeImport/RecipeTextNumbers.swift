@@ -33,8 +33,10 @@ enum RecipeTextNumbers {
         }
         // ".5 oz" is half an ounce. The digits after the point are claimed here
         // so the plain scan below doesn't also read them as a 5; a point that
-        // trails a word or number ("well.5", "1.5") is not a leading one.
-        for match in text.matches(of: #/(?m)(?:^|[\h(])[.,](\d+)/#) {
+        // trails a word or number ("well.5", "1.5") is not a leading one. Only
+        // a point counts: after a space, a comma is a separator ("Olive Oil
+        // ,200 g"), and reading it as 0.200 would hide the 200.
+        for match in text.matches(of: #/(?m)(?:^|[\h(])\.(\d+)/#) {
             guard let value = Double("0.\(match.output.1)") else { continue }
             fractionRanges.append(match.range)
             values.append(value)

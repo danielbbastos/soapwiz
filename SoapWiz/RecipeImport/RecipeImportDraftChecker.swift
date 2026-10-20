@@ -37,7 +37,7 @@ enum RecipeImportDraftChecker {
         // before the share-and-weight scan of single lines.
         checked = oilTableRecipe(checked, in: text) ?? statedPercentageRecipe(checked, in: text) ?? matchingOilUnits(checked)
         // Both read the unit and flag settled just above.
-        checked = clearingStaleBatchSize(readingSharesAsPercentages(checked))
+        checked = clearingStaleBatchSize(readingSharesAsPercentages(checked, in: text))
 
         let stated = RecipeTextSettingsParser.parse(text)
         checked.superFat = stated.superFat ?? valueNear(
