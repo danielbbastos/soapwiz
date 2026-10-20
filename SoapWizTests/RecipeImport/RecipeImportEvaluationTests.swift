@@ -19,10 +19,17 @@ struct RecipeImportEvaluationTests {
 
     /// Asks the model itself, not `RecipeImportAvailability`, which the debug
     /// stub launch argument can make report `.available` with no model behind it.
+    ///
+    /// The simulator is excluded explicitly: it can report the model available
+    /// without being able to run it.
     nonisolated static var modelIsAvailable: Bool {
+        #if targetEnvironment(simulator)
+        return false
+        #else
         guard #available(iOS 26, *) else { return false }
         guard case .available = SystemLanguageModel.default.availability else { return false }
         return true
+        #endif
     }
 
     @Test(.enabled(if: RecipeImportEvaluationTests.modelIsAvailable, "needs the on-device language model"))
