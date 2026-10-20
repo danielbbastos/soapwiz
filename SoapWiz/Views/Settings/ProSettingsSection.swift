@@ -76,6 +76,7 @@ struct ProSettingsSection: View {
             await proStore.loadPrice()
         }
         .task { refreshCounts() }
+        .onChange(of: proStore.isPro) { refreshCounts() }
         .onReceive(NotificationCenter.default.publisher(for: ModelContext.didSave)) { _ in
             refreshCounts()
         }
@@ -108,7 +109,10 @@ struct ProSettingsSection: View {
         ))
     }
 
+    /// Only the free layout shows the counts, so a Pro user's saves don't pay
+    /// for them; a refund brings them back through the `isPro` change.
     private func refreshCounts() {
+        guard !proStore.isPro else { return }
         recipeCount = (try? FreeTierLimits.recipeCount(in: modelContext)) ?? 0
         customIngredientCount = (try? FreeTierLimits.customIngredientCount(in: modelContext)) ?? 0
     }

@@ -47,6 +47,11 @@ final class DuplicateMergeCoordinator {
     /// once in `deinit`, never concurrently.
     private nonisolated(unsafe) var observer: (any NSObjectProtocol)?
 
+    /// Wraps each merge, so the screens' row stores can hold their per-save
+    /// refetches until it is done. Set by `StoreHost` once they exist, which is
+    /// after this coordinator; the launch merge runs before any of them does.
+    var mergeScope: (() -> Void) -> Void = { $0() }
+
     init(context: ModelContext, debounce: Duration = .milliseconds(500)) {
         self.context = context
         self.debounce = debounce
@@ -84,9 +89,11 @@ final class DuplicateMergeCoordinator {
         let signposter = Signposts.foreground
         let state = signposter.beginInterval("Merge", "\(trigger, privacy: .public)")
         defer { signposter.endInterval("Merge", state) }
-        DuplicateMerger.mergeAllLoggingFailure(in: context)
-        BatchCodeBackfill.fillMissingCodesLoggingFailure(in: context)
-        BatchCodeDeduplicator.resolveLoggingFailure(in: context)
+        mergeScope {
+            DuplicateMerger.mergeAllLoggingFailure(in: context)
+            BatchCodeBackfill.fillMissingCodesLoggingFailure(in: context)
+            BatchCodeDeduplicator.resolveLoggingFailure(in: context)
+        }
     }
 
     private func observeImports() {

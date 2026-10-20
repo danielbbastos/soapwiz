@@ -75,11 +75,20 @@ final class StoreHost {
         // before the launch merge below: an import that finished in between
         // would otherwise go unmerged until the next one. Held for the app's
         // lifetime; CloudKit imports duplicates long after launch.
-        mergeCoordinator = DuplicateMergeCoordinator(context: container.mainContext)
+        let coordinator = DuplicateMergeCoordinator(context: container.mainContext)
+        mergeCoordinator = coordinator
         Self.prepare(container.mainContext)
         // After `prepare`, so its first fetch already sees the repaired store.
-        inventoryRows = InventoryRows(context: container.mainContext)
-        settings = SettingsState(context: container.mainContext)
+        let rows = InventoryRows(context: container.mainContext)
+        let settingsState = SettingsState(context: container.mainContext)
+        inventoryRows = rows
+        settings = settingsState
+        // Each merge saves two or three times; this makes the rows refetch once
+        // at the end instead of after every save. The rows also wait for this
+        // merge after an import, so it checks for what the import wrote.
+        coordinator.mergeScope = { body in
+            rows.settlingMerge { settingsState.deferringRefreshes(body) }
+        }
         self.container = container
         // After `makeProduction()`, which records which store it opened.
         syncHealth = SyncHealthMonitor(activeStore: ModelContainerFactory.activeStore)
