@@ -81,8 +81,9 @@ enum ImportedIngredientName {
     ///
     /// Only the start of the name counts, and the rest must read as a note:
     /// nothing, or wording such as "for", "as needed" or "if", or a bracket,
-    /// comma, dash or colon. "Rose Water", "Waterlily Extract", "Water Kefir"
-    /// and "Water Soluble Dye" are not taken for plain water.
+    /// comma, colon or spaced dash. "Rose Water", "Waterlily Extract", "Water Kefir",
+    /// "Water Soluble Dye" and the hyphenated "Water-Soluble Dye" are not taken
+    /// for plain water.
     static func isWaterWithNote(_ name: String) -> Bool {
         let key = withoutParentheticals(name).lookupKey
         return waterNames.contains { water in
@@ -92,12 +93,16 @@ enum ImportedIngredientName {
     }
 
     private static let noteOpeners = ["for", "as needed", "as required", "to", "if"]
-    private static let notePunctuation: Set<Character> = [",", "(", "-", ":"]
+    private static let notePunctuation: Set<Character> = [",", "(", ":"]
+    private static let noteDashes: Set<Character> = ["-", "–"]
 
+    /// A dash opens a note only when whitespace sets it off from the water word.
+    /// Joined to it, as in "Water-Soluble Dye", it is part of another ingredient's name.
     private static func readsAsNote(_ rest: Substring) -> Bool {
         let trimmed = rest.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard let first = trimmed.first else { return true }
         if notePunctuation.contains(first) { return true }
+        if noteDashes.contains(first) { return rest.first?.isWhitespace == true }
         return noteOpeners.contains { opener in
             guard trimmed.hasPrefix(opener) else { return false }
             guard let next = trimmed.dropFirst(opener.count).first else { return true }

@@ -12,6 +12,11 @@ extension RecipeTextSettingsParser {
     /// gives purities for both NaOH and KOH describes a hybrid lye, which a
     /// single purity can't express, so it reads as none.
     ///
+    /// A percentage beside both a sodium and a potassium lye name, as in
+    /// "75% NaOH, 25% KOH", is a blend of the two lyes, not a purity. Read as one,
+    /// the 75 would have the form weigh the NaOH as needed ÷ 0.75, about a third
+    /// too much, so no bare match counts then. A written "pure" or "purity" still does.
+    ///
     /// A bare "100% KOH" or "NaOH 100%" says the lye is the only one in the
     /// recipe, not that it is pure, so a 100 beside the lye's name alone is
     /// ignored. With "pure" or "purity" attached, as in "100% pure NaOH" or
@@ -27,6 +32,12 @@ extension RecipeTextSettingsParser {
             /#.ignoresCase()
         let purityFirst = #/\bpurity\h*(?:of|:|=|is)?\h*(\d+(?:[.,]\d+)?)\h*%/#.ignoresCase()
 
+        let beforeMatches = text.matches(of: before)
+        let afterMatches = text.matches(of: after)
+        let isBlendShare = isBlend(
+            lyeNames: beforeMatches.map { String($0.output.3) } + afterMatches.map { String($0.output.1) }
+        )
+
         let found: [StatedPurity] =
             text.matches(of: weightAtPurity).compactMap { match in
                 purity(match.output.2).map {
@@ -37,24 +48,14 @@ extension RecipeTextSettingsParser {
                     )
                 }
             }
-            + text.matches(of: before).compactMap { match in
-                let value = match.output.2 == nil ? bareLyePurity(match.output.1) : purity(match.output.1)
-                return value.map {
-                    StatedPurity(
-                        position: match.range.lowerBound,
-                        value: $0,
-                        lye: ImportedIngredientName.lyeType(ofLye: String(match.output.3))
-                    )
-                }
+            + beforeMatches.compactMap { match in
+                let bare = isBlendShare ? nil : bareLyePurity(match.output.1)
+                let value = match.output.2 == nil ? bare : purity(match.output.1)
+                return statedPurity(at: match.range, value: value, lyeName: match.output.3)
             }
-            + text.matches(of: after).compactMap { match in
-                bareLyePurity(match.output.2).map {
-                    StatedPurity(
-                        position: match.range.lowerBound,
-                        value: $0,
-                        lye: ImportedIngredientName.lyeType(ofLye: String(match.output.1))
-                    )
-                }
+            + afterMatches.compactMap { match in
+                let value = isBlendShare ? nil : bareLyePurity(match.output.2)
+                return statedPurity(at: match.range, value: value, lyeName: match.output.1)
             }
             + text.matches(of: purityFirst).compactMap { match in
                 purity(match.output.1).map {
@@ -69,6 +70,22 @@ extension RecipeTextSettingsParser {
             return nil
         }
         return found.min { $0.position < $1.position }?.value
+    }
+
+    /// Whether the lyes that have a percentage beside them include both a sodium
+    /// and a potassium one.
+    private static func isBlend(lyeNames: [String]) -> Bool {
+        Set(lyeNames.compactMap { ImportedIngredientName.lyeType(ofLye: $0) }).count == 2
+    }
+
+    private static func statedPurity(at range: Range<String.Index>, value: Double?, lyeName: Substring) -> StatedPurity? {
+        value.map {
+            StatedPurity(
+                position: range.lowerBound,
+                value: $0,
+                lye: ImportedIngredientName.lyeType(ofLye: String(lyeName))
+            )
+        }
     }
 
     private struct StatedPurity {

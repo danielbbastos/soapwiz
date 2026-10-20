@@ -26,7 +26,10 @@ struct RecipeTextSettings: Equatable {
 enum RecipeTextSettingsParser {
     /// Wide enough for a salt bar, which is routinely made at 20-25%.
     static let superFatRange = 0.0...30.0
-    static let lyePurityRange = 50.0...100.0
+    /// Real lye is about 97-99+% pure for NaOH and 85-95% for KOH. A lower purity
+    /// makes the form weigh more lye, so a misread, such as a blend share like
+    /// the 75 of "75% NaOH, 25% KOH", must never pass for one.
+    static let lyePurityRange = 80.0...100.0
     static let waterPartsRange = 0.5...5.0
     static let fragrancePercentageRange = 0.0...15.0
 

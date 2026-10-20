@@ -82,13 +82,14 @@ struct RecipeImportDraftCheckerReviewFixTests {
     // MARK: - Water with a note
 
     @Test(arguments: [
-        "Distilled water for dilution, as needed", "Water (as needed)", "Water", "Water, as required", "Water - if needed"
+        "Distilled water for dilution, as needed", "Water (as needed)", "Water", "Water, as required", "Water - if needed",
+        "Water - as needed", "Water – for dilution"
     ])
     func isWaterWithNote_NoteAfterTheWaterName_IsTrue(_ name: String) {
         #expect(ImportedIngredientName.isWaterWithNote(name))
     }
 
-    @Test(arguments: ["Water Kefir", "Water Soluble Dye", "Rose Water", "Waterlily Extract"])
+    @Test(arguments: ["Water Kefir", "Water Soluble Dye", "Rose Water", "Waterlily Extract", "Water-Soluble Dye"])
     func isWaterWithNote_AnotherIngredientStartingWithWater_IsFalse(_ name: String) {
         #expect(!ImportedIngredientName.isWaterWithNote(name))
     }
