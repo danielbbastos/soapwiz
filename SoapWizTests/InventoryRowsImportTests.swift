@@ -15,7 +15,11 @@ struct InventoryRowsImportTests: InventoryRowsTestHelpers {
     @Test func handle_FinishedImport_DoesNotRefetch() throws {
         let container = try makeContainer()
         let counter = InventoryFetchCounter()
-        let sut = InventoryRows(context: container.mainContext, fetchRows: counter.fetch)
+        let sut = InventoryRows(
+            context: container.mainContext,
+            firstImport: try isolatedFirstImport(),
+            fetchRows: counter.fetch
+        )
         let fetchesBefore = counter.count
         let other = ModelContext(container)
         other.insert(Ingredient(name: "Olive Oil", unit: "g"))
@@ -39,9 +43,6 @@ struct InventoryRowsImportTests: InventoryRowsTestHelpers {
 
         #expect(sut.ingredients.isEmpty)
     }
-
-    private let importStart = SyncEvent(kind: .import, endDate: nil, succeeded: false, error: nil)
-    private let importEnd = SyncEvent(kind: .import, endDate: .now, succeeded: true, error: nil)
 
     private func insertRemotely(_ name: String, in container: ModelContainer) throws {
         let other = ModelContext(container)
@@ -163,6 +164,7 @@ struct InventoryRowsImportTests: InventoryRowsTestHelpers {
         let sut = InventoryRows(
             context: container.mainContext,
             importTimeout: .milliseconds(50),
+            firstImport: try isolatedFirstImport(),
             fetchRows: counter.fetch
         )
         let fetchesBefore = counter.count
@@ -181,6 +183,7 @@ struct InventoryRowsImportTests: InventoryRowsTestHelpers {
         let sut = InventoryRows(
             context: container.mainContext,
             importTimeout: .milliseconds(50),
+            firstImport: try isolatedFirstImport(),
             fetchRows: counter.fetch
         )
         let fetchesBefore = counter.count
@@ -286,7 +289,11 @@ struct InventoryRowsImportTests: InventoryRowsTestHelpers {
         let container = try makeContainer()
         let context = container.mainContext
         let seed = try seedForPruning(in: context)
-        let sut = InventoryRows(context: context, pruneInterval: .milliseconds(10))
+        let sut = InventoryRows(
+            context: context,
+            pruneInterval: .milliseconds(10),
+            firstImport: try isolatedFirstImport()
+        )
 
         sut.handle(importStart)
         sut.handle(importEnd)
@@ -296,63 +303,4 @@ struct InventoryRowsImportTests: InventoryRowsTestHelpers {
         #expect(sut.ingredients.count == 2)
     }
 
-    // MARK: - Sync notice
-
-    @Test func isSyncing_BeforeDelay_IsFalse() throws {
-        let container = try makeContainer()
-        let sut = InventoryRows(context: container.mainContext, syncNoticeDelay: .seconds(60))
-
-        sut.handle(importStart)
-
-        #expect(!sut.isSyncing)
-    }
-
-    @Test func isSyncing_AfterDelay_IsTrueAndFalseAtFinish() async throws {
-        let container = try makeContainer()
-        let sut = InventoryRows(context: container.mainContext, syncNoticeDelay: .milliseconds(30))
-
-        sut.handle(importStart)
-        await waitUntil { sut.isSyncing }
-        #expect(sut.isSyncing)
-
-        sut.handle(importEnd)
-        #expect(!sut.isSyncing)
-    }
-
-    @Test func isSyncing_FinishBeforeDelay_NeverSets() async throws {
-        let container = try makeContainer()
-        let sut = InventoryRows(context: container.mainContext, syncNoticeDelay: .milliseconds(50))
-
-        sut.handle(importStart)
-        sut.handle(importEnd)
-        try await Task.sleep(for: .milliseconds(200))
-
-        #expect(!sut.isSyncing)
-    }
-
-    @Test func isSyncing_ExportEvent_IsIgnored() async throws {
-        let container = try makeContainer()
-        let sut = InventoryRows(context: container.mainContext, syncNoticeDelay: .milliseconds(10))
-
-        sut.handle(SyncEvent(kind: .export, endDate: nil, succeeded: false, error: nil))
-        try await Task.sleep(for: .milliseconds(100))
-
-        #expect(!sut.isSyncing)
-    }
-
-    @Test func isSyncing_TimeoutFires_IsFalse() async throws {
-        let container = try makeContainer()
-        let sut = InventoryRows(
-            context: container.mainContext,
-            importTimeout: .milliseconds(100),
-            syncNoticeDelay: .milliseconds(10)
-        )
-
-        sut.handle(importStart)
-        await waitUntil { sut.isSyncing }
-        #expect(sut.isSyncing)
-        await waitUntil { !sut.isSyncing }
-
-        #expect(!sut.isSyncing)
-    }
 }

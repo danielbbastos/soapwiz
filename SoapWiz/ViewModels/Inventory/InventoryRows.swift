@@ -33,7 +33,9 @@ import SwiftData
 /// and only the merge that follows collapses them, so showing rows as they
 /// arrive listed each ingredient twice for as long as the sync lasted.
 /// `isSyncing` tells the view to say so instead, once an import has run for
-/// `syncNoticeDelay`.
+/// `syncNoticeDelay`, and only during this device's first successful sync
+/// (`FirstImportRecord`): later imports are short and the list just updates
+/// once they end.
 ///
 /// Exports never trigger anything: they only send what this device has.
 ///
@@ -50,9 +52,10 @@ final class InventoryRows {
     private(set) var purchases: [IngredientPurchase] = []
     private(set) var categories: [IngredientCategory] = []
 
-    /// Whether an import has been running for `syncNoticeDelay`. A short import
-    /// never sets it, so the notice doesn't flash on every return to the
-    /// foreground.
+    /// Whether this device's first import has been running for
+    /// `syncNoticeDelay`. A short import never sets it, so the notice doesn't
+    /// flash on every return to the foreground, and once an import has
+    /// succeeded on this device none does again.
     private(set) var isSyncing = false
 
     @ObservationIgnored private let context: ModelContext
@@ -60,6 +63,7 @@ final class InventoryRows {
     @ObservationIgnored private let importTimeout: Duration
     @ObservationIgnored private let syncNoticeDelay: Duration
     @ObservationIgnored private let pruneInterval: Duration
+    @ObservationIgnored private let firstImport: FirstImportRecord
     @ObservationIgnored private let fetchRows: @MainActor (ModelContext) throws -> FetchedRows
     @ObservationIgnored private let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "inventory")
     @ObservationIgnored private var timeoutTask: Task<Void, Never>?
@@ -119,9 +123,11 @@ final class InventoryRows {
         importTimeout: Duration = .seconds(120),
         syncNoticeDelay: Duration = .seconds(2),
         pruneInterval: Duration = .seconds(1),
+        firstImport: FirstImportRecord = FirstImportRecord(),
         fetchRows: @escaping @MainActor (ModelContext) throws -> FetchedRows = InventoryRows.fetchAll(in:)
     ) {
         self.context = context
+        self.firstImport = firstImport
         self.fetchRows = fetchRows
         self.importTimeout = importTimeout
         self.syncNoticeDelay = syncNoticeDelay
@@ -192,6 +198,7 @@ final class InventoryRows {
     func handle(_ event: SyncEvent) {
         guard event.kind == .import else { return }
         if event.isFinished {
+            if event.succeeded { firstImport.markCompleted() }
             endImport()
         } else {
             beginImport()
@@ -215,7 +222,7 @@ final class InventoryRows {
                 }
             }
         }
-        guard noticeTask == nil, !isSyncing else { return }
+        guard noticeTask == nil, !isSyncing, !firstImport.isCompleted else { return }
         noticeTask = Task { [weak self, syncNoticeDelay] in
             try? await Task.sleep(for: syncNoticeDelay)
             guard !Task.isCancelled, let self else { return }

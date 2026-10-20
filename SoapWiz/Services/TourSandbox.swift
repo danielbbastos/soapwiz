@@ -85,7 +85,9 @@ final class TourSandbox {
         try context.save()
 
         // After the sample is in, so their first fetch already sees it.
-        inventoryRows = InventoryRows(context: context)
+        // The throwaway defaults, so an import event the real store posts can't
+        // mark this device's first sync as done.
+        inventoryRows = InventoryRows(context: context, firstImport: FirstImportRecord(defaults: defaults))
         settings = SettingsState(context: context)
         navigation = AppNavigation()
         syncHealth = SyncHealthMonitor(

@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import Testing
 @testable import SoapWiz
 
 /// What the `InventoryRows` suites share.
@@ -25,6 +26,21 @@ extension InventoryRowsTestHelpers {
             expiryDate: nil,
             openingDate: nil
         )
+    }
+
+    var importStart: SyncEvent {
+        SyncEvent(kind: .import, endDate: nil, succeeded: false, error: nil)
+    }
+
+    var importEnd: SyncEvent {
+        SyncEvent(kind: .import, endDate: .now, succeeded: true, error: nil)
+    }
+
+    /// A first-import record on its own defaults, so a test that finishes an
+    /// import never marks the real device as having synced.
+    func isolatedFirstImport() throws -> FirstImportRecord {
+        let defaults = try #require(UserDefaults(suiteName: "pt.tachyon.SoapWiz.tests.\(UUID().uuidString)"))
+        return FirstImportRecord(defaults: defaults)
     }
 
     /// Waits for `condition`, which a background task makes true, for at most
