@@ -57,12 +57,16 @@ extension RecipeTextSettingsParser {
     /// ingredient name it is ambiguous (wood ash, potassium carbonate), so it
     /// isn't in `ImportedIngredientName.potassiumLye`; beside "NaOH" in a lye
     /// line, though, it is the potassium lye. "Potassium lye" is also not in
-    /// that pattern, which only spells the hydroxide out.
+    /// that pattern, which only spells the hydroxide out. "Sodium lye" is
+    /// likewise missing from `ImportedIngredientName.sodiumLye`, so the sodium
+    /// side has its own wording for the same reason.
     private static let potassiumLyeWording = #/\b(?:potassium\h+lye|potash)\b/#.ignoresCase()
+    private static let sodiumLyeWording = #/\b(?:sodium\h+lye)\b/#.ignoresCase()
 
     private static func namesBothLyes(_ text: String) -> Bool {
-        text.contains(ImportedIngredientName.sodiumLye)
-            && (text.contains(ImportedIngredientName.potassiumLye) || text.contains(potassiumLyeWording))
+        let namesSodium = text.contains(ImportedIngredientName.sodiumLye) || text.contains(sodiumLyeWording)
+        let namesPotassium = text.contains(ImportedIngredientName.potassiumLye) || text.contains(potassiumLyeWording)
+        return namesSodium && namesPotassium
     }
 
     private static func statedPurity(at range: Range<String.Index>, value: Double?) -> StatedPurity? {
