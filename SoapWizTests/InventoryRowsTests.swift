@@ -444,6 +444,102 @@ struct InventoryRowsTests {
         #expect(counter.count == fetchesBefore + 1)
     }
 
+    // MARK: - Pruning during an import
+
+    /// Two ingredients, the first with a purchase, saved before the rows load.
+    private func seedForPruning(in context: ModelContext) throws -> (Ingredient, Ingredient, IngredientPurchase) {
+        let first = Ingredient(name: "Olive Oil", unit: "g")
+        let second = Ingredient(name: "Lye", unit: "g")
+        context.insert(first)
+        context.insert(second)
+        let purchase = makePurchase()
+        first.purchases.append(purchase)
+        try context.save()
+        return (first, second, purchase)
+    }
+
+    @Test func prune_ImportRunning_DropsDeletedIngredientWithoutFetching() async throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (first, second, _) = try seedForPruning(in: context)
+        let counter = CountingFetch()
+        let sut = InventoryRows(
+            context: context,
+            pruneInterval: .milliseconds(10),
+            fetchRows: counter.fetch
+        )
+        let fetchesBefore = counter.count
+
+        sut.handle(importStart)
+        context.delete(first)
+        await waitUntil { sut.ingredients.count == 1 }
+
+        #expect(sut.ingredients.count == 1)
+        #expect(sut.ingredients.first === second)
+        #expect(counter.count == fetchesBefore)
+    }
+
+    @Test func prune_ImportRunning_DropsDeletedPurchase() async throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (_, _, purchase) = try seedForPruning(in: context)
+        let sut = InventoryRows(context: context, pruneInterval: .milliseconds(10))
+        #expect(sut.purchases.count == 1)
+
+        sut.handle(importStart)
+        context.delete(purchase)
+        await waitUntil { sut.purchases.isEmpty }
+
+        #expect(sut.purchases.isEmpty)
+        #expect(sut.ingredients.count == 2)
+    }
+
+    @Test func prune_ImportRunning_DoesNotAddRowsFromTheStore() async throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        _ = try seedForPruning(in: context)
+        let counter = CountingFetch()
+        let sut = InventoryRows(
+            context: context,
+            pruneInterval: .milliseconds(10),
+            fetchRows: counter.fetch
+        )
+        let fetchesBefore = counter.count
+
+        sut.handle(importStart)
+        try insertRemotely("Coconut Oil", in: container)
+        try await Task.sleep(for: .milliseconds(100))
+
+        #expect(sut.ingredients.count == 2)
+        #expect(counter.count == fetchesBefore)
+    }
+
+    @Test func prune_NoImportRunning_DoesNothing() async throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (first, _, _) = try seedForPruning(in: context)
+        let sut = InventoryRows(context: context, pruneInterval: .milliseconds(10))
+
+        context.delete(first)
+        try await Task.sleep(for: .milliseconds(100))
+
+        #expect(sut.ingredients.count == 2)
+    }
+
+    @Test func prune_AfterImportFinishes_Stops() async throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let (first, _, _) = try seedForPruning(in: context)
+        let sut = InventoryRows(context: context, pruneInterval: .milliseconds(10))
+
+        sut.handle(importStart)
+        sut.handle(importEnd)
+        context.delete(first)
+        try await Task.sleep(for: .milliseconds(100))
+
+        #expect(sut.ingredients.count == 2)
+    }
+
     // MARK: - Sync notice
 
     @Test func isSyncing_BeforeDelay_IsFalse() throws {

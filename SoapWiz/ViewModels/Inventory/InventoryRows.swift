@@ -38,7 +38,11 @@ import SwiftData
 /// Exports never trigger anything: they only send what this device has.
 ///
 /// Deleted models are never handed out. Reading one can crash SwiftData, so
-/// every refetch drops any row that is deleted or has left its context.
+/// every refetch drops any row that is deleted or has left its context. With
+/// no refetch during an import, a row another device deleted would stay in
+/// the lists until the merge that follows, so about once a second while an
+/// import runs the lists are pruned of such rows. The prune reads nothing from
+/// the store and adds nothing, so rows still wait for the merge.
 @MainActor
 @Observable
 final class InventoryRows {
@@ -55,10 +59,12 @@ final class InventoryRows {
     @ObservationIgnored private let cursor: StoreHistoryCursor
     @ObservationIgnored private let importTimeout: Duration
     @ObservationIgnored private let syncNoticeDelay: Duration
+    @ObservationIgnored private let pruneInterval: Duration
     @ObservationIgnored private let fetchRows: @MainActor (ModelContext) throws -> FetchedRows
     @ObservationIgnored private let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "inventory")
     @ObservationIgnored private var timeoutTask: Task<Void, Never>?
     @ObservationIgnored private var noticeTask: Task<Void, Never>?
+    @ObservationIgnored private var pruneTask: Task<Void, Never>?
     /// Set when the last refetch failed, so the next check retries even if the
     /// history shows nothing new.
     @ObservationIgnored private var needsReload = false
@@ -112,12 +118,14 @@ final class InventoryRows {
         context: ModelContext,
         importTimeout: Duration = .seconds(120),
         syncNoticeDelay: Duration = .seconds(2),
+        pruneInterval: Duration = .seconds(1),
         fetchRows: @escaping @MainActor (ModelContext) throws -> FetchedRows = InventoryRows.fetchAll(in:)
     ) {
         self.context = context
         self.fetchRows = fetchRows
         self.importTimeout = importTimeout
         self.syncNoticeDelay = syncNoticeDelay
+        self.pruneInterval = pruneInterval
         cursor = StoreHistoryCursor(context: context)
         reload()
         observe()
@@ -198,6 +206,15 @@ final class InventoryRows {
             self.endImport()
             self.refreshIfInventoryChanged()
         }
+        if pruneTask == nil {
+            pruneTask = Task { [weak self, pruneInterval] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: pruneInterval)
+                    guard !Task.isCancelled, let self else { return }
+                    self.setRows(ingredients: self.ingredients, purchases: self.purchases, categories: self.categories)
+                }
+            }
+        }
         guard noticeTask == nil, !isSyncing else { return }
         noticeTask = Task { [weak self, syncNoticeDelay] in
             try? await Task.sleep(for: syncNoticeDelay)
@@ -212,6 +229,8 @@ final class InventoryRows {
         timeoutTask = nil
         noticeTask?.cancel()
         noticeTask = nil
+        pruneTask?.cancel()
+        pruneTask = nil
         if isSyncing { isSyncing = false }
     }
 
@@ -236,11 +255,21 @@ final class InventoryRows {
             return
         }
         needsReload = false
-        let liveIngredients = Self.live(fetched.ingredients)
+        setRows(ingredients: fetched.ingredients, purchases: fetched.purchases, categories: fetched.categories)
+    }
+
+    /// Keeps the live rows of each list, assigning only what differs so an
+    /// unchanged list invalidates no view.
+    private func setRows(
+        ingredients newIngredients: [Ingredient],
+        purchases newPurchases: [IngredientPurchase],
+        categories newCategories: [IngredientCategory]
+    ) {
+        let liveIngredients = Self.live(newIngredients)
         if liveIngredients != ingredients { ingredients = liveIngredients }
-        let livePurchases = Self.live(fetched.purchases)
+        let livePurchases = Self.live(newPurchases)
         if livePurchases != purchases { purchases = livePurchases }
-        let liveCategories = Self.live(fetched.categories)
+        let liveCategories = Self.live(newCategories)
         if liveCategories != categories { categories = liveCategories }
     }
 
