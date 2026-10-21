@@ -7,6 +7,13 @@ struct IngredientRowView: View {
     /// comparable inputs, a row is redrawn only when its own ingredient changes.
     /// An iCloud import saves many times a second (SW-219).
     let model: IngredientListViewModel
+    /// Passed in as a value rather than read off `ingredient.purchases`. A
+    /// purchase deleted here, or added or deleted on another device, changes
+    /// that relationship without going through any of the ingredient's setters,
+    /// so nothing observed would change and the row would keep its old
+    /// quantity and stamps. As an input, a change in stock redraws the row
+    /// exactly when it happens (SW-317).
+    let stock: IngredientStock
 
     @Environment(\.editMode) private var editMode
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -18,7 +25,11 @@ struct IngredientRowView: View {
     }
 
     private var stamps: [IngredientStockStamp] {
-        IngredientStockStamp.stamps(for: ingredient, tracksInventory: tracksInventory)
+        IngredientStockStamp.stamps(
+            stock: stock,
+            lowStockThreshold: ingredient.lowStockThreshold,
+            tracksInventory: tracksInventory
+        )
     }
 
     var body: some View {
@@ -129,7 +140,7 @@ struct IngredientRowView: View {
     }
 
     private func quantity(stamps: [IngredientStockStamp]) -> some View {
-        Text("\(ingredient.totalRemaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
+        Text("\(stock.remaining.formatted(.number.precision(.fractionLength(0...2)))) \(ingredient.unit)")
             .font(.body.weight(.medium).monospacedDigit())
             .foregroundStyle(quantityColor(stamps: stamps))
     }
@@ -137,7 +148,7 @@ struct IngredientRowView: View {
     private func quantityColor(stamps: [IngredientStockStamp]) -> Color {
         if stamps.contains(.out) { return Color.danger }
         if stamps.contains(.low) { return Color.warning }
-        if ingredient.purchases.isEmpty { return Color.inkFaint }
+        if !stock.hasPurchases { return Color.inkFaint }
         return Color.inkSoft
     }
 }

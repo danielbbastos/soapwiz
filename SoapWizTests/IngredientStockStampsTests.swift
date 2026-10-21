@@ -51,7 +51,13 @@ struct IngredientStockStampsTests {
     }
 
     private func stamps(for ingredient: Ingredient, tracksInventory: Bool = true) -> [IngredientStockStamp] {
-        IngredientStockStamp.stamps(for: ingredient, tracksInventory: tracksInventory, now: now, calendar: calendar)
+        IngredientStockStamp.stamps(
+            stock: StockLevels(ingredient.purchases).stock(for: ingredient),
+            lowStockThreshold: ingredient.lowStockThreshold,
+            tracksInventory: tracksInventory,
+            now: now,
+            calendar: calendar
+        )
     }
 
     @Test func stamps_PlainStockedIngredient_ReturnsNone() {

@@ -27,10 +27,11 @@ struct IngredientListView: View {
         model.visibleCategories(rows.categories, in: rows.ingredients)
     }
 
-    private func row(_ ingredient: Ingredient, index: Int, count: Int) -> IngredientListRow {
+    private func row(_ ingredient: Ingredient, stockLevels: StockLevels, index: Int, count: Int) -> IngredientListRow {
         IngredientListRow(
             ingredient: ingredient,
             model: model,
+            stock: stockLevels.stock(for: ingredient),
             navigation: navigation,
             position: .position(index: index, count: count)
         )
@@ -71,7 +72,8 @@ struct IngredientListView: View {
         // be part of the fetch's sort (`SortDescriptor` has no `Bool` overload),
         // so the pinning is applied there, after filtering.
         let ingredients = rows.ingredients
-        let content = model.content(for: ingredients, stock: StockLevels(rows.purchases))
+        let stockLevels = StockLevels(rows.purchases)
+        let content = model.content(for: ingredients, stock: stockLevels)
         let displayed = content.displayed
         ListDetailContainer(
             navigation: navigation,
@@ -113,7 +115,7 @@ struct IngredientListView: View {
                         // for the bulk delete, which only Select mode offers.
                         List(selection: $model.selection) {
                             ForEach(Array(displayed.enumerated()), id: \.element.id) { index, ingredient in
-                                row(ingredient, index: index, count: displayed.count)
+                                row(ingredient, stockLevels: stockLevels, index: index, count: displayed.count)
                             }
                         }
                         .environment(\.editMode, $model.editMode)
@@ -128,7 +130,7 @@ struct IngredientListView: View {
                                 .transition(.opacity)
                             }
                             ForEach(Array(displayed.enumerated()), id: \.element.id) { index, ingredient in
-                                row(ingredient, index: index, count: displayed.count)
+                                row(ingredient, stockLevels: stockLevels, index: index, count: displayed.count)
                             }
                         }
                         .animation(.default, value: rows.syncNotice)

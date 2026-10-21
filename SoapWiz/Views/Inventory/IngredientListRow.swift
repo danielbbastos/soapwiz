@@ -18,11 +18,12 @@ import SwiftUI
 struct IngredientListRow: View {
     let ingredient: Ingredient
     let model: IngredientListViewModel
+    let stock: IngredientStock
     let navigation: ListDetailNavigation<Ingredient>
     let position: LedgerSheetPosition
 
     var body: some View {
-        let content = IngredientRowView(ingredient: ingredient, model: model)
+        let content = IngredientRowView(ingredient: ingredient, model: model, stock: stock)
         if model.editMode == .active {
             content
                 .ledgerSheetRow(position: position)

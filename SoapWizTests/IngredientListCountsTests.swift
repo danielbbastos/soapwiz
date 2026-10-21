@@ -318,7 +318,14 @@ struct IngredientListCountsTests {
         expired.purchases.first?.expiryDate = Calendar.current.date(byAdding: .day, value: -3, to: .now)
         let all = ingredients + [expired]
 
-        let stamps = all.map { IngredientStockStamp.stamps(for: $0, tracksInventory: true) }
+        let levels = stock(all)
+        let stamps = all.map {
+            IngredientStockStamp.stamps(
+                stock: levels.stock(for: $0),
+                lowStockThreshold: $0.lowStockThreshold,
+                tracksInventory: true
+            )
+        }
         let summary = countSummary(all)
 
         #expect(summary.low == stamps.filter { $0.contains(.low) }.count)
