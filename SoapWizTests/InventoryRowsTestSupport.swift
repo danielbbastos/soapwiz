@@ -43,6 +43,12 @@ extension InventoryRowsTestHelpers {
         return FirstImportRecord(defaults: defaults)
     }
 
+    /// A sync status store on its own defaults, for the same reason.
+    func isolatedSyncStatus() throws -> SyncStatusStore {
+        let defaults = try #require(UserDefaults(suiteName: "pt.tachyon.SoapWiz.tests.\(UUID().uuidString)"))
+        return SyncStatusStore(defaults: defaults)
+    }
+
     /// Waits for `condition`, which a background task makes true, for at most
     /// two seconds.
     func waitUntil(_ condition: () -> Bool) async {

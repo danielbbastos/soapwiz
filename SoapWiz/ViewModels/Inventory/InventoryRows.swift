@@ -32,10 +32,13 @@ import SwiftData
 /// joining an existing account imports every library ingredient a second time
 /// and only the merge that follows collapses them, so showing rows as they
 /// arrive listed each ingredient twice for as long as the sync lasted.
-/// `isSyncing` tells the view to say so instead, once an import has run for
-/// `syncNoticeDelay`, and only during this device's first successful sync
-/// (`FirstImportRecord`): later imports are short and the list just updates
-/// once they end.
+/// `syncNotice` tells the view to say so instead. It is set for two kinds of
+/// import, decided when the import begins: this device's first (it has never
+/// completed one, see `FirstImportRecord`), and one after a long gap (its last
+/// successful sync, from `SyncStatusStore`, is more than seven days old, or was
+/// never recorded). Any other import is short and the list just updates once it
+/// ends. Either way the notice appears only once the import has run for
+/// `syncNoticeDelay`, so a qualifying import that ends quickly never flashes it.
 ///
 /// Exports never trigger anything: they only send what this device has.
 ///
@@ -52,11 +55,10 @@ final class InventoryRows {
     private(set) var purchases: [IngredientPurchase] = []
     private(set) var categories: [IngredientCategory] = []
 
-    /// Whether this device's first import has been running for
-    /// `syncNoticeDelay`. A short import never sets it, so the notice doesn't
-    /// flash on every return to the foreground, and once an import has
-    /// succeeded on this device none does again.
-    private(set) var isSyncing = false
+    /// The notice to show, once a first or catching-up import has been running
+    /// for `syncNoticeDelay`; nil otherwise. A short import never sets it, so
+    /// the notice doesn't flash on every return to the foreground.
+    private(set) var syncNotice: SyncNotice?
 
     @ObservationIgnored private let context: ModelContext
     @ObservationIgnored private let cursor: StoreHistoryCursor
@@ -64,6 +66,8 @@ final class InventoryRows {
     @ObservationIgnored private let syncNoticeDelay: Duration
     @ObservationIgnored private let pruneInterval: Duration
     @ObservationIgnored private let firstImport: FirstImportRecord
+    @ObservationIgnored private let syncStatus: SyncStatusStore
+    @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let fetchRows: @MainActor (ModelContext) throws -> FetchedRows
     @ObservationIgnored private let log = Logger(subsystem: "pt.tachyon.SoapWiz", category: "inventory")
     @ObservationIgnored private var timeoutTask: Task<Void, Never>?
@@ -124,10 +128,14 @@ final class InventoryRows {
         syncNoticeDelay: Duration = .seconds(2),
         pruneInterval: Duration = .seconds(1),
         firstImport: FirstImportRecord = FirstImportRecord(),
+        syncStatus: SyncStatusStore = SyncStatusStore(),
+        now: @escaping () -> Date = { .now },
         fetchRows: @escaping @MainActor (ModelContext) throws -> FetchedRows = InventoryRows.fetchAll(in:)
     ) {
         self.context = context
         self.firstImport = firstImport
+        self.syncStatus = syncStatus
+        self.now = now
         self.fetchRows = fetchRows
         self.importTimeout = importTimeout
         self.syncNoticeDelay = syncNoticeDelay
@@ -222,13 +230,26 @@ final class InventoryRows {
                 }
             }
         }
-        guard noticeTask == nil, !isSyncing, !firstImport.isCompleted else { return }
+        guard noticeTask == nil, syncNotice == nil, let notice = noticeForImport() else { return }
         noticeTask = Task { [weak self, syncNoticeDelay] in
             try? await Task.sleep(for: syncNoticeDelay)
             guard !Task.isCancelled, let self else { return }
             self.noticeTask = nil
-            self.isSyncing = true
+            self.syncNotice = notice
         }
+    }
+
+    /// Which notice an import that is just beginning earns, if any. Read when
+    /// the import begins, before its own success is recorded: the monitor
+    /// writes the last sync date only when an event finishes, so this never sees
+    /// the import it is deciding about. A device that has completed an import
+    /// but has no recorded sync date is treated as catching up, since nothing
+    /// says it is current.
+    private func noticeForImport() -> SyncNotice? {
+        guard firstImport.isCompleted else { return .firstSync }
+        guard let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: now()),
+              let lastSync = syncStatus.lastSuccessfulSync else { return .catchingUp }
+        return lastSync < cutoff ? .catchingUp : nil
     }
 
     private func endImport() {
@@ -238,7 +259,7 @@ final class InventoryRows {
         noticeTask = nil
         pruneTask?.cancel()
         pruneTask = nil
-        if isSyncing { isSyncing = false }
+        if syncNotice != nil { syncNotice = nil }
     }
 
     /// Every fetch the inventory shows. Injected only so a test can count them or make them fail.

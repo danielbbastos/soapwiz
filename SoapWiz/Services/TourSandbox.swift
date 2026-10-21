@@ -87,7 +87,11 @@ final class TourSandbox {
         // After the sample is in, so their first fetch already sees it.
         // The throwaway defaults, so an import event the real store posts can't
         // mark this device's first sync as done.
-        inventoryRows = InventoryRows(context: context, firstImport: FirstImportRecord(defaults: defaults))
+        inventoryRows = InventoryRows(
+            context: context,
+            firstImport: FirstImportRecord(defaults: defaults),
+            syncStatus: SyncStatusStore(defaults: defaults)
+        )
         settings = SettingsState(context: context)
         navigation = AppNavigation()
         syncHealth = SyncHealthMonitor(

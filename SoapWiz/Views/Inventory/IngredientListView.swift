@@ -119,9 +119,9 @@ struct IngredientListView: View {
                         .environment(\.editMode, $model.editMode)
                     } else {
                         List {
-                            if rows.isSyncing {
+                            if let notice = rows.syncNotice {
                                 Section {
-                                    InventorySyncStatusRow()
+                                    InventorySyncStatusRow(notice: notice)
                                         .ledgerSheetRow(position: .only)
                                 }
                                 .listSectionSpacing(.custom(16))
@@ -131,7 +131,7 @@ struct IngredientListView: View {
                                 row(ingredient, index: index, count: displayed.count)
                             }
                         }
-                        .animation(.default, value: rows.isSyncing)
+                        .animation(.default, value: rows.syncNotice)
                         .environment(\.editMode, $model.editMode)
                         // The chips already stand off the list on their own; the
                         // scroll view's default top margin on top of that left
