@@ -144,8 +144,19 @@ enum FreeTierLimits {
     }
 
     /// Hidden ingredients count: hiding one doesn't free a slot.
+    ///
+    /// Rows with no slug are always custom, so they are counted by the store
+    /// as everything that isn't a library row. Only the library rows are
+    /// fetched, and only the two fields the rule reads: the full fetch faulted
+    /// every ingredient (photos included) and cost 20 to 50 ms on an iPad.
+    /// Subtracting rather than matching an empty slug keeps a row whose slug
+    /// the store holds as null counted as the custom row it reads as.
     static func customIngredientCount(in context: ModelContext) throws -> Int {
-        try context.fetch(FetchDescriptor<Ingredient>())
-            .count { isCustomIngredient(librarySlug: $0.librarySlug, name: $0.name) }
+        let total = try context.fetchCount(FetchDescriptor<Ingredient>())
+        var libraryRows = FetchDescriptor<Ingredient>(predicate: #Predicate { !$0.librarySlug.isEmpty })
+        libraryRows.propertiesToFetch = [\.librarySlug, \.name]
+        let library = try context.fetch(libraryRows)
+        let renamedCount = library.count { isCustomIngredient(librarySlug: $0.librarySlug, name: $0.name) }
+        return total - library.count + renamedCount
     }
 }

@@ -36,6 +36,9 @@ final class SettingsState {
     /// Set when the last refetch failed, so the next check retries even if the
     /// history shows nothing new.
     @ObservationIgnored private var needsReload = false
+    /// How many `deferringRefreshes` calls are running; see `InventoryRows`.
+    @ObservationIgnored private var deferralDepth = 0
+    @ObservationIgnored private var refreshIsOwed = false
     /// `nonisolated` so `deinit` can unregister them. Written once in `init`
     /// and read once in `deinit`, never concurrently.
     @ObservationIgnored private nonisolated(unsafe) var observers: [any NSObjectProtocol] = []
@@ -64,7 +67,23 @@ final class SettingsState {
         // Everything written so far is about to be read, so the cursor needn't
         // report it again.
         _ = try? cursor.changesSinceLastCheck()
+        refreshIsOwed = false
         reload()
+    }
+
+    /// Runs `body`, which saves several times, and refetches once afterwards
+    /// if a save wrote an `AppSettings` record, even when `body` throws. Calls
+    /// nest; only the outermost one refetches. `InventoryRows` has the
+    /// rationale.
+    func deferringRefreshes<Result>(_ body: () throws -> Result) rethrows -> Result {
+        deferralDepth += 1
+        defer {
+            deferralDepth -= 1
+            if deferralDepth == 0, refreshIsOwed {
+                refresh()
+            }
+        }
+        return try body()
     }
 
     /// Refetches when the store's history shows an `AppSettings` record was
@@ -105,6 +124,14 @@ final class SettingsState {
         if snapshot != reminders { reminders = snapshot }
     }
 
+    private func refreshAfterSave() {
+        if deferralDepth > 0 {
+            refreshIsOwed = true
+        } else {
+            refresh()
+        }
+    }
+
     private func observe() {
         // No queue, so the block runs inside the save that posted it.
         observers.append(NotificationCenter.default.addObserver(
@@ -117,7 +144,7 @@ final class SettingsState {
                 // A skipped save leaves its history for the next
                 // `refreshIfSettingsChanged()`, which filters it out too.
                 if let names, !names.contains(Self.settingsEntity) { return }
-                self?.refresh()
+                self?.refreshAfterSave()
             }
         })
         observers.append(NotificationCenter.default.addObserver(
