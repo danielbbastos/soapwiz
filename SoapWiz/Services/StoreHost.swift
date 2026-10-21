@@ -148,12 +148,12 @@ final class StoreHost {
         // Repairs the migration that gave `Ingredient` its identity, before
         // anything installs or merges ingredients.
         IngredientIdentityBackfill.repairSharedIdentitiesLoggingFailure(in: context)
-        // Before the seeder, whose fixtures only stock the library's rows.
+        // Before the debug seeder, which runs later from the launch task and
+        // whose fixtures only stock the library's rows.
         IngredientLibraryInstaller.installMissingLoggingFailure(in: context)
         // After the installer, which codes only the rows it adds: this fills the
         // journal code on library rows an earlier build installed without one.
         IngredientCodeBackfill.fillMissingCodesLoggingFailure(in: context)
-        DataSeeder.seed(into: context)
         // Before `resolve`, so it only ever has to handle the zero-record case —
         // any duplicate settings rows from a previous sync are already gone.
         DuplicateMerger.mergeAllLoggingFailure(in: context)
