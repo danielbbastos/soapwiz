@@ -19,18 +19,26 @@ struct DataSeederBatchTests {
         return (container, container.mainContext)
     }
 
-    /// The two steps of a debug launch: the seeding in `SoapWizApp.init`, then
-    /// the batches from its launch task.
+    /// The seeding a debug launch does from `SoapWizApp`'s launch task.
     private func launch(
         _ ctx: ModelContext,
         store: ModelContainerFactory.ActiveStore = .mirrored,
-        account: CKAccountStatus = .noAccount
+        account: CKAccountStatus = .noAccount,
+        storeGeneration: Int = 0
     ) async {
-        DataSeeder.seed(into: ctx)
-        await DataSeeder.seedTestBatchesIfDue(
+        await DataSeeder.seedTestDataIfDue(
             into: ctx,
             activeStore: store,
+            storeGeneration: storeGeneration,
             account: StubSeederAccount(status: account)
+        )
+    }
+
+    private func counts(_ ctx: ModelContext) throws -> SeededCounts {
+        SeededCounts(
+            purchases: try ctx.fetchCount(FetchDescriptor<IngredientPurchase>()),
+            recipes: try ctx.fetchCount(FetchDescriptor<Recipe>()),
+            batches: try ctx.fetchCount(FetchDescriptor<Batch>())
         )
     }
 
@@ -177,27 +185,125 @@ struct DataSeederBatchTests {
         #expect(try ctx.fetchCount(FetchDescriptor<Batch>()) == 0)
     }
 
-    /// Once per launch: a second window's launch task finds nothing due. The
-    /// second call goes to an empty store of its own, which would get batches
-    /// if the first call hadn't used up the launch's turn.
-    @Test func seedTestBatchesIfDue_CalledTwice_SeedsOnce() async throws {
-        let (firstContainer, firstCtx) = try freshContext()
-        _ = firstContainer
-        let (secondContainer, secondCtx) = try freshContext()
-        _ = secondContainer
-        DataSeeder.seedTestIngredients(into: secondCtx)
-        DataSeeder.seedTestRecipes(into: secondCtx)
+    /// A second launch task (another window) finds the stock and recipes
+    /// already there, so it adds nothing, batches included.
+    @Test func seedTestDataIfDue_CalledTwiceOnSameStore_SeedsOnce() async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
 
-        await launch(firstCtx)
-        await DataSeeder.seedTestBatchesIfDue(
-            into: secondCtx,
-            activeStore: .mirrored,
-            account: StubSeederAccount(status: .noAccount)
-        )
+        await launch(ctx)
+        let first = try counts(ctx)
+        await launch(ctx)
+        let second = try counts(ctx)
 
-        #expect(try firstCtx.fetchCount(FetchDescriptor<Batch>()) == 3)
-        #expect(try secondCtx.fetchCount(FetchDescriptor<Batch>()) == 0)
+        #expect(first.batches == 3)
+        #expect(first.purchases > 0)
+        #expect(first.recipes == 5)
+        #expect(second == first)
     }
+
+    /// The Mac case: a free user's store is local, and the account is signed in.
+    /// Nothing of the test data may reach it.
+    @Test(arguments: [
+        ModelContainerFactory.ActiveStore.requiresPro,
+        .mirrored,
+        .localFallback(reason: "Schema not deployed"),
+        .notMirrored,
+        .offlineByChoice
+    ])
+    func launch_SignedInAccount_SeedsNothing(_ store: ModelContainerFactory.ActiveStore) async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+
+        await launch(ctx, store: store, account: .available)
+
+        #expect(try counts(ctx) == .none)
+    }
+
+    @Test(arguments: [CKAccountStatus.couldNotDetermine, .restricted, .temporarilyUnavailable])
+    func launch_AccountNotKnownToBeAbsent_SeedsNothing(_ status: CKAccountStatus) async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+
+        await launch(ctx, store: .mirrored, account: status)
+
+        #expect(try counts(ctx) == .none)
+    }
+
+    @Test func launch_StoreRebuiltAfterErase_SeedsNothing() async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+
+        await launch(ctx, store: .mirrored, account: .noAccount, storeGeneration: 1)
+
+        #expect(try counts(ctx) == .none)
+    }
+
+    @Test func launch_NoAccountOnLocalStoreThatRequiresPro_SeedsStockAndRecipesButNoBatches() async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+
+        await launch(ctx, store: .requiresPro, account: .noAccount)
+
+        let seeded = try counts(ctx)
+        #expect(seeded.purchases > 0)
+        #expect(seeded.recipes == 5)
+        #expect(seeded.batches == 0)
+    }
+
+    /// Inventory refetches on a save, so what was seeded must be saved.
+    @Test(arguments: [
+        ModelContainerFactory.ActiveStore.mirrored,
+        .requiresPro
+    ])
+    func launch_NoAccount_SavesWhatItSeeded(_ store: ModelContainerFactory.ActiveStore) async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+        ctx.autosaveEnabled = false
+        try ctx.save()
+        #expect(!ctx.hasChanges)
+
+        await launch(ctx, store: store, account: .noAccount)
+
+        #expect(try counts(ctx).purchases > 0)
+        #expect(!ctx.hasChanges)
+    }
+
+    @Test func launch_NoAccountStoreWithPurchaseAndRecipe_AddsNothing() async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+        let ingredient = try #require(try ctx.fetch(
+            FetchDescriptor<Ingredient>(predicate: #Predicate { $0.librarySlug == "olive-oil" })
+        ).first)
+        let purchase = IngredientPurchase(
+            dateOfPurchase: .now,
+            quantity: 5000,
+            totalPrice: 50,
+            badge: "",
+            journalCode: "",
+            expiryDate: nil,
+            openingDate: nil
+        )
+        ctx.insert(purchase)
+        purchase.attach(to: ingredient)
+        ctx.insert(Recipe(name: "My Own Bar"))
+        try ctx.save()
+
+        await launch(ctx, store: .mirrored, account: .noAccount)
+
+        let seeded = try counts(ctx)
+        #expect(seeded.purchases == 1)
+        #expect(seeded.recipes == 1)
+        #expect(seeded.batches == 0)
+    }
+}
+
+private struct SeededCounts: Equatable {
+    static let none = SeededCounts(purchases: 0, recipes: 0, batches: 0)
+
+    let purchases: Int
+    let recipes: Int
+    let batches: Int
 }
 
 private nonisolated struct StubSeederAccount: SyncAccountStatusProviding {

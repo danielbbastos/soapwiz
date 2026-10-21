@@ -154,12 +154,14 @@ struct SoapWizApp: App {
                     await tourLauncher.presentAtLaunchIfDue()
                 }
                 .task {
-                    // After launch rather than with the rest of the
-                    // seeding: whether the store syncs to an account
-                    // is only known asynchronously.
-                    await DataSeeder.seedTestBatchesIfDue(
+                    // After launch rather than while preparing the store:
+                    // whether the device has an iCloud account is only
+                    // known asynchronously, and nothing may be seeded
+                    // into a store that could sync.
+                    await DataSeeder.seedTestDataIfDue(
                         into: storeHost.container.mainContext,
-                        activeStore: ModelContainerFactory.activeStore
+                        activeStore: ModelContainerFactory.activeStore,
+                        storeGeneration: storeHost.generation
                     )
                     await NotificationService.syncIfEnabled(
                         modelContext: storeHost.container.mainContext

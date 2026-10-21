@@ -3,56 +3,49 @@ import Foundation
 import SwiftData
 
 struct DataSeeder {
-    /// Whether this launch filled an empty store with test stock and recipes,
-    /// so test batches may follow once `seedTestBatchesIfDue` has checked the
-    /// account. A batch draws stock, and purchases or recipes already there may
-    /// be real data.
-    private static var batchesDue = false
-
-    static func seed(into context: ModelContext) {
-        #if DEBUG
-        let seededStock = seedTestIngredients(into: context)
-        let seededRecipes = seedTestRecipes(into: context)
-        batchesDue = seededStock && seededRecipes
-        #endif
-    }
-
-    /// The test batches, when `seed(into:)` has just filled the store and the
-    /// store isn't syncing to an iCloud account. A synced store looks empty
-    /// after a reinstall only until the import arrives: seeding it would add
-    /// three more batches to every device on the account each time, and a
-    /// batch can't be deleted. Runs at most once per launch.
+    /// The test stock, recipes and batches, seeded only when the device
+    /// definitely has no iCloud account. Every store a debug build opens is the
+    /// file that mirrors, so seeding a signed-in device would upload the test
+    /// data to the user's real account. A local-only build can't ask — it lacks
+    /// the entitlement CloudKit needs — so it seeds nothing. Signing a simulator
+    /// with no account into iCloud later would still upload the data; that's a
+    /// deliberate step, and accepted.
     ///
-    /// Every store a debug build opens is the same file the entitled build
-    /// mirrors: a mirrored store opens without an account too, a local
-    /// fallback may mirror on the next launch, and a local-only build may be
-    /// installed over by an entitled one. So only a definite "no account" lets
-    /// the batches through. A local-only build can't ask — it lacks the
-    /// entitlement CloudKit needs — so it never gets them. Signing a simulator
-    /// with no account into iCloud later would still upload them, as it would
-    /// the seeded stock and recipes; that's a deliberate step, and accepted.
+    /// Batches follow only a call that filled both the stock and the recipes,
+    /// since a batch draws stock and what was already there may be real data.
+    /// They never go into a local store (`.notMirrored`, `.offlineByChoice`,
+    /// `.requiresPro`), which mirrors once sync is on, because a batch can't be
+    /// deleted.
     ///
-    /// `activeStore` is the store this launch opened. `account` defaults to the
-    /// real account, resolved here rather than as a default argument, which
-    /// isn't evaluated on the main actor.
-    static func seedTestBatchesIfDue(
+    /// Saves once if it seeded anything, so views that refetch on a save pick
+    /// the data up.
+    ///
+    /// `activeStore` is the store this launch opened. Only the store as opened
+    /// at launch (`storeGeneration` 0) is seeded; after an erase it stays empty
+    /// until the next launch, so the erase flow can be checked. `account`
+    /// defaults to the real account, resolved here rather than as a default
+    /// argument, which isn't evaluated on the main actor.
+    static func seedTestDataIfDue(
         into context: ModelContext,
         activeStore: ModelContainerFactory.ActiveStore?,
+        storeGeneration: Int,
         account: (any SyncAccountStatusProviding)? = nil
     ) async {
         #if DEBUG
-        guard batchesDue else { return }
-        batchesDue = false
-        // A store the user took offline, or that Pro hasn't unlocked yet, is the
-        // same file that mirrors once sync is on, so it's no safer than a
-        // mirrored one.
-        guard activeStore != .notMirrored,
-              activeStore != .offlineByChoice,
-              activeStore != .requiresPro else { return }
+        guard storeGeneration == 0 else { return }
         let account = account ?? CloudKitAccountStatusProvider(
             containerIdentifier: ModelContainerFactory.cloudKitContainerIdentifier
         )
         guard await account.accountStatus() == .noAccount else { return }
+        defer {
+            if context.hasChanges { try? context.save() }
+        }
+        let seededStock = seedTestIngredients(into: context)
+        let seededRecipes = seedTestRecipes(into: context)
+        guard seededStock, seededRecipes,
+              activeStore != .notMirrored,
+              activeStore != .offlineByChoice,
+              activeStore != .requiresPro else { return }
         seedTestBatches(into: context)
         #endif
     }
@@ -166,7 +159,7 @@ extension DataSeeder {
         BatchSeed(recipeName: "Everyday Kitchen Bar", process: .hot, cureFraction: 1.2)
     ]
 
-    /// Called only through `seedTestBatchesIfDue`, on a launch that seeded
+    /// Called only through `seedTestDataIfDue`, on a launch that seeded
     /// both the test stock and the test recipes. Each batch goes through
     /// `BatchProductionViewModel` like one made in the app — stock is drawn,
     /// the code generated, the cure suggested — then is backdated so its cure
