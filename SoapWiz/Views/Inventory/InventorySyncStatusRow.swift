@@ -10,14 +10,14 @@ import SwiftUI
 struct InventorySyncStatusRow: View {
     let notice: SyncNotice
 
-    var title: String {
+    private var title: String {
         switch notice {
         case .firstSync: String(localized: "Syncing with iCloud")
         case .catchingUp: String(localized: "Updating from iCloud")
         }
     }
 
-    var detail: String {
+    private var detail: String {
         switch notice {
         case .firstSync:
             String(localized: "Your ingredients and purchases will update when it finishes.")

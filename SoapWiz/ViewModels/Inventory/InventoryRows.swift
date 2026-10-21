@@ -214,6 +214,12 @@ final class InventoryRows {
     }
 
     private func beginImport() {
+        startImportTimeout()
+        startPruning()
+        scheduleSyncNotice()
+    }
+
+    private func startImportTimeout() {
         timeoutTask?.cancel()
         timeoutTask = Task { [weak self, importTimeout] in
             try? await Task.sleep(for: importTimeout)
@@ -221,15 +227,20 @@ final class InventoryRows {
             self.endImport()
             self.refreshIfInventoryChanged()
         }
-        if pruneTask == nil {
-            pruneTask = Task { [weak self, pruneInterval] in
-                while !Task.isCancelled {
-                    try? await Task.sleep(for: pruneInterval)
-                    guard !Task.isCancelled, let self else { return }
-                    self.setRows(ingredients: self.ingredients, purchases: self.purchases, categories: self.categories)
-                }
+    }
+
+    private func startPruning() {
+        guard pruneTask == nil else { return }
+        pruneTask = Task { [weak self, pruneInterval] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: pruneInterval)
+                guard !Task.isCancelled, let self else { return }
+                self.setRows(ingredients: self.ingredients, purchases: self.purchases, categories: self.categories)
             }
         }
+    }
+
+    private func scheduleSyncNotice() {
         guard noticeTask == nil, syncNotice == nil, let notice = noticeForImport() else { return }
         noticeTask = Task { [weak self, syncNoticeDelay] in
             try? await Task.sleep(for: syncNoticeDelay)
