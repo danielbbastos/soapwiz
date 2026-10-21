@@ -107,8 +107,13 @@ struct RecipeProductHeaderView: View {
                     .foregroundStyle(Color.inkSoft)
             }
             .foregroundStyle(Color.ink)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .padding(.horizontal, -8)
+        .padding(.vertical, -6)
         .popover(isPresented: $isUnitPickerPresented) {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(availableUnits, id: \.rawValue) { unit in
