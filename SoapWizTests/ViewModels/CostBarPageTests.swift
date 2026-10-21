@@ -97,4 +97,35 @@ struct CostBarPageTests: RecipeFormTestHelpers {
 
         #expect(summary == String(localized: "Batch \(totalText) · RRP \(rrpText)"))
     }
+
+    @Test func costBarBatchText_NoIngredients_ShowsZeroBatchCost() {
+        let model = RecipeFormViewModel()
+        let zero = Double(0).formatted(.currency(code: "EUR"))
+
+        #expect(model.costBarBatchText(currencyCode: "EUR") == String(localized: "Batch \(zero)"))
+    }
+
+    @Test func costBarRRPText_NoIngredients_ShowsZeroRRP() {
+        let model = RecipeFormViewModel()
+        let zero = Double(0).formatted(.currency(code: "EUR"))
+
+        #expect(model.costBarRRPText(pvpFactor: 4, currencyCode: "EUR") == String(localized: "RRP \(zero)"))
+    }
+
+    @Test func costBarParts_PricedOil_ShowBatchCostAndScaledRRP() throws {
+        let model = makeModelWithOils(oils: 1000)
+        let oil = try #require(model.oilDrafts.first?.ingredient)
+        let purchase = IngredientPurchase(
+            dateOfPurchase: .now, quantity: 1000, totalPrice: 8,
+            badge: "", journalCode: "", expiryDate: nil, openingDate: nil
+        )
+        purchase.ingredient = oil
+        let total = model.wholeBatchBreakdown.total
+        try #require(total > 0)
+        let totalText = total.formatted(.currency(code: "EUR"))
+        let rrpText = (total * 3).formatted(.currency(code: "EUR"))
+
+        #expect(model.costBarBatchText(currencyCode: "EUR") == String(localized: "Batch \(totalText)"))
+        #expect(model.costBarRRPText(pvpFactor: 3, currencyCode: "EUR") == String(localized: "RRP \(rrpText)"))
+    }
 }

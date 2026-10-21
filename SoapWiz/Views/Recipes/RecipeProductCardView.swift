@@ -11,11 +11,10 @@ struct RecipeProductCardView: View {
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @ScaledMetric(relativeTo: .subheadline) private var compactColumnWidth: CGFloat = 64
-    @ScaledMetric(relativeTo: .body) private var regularColumnWidth: CGFloat = 88
+    @ScaledMetric(relativeTo: .subheadline) private var regularColumnWidth: CGFloat = 72
     @State private var collapsedGroups: Set<BreakdownGroupKey> = []
 
     private var isRegular: Bool { horizontalSizeClass == .regular }
-    private var lineFont: Font { isRegular ? .body : .subheadline }
     private var columnWidth: CGFloat { isRegular ? regularColumnWidth : compactColumnWidth }
 
     private static let amountFormatter: NumberFormatter = {
@@ -47,14 +46,9 @@ struct RecipeProductCardView: View {
             if isCollapsed { collapsedGroups.remove(key) } else { collapsedGroups.insert(key) }
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                Text(key.displayName)
-                    .font(.caption.weight(.semibold))
-                    .textCase(.uppercase)
-                    .tracking(0.9)
-                    .foregroundStyle(Color.inkSoft)
+                HoneyLedgerSectionLabel(key.displayName, isExpanded: !isCollapsed)
                     .padding(.top, isFirst ? 4 : 14)
                     .padding(.bottom, 4)
-                    .accessibilityAddTraits(.isHeader)
                 if isCollapsed {
                     subtotalLine(rows: rows)
                         .transition(.identity)
@@ -76,7 +70,6 @@ struct RecipeProductCardView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityValue(isCollapsed ? Text("Collapsed") : Text("Expanded"))
     }
 
     private func subtotalLine(rows: [IngredientProductBreakdown]) -> some View {
@@ -118,7 +111,7 @@ struct RecipeProductCardView: View {
                 .minimumScaleFactor(0.75)
                 .frame(minWidth: columnWidth, alignment: .trailing)
         }
-        .font(lineFont)
+        .font(.subheadline)
         .monospacedDigit()
         .padding(.vertical, isRegular ? 4 : 3)
     }

@@ -25,8 +25,8 @@ struct CostBarHeightTests {
         #expect(Self.height(extra: 900) == 500)
     }
 
-    @Test func panelCarouselHeight_MaximumBelowDefault_ReturnsDefault() {
-        #expect(Self.height(extra: 100, maximum: 250) == 300)
+    @Test func panelCarouselHeight_MaximumBelowCap_ReturnsMaximum() {
+        #expect(Self.height(extra: 100, maximum: 250) == 250)
     }
 
     @Test func panelCarouselHeight_NoMeasuredMaximum_ReturnsDefault() {
@@ -41,8 +41,55 @@ struct CostBarHeightTests {
         #expect(Self.height(extra: 900, content: 800) == 500)
     }
 
-    @Test func panelCarouselHeight_ContentBelowDefault_ReturnsDefault() {
-        #expect(Self.height(extra: 900, content: 200) == 300)
+    @Test func panelCarouselHeight_ContentBelowCap_OpensAtContent() {
+        #expect(Self.height(extra: 0, content: 200) == 200)
+    }
+
+    @Test func panelCarouselHeight_ContentBelowCap_DragCannotGrowPastContent() {
+        #expect(Self.height(extra: 900, content: 200) == 200)
+    }
+
+    @Test func panelCarouselHeight_ContentAboveCap_OpensAtCap() {
+        #expect(Self.height(extra: 0, content: 450) == 300)
+    }
+
+    @Test func panelCarouselHeight_ShortOpening_NegativeDragStaysAtOpening() {
+        #expect(Self.height(extra: -80, content: 200) == 200)
+    }
+
+    @Test func panelCarouselHeight_ShortOpening_DragWithinBoundAdds() {
+        #expect(Self.height(extra: 50, content: 400, cap: 200) == 250)
+    }
+
+    @Test func panelCarouselHeight_UnmeasuredMaximumAndContent_OpensAtCap() {
+        #expect(Self.height(extra: 100, maximum: 0, content: 0) == 300)
+        #expect(Self.height(extra: 100, maximum: -40, content: 0) == 300)
+    }
+
+    @Test func panelCarouselHeight_UnmeasuredMaximumShortContent_OpensAtContent() {
+        #expect(Self.height(extra: 100, maximum: 0, content: 200) == 200)
+    }
+
+    @Test func openingCarouselHeight_ShortContent_ReturnsContent() {
+        #expect(CostBreakdownBarInset.openingCarouselHeight(cap: 300, maximum: 500, contentHeight: 200) == 200)
+    }
+
+    @Test func openingCarouselHeight_LongContent_ReturnsCap() {
+        #expect(CostBreakdownBarInset.openingCarouselHeight(cap: 300, maximum: 500, contentHeight: 800) == 300)
+    }
+
+    @Test func openingCarouselHeight_ContentNotMeasured_ReturnsCapWithinMaximum() {
+        #expect(CostBreakdownBarInset.openingCarouselHeight(cap: 300, maximum: 500, contentHeight: 0) == 300)
+        #expect(CostBreakdownBarInset.openingCarouselHeight(cap: 300, maximum: 250, contentHeight: 0) == 250)
+    }
+
+    @Test func openingCarouselHeight_MaximumNotMeasured_ReturnsCap() {
+        #expect(CostBreakdownBarInset.openingCarouselHeight(cap: 300, maximum: 0, contentHeight: 0) == 300)
+        #expect(CostBreakdownBarInset.openingCarouselHeight(cap: 300, maximum: -20, contentHeight: 0) == 300)
+    }
+
+    @Test func openingCarouselHeight_MaximumNotMeasuredShortContent_ReturnsContent() {
+        #expect(CostBreakdownBarInset.openingCarouselHeight(cap: 300, maximum: 0, contentHeight: 120) == 120)
     }
 
     @Test func panelCarouselHeight_ContentNotMeasured_DoesNotCap() {
@@ -71,9 +118,11 @@ struct CostBarHeightTests {
         ) == expected)
     }
 
-    private static func height(extra: CGFloat, maximum: CGFloat = 500, content: CGFloat = 0) -> CGFloat {
+    private static func height(
+        extra: CGFloat, maximum: CGFloat = 500, content: CGFloat = 0, cap: CGFloat = 300
+    ) -> CGFloat {
         CostBreakdownBarInset.panelCarouselHeight(
-            defaultHeight: 300, extraHeight: extra, maximum: maximum, contentHeight: content
+            cap: cap, extraHeight: extra, maximum: maximum, contentHeight: content
         )
     }
 }

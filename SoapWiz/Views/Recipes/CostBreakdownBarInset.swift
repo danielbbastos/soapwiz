@@ -168,18 +168,28 @@ struct CostBreakdownBarInset: ViewModifier {
         contentHeight > 0 ? min(maximum, contentHeight) : maximum
     }
 
-    /// The expanded panel's carousel height: its default plus what the user
-    /// dragged, held to the upper bound. It never drops below the default,
-    /// even when the bound is smaller than that, and a negative drag counts as
-    /// none.
+    /// The height the carousel opens at: the cap, or the upper bound if that
+    /// is less, so a short page opens to fit its rows. A maximum that isn't
+    /// positive isn't measured yet and bounds nothing, so the cap stands
+    /// unless the content is already known to be shorter.
+    static func openingCarouselHeight(cap: CGFloat, maximum: CGFloat, contentHeight: CGFloat) -> CGFloat {
+        min(cap, carouselUpperBound(maximum: maximum > 0 ? maximum : cap, contentHeight: contentHeight))
+    }
+
+    /// The expanded panel's carousel height: its opening height plus what the
+    /// user dragged, held to the upper bound. It never drops below the
+    /// opening height, and a negative drag counts as none. While the maximum
+    /// isn't measured it can't grow.
     static func panelCarouselHeight(
-        defaultHeight: CGFloat,
+        cap: CGFloat,
         extraHeight: CGFloat,
         maximum: CGFloat,
         contentHeight: CGFloat
     ) -> CGFloat {
+        let opening = openingCarouselHeight(cap: cap, maximum: maximum, contentHeight: contentHeight)
+        guard maximum > 0 else { return opening }
         let bound = carouselUpperBound(maximum: maximum, contentHeight: contentHeight)
-        return max(defaultHeight, min(defaultHeight + max(0, extraHeight), bound))
+        return max(opening, min(opening + max(0, extraHeight), bound))
     }
 
     /// How far to move the bar down from where its overlay puts it. A docked

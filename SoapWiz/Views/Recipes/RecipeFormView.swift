@@ -35,7 +35,7 @@ struct RecipeFormView: View {
     @State private var selectedTab: RecipeTab = .config
     @State private var closeReason: RecipeFormCloseReason?
     @State private var isWide = false
-    /// How far the cost panel has been dragged past its default height. Kept
+    /// How far the cost panel has been dragged past its opening height. Kept
     /// here because the ingredients tab is rebuilt on every tab switch.
     @State private var costPanelExtraHeight: CGFloat = 0
     /// Set once the recipe, seed or import has been applied. Before that the

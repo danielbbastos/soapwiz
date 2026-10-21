@@ -3,13 +3,13 @@ import SwiftUI
 /// The handle at the top of the expanded cost panel. Dragging it up grows the
 /// panel; assistive technologies get it as an adjustable element.
 struct CostBarGrabber: View {
-    /// How far the carousel has been dragged past its default height.
+    /// How far the carousel has been dragged past its opening height.
     @Binding var extraHeight: CGFloat
-    /// The room between the default height and the upper bound.
+    /// The room between the opening height and the upper bound.
     let extraRoom: CGFloat
     @State private var dragStartExtra: CGFloat?
 
-    /// How much of the room above the default height one accessibility step moves.
+    /// How much of the room above the opening height one accessibility step moves.
     private static let adjustmentStep: CGFloat = 0.25
 
     /// The dragged height as drawn: what was stored, held to the room there is now.

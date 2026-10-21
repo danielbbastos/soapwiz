@@ -2,7 +2,7 @@
 /// form's product card and the detail screen's cost section, which render the
 /// same grouping very differently but must agree on its order and labels.
 enum BreakdownGroupKey: String, CaseIterable {
-    case oils, additives, neutralizer, fragrances, lye
+    case oils, lye, additives, neutralizer, fragrances
 
     var displayName: String {
         switch self {

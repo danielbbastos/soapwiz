@@ -6,7 +6,7 @@ struct CostBreakdownBarView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Bindable var model: RecipeFormViewModel
     @Binding var isExpanded: Bool
-    /// How far the carousel has been dragged past its default height.
+    /// How far the carousel has been dragged past its opening height.
     @Binding var extraHeight: CGFloat
     var availableHeight: CGFloat = 0
     /// The tallest the whole panel may be, or 0 while that isn't measured yet.
@@ -24,8 +24,7 @@ struct CostBreakdownBarView: View {
     @State private var footerHeights: [UUID: CGFloat] = [:]
     /// A touch taller than anything a page's header holds, so the bar keeps
     /// one height as it pages between a plain title and a size's controls.
-    @ScaledMetric(relativeTo: .subheadline) private var compactPageHeaderHeight: CGFloat = 22
-    @ScaledMetric(relativeTo: .body) private var regularPageHeaderHeight: CGFloat = 24
+    @ScaledMetric(relativeTo: .body) private var pageHeaderHeight: CGFloat = 24
 
     /// Narrower than the screens' readable width, so on iPad the bar reads as
     /// a floating summary rather than a second sheet.
@@ -69,11 +68,24 @@ struct CostBreakdownBarView: View {
 
     // MARK: - Resizing
 
-    private var defaultCarouselHeight: CGFloat {
+    /// The tallest the carousel opens, though a short page opens shorter.
+    private var carouselCap: CGFloat {
         let fraction = CostBreakdownBarInset.defaultCarouselFraction(
             isRegular: isRegular, isLandscape: isLandscape, keyboardVisible: keyboardVisible
         )
         return availableHeight > 0 ? availableHeight * fraction : 350
+    }
+
+    private var carouselBound: CGFloat {
+        CostBreakdownBarInset.carouselUpperBound(maximum: maximumCarouselHeight, contentHeight: tallestContentHeight)
+    }
+
+    private var openingHeight: CGFloat {
+        CostBreakdownBarInset.openingCarouselHeight(
+            cap: carouselCap,
+            maximum: maximumCarouselHeight,
+            contentHeight: tallestContentHeight
+        )
     }
 
     /// What is left of the panel's maximum once the header, grabber and page
@@ -93,21 +105,17 @@ struct CostBreakdownBarView: View {
 
     private var carouselHeight: CGFloat {
         CostBreakdownBarInset.panelCarouselHeight(
-            defaultHeight: defaultCarouselHeight,
+            cap: carouselCap,
             extraHeight: extraHeight,
             maximum: maximumCarouselHeight,
             contentHeight: tallestContentHeight
         )
     }
 
-    /// The room between the default height and the upper bound. Zero where the
+    /// The room between the opening height and the upper bound. Zero where the
     /// panel can't grow.
     private var extraRoom: CGFloat {
-        let bound = CostBreakdownBarInset.carouselUpperBound(
-            maximum: maximumCarouselHeight,
-            contentHeight: tallestContentHeight
-        )
-        return max(0, bound - defaultCarouselHeight)
+        max(0, carouselBound - openingHeight)
     }
 
     /// Collapsed, the batch cost and its RRP; expanded, the showing page's own
@@ -135,22 +143,19 @@ struct CostBreakdownBarView: View {
 
     private func headerContent(canExpand: Bool, expanded: Bool, batch: ProductCostBreakdown) -> some View {
         HStack(spacing: 12) {
-            Image(systemName: "eurosign.circle.fill")
+            Image(systemName: CurrencySymbol.symbolName(forCurrencyCode: currencyCode))
                 .foregroundStyle(Color.amberText)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
             if expanded {
                 pageHeader(batch: batch)
-                    .frame(minHeight: isRegular ? regularPageHeaderHeight : compactPageHeaderHeight)
+                    .frame(minHeight: pageHeaderHeight)
             } else {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Cost breakdown")
                         .font(captionFont)
                         .foregroundStyle(Color.inkSoft)
-                    Text(model.costBarSummary(pvpFactor: pvpFactor, currencyCode: currencyCode))
-                        .font(headlineFont.weight(.semibold))
-                        .foregroundStyle(Color.ink)
-                        .monospacedDigit()
+                    collapsedSummary
                 }
                 .allowsHitTesting(false)
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -177,9 +182,31 @@ struct CostBreakdownBarView: View {
         }
     }
 
+    /// The batch cost in `ink` and the RRP after it in the smaller amber, on
+    /// one baseline. A recipe with no ingredients keeps its single plain line.
+    private var collapsedSummary: Text {
+        guard model.hasIngredients else {
+            return Text(model.costBarSummary(pvpFactor: pvpFactor, currencyCode: currencyCode))
+                .font(headlineFont.weight(.semibold))
+                .foregroundStyle(Color.ink)
+                .monospacedDigit()
+        }
+        let batch = Text(model.costBarBatchText(currencyCode: currencyCode))
+            .font(.body.weight(.semibold))
+            .foregroundStyle(Color.ink)
+        let rrp = Text(" · \(model.costBarRRPText(pvpFactor: pvpFactor, currencyCode: currencyCode))")
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(Color.amberText)
+        return (batch + rrp).monospacedDigit()
+    }
+
     private func toggleExpanded(canExpand: Bool) {
         guard canExpand else { return }
-        withAnimation(.easeInOut(duration: 0.25)) { isExpanded.toggle() }
+        // Until a page has been measured the carousel opens at its cap and
+        // shrinks to fit a frame later; animating the insertion across that
+        // change leaves the panel's content drawn below its surface.
+        let animation: Animation? = tallestContentHeight > 0 || isExpanded ? .easeInOut(duration: 0.25) : nil
+        withAnimation(animation) { isExpanded.toggle() }
     }
 
     @ViewBuilder
@@ -187,7 +214,7 @@ struct CostBreakdownBarView: View {
         switch model.costBarPage(for: visibleCardID) {
         case .addSize:
             Text("New size")
-                .font(headlineFont.weight(.semibold))
+                .font(.body.weight(.semibold))
                 .foregroundStyle(Color.ink)
                 .allowsHitTesting(false)
         case .product(let id):
@@ -314,15 +341,16 @@ struct CostBreakdownBarView: View {
                 Spacer()
                 Text(breakdown.total.formatted(.currency(code: currencyCode)))
             }
+            .font(.body.weight(.semibold))
             .foregroundStyle(Color.ink)
             HStack {
                 Text("RRP")
                 Spacer()
                 Text((breakdown.total * pvpFactor).formatted(.currency(code: currencyCode)))
             }
+            .font(.subheadline.weight(.medium))
             .foregroundStyle(Color.amberText)
         }
-        .font(headlineFont.weight(.semibold))
         .monospacedDigit()
         .padding(.horizontal, horizontalPadding)
         .padding(.top, isRegular ? 10 : 8)
