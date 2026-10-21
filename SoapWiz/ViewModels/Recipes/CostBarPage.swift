@@ -25,6 +25,18 @@ extension RecipeFormViewModel {
         return productDrafts.first.map { .product($0.id) } ?? .addSize
     }
 
+    /// The batch cost half of the collapsed bar's line.
+    func costBarBatchText(currencyCode: String) -> String {
+        let totalText = wholeBatchBreakdown.total.formatted(.currency(code: currencyCode))
+        return String(localized: "Batch \(totalText)")
+    }
+
+    /// The selling price half of the collapsed bar's line.
+    func costBarRRPText(pvpFactor: Double, currencyCode: String) -> String {
+        let rrpText = (wholeBatchBreakdown.total * pvpFactor).formatted(.currency(code: currencyCode))
+        return String(localized: "RRP \(rrpText)")
+    }
+
     /// The collapsed bar's one line: the batch cost and what it should sell for.
     func costBarSummary(pvpFactor: Double, currencyCode: String) -> String {
         let total = wholeBatchBreakdown.total

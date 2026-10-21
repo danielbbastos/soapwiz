@@ -14,7 +14,6 @@ struct RecipeProductHeaderView: View {
     @State private var isUnitPickerPresented = false
 
     private var isRegular: Bool { horizontalSizeClass == .regular }
-    private var headerFont: Font { isRegular ? .body : .subheadline }
     private var badgeFont: Font { isRegular ? .caption : .caption2 }
     private var sizeFieldWidth: CGFloat { isRegular ? 70 : 56 }
 
@@ -34,7 +33,7 @@ struct RecipeProductHeaderView: View {
                     prompt: "Size", value: $draft.size, width: sizeFieldWidth, alignment: .center,
                     allowsDecimals: selectedUnit != .partsOfBatch
                 )
-                    .font(headerFont.weight(.semibold))
+                    .font(.body.weight(.semibold))
                     .foregroundStyle(Color.ink)
                     .tint(Color.amber)
                     // Drawn below the text rather than padded in, so a size's
@@ -50,7 +49,7 @@ struct RecipeProductHeaderView: View {
 
             if isDefault {
                 Text(displayedUnitLabel)
-                    .font(headerFont.weight(.semibold))
+                    .font(.body.weight(.semibold))
                     .foregroundStyle(Color.ink)
                     .allowsHitTesting(false)
             } else {
@@ -73,7 +72,7 @@ struct RecipeProductHeaderView: View {
             if let onDelete {
                 Button(action: onDelete) {
                     Image(systemName: "trash")
-                        .font(headerFont)
+                        .font(.body)
                         .foregroundStyle(Color.inkSoft)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 6)
@@ -102,14 +101,19 @@ struct RecipeProductHeaderView: View {
         } label: {
             HStack(spacing: 4) {
                 Text(displayedUnitLabel)
-                    .font(headerFont.weight(.semibold))
+                    .font(.body.weight(.semibold))
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.caption2)
                     .foregroundStyle(Color.inkSoft)
             }
             .foregroundStyle(Color.ink)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .padding(.horizontal, -8)
+        .padding(.vertical, -6)
         .popover(isPresented: $isUnitPickerPresented) {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(availableUnits, id: \.rawValue) { unit in
@@ -119,7 +123,7 @@ struct RecipeProductHeaderView: View {
                     } label: {
                         HStack {
                             Text(unit.rawValue)
-                                .font(headerFont)
+                                .font(.body)
                             Spacer()
                             if draft.unitSymbol == unit.rawValue {
                                 Image(systemName: "checkmark")
