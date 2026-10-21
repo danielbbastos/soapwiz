@@ -23,11 +23,13 @@ struct DataSeederBatchTests {
     private func launch(
         _ ctx: ModelContext,
         store: ModelContainerFactory.ActiveStore = .mirrored,
-        account: CKAccountStatus = .noAccount
+        account: CKAccountStatus = .noAccount,
+        storeGeneration: Int = 0
     ) async {
         await DataSeeder.seedTestDataIfDue(
             into: ctx,
             activeStore: store,
+            storeGeneration: storeGeneration,
             account: StubSeederAccount(status: account)
         )
     }
@@ -224,6 +226,15 @@ struct DataSeederBatchTests {
         _ = container
 
         await launch(ctx, store: .mirrored, account: status)
+
+        #expect(try counts(ctx) == .none)
+    }
+
+    @Test func launch_StoreRebuiltAfterErase_SeedsNothing() async throws {
+        let (container, ctx) = try freshContext()
+        _ = container
+
+        await launch(ctx, store: .mirrored, account: .noAccount, storeGeneration: 1)
 
         #expect(try counts(ctx) == .none)
     }

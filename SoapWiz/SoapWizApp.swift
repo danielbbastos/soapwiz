@@ -160,7 +160,8 @@ struct SoapWizApp: App {
                     // into a store that could sync.
                     await DataSeeder.seedTestDataIfDue(
                         into: storeHost.container.mainContext,
-                        activeStore: ModelContainerFactory.activeStore
+                        activeStore: ModelContainerFactory.activeStore,
+                        storeGeneration: storeHost.generation
                     )
                     await NotificationService.syncIfEnabled(
                         modelContext: storeHost.container.mainContext

@@ -20,15 +20,19 @@ struct DataSeeder {
     /// Saves once if it seeded anything, so views that refetch on a save pick
     /// the data up.
     ///
-    /// `activeStore` is the store this launch opened. `account` defaults to the
-    /// real account, resolved here rather than as a default argument, which
-    /// isn't evaluated on the main actor.
+    /// `activeStore` is the store this launch opened. Only the store as opened
+    /// at launch (`storeGeneration` 0) is seeded; after an erase it stays empty
+    /// until the next launch, so the erase flow can be checked. `account`
+    /// defaults to the real account, resolved here rather than as a default
+    /// argument, which isn't evaluated on the main actor.
     static func seedTestDataIfDue(
         into context: ModelContext,
         activeStore: ModelContainerFactory.ActiveStore?,
+        storeGeneration: Int,
         account: (any SyncAccountStatusProviding)? = nil
     ) async {
         #if DEBUG
+        guard storeGeneration == 0 else { return }
         let account = account ?? CloudKitAccountStatusProvider(
             containerIdentifier: ModelContainerFactory.cloudKitContainerIdentifier
         )
