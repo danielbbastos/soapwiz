@@ -41,31 +41,30 @@ enum IngredientStockStamp: Equatable {
     /// of hundred ingredients the user has never bought, and they must not all
     /// read as out of stock. Out replaces Low, since it is the stronger form of it.
     static func stamps(
-        for ingredient: Ingredient,
+        stock: IngredientStock,
+        lowStockThreshold: Double?,
         tracksInventory: Bool,
         now: Date = .now,
         calendar: Calendar = .current
     ) -> [IngredientStockStamp] {
-        guard tracksInventory, !ingredient.purchases.isEmpty else { return [] }
+        guard tracksInventory, stock.hasPurchases else { return [] }
 
         var result: [IngredientStockStamp] = []
-        let remaining = ingredient.totalRemaining
-        let isOut = remaining <= 0
+        let isOut = stock.remaining <= 0
         if isOut {
             result.append(.out)
         }
 
-        let expiries = ingredient.purchases.compactMap(\.expiryDate)
-        if expiries.contains(where: { $0 < now }) {
+        if stock.expiries.contains(where: { $0 < now }) {
             result.append(.expired)
         }
 
-        if !isOut, let threshold = ingredient.lowStockThreshold, remaining <= threshold {
+        if !isOut, let threshold = lowStockThreshold, stock.remaining <= threshold {
             result.append(.low)
         }
 
         if !result.contains(.expired),
-           let nearest = expiries.filter({ $0 > now }).min(),
+           let nearest = stock.expiries.filter({ $0 > now }).min(),
            let stamp = expiry(nearest, now: now, calendar: calendar) {
             result.append(stamp)
         }
