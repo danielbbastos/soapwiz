@@ -13,21 +13,25 @@ enum RecipeTransferImporter {
 
     /// Applies the plan and returns the recipes created, in payload order.
     ///
+    /// Only the ticked recipes are written, and only the ingredients they use:
+    /// an empty selection writes nothing at all.
+    ///
     /// Everything is inserted into the context but nothing is saved: the caller
     /// owns the save, so a failure part-way leaves a context it can roll back
     /// rather than a library holding half an import.
     @discardableResult
     static func apply(_ plan: RecipeTransferPlan, into context: ModelContext, categories: [IngredientCategory]) -> [Recipe] {
         let resolved = resolveIngredients(plan, into: context, categories: categories)
-        return plan.recipeSummaries.map { summary in
+        return plan.selectedRecipes.map { summary in
             recipe(from: summary, plan: plan, ingredients: resolved, into: context)
         }
     }
 
     // MARK: - Ingredients
 
-    /// Every pooled ingredient as a live model: the one already in the
-    /// inventory, or a new one carrying the sender's chemistry.
+    /// Every ingredient the ticked recipes use as a live model, by the plan
+    /// entry's id: the one already in the inventory, or a new one carrying the
+    /// sender's chemistry. Ingredients only unticked recipes use are left alone.
     ///
     /// A created ingredient takes the payload's saponification values, density
     /// and fatty-acid profile because a recipe cannot be calculated without
@@ -40,13 +44,18 @@ enum RecipeTransferImporter {
         _ plan: RecipeTransferPlan,
         into context: ModelContext,
         categories: [IngredientCategory]
-    ) -> [Ingredient] {
+    ) -> [Int: Ingredient] {
         let categoryIndex = Dictionary(
             categories.map { ($0.name.lookupKey, $0) },
             uniquingKeysWith: { first, _ in first }
         )
-        return plan.ingredients.map { entry in
-            if let existing = entry.existing { return existing }
+        let needed = plan.neededIngredientIDs
+        var resolved: [Int: Ingredient] = [:]
+        for entry in plan.ingredients where needed.contains(entry.id) {
+            if let existing = entry.existing {
+                resolved[entry.id] = existing
+                continue
+            }
 
             let ingredient = Ingredient(
                 name: entry.incoming.name,
@@ -60,8 +69,9 @@ enum RecipeTransferImporter {
             // Blank unless this build's catalog knows the slug — see `adoptableSlug`.
             ingredient.librarySlug = entry.adoptableSlug ?? ""
             context.insert(ingredient)
-            return ingredient
+            resolved[entry.id] = ingredient
         }
+        return resolved
     }
 
     // MARK: - Recipe
@@ -69,7 +79,7 @@ enum RecipeTransferImporter {
     private static func recipe(
         from summary: RecipeTransferRecipeSummary,
         plan: RecipeTransferPlan,
-        ingredients: [Ingredient],
+        ingredients: [Int: Ingredient],
         into context: ModelContext
     ) -> Recipe {
         let incoming = summary.recipe

@@ -26,14 +26,14 @@ struct FreeTierImportFit: Equatable {
         if exceedsRecipes {
             let noun = incomingRecipes == 1 ? "recipe" : "recipes"
             lines.append(
-                "This file has \(incomingRecipes) \(noun); the free version keeps "
+                "You’re adding \(incomingRecipes) \(noun); the free version keeps "
                 + "\(FreeTierLimits.recipeCap) and you have \(existingRecipes)."
             )
         }
         if exceedsCustomIngredients {
             let noun = incomingCustomIngredients == 1 ? "custom ingredient" : "custom ingredients"
             lines.append(
-                "This file brings \(incomingCustomIngredients) new \(noun); the free version keeps "
+                "These recipes bring \(incomingCustomIngredients) new \(noun); the free version keeps "
                 + "\(FreeTierLimits.customIngredientCap) and you have \(existingCustomIngredients)."
             )
         }
@@ -96,8 +96,9 @@ enum FreeTierLimits {
             && isCustomIngredient(librarySlug: librarySlug, name: newName)
     }
 
-    /// Whether a whole import fits, all or nothing: half a shared file would
-    /// leave recipes pointing at ingredients that were never made. A kind the
+    /// Whether an import fits, all or nothing: half of what the user chose
+    /// would leave recipes pointing at ingredients that were never made. The
+    /// counts are those of the recipes ticked, not of the file. A kind the
     /// file brings none of can't be exceeded by it, even when the store is
     /// already over that cap.
     static func importFit(

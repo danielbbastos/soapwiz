@@ -11,20 +11,22 @@ import SwiftData
 struct RecipeTransferPlan {
     let payload: RecipeTransferData
 
-    /// One entry per pooled ingredient, in payload order.
+    /// One entry per pooled ingredient, in payload order. The whole pool, not
+    /// just what the ticked recipes use: an entry keeps its position and any
+    /// match the user made while its recipes are unticked, so ticking them again
+    /// finds both as they were.
     let ingredients: [RecipeTransferIngredientPlan]
 
     /// Collection names that matched something the recipient already has.
     /// Keyed by the name as written in the payload.
     let matchedCollections: [String: RecipeCollection]
 
-    /// Collection names with no match here. The recipes that named them arrive
-    /// unfiled — filing is a personal decision, and an import must not litter a
-    /// library with a stranger's folders.
-    let unmatchedCollectionNames: [String]
+    /// Every collection name with no match here, whichever recipes use it.
+    private let allUnmatchedCollectionNames: [String]
 
     /// The incoming recipes, each with an identity of its own and the name it
-    /// will actually be saved under.
+    /// will actually be saved under. Every recipe in the payload, ticked or not,
+    /// so the review screen can list them all.
     ///
     /// Identified by position rather than by name: nothing stops a file holding
     /// two recipes called "Bar", and on a screen whose entire job is to say what
@@ -32,21 +34,55 @@ struct RecipeTransferPlan {
     /// possible place to lose something.
     let recipeSummaries: [RecipeTransferRecipeSummary]
 
-    var recipeCount: Int { payload.recipes.count }
+    /// The summary ids the user means to import. Transient review state, never
+    /// stored: a file opened again starts with every recipe ticked.
+    let selectedRecipeIDs: Set<Int>
+
+    /// What `summaries` needs from the library to name and identify the ticked
+    /// recipes again, kept so a change of selection doesn't have to ask the store.
+    private let libraryNameKeys: Set<String>
+    private let libraryRecipesByUUID: [UUID: Recipe]
+
+    /// The recipes that will be imported, in payload order.
+    var selectedRecipes: [RecipeTransferRecipeSummary] {
+        recipeSummaries.filter { selectedRecipeIDs.contains($0.id) }
+    }
+
+    /// How many recipes will be imported, which is what the free tier counts.
+    var recipeCount: Int { selectedRecipeIDs.count }
+
+    var hasSelection: Bool { !selectedRecipeIDs.isEmpty }
+
+    /// Whether there is a choice to make. A single recipe has nothing to tick.
+    var isMultiRecipe: Bool { payload.recipes.count > 1 }
+
+    func isSelected(_ id: Int) -> Bool { selectedRecipeIDs.contains(id) }
 
     /// Recipes arriving under a name the library already uses.
     var renamedRecipes: [RecipeTransferRecipeSummary] {
-        recipeSummaries.filter(\.isRenamed)
+        selectedRecipes.filter(\.isRenamed)
     }
 
     /// Recipes the library has seen before, matched on the uuid the payload
     /// carried rather than on what either side calls them now.
     var knownRecipes: [RecipeTransferRecipeSummary] {
-        recipeSummaries.filter(\.isKnownRecipe)
+        selectedRecipes.filter(\.isKnownRecipe)
+    }
+
+    /// The pooled ingredients the ticked recipes actually use. What an unticked
+    /// recipe alone uses is neither created nor counted: importing it would
+    /// otherwise cost a custom slot for something that never gets used.
+    var neededIngredientIDs: Set<Int> {
+        Set(selectedRecipes.flatMap { $0.recipe.ingredients.map(\.ingredientIndex) })
+    }
+
+    private var neededIngredients: [RecipeTransferIngredientPlan] {
+        let needed = neededIngredientIDs
+        return ingredients.filter { needed.contains($0.id) }
     }
 
     var ingredientsToCreate: [RecipeTransferIngredientPlan] {
-        ingredients.filter(\.willBeCreated)
+        neededIngredients.filter(\.willBeCreated)
     }
 
     /// The ingredients to create that count against the free tier's custom
@@ -57,7 +93,7 @@ struct RecipeTransferPlan {
     }
 
     var matchedIngredients: [RecipeTransferIngredientPlan] {
-        ingredients.filter { !$0.willBeCreated }
+        neededIngredients.filter { !$0.willBeCreated }
     }
 
     /// Matched ingredients whose stored chemistry differs from the sender's.
@@ -66,11 +102,21 @@ struct RecipeTransferPlan {
     /// used, and silently calculating a different lye weight than the sender saw
     /// is exactly the kind of surprise a caustic recipe must not spring.
     var conflictingIngredients: [RecipeTransferIngredientPlan] {
-        ingredients.filter(\.hasChemistryConflict)
+        neededIngredients.filter(\.hasChemistryConflict)
+    }
+
+    /// Collection names with no match here, among those the ticked recipes
+    /// name. Those recipes arrive unfiled — filing is a personal decision, and
+    /// an import must not litter a library with a stranger's folders.
+    var unmatchedCollectionNames: [String] {
+        let used = Set(selectedRecipes.flatMap { $0.recipe.collectionNames })
+        return allUnmatchedCollectionNames.filter(used.contains)
     }
 
     /// Whether there is anything worth importing. An empty payload decodes fine
-    /// and would otherwise present a review screen with nothing on it.
+    /// and would otherwise present a review screen with nothing on it. About the
+    /// file, not the selection: unticking everything is a state to show, not a
+    /// failure to read.
     var isEmpty: Bool { payload.recipes.isEmpty }
 
     init(
@@ -80,7 +126,15 @@ struct RecipeTransferPlan {
         recipes: [Recipe] = []
     ) {
         self.payload = payload
-        recipeSummaries = Self.summaries(for: payload, among: recipes)
+        libraryNameKeys = Set(recipes.map(\.name).map(\.lookupKey))
+        libraryRecipesByUUID = Dictionary(recipes.map { ($0.uuid, $0) }, uniquingKeysWith: { first, _ in first })
+        selectedRecipeIDs = Set(payload.recipes.indices)
+        recipeSummaries = Self.summaries(
+            for: payload,
+            selecting: selectedRecipeIDs,
+            libraryNameKeys: libraryNameKeys,
+            libraryRecipesByUUID: libraryRecipesByUUID
+        )
 
         let index = Self.index(of: inventory)
         let slugIndex = Self.slugIndex(of: inventory)
@@ -115,21 +169,27 @@ struct RecipeTransferPlan {
             }
         }
         matchedCollections = matched
-        unmatchedCollectionNames = unmatched
+        allUnmatchedCollectionNames = unmatched
     }
 
     private init(
         payload: RecipeTransferData,
         ingredients: [RecipeTransferIngredientPlan],
         matchedCollections: [String: RecipeCollection],
-        unmatchedCollectionNames: [String],
-        recipeSummaries: [RecipeTransferRecipeSummary]
+        allUnmatchedCollectionNames: [String],
+        recipeSummaries: [RecipeTransferRecipeSummary],
+        selectedRecipeIDs: Set<Int>,
+        libraryNameKeys: Set<String>,
+        libraryRecipesByUUID: [UUID: Recipe]
     ) {
         self.payload = payload
         self.ingredients = ingredients
         self.matchedCollections = matchedCollections
-        self.unmatchedCollectionNames = unmatchedCollectionNames
+        self.allUnmatchedCollectionNames = allUnmatchedCollectionNames
         self.recipeSummaries = recipeSummaries
+        self.selectedRecipeIDs = selectedRecipeIDs
+        self.libraryNameKeys = libraryNameKeys
+        self.libraryRecipesByUUID = libraryRecipesByUUID
     }
 
     /// This plan with one entry matched to an ingredient the user chose, so it
@@ -140,8 +200,35 @@ struct RecipeTransferPlan {
             payload: payload,
             ingredients: ingredients.map { $0.id == entryID ? $0.matched(to: ingredient) : $0 },
             matchedCollections: matchedCollections,
-            unmatchedCollectionNames: unmatchedCollectionNames,
-            recipeSummaries: recipeSummaries
+            allUnmatchedCollectionNames: allUnmatchedCollectionNames,
+            recipeSummaries: recipeSummaries,
+            selectedRecipeIDs: selectedRecipeIDs,
+            libraryNameKeys: libraryNameKeys,
+            libraryRecipesByUUID: libraryRecipesByUUID
+        )
+    }
+
+    /// This plan importing only the recipes with these ids. Ids the payload
+    /// doesn't have are ignored. Ingredients, and any matches the user made,
+    /// are carried over untouched; names and identities are worked out again
+    /// over the ticked recipes alone, since a recipe that isn't coming can't
+    /// have claimed a name or an identity first.
+    func selecting(_ ids: Set<Int>) -> RecipeTransferPlan {
+        let selected = ids.intersection(payload.recipes.indices)
+        return RecipeTransferPlan(
+            payload: payload,
+            ingredients: ingredients,
+            matchedCollections: matchedCollections,
+            allUnmatchedCollectionNames: allUnmatchedCollectionNames,
+            recipeSummaries: Self.summaries(
+                for: payload,
+                selecting: selected,
+                libraryNameKeys: libraryNameKeys,
+                libraryRecipesByUUID: libraryRecipesByUUID
+            ),
+            selectedRecipeIDs: selected,
+            libraryNameKeys: libraryNameKeys,
+            libraryRecipesByUUID: libraryRecipesByUUID
         )
     }
 
@@ -171,13 +258,19 @@ struct RecipeTransferPlan {
     /// holding two recipes called "Bar" produces "Bar" and "Bar (copy)" rather
     /// than the pair it started with. Deliberately not applied to an untitled
     /// recipe: " (copy)" reads as nothing at all.
+    ///
+    /// Only the selected recipes claim names and identities, in payload order:
+    /// with the first of two "Bar"s unticked, the second is the only one coming
+    /// and keeps its name. An unselected recipe is resolved as if it were the
+    /// next to arrive, claiming nothing, so its summary is never missing a name.
     private static func summaries(
         for payload: RecipeTransferData,
-        among recipes: [Recipe]
+        selecting selected: Set<Int>,
+        libraryNameKeys: Set<String>,
+        libraryRecipesByUUID byUUID: [UUID: Recipe]
     ) -> [RecipeTransferRecipeSummary] {
-        let byUUID = Dictionary(recipes.map { ($0.uuid, $0) }, uniquingKeysWith: { first, _ in first })
-        var taken = Set(recipes.map(\.name).map(\.lookupKey))
-        var claimed = Set(recipes.map(\.uuid))
+        var taken = libraryNameKeys
+        var claimed = Set(byUUID.keys)
         return payload.recipes.enumerated().map { offset, recipe in
             let incoming = recipe.name.trimmingCharacters(in: .whitespaces)
             let resolved: String
@@ -186,10 +279,11 @@ struct RecipeTransferPlan {
             } else {
                 resolved = RecipeDuplicator.copyName(of: incoming, taken: taken)
             }
-            if !resolved.isEmpty { taken.insert(resolved.lookupKey) }
-
             let identity = Self.identity(for: recipe, claimed: claimed)
-            claimed.insert(identity)
+            if selected.contains(offset) {
+                if !resolved.isEmpty { taken.insert(resolved.lookupKey) }
+                claimed.insert(identity)
+            }
             return RecipeTransferRecipeSummary(
                 id: offset,
                 recipe: recipe,
@@ -272,98 +366,5 @@ struct RecipeTransferPlan {
             }
         }
         return index
-    }
-}
-
-/// One incoming ingredient and what will become of it.
-@MainActor
-struct RecipeTransferIngredientPlan: Identifiable {
-    /// Position in the payload's ingredient pool.
-    ///
-    /// Identity by position rather than by name, because the pool is built by
-    /// model identity on the sending side: two rows sharing a name — a CloudKit
-    /// duplicate the sender hasn't merged yet — are two separate entries here,
-    /// and keying on the name would collapse them in every `ForEach`.
-    let id: Int
-
-    let incoming: RecipeTransferIngredient
-
-    /// The role its first line item uses it in, which decides the category a
-    /// created ingredient is filed under.
-    let role: RecipeIngredientRole
-
-    /// The inventory ingredient it matched, or `nil` when it will be created.
-    let existing: Ingredient?
-
-    /// Whether `existing` was found by library slug rather than by name.
-    ///
-    /// Not on its own a reason to stay quiet about chemistry: the slug says both
-    /// rows came from one catalog entry, not that either still holds its values.
-    /// See `hasChemistryConflict`.
-    let matchedBySlug: Bool
-
-    /// The slug a newly created row should take: the incoming one, but only when
-    /// this build's catalog actually ships that entry.
-    ///
-    /// An unknown slug — a sender on a newer catalog — is deliberately dropped. Were
-    /// it adopted, the installer would count the entry as present once the update
-    /// shipped and skip it, leaving the sender's unverified chemistry wearing the
-    /// "from the built-in library" badge for good. Left blank, the row is instead
-    /// adopted by name or alias on the next launch, keeping the user's recipes
-    /// pointing at it while flagging any chemistry that differs as custom.
-    var adoptableSlug: String? {
-        guard let slug = incoming.librarySlug, !slug.isEmpty else { return nil }
-        return IngredientLibrary.bundledName(for: slug) == nil ? nil : slug
-    }
-
-    var name: String { incoming.name }
-
-    var willBeCreated: Bool { existing == nil }
-
-    /// Whether creating it would use one of the free tier's custom slots.
-    var countsAsCustomIngredient: Bool {
-        FreeTierLimits.isCustomIngredient(librarySlug: adoptableSlug ?? "", name: incoming.name)
-    }
-
-    /// This entry matched to an ingredient the user picked. Not a slug match,
-    /// so a pick whose chemistry differs from the sender's is reported.
-    func matched(to ingredient: Ingredient) -> RecipeTransferIngredientPlan {
-        RecipeTransferIngredientPlan(
-            id: id,
-            incoming: incoming,
-            role: role,
-            existing: ingredient,
-            matchedBySlug: false
-        )
-    }
-
-    /// The category a created ingredient is filed under, by name.
-    var suggestedCategoryName: String {
-        switch role {
-        case .oil: IngredientCategory.Name.oils
-        case .fragrance: IngredientCategory.Name.fragrances
-        case .additive: IngredientCategory.Name.additives
-        }
-    }
-
-    /// Whether the recipient already has this ingredient with different
-    /// chemistry from the sender's.
-    ///
-    /// Compared only on the values that change a calculation. A different
-    /// fatty-acid profile moves the soap-property stats but not the lye weight,
-    /// and is included for the same reason: the recipe will not read the way it
-    /// read on the sender's device, and the user should hear that from the app
-    /// rather than notice it later.
-    var hasChemistryConflict: Bool {
-        guard let existing else { return false }
-        // Silence needs both sides holding the catalog's own values. A slug match
-        // against a row the user has customised is exactly when the warning is
-        // wanted: their values are the ones the recipe will be calculated from,
-        // and the sender never saw them.
-        if matchedBySlug, existing.isPristineLibraryRow { return false }
-        return existing.sapValue != incoming.sapValue
-            || existing.kohSapValue != incoming.kohSapValue
-            || existing.density != incoming.density
-            || existing.fattyAcidProfile != incoming.fattyAcidProfile
     }
 }
