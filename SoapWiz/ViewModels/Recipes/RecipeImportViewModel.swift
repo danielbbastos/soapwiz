@@ -53,6 +53,12 @@ final class RecipeImportViewModel {
     @ObservationIgnored
     private var manualMatches: [Int: ManualMatch] = [:]
 
+    /// The recipes the user has ticked, or `nil` while every recipe still is.
+    /// Remembered for the same reason as `manualMatches`: a rebuilt plan starts
+    /// with everything ticked.
+    @ObservationIgnored
+    private var selectedRecipeIDs: Set<Int>?
+
     /// The collections the last read was given, for matching the names a
     /// SoapWiz copy files its recipe under.
     @ObservationIgnored
@@ -194,6 +200,7 @@ final class RecipeImportViewModel {
         }
         transferPlan = plan
         manualMatches = [:]
+        selectedRecipeIDs = nil
         phase = .exactReview
     }
 
@@ -306,6 +313,7 @@ final class RecipeImportViewModel {
         phase = .input
         transferPlan = nil
         manualMatches = [:]
+        selectedRecipeIDs = nil
     }
 
     /// Moves both review screens off rows the duplicate merge deleted. Each
@@ -330,9 +338,11 @@ final class RecipeImportViewModel {
             collections: collections,
             recipes: (try? context.fetch(FetchDescriptor<Recipe>())) ?? []
         )
+        if let selectedRecipeIDs { rebuilt = rebuilt.selecting(selectedRecipeIDs) }
         // The user's own matches are decisions the payload and the store can't
         // reproduce. Followed onto the survivor of a merge, and dropped when
-        // the ingredient has gone altogether.
+        // the ingredient has gone altogether — not when no ticked recipe uses
+        // it, so ticking that recipe again finds the match still there.
         for (entryID, match) in manualMatches {
             guard let entry = rebuilt.ingredients.first(where: { $0.id == entryID }), entry.willBeCreated,
                   let live = LiveIngredient.resolve(match.ingredient, slug: match.slug, in: context)
@@ -353,14 +363,23 @@ final class RecipeImportViewModel {
         transferPlan = plan.matching(entryID, to: ingredient)
     }
 
+    /// Ticks or unticks one recipe of the file, by its summary id.
+    func toggleRecipe(_ id: Int) {
+        guard let plan = transferPlan else { return }
+        var selected = plan.selectedRecipeIDs
+        if !selected.insert(id).inserted { selected.remove(id) }
+        selectedRecipeIDs = selected
+        transferPlan = plan.selecting(selected)
+    }
+
     /// Writes the reviewed payload into the library.
     ///
-    /// Returns the recipes created, or `nil` if nothing was written: the file
-    /// doesn't fit the free tier, or the save failed. The context is rolled
-    /// back on failure so a half-written import — recipes without their line
-    /// items, ingredients nothing references — never survives.
+    /// Returns the recipes created, or `nil` if nothing was written: nothing is
+    /// ticked, the ticked recipes don't fit the free tier, or the save failed.
+    /// The context is rolled back on failure so a half-written import — recipes
+    /// without their line items, ingredients nothing references — never survives.
     func confirmExactImport(context: ModelContext, categories: [IngredientCategory], gate: FreeTierGate) -> [Recipe]? {
-        guard let transferPlan else { return nil }
+        guard let transferPlan, transferPlan.hasSelection else { return nil }
         guard gate.importFit(for: transferPlan, in: context).fits else { return nil }
         let recipes = RecipeTransferImporter.apply(transferPlan, into: context, categories: categories)
         do {

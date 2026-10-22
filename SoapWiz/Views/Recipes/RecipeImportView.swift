@@ -61,12 +61,12 @@ struct RecipeImportView: View {
                             fit: confirmedFit ?? freeTier.gate.importFit(for: plan, in: modelContext),
                             onUpgrade: freeTier.presentUpgrade,
                             onUseExisting: model.useExisting,
-                            onConfirm: confirmExactImport,
-                            onCancel: { model.returnToInput() }
+                            onToggleRecipe: model.toggleRecipe,
+                            onConfirm: confirmExactImport
                         )
                     }
                 case .failed(let error):
-                    failureView(error)
+                    RecipeImportFailureView(error: error, onBack: { model.returnToInput() })
                 }
             }
             .navigationTitle("Import Recipe")
@@ -288,23 +288,6 @@ struct RecipeImportView: View {
             return "\(count) characters."
         }
         return "\(count) characters — that's more than fits in one go, so the recipe will be picked out of it."
-    }
-
-    // MARK: - Failure
-
-    private func failureView(_ error: RecipeImportError) -> some View {
-        VStack(spacing: 20) {
-            HoneyLedgerEmptyState(
-                LocalizedStringKey(error.errorDescription ?? "Import failed"),
-                systemImage: "text.badge.xmark",
-                description: LocalizedStringKey(error.recoverySuggestion ?? "")
-            )
-            .fixedSize(horizontal: false, vertical: true)
-            Button("Back to Text") { model.returnToInput() }
-                .fontWeight(.semibold)
-                .foregroundStyle(Color.amberText)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Actions

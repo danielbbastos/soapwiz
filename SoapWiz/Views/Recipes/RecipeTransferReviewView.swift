@@ -13,8 +13,8 @@ struct RecipeTransferReviewView: View {
     let fit: FreeTierImportFit
     var onUpgrade: (ProUpgradeReason) -> Void
     var onUseExisting: (Int, Ingredient) -> Void
+    var onToggleRecipe: (Int) -> Void
     var onConfirm: () -> Void
-    var onCancel: () -> Void
 
     @FreeTierGateEnvironment private var freeTier
     @State private var pickingEntry: RecipeTransferIngredientPlan?
@@ -34,9 +34,14 @@ struct RecipeTransferReviewView: View {
             if !plan.unmatchedCollectionNames.isEmpty {
                 collectionsSection
             }
-            confirmSection
         }
         .environment(\.defaultMinListRowHeight, 48)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button(confirmTitle) { onConfirm() }
+                    .disabled(!fit.fits || !plan.hasSelection)
+            }
+        }
         .sheet(item: $pickingEntry) { entry in
             IngredientPickerView(
                 config: .useExisting,
@@ -52,9 +57,11 @@ struct RecipeTransferReviewView: View {
 
     // MARK: - Free limit
 
-    /// Why the file can't be added as it is, and the way past it. All or
-    /// nothing: a file with some of its recipes would leave the rest pointing
-    /// at ingredients that were never made.
+    /// Why the ticked recipes can't be added as they are, and the way past it:
+    /// untick some, use ingredients already in the inventory, or upgrade. Judged
+    /// on the ticked recipes and what they bring, never the whole file, and
+    /// still all or nothing among those — a recipe added without its
+    /// ingredients would point at things that were never made.
     private var limitSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 8) {
@@ -71,9 +78,23 @@ struct RecipeTransferReviewView: View {
         } header: {
             HoneyLedgerSectionLabel("Over the Free Limit")
         } footer: {
-            if fit.exceedsCustomIngredients {
-                HoneyLedgerFooter("Use ingredients you already have in place of the new ones below, or upgrade to add them all.")
+            if let guidance = limitFooter {
+                HoneyLedgerFooter(guidance)
             }
+        }
+    }
+
+    private var limitFooter: String? {
+        switch (plan.isMultiRecipe, fit.exceedsCustomIngredients) {
+        case (true, true):
+            "Untick some recipes, use ingredients you already have in place of the new ones below, "
+                + "or upgrade to add them all."
+        case (true, false):
+            "Untick some recipes to fit, or upgrade to add them all."
+        case (false, true):
+            "Use ingredients you already have in place of the new ones below, or upgrade to add them all."
+        case (false, false):
+            nil
         }
     }
 
@@ -82,45 +103,63 @@ struct RecipeTransferReviewView: View {
     private var recipesSection: some View {
         Section {
             ForEach(Array(plan.recipeSummaries.enumerated()), id: \.element.id) { index, summary in
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(summary.displayName)
-                        .foregroundStyle(Color.ink)
-                    Text(summary.detail)
-                        .font(.footnote)
-                        .monospacedDigit()
-                        .foregroundStyle(Color.inkSoft)
-                    // Said here rather than in an alert. The rename is a fact
-                    // about one row, and a payload can hold fifteen — a prompt
-                    // for each would be a wall of taps between the user and an
-                    // import they already asked for.
-                    //
-                    // A recognised recipe is told about instead of the rename,
-                    // never as well: the rename is a consequence of already
-                    // having it, and saying both would read as two problems.
-                    // Secondary rather than orange, because nothing here needs
-                    // checking — the sender's copy and the user's own are both
-                    // kept, which is the least surprising outcome available
-                    // until a screen exists to offer the alternative.
-                    if summary.isKnownRecipe {
-                        Text(
-                            "This is a version of “\(summary.knownRecipeName)”, which you "
-                            + "already have. It will be added separately."
-                        )
-                        .font(.footnote)
-                        .foregroundStyle(Color.inkSoft)
-                    } else if summary.isRenamed {
-                        HoneyLedgerFieldNote(
-                            "You already have “\(summary.incomingName)”, so this one is renamed.",
-                            tint: .warning
-                        )
+                let position = LedgerSheetPosition.position(index: index, count: plan.recipeSummaries.count)
+                if plan.isMultiRecipe {
+                    let isSelected = plan.isSelected(summary.id)
+                    Button { onToggleRecipe(summary.id) } label: {
+                        HoneyLedgerPickerRow(state: isSelected ? .selected : .unselected) {
+                            recipeRow(summary, isSelected: isSelected)
+                        }
                     }
+                    .ledgerSheetRow(position: position)
+                    .accessibilityAddTraits(isSelected ? .isSelected : [])
+                } else {
+                    recipeRow(summary, isSelected: true)
+                        .ledgerSheetRow(position: position)
                 }
-                .padding(.vertical, 4)
-                .ledgerSheetRow(position: .position(index: index, count: plan.recipeSummaries.count))
             }
         } header: {
             HoneyLedgerSectionLabel("Recipes")
         }
+    }
+
+    /// An unticked recipe keeps its notes and only fades its name: dropping the
+    /// notes made the row change height the moment it was ticked.
+    private func recipeRow(_ summary: RecipeTransferRecipeSummary, isSelected: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(summary.displayName)
+                .foregroundStyle(isSelected ? Color.ink : Color.inkFaint)
+            Text(summary.detail)
+                .font(.footnote)
+                .monospacedDigit()
+                .foregroundStyle(Color.inkSoft)
+            // Said here rather than in an alert. The rename is a fact
+            // about one row, and a payload can hold fifteen — a prompt
+            // for each would be a wall of taps between the user and an
+            // import they already asked for.
+            //
+            // A recognised recipe is told about instead of the rename,
+            // never as well: the rename is a consequence of already
+            // having it, and saying both would read as two problems.
+            // Secondary rather than orange, because nothing here needs
+            // checking — the sender's copy and the user's own are both
+            // kept, which is the least surprising outcome available
+            // until a screen exists to offer the alternative.
+            if summary.isKnownRecipe {
+                Text(
+                    "This is a version of “\(summary.knownRecipeName)”, which you "
+                    + "already have. It will be added separately."
+                )
+                .font(.footnote)
+                .foregroundStyle(Color.inkSoft)
+            } else if summary.isRenamed {
+                HoneyLedgerFieldNote(
+                    "You already have “\(summary.incomingName)”, so this one is renamed.",
+                    tint: .warning
+                )
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     // MARK: - Ingredients
@@ -255,27 +294,12 @@ struct RecipeTransferReviewView: View {
 
     // MARK: - Confirm
 
-    private var confirmSection: some View {
-        Section {
-            HoneyLedgerActionRow(confirmTitle) { onConfirm() }
-                .disabled(!fit.fits)
-                .ledgerSheetRow(position: .first)
-            HoneyLedgerActionRow("Cancel", isPrimary: false) { onCancel() }
-                .ledgerSheetRow(position: .last)
-        } footer: {
-            if fit.fits {
-                HoneyLedgerFooter("Nothing is added until you tap \(confirmTitle).")
-            } else {
-                HoneyLedgerFooter(
-                    "\(confirmTitle) is off because this file is over the free limit, "
-                    + "and nothing is added until all of it fits."
-                )
-            }
-        }
-    }
-
     private var confirmTitle: String {
-        plan.recipeCount == 1 ? "Add Recipe" : "Add \(plan.recipeCount) Recipes"
+        switch plan.recipeCount {
+        case 0: "Add Recipes"
+        case 1: "Add Recipe"
+        default: "Add \(plan.recipeCount) Recipes"
+        }
     }
 
     // MARK: - Formatting

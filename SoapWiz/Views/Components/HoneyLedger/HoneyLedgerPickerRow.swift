@@ -10,35 +10,43 @@ enum HoneyLedgerPickerRowState {
     case added
 }
 
-/// The label of a picker row: the state at the leading edge, then the name. The
+/// The label of a picker row: the state at the leading edge, then the label,
+/// which is the name unless the caller supplies a richer view of its own. The
 /// caller keeps the `Button`, `.disabled` for an added row, and
 /// `.ledgerListDetailRow(isSelected:position:)`, so the row's action and its
 /// place in the sheet stay with the screen that owns them.
 ///
-/// At accessibility text sizes the name moves under the circle instead of
+/// At accessibility text sizes the label moves under the circle instead of
 /// breaking mid-word beside it.
-struct HoneyLedgerPickerRow: View {
+struct HoneyLedgerPickerRow<Label: View>: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    let name: String
     let state: HoneyLedgerPickerRowState
 
     /// Off for a picker that takes one row, where an empty circle would
     /// suggest several can be ticked.
     var showsMarker = true
 
+    private let label: Label
+
+    init(state: HoneyLedgerPickerRowState, showsMarker: Bool = true, @ViewBuilder label: () -> Label) {
+        self.state = state
+        self.showsMarker = showsMarker
+        self.label = label()
+    }
+
     var body: some View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 4) {
                     if showsMarker { circle }
-                    nameText
+                    label
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 HStack(spacing: 12) {
                     if showsMarker { circle }
-                    nameText
+                    label
                     Spacer()
                 }
             }
@@ -56,11 +64,6 @@ struct HoneyLedgerPickerRow: View {
             .accessibilityHidden(true)
     }
 
-    private var nameText: some View {
-        Text(name)
-            .foregroundStyle(state == .added ? Color.inkFaint : Color.ink)
-    }
-
     private var symbol: String {
         switch state {
         case .unselected: "circle"
@@ -74,6 +77,15 @@ struct HoneyLedgerPickerRow: View {
         case .unselected: Color.inkSoft
         case .selected: Color.amberText
         case .added: Color.inkFaint
+        }
+    }
+}
+
+extension HoneyLedgerPickerRow where Label == Text {
+    /// The common row: just a name, faint once it is already taken.
+    init(name: String, state: HoneyLedgerPickerRowState, showsMarker: Bool = true) {
+        self.init(state: state, showsMarker: showsMarker) {
+            Text(name).foregroundStyle(state == .added ? Color.inkFaint : Color.ink)
         }
     }
 }
