@@ -20,7 +20,7 @@ import Foundation
 /// count. When the character limit cuts the sample short, its last row may be
 /// cut mid-row and is left out, unless it is the only row there is. A file
 /// where none of them makes more than one cell is read with ",".
-enum CSVReader {
+nonisolated enum CSVReader {
     private static let candidates: [Character] = ["\t", ";", ","]
     private static let sampleRowCount = 20
     private static let sampleCharacterLimit = 65_536
@@ -105,7 +105,7 @@ enum CSVReader {
 
 /// How well a delimiter splits the sampled rows: how many rows share its most
 /// common cell count, and what that count is.
-private struct DelimiterScore {
+private nonisolated struct DelimiterScore {
     let delimiter: Character
     let rowCount: Int
     let cellCount: Int

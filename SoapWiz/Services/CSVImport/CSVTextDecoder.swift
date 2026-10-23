@@ -8,7 +8,7 @@ import Foundation
 /// on its own. Without one the file is read as UTF-8 when it is valid UTF-8,
 /// and as Windows-1252 otherwise: Windows-1252 accepts nearly any byte, so it
 /// can only be the fallback, never the first guess.
-enum CSVTextDecoder {
+nonisolated enum CSVTextDecoder {
     /// The text in `data` with any byte order mark removed, or nil when the
     /// data is empty or can't be read in any of the supported encodings.
     static func text(from data: Data) -> String? {
