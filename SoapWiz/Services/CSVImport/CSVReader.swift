@@ -40,7 +40,7 @@ enum CSVReader {
     private static func detectDelimiter(in characters: [Character]) -> Character {
         let sample = characters.prefix(sampleCharacterLimit)
         let isCutShort = characters.count > sampleCharacterLimit
-        var best: (delimiter: Character, rowCount: Int, cellCount: Int)?
+        var best: DelimiterScore?
         for delimiter in candidates {
             var sampled = split(sample, on: delimiter, limit: sampleRowCount)
             if isCutShort, sampled.count > 1, sampled.count < sampleRowCount {
@@ -49,8 +49,9 @@ enum CSVReader {
             let counts = sampled.map(\.count).filter { $0 > 1 }
             let frequencies = Dictionary(grouping: counts, by: \.self).mapValues(\.count)
             guard let modal = frequencies.max(by: { ($0.value, $0.key) < ($1.value, $1.key) }) else { continue }
-            if let current = best, (modal.value, modal.key) <= (current.rowCount, current.cellCount) { continue }
-            best = (delimiter, modal.value, modal.key)
+            let score = DelimiterScore(delimiter: delimiter, rowCount: modal.value, cellCount: modal.key)
+            if let current = best, !score.beats(current) { continue }
+            best = score
         }
         return best?.delimiter ?? ","
     }
@@ -99,5 +100,17 @@ enum CSVReader {
             rows.append(row)
         }
         return rows
+    }
+}
+
+/// How well a delimiter splits the sampled rows: how many rows share its most
+/// common cell count, and what that count is.
+private struct DelimiterScore {
+    let delimiter: Character
+    let rowCount: Int
+    let cellCount: Int
+
+    func beats(_ other: DelimiterScore) -> Bool {
+        (rowCount, cellCount) > (other.rowCount, other.cellCount)
     }
 }

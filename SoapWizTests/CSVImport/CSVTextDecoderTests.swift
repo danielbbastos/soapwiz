@@ -9,12 +9,12 @@ struct CSVTextDecoderTests {
     }
 
     @Test func text_PlainUTF8_Decodes() throws {
-        let data = try #require("Óleo de coco".data(using: .utf8))
+        let data = Data("Óleo de coco".utf8)
         #expect(CSVTextDecoder.text(from: data) == "Óleo de coco")
     }
 
     @Test func text_UTF8WithBOM_StripsBOM() throws {
-        let data = try Data([0xEF, 0xBB, 0xBF]) + #require("name,price".data(using: .utf8))
+        let data = Data([0xEF, 0xBB, 0xBF]) + Data("name,price".utf8)
         #expect(CSVTextDecoder.text(from: data) == "name,price")
     }
 

@@ -4,7 +4,7 @@ import Testing
 
 @Suite
 struct CSVUnitParserTests {
-    private let us = Locale(identifier: "en_US")
+    private let american = Locale(identifier: "en_US")
     private let german = Locale(identifier: "de_DE")
 
     @Test(arguments: [
@@ -39,22 +39,22 @@ struct CSVUnitParserTests {
     }
 
     @Test func quantities_NumberAndUnitWithSpace_Splits() {
-        let result = CSVUnitParser.quantities(in: ["500 g", "2 lbs"], locale: us)
+        let result = CSVUnitParser.quantities(in: ["500 g", "2 lbs"], locale: american)
         #expect(result == [CSVQuantity(amount: 500, unit: .grams), CSVQuantity(amount: 2, unit: .pounds)])
     }
 
     @Test func quantities_NumberAndUnitWithoutSpace_Splits() {
         #expect(CSVUnitParser.quantities(in: ["1,5kg"], locale: german) == [CSVQuantity(amount: 1.5, unit: .kilograms)])
-        #expect(CSVUnitParser.quantities(in: ["0.5L"], locale: us) == [CSVQuantity(amount: 0.5, unit: .liters)])
+        #expect(CSVUnitParser.quantities(in: ["0.5L"], locale: american) == [CSVQuantity(amount: 0.5, unit: .liters)])
     }
 
     @Test func quantities_NumberOnly_HasNoUnit() {
-        let result = CSVUnitParser.quantities(in: ["12", "  12  "], locale: us)
+        let result = CSVUnitParser.quantities(in: ["12", "  12  "], locale: american)
         #expect(result == [CSVQuantity(amount: 12, unit: nil), CSVQuantity(amount: 12, unit: nil)])
     }
 
     @Test func quantities_GroupedNumber_UsesTheLocale() {
-        #expect(CSVUnitParser.quantities(in: ["1,000 g"], locale: us) == [CSVQuantity(amount: 1000, unit: .grams)])
+        #expect(CSVUnitParser.quantities(in: ["1,000 g"], locale: american) == [CSVQuantity(amount: 1000, unit: .grams)])
         #expect(CSVUnitParser.quantities(in: ["1.000 g"], locale: german) == [CSVQuantity(amount: 1000, unit: .grams)])
     }
 
@@ -66,17 +66,17 @@ struct CSVUnitParserTests {
 
     @Test(arguments: [" ", "\u{00A0}", "\u{202F}"])
     func quantities_SpaceGroupedNumber_ReadsWholeNumber(space: String) {
-        let result = CSVUnitParser.quantities(in: ["1\(space)234 g", "1\(space)234,5 kg"], locale: us)
+        let result = CSVUnitParser.quantities(in: ["1\(space)234 g", "1\(space)234,5 kg"], locale: american)
         #expect(result == [CSVQuantity(amount: 1234, unit: .grams), CSVQuantity(amount: 1234.5, unit: .kilograms)])
     }
 
     @Test func quantities_SpaceGroupedAndCommaDecimalInOneColumn_ReadEach() {
-        let result = CSVUnitParser.quantities(in: ["1 234 g", "2,5 kg"], locale: us)
+        let result = CSVUnitParser.quantities(in: ["1 234 g", "2,5 kg"], locale: american)
         #expect(result == [CSVQuantity(amount: 1234, unit: .grams), CSVQuantity(amount: 2.5, unit: .kilograms)])
     }
 
     @Test func quantities_OnlyOneCellHasUnit_OthersHaveNone() {
-        let result = CSVUnitParser.quantities(in: ["500 g", "250", "1,5"], locale: us)
+        let result = CSVUnitParser.quantities(in: ["500 g", "250", "1,5"], locale: american)
         #expect(result == [
             CSVQuantity(amount: 500, unit: .grams),
             CSVQuantity(amount: 250, unit: nil),
@@ -85,17 +85,17 @@ struct CSVUnitParserTests {
     }
 
     @Test func quantities_TrailingPointOnUnit_IsTolerated() {
-        #expect(CSVUnitParser.quantities(in: ["500 g."], locale: us) == [CSVQuantity(amount: 500, unit: .grams)])
+        #expect(CSVUnitParser.quantities(in: ["500 g."], locale: american) == [CSVQuantity(amount: 500, unit: .grams)])
     }
 
     @Test func quantities_PreservesCountAndOrder() {
-        let result = CSVUnitParser.quantities(in: ["1 g", "x", "2 kg"], locale: us)
+        let result = CSVUnitParser.quantities(in: ["1 g", "x", "2 kg"], locale: american)
         #expect(result == [CSVQuantity(amount: 1, unit: .grams), nil, CSVQuantity(amount: 2, unit: .kilograms)])
-        #expect(CSVUnitParser.quantities(in: [], locale: us).isEmpty)
+        #expect(CSVUnitParser.quantities(in: [], locale: american).isEmpty)
     }
 
     @Test(arguments: ["", "   ", "abc", "g", "kg 5", "-5 g", "5 widgets", "5 fl oz", "5 g extra"])
     func quantities_UnreadableNumberOrUnknownUnit_ReturnsNil(text: String) {
-        #expect(CSVUnitParser.quantities(in: [text], locale: us) == [nil])
+        #expect(CSVUnitParser.quantities(in: [text], locale: american) == [nil])
     }
 }

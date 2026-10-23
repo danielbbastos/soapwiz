@@ -31,15 +31,18 @@ enum CSVDateParser {
             return trimmed.map { Int($0).flatMap { excelDate(serial: $0, calendar: calendar) } }
         }
 
-        let readings = trimmed.map(reading)
+        let readings = trimmed.map { reading(of: $0) }
         let isDayFirst = isDayFirst(in: readings, locale: locale)
         return readings.map { reading in
             switch reading {
             case .fixed(let year, let month, let day): date(year: year, month: month, day: day, calendar: calendar)
             case .numeric(let first, let second, let year):
-                isDayFirst
-                    ? date(year: year, month: second, day: first, calendar: calendar)
-                    : date(year: year, month: first, day: second, calendar: calendar)
+                date(
+                    year: year,
+                    month: isDayFirst ? second : first,
+                    day: isDayFirst ? first : second,
+                    calendar: calendar
+                )
             case .unreadable: nil
             }
         }
