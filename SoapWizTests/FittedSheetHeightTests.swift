@@ -24,7 +24,7 @@ struct FittedSheetHeightTests {
         (nil, 1180),
         (0, 1180),
         (400, 0),
-        (400, -100),
+        (400, -100)
     ] as [(CGFloat?, CGFloat)])
     func height_UnusableInput_ReturnsNil(content: CGFloat?, available: CGFloat) {
         #expect(FittedSheetHeight.height(content: content, available: available) == nil)
