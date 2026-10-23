@@ -45,10 +45,6 @@ struct RecipeTransferSelectionTests {
         )
     }
 
-    private func entryID(named name: String, in plan: RecipeTransferPlan) throws -> Int {
-        try #require(plan.ingredients.first { $0.name == name }).id
-    }
-
     // MARK: - Default
 
     @Test func plan_Default_SelectsEveryRecipe() {
@@ -93,7 +89,6 @@ struct RecipeTransferSelectionTests {
         ]).selecting([1])
 
         #expect(plan.ingredientsToCreate.map(\.name) == ["Oil B"])
-        #expect(plan.customIngredientsToCreate.map(\.name) == ["Oil B"])
         #expect(plan.ingredients.count == 2)
     }
 
@@ -116,23 +111,8 @@ struct RecipeTransferSelectionTests {
 
         #expect(plan.conflictingIngredients.map(\.name) == ["Olive Oil"])
         #expect(plan.selecting([1]).conflictingIngredients.isEmpty)
-        #expect(plan.selecting([1]).matchedIngredients.isEmpty)
-        #expect(plan.selecting([0]).matchedIngredients.map(\.name) == ["Olive Oil"])
-    }
-
-    @Test func selecting_ManualMatch_SurvivesUntickingAndTickingAgain() throws {
-        let mine = destination.oil("Mine")
-        let plan = plan([
-            recipe("A", oils: [fixture.oil("Moon Oil")]),
-            recipe("B", oils: [fixture.oil("Star Oil")])
-        ])
-        let moon = try entryID(named: "Moon Oil", in: plan)
-
-        let matched = plan.matching(moon, to: mine)
-        let restored = matched.selecting([1]).selecting([0, 1])
-
-        #expect(matched.selecting([1]).matchedIngredients.isEmpty)
-        #expect(restored.matchedIngredients.compactMap(\.existing) == [mine])
+        #expect(plan.selecting([1]).ingredientsToCreate.map(\.name) == ["Other Oil"])
+        #expect(plan.selecting([0]).ingredientsToCreate.isEmpty)
     }
 
     // MARK: - Collections
@@ -164,7 +144,7 @@ struct RecipeTransferSelectionTests {
 
         let second = try #require(narrowed.selectedRecipes.first)
         #expect(second.resolvedName == "Bar")
-        #expect(narrowed.renamedRecipes.isEmpty)
+        #expect(narrowed.selectedRecipes.filter(\.isRenamed).isEmpty)
     }
 
     @Test func selecting_BothSameNamedRecipesTicked_StillToldApart() {
@@ -215,7 +195,7 @@ struct RecipeTransferSelectionTests {
         #expect(!plan.isSelected(unticked.id))
         #expect(unticked.isRenamed)
         #expect(unticked.resolvedName == "Bar (copy)")
-        #expect(plan.renamedRecipes.isEmpty)
+        #expect(plan.selectedRecipes.filter(\.isRenamed).isEmpty)
     }
 
     @Test func selecting_UntickedRecipeTheLibraryKnows_StillReportsKnown() throws {
@@ -226,7 +206,7 @@ struct RecipeTransferSelectionTests {
             .selecting([1])
 
         #expect(try #require(plan.recipeSummaries.first).isKnownRecipe)
-        #expect(plan.knownRecipes.isEmpty)
+        #expect(plan.selectedRecipes.filter(\.isKnownRecipe).isEmpty)
     }
 
     // MARK: - Empty selection
@@ -325,7 +305,7 @@ struct RecipeTransferSelectionTests {
 
         #expect(FreeTierLimits.recipeCap >= 2)
         #expect(fit.incomingRecipes == 2)
-        #expect(fit.incomingCustomIngredients == 2)
+        #expect(plan.ingredientsToCreate.count == 2)
         #expect(fit.fits)
     }
 
@@ -346,18 +326,26 @@ struct RecipeTransferSelectionTests {
         #expect(free.importFit(for: tenRecipePlan(), in: destination.context).exceedsRecipes)
     }
 
-    @Test func importFit_CustomIngredientCount_FollowsTheSelection() {
+    @Test func importFit_IngredientsToCreate_FollowTheSelection() {
         let shared = fixture.oil("Shared Oil")
         let plan = plan([
             recipe("A", oils: [shared, fixture.oil("Only A")]),
             recipe("B", oils: [shared]),
             recipe("C", oils: [fixture.oil("Only C")])
         ])
+
+        #expect(plan.ingredientsToCreate.count == 3)
+        #expect(plan.selecting([1]).ingredientsToCreate.count == 1)
+        #expect(plan.selecting([0, 1]).ingredientsToCreate.count == 2)
+    }
+
+    @Test func importFit_ManyNewIngredientsWithinTheRecipeCap_Fits() {
+        let oils = (0..<(FreeTierLimits.recipeCap + 3)).map { fixture.oil("Custom Oil \($0)") }
+        let plan = plan([recipe("A", oils: oils)])
         let free = FreeTierGate(isPro: false)
 
-        #expect(free.importFit(for: plan, in: destination.context).incomingCustomIngredients == 3)
-        #expect(free.importFit(for: plan.selecting([1]), in: destination.context).incomingCustomIngredients == 1)
-        #expect(free.importFit(for: plan.selecting([0, 1]), in: destination.context).incomingCustomIngredients == 2)
+        #expect(plan.ingredientsToCreate.count == oils.count)
+        #expect(free.importFit(for: plan, in: destination.context).fits)
     }
 
 }

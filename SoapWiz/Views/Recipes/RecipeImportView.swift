@@ -60,7 +60,6 @@ struct RecipeImportView: View {
                             plan: plan,
                             fit: confirmedFit ?? freeTier.gate.importFit(for: plan, in: modelContext),
                             onUpgrade: freeTier.presentUpgrade,
-                            onUseExisting: model.useExisting,
                             onToggleRecipe: model.toggleRecipe,
                             onConfirm: confirmExactImport
                         )
@@ -295,7 +294,7 @@ struct RecipeImportView: View {
     /// Stays on the review when the free tier's recipes are used up, rather
     /// than closing it to a form that can't be saved.
     private func confirm(_ prepared: PreparedRecipeImport) {
-        freeTier.ifAllowed(.recipe, in: modelContext) {
+        freeTier.ifMayCreateRecipe(in: modelContext) {
             onConfirm?(prepared)
             dismiss()
         }

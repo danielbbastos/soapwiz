@@ -33,7 +33,7 @@ struct RecipeTransferSlugResolutionTests {
         let plan = RecipeTransferPlan(payload: built, inventory: inventory, collections: [])
 
         #expect(plan.ingredientsToCreate.isEmpty)
-        #expect(plan.matchedIngredients.count == 1)
+        #expect(plan.ingredients.compactMap(\.existing).count == 1)
     }
 
     /// Two devices holding the same catalog entry differ only by catalog version,
@@ -48,7 +48,7 @@ struct RecipeTransferSlugResolutionTests {
 
         let plan = RecipeTransferPlan(payload: built, inventory: inventory, collections: [])
 
-        #expect(plan.matchedIngredients.count == 1)
+        #expect(plan.ingredients.compactMap(\.existing).count == 1)
         #expect(plan.conflictingIngredients.isEmpty)
     }
 
@@ -72,7 +72,7 @@ struct RecipeTransferSlugResolutionTests {
 
         let plan = RecipeTransferPlan(payload: built, inventory: inventory, collections: [])
 
-        #expect(plan.matchedIngredients.count == 1)
+        #expect(plan.ingredients.compactMap(\.existing).count == 1)
         #expect(plan.conflictingIngredients.map(\.name) == ["Olive Oil"])
     }
 
@@ -101,7 +101,7 @@ struct RecipeTransferSlugResolutionTests {
 
         let plan = RecipeTransferPlan(payload: built, inventory: inventory, collections: [])
 
-        #expect(plan.matchedIngredients.count == 1)
+        #expect(plan.ingredients.compactMap(\.existing).count == 1)
     }
 
     /// Sender on a newer catalog. Nothing local carries the slug and the name misses

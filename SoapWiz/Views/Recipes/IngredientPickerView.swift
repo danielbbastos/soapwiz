@@ -23,11 +23,6 @@ struct IngredientPickerConfig {
         emptyTitle: "No fragrances",
         addedNote: "Fragrances already in this recipe are dimmed."
     )
-    static let useExisting = IngredientPickerConfig(
-        title: "Use Existing",
-        emptyTitle: "No ingredients",
-        addedNote: ""
-    )
     static let ingredients = IngredientPickerConfig(
         title: "Add Ingredients",
         emptyTitle: "No ingredients",
@@ -41,7 +36,6 @@ struct IngredientPickerView: View {
     @Query private var settingsRecords: [AppSettings]
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @FreeTierGateEnvironment private var freeTier
 
     let config: IngredientPickerConfig
     let addedIDs: Set<PersistentIdentifier>
@@ -55,9 +49,6 @@ struct IngredientPickerView: View {
     /// general ingredient that is neither oil, additive nor fragrance can still
     /// be chosen; soap pickers leave it off.
     var includesUnroled = false
-    /// Picks one ingredient from the existing ones: tapping a row selects it
-    /// and closes the picker, and there is no way to add a new one here.
-    var isSinglePick = false
     let onSelect: ([Ingredient]) -> Void
 
     @State private var searchText = ""
@@ -123,22 +114,20 @@ struct IngredientPickerView: View {
                     chipRow
                 }
                 List {
-                    if !isSinglePick {
-                        Section {
-                            Button {
-                                addNewIngredient()
-                            } label: {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "plus")
-                                    Text("Add new ingredient")
-                                }
-                                .fontWeight(.semibold)
-                                .foregroundStyle(Color.amberText)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .contentShape(.rect)
+                    Section {
+                        Button {
+                            showingNewIngredient = true
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "plus")
+                                Text("Add new ingredient")
                             }
-                            .ledgerSheetRow(position: .only)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(Color.amberText)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(.rect)
                         }
+                        .ledgerSheetRow(position: .only)
                     }
                     if rows.isEmpty {
                         Section {
@@ -193,25 +182,16 @@ struct IngredientPickerView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
-                if !isSinglePick {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button(Self.confirmTitle(count: pendingSelections.count)) {
-                            let selected = allIngredients.filter { pendingSelections.contains($0.persistentModelID) }
-                            onSelect(selected)
-                            dismiss()
-                        }
-                        .disabled(pendingSelections.isEmpty)
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(Self.confirmTitle(count: pendingSelections.count)) {
+                        let selected = allIngredients.filter { pendingSelections.contains($0.persistentModelID) }
+                        onSelect(selected)
+                        dismiss()
                     }
+                    .disabled(pendingSelections.isEmpty)
                 }
             }
         }
-        .proUpgradeHost()
-    }
-
-    /// Opens the new-ingredient form, or the upgrade sheet when the free
-    /// tier's custom ingredients are used up.
-    private func addNewIngredient() {
-        freeTier.ifAllowed(.customIngredient, in: modelContext) { showingNewIngredient = true }
     }
 
     private var chipRow: some View {
@@ -264,14 +244,9 @@ struct IngredientPickerView: View {
         let state: HoneyLedgerPickerRowState = isAdded ? .added : (isPending ? .selected : .unselected)
         return HStack(spacing: 0) {
             Button {
-                if isSinglePick {
-                    onSelect([ingredient])
-                    dismiss()
-                } else {
-                    pendingSelections.toggle(ingredient)
-                }
+                pendingSelections.toggle(ingredient)
             } label: {
-                HoneyLedgerPickerRow(name: ingredient.name, state: state, showsMarker: !isSinglePick)
+                HoneyLedgerPickerRow(name: ingredient.name, state: state)
             }
             .buttonStyle(.borderless)
             .disabled(isAdded)

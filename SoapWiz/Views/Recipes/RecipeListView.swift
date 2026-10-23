@@ -106,7 +106,7 @@ struct RecipeListView: View {
             Label("Collections…", systemImage: "square.stack")
         }
         Button {
-            freeTier.ifAllowed(.recipe, in: modelContext) {
+            freeTier.ifMayCreateRecipe(in: modelContext) {
                 model.duplicate(
                     recipe,
                     among: recipes,
@@ -149,7 +149,7 @@ struct RecipeListView: View {
     /// edit never does.
     private func openForm(_ request: RecipeFormRequest) {
         if request.createsRecipe {
-            freeTier.ifAllowed(.recipe, in: modelContext) { showForm(request) }
+            freeTier.ifMayCreateRecipe(in: modelContext) { showForm(request) }
         } else {
             showForm(request)
         }
@@ -167,7 +167,7 @@ struct RecipeListView: View {
     /// Opens the paste-and-import sheet, unless the free tier's recipes are
     /// used up and nothing could come of it.
     private func openImport() {
-        freeTier.ifAllowed(.recipe, in: modelContext) { importRequest = .manual }
+        freeTier.ifMayCreateRecipe(in: modelContext) { importRequest = .manual }
     }
 
     private func presentFormAfterImport() {

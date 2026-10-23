@@ -45,23 +45,6 @@ struct RecipeTransferIngredientPlan: Identifiable {
 
     var willBeCreated: Bool { existing == nil }
 
-    /// Whether creating it would use one of the free tier's custom slots.
-    var countsAsCustomIngredient: Bool {
-        FreeTierLimits.isCustomIngredient(librarySlug: adoptableSlug ?? "", name: incoming.name)
-    }
-
-    /// This entry matched to an ingredient the user picked. Not a slug match,
-    /// so a pick whose chemistry differs from the sender's is reported.
-    func matched(to ingredient: Ingredient) -> RecipeTransferIngredientPlan {
-        RecipeTransferIngredientPlan(
-            id: id,
-            incoming: incoming,
-            role: role,
-            existing: ingredient,
-            matchedBySlug: false
-        )
-    }
-
     /// The category a created ingredient is filed under, by name.
     var suggestedCategoryName: String {
         switch role {

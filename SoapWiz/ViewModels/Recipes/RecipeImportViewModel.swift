@@ -1,14 +1,6 @@
 import Foundation
 import SwiftData
 
-/// An ingredient the user chose in place of one the file would create, and
-/// the slug it carried when chosen: a merge can delete the row, and a deleted
-/// row can't be asked.
-private struct ManualMatch {
-    let ingredient: Ingredient
-    let slug: String
-}
-
 enum RecipeImportPhase: Equatable {
     case input
     case extracting
@@ -48,14 +40,9 @@ final class RecipeImportViewModel {
     /// What an exact payload would do, once one has been read.
     private(set) var transferPlan: RecipeTransferPlan?
 
-    /// The user's choices by plan entry, so a plan rebuilt after a merge keeps
-    /// them.
-    @ObservationIgnored
-    private var manualMatches: [Int: ManualMatch] = [:]
-
     /// The recipes the user has ticked, or `nil` while every recipe still is.
-    /// Remembered for the same reason as `manualMatches`: a rebuilt plan starts
-    /// with everything ticked.
+    /// Remembered so a plan rebuilt after a merge keeps them: a rebuilt plan
+    /// starts with everything ticked.
     @ObservationIgnored
     private var selectedRecipeIDs: Set<Int>?
 
@@ -199,7 +186,6 @@ final class RecipeImportViewModel {
             return
         }
         transferPlan = plan
-        manualMatches = [:]
         selectedRecipeIDs = nil
         phase = .exactReview
     }
@@ -312,7 +298,6 @@ final class RecipeImportViewModel {
     func returnToInput() {
         phase = .input
         transferPlan = nil
-        manualMatches = [:]
         selectedRecipeIDs = nil
     }
 
@@ -332,35 +317,13 @@ final class RecipeImportViewModel {
             : []
         knownCollections = collections
         guard let plan = transferPlan else { return }
-        var rebuilt = RecipeTransferPlan(
+        let rebuilt = RecipeTransferPlan(
             payload: plan.payload,
             inventory: (try? context.fetch(FetchDescriptor<Ingredient>())) ?? [],
             collections: collections,
             recipes: (try? context.fetch(FetchDescriptor<Recipe>())) ?? []
         )
-        if let selectedRecipeIDs { rebuilt = rebuilt.selecting(selectedRecipeIDs) }
-        // The user's own matches are decisions the payload and the store can't
-        // reproduce. Followed onto the survivor of a merge, and dropped when
-        // the ingredient has gone altogether — not when no ticked recipe uses
-        // it, so ticking that recipe again finds the match still there.
-        for (entryID, match) in manualMatches {
-            guard let entry = rebuilt.ingredients.first(where: { $0.id == entryID }), entry.willBeCreated,
-                  let live = LiveIngredient.resolve(match.ingredient, slug: match.slug, in: context)
-            else {
-                manualMatches[entryID] = nil
-                continue
-            }
-            rebuilt = rebuilt.matching(entryID, to: live)
-        }
-        transferPlan = rebuilt
-    }
-
-    /// Matches an ingredient the file would create to one the user already has,
-    /// so it takes no custom slot. Remembered so a rebuilt plan keeps it.
-    func useExisting(_ entryID: Int, _ ingredient: Ingredient) {
-        guard let plan = transferPlan else { return }
-        manualMatches[entryID] = ManualMatch(ingredient: ingredient, slug: ingredient.librarySlug)
-        transferPlan = plan.matching(entryID, to: ingredient)
+        transferPlan = selectedRecipeIDs.map(rebuilt.selecting) ?? rebuilt
     }
 
     /// Ticks or unticks one recipe of the file, by its summary id.

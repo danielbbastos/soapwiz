@@ -9,7 +9,7 @@ struct ProThankYouView: View {
     private static let readyRow = ProBenefit(
         symbol: "checkmark",
         title: "Ready now",
-        detail: "Unlimited recipes and custom ingredients, collections and reminders.",
+        detail: "Unlimited recipes, collections and reminders.",
         tint: .success
     )
 

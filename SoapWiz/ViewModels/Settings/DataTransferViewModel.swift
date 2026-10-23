@@ -40,8 +40,8 @@ final class DataTransferViewModel {
             + "Leaving photos out makes a much smaller file, but importing it brings "
             + "everything back without them. "
             + "Importing a file replaces everything currently in the app. "
-            + "The free version restores backups of up to \(FreeTierLimits.recipeCap) recipes "
-            + "and \(FreeTierLimits.customIngredientCap) custom ingredients; Pro restores any size."
+            + "The free version restores backups of up to \(FreeTierLimits.recipeCap) recipes; "
+            + "Pro restores any size."
             + lastExportedLine
     }
 

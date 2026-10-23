@@ -4,9 +4,7 @@ import Observation
 /// Why the upgrade sheet was opened, shown as a line above the benefits.
 enum ProUpgradeReason: Hashable {
     case recipeLimit
-    case customIngredientLimit
     case recipeImportLimit
-    case customIngredientImportLimit
     case backupLimit
     case sync
     case collections
@@ -16,16 +14,10 @@ enum ProUpgradeReason: Hashable {
         switch self {
         case .recipeLimit:
             "You’ve reached the free version’s limit of \(FreeTierLimits.recipeCap) recipes. Pro removes the limit."
-        case .customIngredientLimit:
-            "You’ve reached the free version’s limit of \(FreeTierLimits.customIngredientCap) custom ingredients. Pro removes the limit."
         case .recipeImportLimit:
             "Importing this file would take you past the free version’s \(FreeTierLimits.recipeCap) recipes. Pro removes the limit."
-        case .customIngredientImportLimit:
-            "Importing this file would take you past the free version’s "
-                + "\(FreeTierLimits.customIngredientCap) custom ingredients. Pro removes the limit."
         case .backupLimit:
-            "This backup has more than the free version’s \(FreeTierLimits.recipeCap) recipes or "
-                + "\(FreeTierLimits.customIngredientCap) custom ingredients. Pro restores all of it."
+            "This backup has more than the free version’s \(FreeTierLimits.recipeCap) recipes. Pro restores all of it."
         case .sync:
             "iCloud sync is part of SoapWiz Pro."
         case .collections:

@@ -12,12 +12,10 @@ struct RecipeTransferReviewView: View {
     let plan: RecipeTransferPlan
     let fit: FreeTierImportFit
     var onUpgrade: (ProUpgradeReason) -> Void
-    var onUseExisting: (Int, Ingredient) -> Void
     var onToggleRecipe: (Int) -> Void
     var onConfirm: () -> Void
 
     @FreeTierGateEnvironment private var freeTier
-    @State private var pickingEntry: RecipeTransferIngredientPlan?
 
     var body: some View {
         Form {
@@ -42,37 +40,22 @@ struct RecipeTransferReviewView: View {
                     .disabled(!fit.fits || !plan.hasSelection)
             }
         }
-        .sheet(item: $pickingEntry) { entry in
-            IngredientPickerView(
-                config: .useExisting,
-                addedIDs: [],
-                allowedRoles: [entry.role],
-                isSinglePick: true
-            ) { picked in
-                guard let ingredient = picked.first else { return }
-                onUseExisting(entry.id, ingredient)
-            }
-        }
     }
 
     // MARK: - Free limit
 
     /// Why the ticked recipes can't be added as they are, and the way past it:
-    /// untick some, use ingredients already in the inventory, or upgrade. Judged
-    /// on the ticked recipes and what they bring, never the whole file, and
-    /// still all or nothing among those — a recipe added without its
-    /// ingredients would point at things that were never made.
+    /// untick some, or upgrade. Judged on the ticked recipes, never the whole
+    /// file, and still all or nothing among those.
     private var limitSection: some View {
         Section {
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(fit.explanations, id: \.self) { line in
-                    HoneyLedgerFieldNote(line, tint: .warning)
-                }
+            if let explanation = fit.explanation {
+                HoneyLedgerFieldNote(explanation, tint: .warning)
+                    .padding(.vertical, 4)
+                    .ledgerSheetRow(position: .first)
             }
-            .padding(.vertical, 4)
-            .ledgerSheetRow(position: .first)
             HoneyLedgerActionRow("Upgrade to SoapWiz Pro", systemImage: "sparkles") {
-                if let reason = fit.upgradeReason { onUpgrade(reason) }
+                onUpgrade(.recipeImportLimit)
             }
             .ledgerSheetRow(position: .last)
         } header: {
@@ -85,17 +68,7 @@ struct RecipeTransferReviewView: View {
     }
 
     private var limitFooter: String? {
-        switch (plan.isMultiRecipe, fit.exceedsCustomIngredients) {
-        case (true, true):
-            "Untick some recipes, use ingredients you already have in place of the new ones below, "
-                + "or upgrade to add them all."
-        case (true, false):
-            "Untick some recipes to fit, or upgrade to add them all."
-        case (false, true):
-            "Use ingredients you already have in place of the new ones below, or upgrade to add them all."
-        case (false, false):
-            nil
-        }
+        plan.isMultiRecipe ? "Untick some recipes to fit, or upgrade to add them all." : nil
     }
 
     // MARK: - Recipes
@@ -174,16 +147,8 @@ struct RecipeTransferReviewView: View {
     private var newIngredientsSection: some View {
         Section {
             ForEach(Array(plan.ingredientsToCreate.enumerated()), id: \.element.id) { index, entry in
-                HStack(spacing: 12) {
-                    ingredientRow(entry.name, detail: chemistryText(entry.incoming))
-                    if fit.exceedsCustomIngredients, entry.countsAsCustomIngredient {
-                        Spacer(minLength: 0)
-                        Button("Use Existing…") { pickingEntry = entry }
-                            .buttonStyle(.borderless)
-                            .foregroundStyle(Color.amberText)
-                    }
-                }
-                .ledgerSheetRow(position: .position(index: index, count: plan.ingredientsToCreate.count))
+                ingredientRow(entry.name, detail: chemistryText(entry.incoming))
+                    .ledgerSheetRow(position: .position(index: index, count: plan.ingredientsToCreate.count))
             }
         } header: {
             HoneyLedgerSectionLabel("Will Be Added to Your Inventory")

@@ -1,19 +1,6 @@
 import SwiftUI
 import SwiftData
 
-/// What a view creates that the free tier counts.
-enum FreeTierSlot {
-    case recipe
-    case customIngredient
-
-    var limitReason: ProUpgradeReason {
-        switch self {
-        case .recipe: .recipeLimit
-        case .customIngredient: .customIngredientLimit
-        }
-    }
-}
-
 extension ProFeature {
     var upgradeReason: ProUpgradeReason {
         switch self {
@@ -31,17 +18,13 @@ struct FreeTierAccess {
     let gate: FreeTierGate
     let presenter: ProUpgradePresenter?
 
-    /// Runs `action` when a slot is free, otherwise opens the upgrade sheet
-    /// with the limit that was hit.
-    func ifAllowed(_ slot: FreeTierSlot, in context: ModelContext, perform action: () -> Void) {
-        let allowed = switch slot {
-        case .recipe: gate.canCreateRecipe(in: context)
-        case .customIngredient: gate.canCreateCustomIngredient(in: context)
-        }
-        if allowed {
+    /// Runs `action` when a recipe slot is free, otherwise opens the upgrade
+    /// sheet naming the recipe limit.
+    func ifMayCreateRecipe(in context: ModelContext, perform action: () -> Void) {
+        if gate.canCreateRecipe(in: context) {
             action()
         } else {
-            presentUpgrade(for: slot.limitReason)
+            presentUpgrade(for: .recipeLimit)
         }
     }
 

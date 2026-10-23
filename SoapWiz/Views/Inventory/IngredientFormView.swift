@@ -4,7 +4,6 @@ import SwiftData
 struct IngredientFormView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @FreeTierGateEnvironment private var freeTier
 
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
     @Query private var allIngredients: [Ingredient]
@@ -163,15 +162,10 @@ struct IngredientFormView: View {
                 }
             }
         }
-        .proUpgradeHost()
     }
 
-    /// Asks the free tier before anything else, so a blocked save neither
-    /// raises the custom-chemistry question nor writes.
     private func attemptSave() {
-        if let reason = model.limitReached(gate: freeTier.gate, in: modelContext) {
-            freeTier.presentUpgrade(for: reason)
-        } else if model.changesLibraryChemistry {
+        if model.changesLibraryChemistry {
             showingChemistryConfirmation = true
         } else {
             commit()

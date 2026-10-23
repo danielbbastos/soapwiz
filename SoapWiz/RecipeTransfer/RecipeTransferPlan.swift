@@ -58,20 +58,8 @@ struct RecipeTransferPlan {
 
     func isSelected(_ id: Int) -> Bool { selectedRecipeIDs.contains(id) }
 
-    /// Recipes arriving under a name the library already uses.
-    var renamedRecipes: [RecipeTransferRecipeSummary] {
-        selectedRecipes.filter(\.isRenamed)
-    }
-
-    /// Recipes the library has seen before, matched on the uuid the payload
-    /// carried rather than on what either side calls them now.
-    var knownRecipes: [RecipeTransferRecipeSummary] {
-        selectedRecipes.filter(\.isKnownRecipe)
-    }
-
-    /// The pooled ingredients the ticked recipes actually use. What an unticked
-    /// recipe alone uses is neither created nor counted: importing it would
-    /// otherwise cost a custom slot for something that never gets used.
+    /// The pooled ingredients the ticked recipes actually use. Only these are
+    /// created; what an unticked recipe alone uses is left out.
     var neededIngredientIDs: Set<Int> {
         Set(selectedRecipes.flatMap { $0.recipe.ingredients.map(\.ingredientIndex) })
     }
@@ -83,17 +71,6 @@ struct RecipeTransferPlan {
 
     var ingredientsToCreate: [RecipeTransferIngredientPlan] {
         neededIngredients.filter(\.willBeCreated)
-    }
-
-    /// The ingredients to create that count against the free tier's custom
-    /// limit. One the catalog ships under the name it arrives with is the
-    /// library's own and takes no slot.
-    var customIngredientsToCreate: [RecipeTransferIngredientPlan] {
-        ingredientsToCreate.filter(\.countsAsCustomIngredient)
-    }
-
-    var matchedIngredients: [RecipeTransferIngredientPlan] {
-        neededIngredients.filter { !$0.willBeCreated }
     }
 
     /// Matched ingredients whose stored chemistry differs from the sender's.
@@ -192,27 +169,11 @@ struct RecipeTransferPlan {
         self.libraryRecipesByUUID = libraryRecipesByUUID
     }
 
-    /// This plan with one entry matched to an ingredient the user chose, so it
-    /// is no longer created. Everything else is carried over untouched; the
-    /// entry's chemistry conflict is worked out again against the new match.
-    func matching(_ entryID: Int, to ingredient: Ingredient) -> RecipeTransferPlan {
-        RecipeTransferPlan(
-            payload: payload,
-            ingredients: ingredients.map { $0.id == entryID ? $0.matched(to: ingredient) : $0 },
-            matchedCollections: matchedCollections,
-            allUnmatchedCollectionNames: allUnmatchedCollectionNames,
-            recipeSummaries: recipeSummaries,
-            selectedRecipeIDs: selectedRecipeIDs,
-            libraryNameKeys: libraryNameKeys,
-            libraryRecipesByUUID: libraryRecipesByUUID
-        )
-    }
-
     /// This plan importing only the recipes with these ids. Ids the payload
-    /// doesn't have are ignored. Ingredients, and any matches the user made,
-    /// are carried over untouched; names and identities are worked out again
-    /// over the ticked recipes alone, since a recipe that isn't coming can't
-    /// have claimed a name or an identity first.
+    /// doesn't have are ignored. Ingredients are carried over untouched; names
+    /// and identities are worked out again over the ticked recipes alone, since
+    /// a recipe that isn't coming can't have claimed a name or an identity
+    /// first.
     func selecting(_ ids: Set<Int>) -> RecipeTransferPlan {
         let selected = ids.intersection(payload.recipes.indices)
         return RecipeTransferPlan(

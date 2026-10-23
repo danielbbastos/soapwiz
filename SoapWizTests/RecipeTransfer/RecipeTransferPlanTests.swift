@@ -28,7 +28,7 @@ struct RecipeTransferPlanTests {
 
         #expect(plan.recipeCount == 1)
         #expect(plan.ingredientsToCreate.count == 5)
-        #expect(plan.matchedIngredients.isEmpty)
+        #expect(plan.ingredients.compactMap(\.existing).isEmpty)
         #expect(plan.conflictingIngredients.isEmpty)
     }
 
@@ -40,7 +40,7 @@ struct RecipeTransferPlanTests {
         let plan = RecipeTransferPlan(payload: fixture.payload([recipe]), inventory: inventory, collections: [])
 
         #expect(plan.ingredientsToCreate.isEmpty)
-        #expect(plan.matchedIngredients.count == 1)
+        #expect(plan.ingredients.compactMap(\.existing).count == 1)
     }
 
     @Test func plan_MatchedIngredientWithSameChemistry_ReportsNoConflict() throws {
@@ -130,7 +130,7 @@ struct RecipeTransferPlanTests {
         )
 
         #expect(plan.recipeSummaries.first?.resolvedName == "Brand New Bar")
-        #expect(plan.renamedRecipes.isEmpty)
+        #expect(plan.selectedRecipes.filter(\.isRenamed).isEmpty)
     }
 
     /// Two identical rows in the list is the outcome worth avoiding: the user
@@ -147,7 +147,7 @@ struct RecipeTransferPlanTests {
         )
 
         #expect(plan.recipeSummaries.first?.resolvedName == "Lavender Bar (copy)")
-        #expect(plan.renamedRecipes.count == 1)
+        #expect(plan.selectedRecipes.filter(\.isRenamed).count == 1)
         #expect(plan.recipeSummaries.first?.incomingName == "Lavender Bar")
     }
 
@@ -212,7 +212,7 @@ struct RecipeTransferPlanTests {
 
         #expect(plan.recipeSummaries.allSatisfy { $0.resolvedName.isEmpty })
         #expect(plan.recipeSummaries.allSatisfy { $0.displayName == "Untitled Recipe" })
-        #expect(plan.renamedRecipes.isEmpty)
+        #expect(plan.selectedRecipes.filter(\.isRenamed).isEmpty)
     }
 
     // MARK: - Recognising a recipe by its uuid
@@ -235,7 +235,7 @@ struct RecipeTransferPlanTests {
         let summary = try #require(plan.recipeSummaries.first)
         #expect(summary.isKnownRecipe)
         #expect(summary.knownRecipe === mine)
-        #expect(plan.knownRecipes.count == 1)
+        #expect(plan.selectedRecipes.filter(\.isKnownRecipe).count == 1)
     }
 
     /// The name the user will recognise is the one on their own copy, not the
@@ -291,7 +291,7 @@ struct RecipeTransferPlanTests {
         )
 
         #expect(!(try #require(plan.recipeSummaries.first).isKnownRecipe))
-        #expect(plan.knownRecipes.isEmpty)
+        #expect(plan.selectedRecipes.filter(\.isKnownRecipe).isEmpty)
     }
 
     /// A version-1 file, written before the field existed, carries no identity.
@@ -306,7 +306,7 @@ struct RecipeTransferPlanTests {
         let summary = try #require(plan.recipeSummaries.first)
         #expect(!summary.isKnownRecipe)
         #expect(summary.resolvedName == "Lavender Bar (copy)")
-        #expect(plan.renamedRecipes.count == 1)
+        #expect(plan.selectedRecipes.filter(\.isRenamed).count == 1)
     }
 
     @Test func plan_PayloadWithoutAUUIDAndNoNameCollision_IsKeptAsItIs() throws {
@@ -316,7 +316,7 @@ struct RecipeTransferPlanTests {
         let plan = RecipeTransferPlan(payload: payload, inventory: [], collections: [], recipes: [])
 
         #expect(plan.recipeSummaries.first?.resolvedName == "Brand New Bar")
-        #expect(plan.renamedRecipes.isEmpty)
+        #expect(plan.selectedRecipes.filter(\.isRenamed).isEmpty)
     }
 
     // MARK: - Identity

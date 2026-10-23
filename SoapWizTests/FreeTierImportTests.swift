@@ -42,7 +42,6 @@ struct FreeTierImportTests {
 
         #expect(fit.fits)
         #expect(fit.incomingRecipes == 1)
-        #expect(fit.incomingCustomIngredients == 1)
     }
 
     @Test func importFit_TooManyRecipes_ExceedsRecipes() throws {
@@ -53,59 +52,28 @@ struct FreeTierImportTests {
         let fit = free.importFit(for: plan, in: destination.context)
 
         #expect(fit.exceedsRecipes)
-        #expect(!fit.exceedsCustomIngredients)
         #expect(fit.existingRecipes == 1)
     }
 
-    @Test func importFit_TooManyCustomIngredients_ExceedsIngredients() throws {
+    @Test func importFit_ManyNewCustomIngredientsWithinRecipeCap_Fits() throws {
         let plan = try plan(from: [source.populatedRecipe()])
 
         let fit = free.importFit(for: plan, in: destination.context)
 
-        #expect(fit.exceedsCustomIngredients)
-        #expect(!fit.exceedsRecipes)
-        #expect(fit.incomingCustomIngredients == 5)
-    }
-
-    @Test func importFit_AdoptableLibraryEntryUnderCatalogName_IsNotCounted() throws {
-        let entry = try #require(IngredientLibrary.bundled.entries.first)
-        let recipe = source.recipe(named: "Library")
-        source.addOil(source.oil(entry.name, slug: entry.slug), percentage: 100, to: recipe)
-        var payload = source.payload([recipe])
-        payload.ingredients[0].librarySlug = entry.slug
-        let plan = RecipeTransferPlan(payload: payload, inventory: [], collections: [])
-
-        let fit = free.importFit(for: plan, in: destination.context)
-
-        #expect(plan.ingredientsToCreate.count == 1)
-        #expect(fit.incomingCustomIngredients == 0)
-    }
-
-    @Test func importFit_MixOfLibraryAndCustom_CountsOnlyCustom() throws {
-        let entry = try #require(IngredientLibrary.bundled.entries.first)
-        let recipe = source.recipe(named: "Mixed")
-        source.addOil(source.oil(entry.name, slug: entry.slug), percentage: 50, to: recipe)
-        source.addOil(source.oil("Moon Oil"), percentage: 30, to: recipe)
-        source.addOil(source.oil("Star Oil"), percentage: 20, to: recipe)
-        var payload = source.payload([recipe])
-        payload.ingredients[0].librarySlug = entry.slug
-        let plan = RecipeTransferPlan(payload: payload, inventory: [], collections: [])
-
-        let fit = free.importFit(for: plan, in: destination.context)
-
-        #expect(plan.ingredientsToCreate.count == 3)
-        #expect(fit.incomingCustomIngredients == 2)
+        #expect(plan.ingredientsToCreate.count > FreeTierLimits.recipeCap)
         #expect(fit.fits)
+        #expect(!fit.exceedsRecipes)
+        #expect(fit.explanation == nil)
     }
 
-    @Test func importFit_MatchedIngredients_AreNotCounted() throws {
-        _ = destination.oil("Moon Oil")
+    @Test func importFit_ManyNewCustomIngredientsIntoStoreWithCustomIngredients_Fits() throws {
+        for index in 0..<5 {
+            _ = destination.oil("Mine \(index)")
+        }
         try destination.context.save()
-        let plan = try plan(from: [oilRecipe(named: "One", oil: "Moon Oil")])
+        let plan = try plan(from: [source.populatedRecipe()])
 
-        let fit = free.importFit(for: plan, in: destination.context)
-
-        #expect(fit.incomingCustomIngredients == 0)
+        #expect(free.importFit(for: plan, in: destination.context).fits)
     }
 
     @Test func importFit_Pro_FitsAnything() throws {
@@ -123,69 +91,24 @@ struct FreeTierImportTests {
 
     // MARK: Matching
 
-    @Test func matching_CreatedEntry_MovesToMatched() throws {
-        let existing = destination.oil("My Olive")
-        let plan = try plan(from: [oilRecipe(named: "One", oil: "Moon Oil")])
-        let entry = try #require(plan.ingredientsToCreate.first)
+    @Test func plan_ExistingIngredientSameChemistry_ReportsNoConflict() throws {
+        _ = destination.oil("Moon Oil")
+        try destination.context.save()
 
-        let updated = plan.matching(entry.id, to: existing)
-
-        #expect(updated.ingredientsToCreate.isEmpty)
-        #expect(updated.matchedIngredients.map(\.name) == ["Moon Oil"])
-        #expect(updated.matchedIngredients.first?.existing === existing)
-    }
-
-    @Test func matching_FreesTheCustomSlot() throws {
-        let existing = destination.oil("My Olive")
-        let plan = try plan(from: [source.populatedRecipe()])
-        let entry = try #require(plan.customIngredientsToCreate.first)
-
-        let updated = plan.matching(entry.id, to: existing)
-
-        #expect(updated.customIngredientsToCreate.count == plan.customIngredientsToCreate.count - 1)
-    }
-
-    @Test func matching_DifferentChemistry_ReportsAConflict() throws {
-        let existing = destination.oil("My Olive", sap: 0.5)
-        let plan = try plan(from: [oilRecipe(named: "One", oil: "Moon Oil")])
-        let entry = try #require(plan.ingredientsToCreate.first)
-
-        let updated = plan.matching(entry.id, to: existing)
-
-        #expect(updated.conflictingIngredients.map(\.name) == ["Moon Oil"])
-    }
-
-    @Test func matching_SameChemistry_ReportsNoConflict() throws {
-        let existing = destination.oil("My Olive")
-        let plan = try plan(from: [oilRecipe(named: "One", oil: "Moon Oil")])
-        let entry = try #require(plan.ingredientsToCreate.first)
-
-        let updated = plan.matching(entry.id, to: existing)
-
-        #expect(updated.conflictingIngredients.isEmpty)
-    }
-
-    @Test func matching_LeavesOtherEntriesRecipesAndCollectionsAlone() throws {
-        let existing = destination.oil("My Olive")
-        let plan = try plan(from: [source.populatedRecipe()])
-        let entry = try #require(plan.ingredientsToCreate.first)
-
-        let updated = plan.matching(entry.id, to: existing)
-
-        #expect(updated.ingredients.map(\.id) == plan.ingredients.map(\.id))
-        #expect(updated.recipeSummaries.map(\.id) == plan.recipeSummaries.map(\.id))
-        #expect(updated.recipeCount == plan.recipeCount)
-        #expect(updated.unmatchedCollectionNames == plan.unmatchedCollectionNames)
-        #expect(updated.ingredientsToCreate.count == plan.ingredientsToCreate.count - 1)
-    }
-
-    @Test func matching_UnknownEntry_ChangesNothing() throws {
-        let existing = destination.oil("My Olive")
         let plan = try plan(from: [oilRecipe(named: "One", oil: "Moon Oil")])
 
-        let updated = plan.matching(999, to: existing)
+        #expect(plan.ingredientsToCreate.isEmpty)
+        #expect(plan.ingredients.compactMap(\.existing).count == 1)
+        #expect(plan.conflictingIngredients.isEmpty)
+    }
 
-        #expect(updated.ingredientsToCreate.count == plan.ingredientsToCreate.count)
+    @Test func plan_ExistingIngredientDifferentChemistry_ReportsAConflict() throws {
+        _ = destination.oil("Moon Oil", sap: 0.5)
+        try destination.context.save()
+
+        let plan = try plan(from: [oilRecipe(named: "One", oil: "Moon Oil")])
+
+        #expect(plan.conflictingIngredients.map(\.name) == ["Moon Oil"])
     }
 
     // MARK: Confirming
@@ -205,16 +128,18 @@ struct FreeTierImportTests {
         #expect(model.phase == .exactReview)
     }
 
-    @Test func confirmExactImport_OverTheIngredientCap_InsertsNothing() throws {
+    @Test func confirmExactImport_ManyNewCustomIngredientsWithinRecipeCap_ImportsEverything() throws {
         let model = RecipeImportViewModel()
         model.rawText = try destination.pastedFile(source.payload([source.populatedRecipe()]))
         _ = model.adoptPayloadFromText(inventory: [], collections: [], recipes: [])
+        let toCreate = try #require(model.transferPlan).ingredientsToCreate.count
+        #expect(toCreate > 3)
 
         let result = model.confirmExactImport(context: destination.context, categories: [], gate: free)
 
-        #expect(result == nil)
-        #expect(try destination.context.fetchCount(FetchDescriptor<Recipe>()) == 0)
-        #expect(try destination.context.fetchCount(FetchDescriptor<Ingredient>()) == 0)
+        #expect(result?.count == 1)
+        #expect(try destination.context.fetchCount(FetchDescriptor<Recipe>()) == 1)
+        #expect(try destination.context.fetchCount(FetchDescriptor<Ingredient>()) >= toCreate)
     }
 
     @Test func confirmExactImport_Fits_ImportsEverything() throws {
@@ -243,58 +168,4 @@ struct FreeTierImportTests {
         #expect(result?.count == 1)
     }
 
-    @Test func useExisting_MatchingEnoughEntries_MakesTheFileFit() throws {
-        let entry = try #require(IngredientLibrary.bundled.entries.first)
-        let existing = destination.oil(entry.name, slug: entry.slug)
-        let model = RecipeImportViewModel()
-        model.rawText = try destination.pastedFile(source.payload([source.populatedRecipe()]))
-        _ = model.adoptPayloadFromText(inventory: [], collections: [], recipes: [])
-        let plan = try #require(model.transferPlan)
-        let entries = plan.customIngredientsToCreate
-        #expect(entries.count == 5)
-
-        for pick in entries.prefix(2) {
-            model.useExisting(pick.id, existing)
-        }
-
-        let updated = try #require(model.transferPlan)
-        #expect(updated.customIngredientsToCreate.count == 3)
-        #expect(free.importFit(for: updated, in: destination.context).fits)
-        let result = model.confirmExactImport(context: destination.context, categories: [], gate: free)
-        #expect(result?.count == 1)
-    }
-
-    @Test func resolveMergedRows_KeepsTheUsersMatch() throws {
-        let existing = destination.oil("My Olive")
-        try destination.context.save()
-        let model = RecipeImportViewModel()
-        model.rawText = try destination.pastedFile(source.payload([source.populatedRecipe()]))
-        _ = model.adoptPayloadFromText(inventory: [], collections: [], recipes: [])
-        let entry = try #require(model.transferPlan?.customIngredientsToCreate.first)
-        model.useExisting(entry.id, existing)
-
-        model.resolveMergedRows(in: destination.context)
-
-        let rebuilt = try #require(model.transferPlan)
-        let kept = try #require(rebuilt.ingredients.first { $0.id == entry.id })
-        #expect(kept.existing === existing)
-    }
-
-    @Test func resolveMergedRows_DropsAMatchWhoseIngredientIsGone() throws {
-        let existing = destination.oil("My Olive")
-        try destination.context.save()
-        let model = RecipeImportViewModel()
-        model.rawText = try destination.pastedFile(source.payload([source.populatedRecipe()]))
-        _ = model.adoptPayloadFromText(inventory: [], collections: [], recipes: [])
-        let entry = try #require(model.transferPlan?.customIngredientsToCreate.first)
-        model.useExisting(entry.id, existing)
-        destination.context.delete(existing)
-        try destination.context.save()
-
-        model.resolveMergedRows(in: destination.context)
-
-        let rebuilt = try #require(model.transferPlan)
-        let dropped = try #require(rebuilt.ingredients.first { $0.id == entry.id })
-        #expect(dropped.willBeCreated)
-    }
 }
