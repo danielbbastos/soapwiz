@@ -70,7 +70,10 @@ private struct FittedFormSheetModifier: ViewModifier {
             } action: { _, height in
                 measuredHeight = height
                 // The keyboard grows the bottom inset, which would stretch the
-                // sheet behind it: the height holds while it is up.
+                // sheet behind it: the height holds while it is up. If the
+                // keyboard is already up at the first measurement (a sheet that
+                // focuses a field as it opens), the sheet keeps the system form
+                // height until the keyboard hides.
                 guard !isKeyboardShown else { return }
                 contentHeight = height
             }
