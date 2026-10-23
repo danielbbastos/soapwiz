@@ -7,6 +7,10 @@ import Foundation
 /// English, Portuguese, Spanish, French and German, so case, accents and
 /// spacing don't matter. No two fields share a name: "amount" is a quantity,
 /// and a price is "price" or "cost".
+///
+/// Each field's names are ranked, strongest first. When several columns name
+/// the same field, the one matching the highest-ranked name wins, so "Name"
+/// beats "Description" and "Total" beats "Price" whatever their order.
 nonisolated enum InventoryImportField: CaseIterable, Hashable {
     case name
     case category
@@ -37,48 +41,50 @@ nonisolated enum InventoryImportField: CaseIterable, Hashable {
     private var headerNames: [String] {
         switch self {
         case .name:
-            ["name", "ingredient", "ingredient name", "item", "product", "material", "description",
-             "nome", "ingrediente", "produto", "nombre", "producto", "nom", "ingrédient", "produit",
-             "zutat", "artikel", "produkt", "bezeichnung"]
+            ["name", "ingredient name", "ingredient",
+             "nome", "ingrediente", "nombre", "nom", "ingrédient", "zutat", "bezeichnung",
+             "product", "produto", "producto", "produit", "produkt", "material", "item", "artikel",
+             "description"]
         case .category:
-            ["category", "type", "group", "categoria", "tipo", "categoría", "catégorie", "kategorie"]
+            ["category", "categoria", "categoría", "catégorie", "kategorie",
+             "type", "tipo", "group"]
         case .quantity:
-            ["quantity", "qty", "amount", "stock", "weight", "quantidade", "peso", "cantidad",
-             "quantité", "menge", "gewicht"]
+            ["quantity", "qty", "quantidade", "cantidad", "quantité", "menge",
+             "amount", "stock", "weight", "peso", "gewicht"]
         case .unit:
-            ["unit", "units", "uom", "unit of measure", "unidade", "unidad", "unité", "einheit"]
+            ["unit", "unit of measure", "uom", "unidade", "unidad", "unité", "einheit", "units"]
         case .totalPrice:
-            ["price", "total", "total price", "cost", "total cost", "amount paid", "preço", "preco",
-             "custo", "valor", "precio", "coste", "costo", "prix", "coût", "preis", "kosten"]
+            ["total price", "total cost", "total", "amount paid",
+             "price", "cost", "preço", "preco", "custo", "precio", "coste", "costo", "prix", "coût",
+             "preis", "kosten", "valor"]
         case .unitPrice:
             ["unit price", "price per unit", "cost per unit", "preço unitário", "precio unitario",
              "prix unitaire", "stückpreis", "einzelpreis"]
         case .supplier:
-            ["supplier", "vendor", "provider", "store", "shop", "fornecedor", "loja", "proveedor",
-             "tienda", "fournisseur", "lieferant"]
+            ["supplier", "vendor", "fornecedor", "proveedor", "fournisseur", "lieferant",
+             "provider", "store", "shop", "loja", "tienda"]
         case .purchaseDate:
-            ["purchase date", "date", "bought", "date purchased", "order date", "data", "data de compra",
-             "fecha", "fecha de compra", "date d'achat", "kaufdatum", "datum"]
+            ["purchase date", "date purchased", "order date", "data de compra", "fecha de compra",
+             "date d'achat", "kaufdatum",
+             "date", "data", "fecha", "datum", "bought"]
         case .expiryDate:
-            ["expiry", "expiry date", "expiration", "expiration date", "best before", "use by", "validade",
-             "data de validade", "caducidad", "fecha de caducidad", "date d'expiration", "péremption",
-             "ablaufdatum", "mhd"]
+            ["expiry date", "expiration date", "best before", "use by", "data de validade",
+             "fecha de caducidad", "date d'expiration", "ablaufdatum",
+             "expiry", "expiration", "validade", "caducidad", "péremption", "mhd"]
         }
     }
 
-    private static let fieldsByHeaderKey: [String: InventoryImportField] = {
-        var fields: [String: InventoryImportField] = [:]
+    private static let fieldsByHeaderKey: [String: (field: InventoryImportField, rank: Int)] = {
+        var fields: [String: (field: InventoryImportField, rank: Int)] = [:]
         for field in allCases {
-            for name in field.headerNames {
-                fields[name.lookupKey] = fields[name.lookupKey] ?? field
+            for (rank, name) in field.headerNames.enumerated() where fields[name.lookupKey] == nil {
+                fields[name.lookupKey] = (field, rank)
             }
         }
         return fields
     }()
 
-    /// The field `header` names, ignoring case, accents, spacing and a
-    /// trailing ":".
-    static func field(forHeader header: String) -> InventoryImportField? {
+    private static func match(forHeader header: String) -> (field: InventoryImportField, rank: Int)? {
         var key = header.lookupKey
         if key.hasSuffix(":") {
             key.removeLast()
@@ -87,16 +93,23 @@ nonisolated enum InventoryImportField: CaseIterable, Hashable {
         return fieldsByHeaderKey[key]
     }
 
+    /// The field `header` names, ignoring case, accents, spacing and a
+    /// trailing ":".
+    static func field(forHeader header: String) -> InventoryImportField? {
+        match(forHeader: header)?.field
+    }
+
     /// The field each column of `header` holds, by column index. A field goes
-    /// to the first column that names it; later columns naming it stay unmapped.
+    /// to the column whose header matches its highest-ranked name, the leftmost
+    /// of any that tie; the other columns naming it stay unmapped.
     static func detect(header: [String]) -> [Int: InventoryImportField] {
-        var mapping: [Int: InventoryImportField] = [:]
-        var taken: Set<InventoryImportField> = []
+        var best: [InventoryImportField: (index: Int, rank: Int)] = [:]
         for (index, cell) in header.enumerated() {
-            guard let field = field(forHeader: cell), taken.insert(field).inserted else { continue }
-            mapping[index] = field
+            guard let match = match(forHeader: cell) else { continue }
+            if let current = best[match.field], current.rank <= match.rank { continue }
+            best[match.field] = (index, match.rank)
         }
-        return mapping
+        return Dictionary(uniqueKeysWithValues: best.map { ($0.value.index, $0.key) })
     }
 
     /// Whether `row` reads as a header: at least one cell names a field.

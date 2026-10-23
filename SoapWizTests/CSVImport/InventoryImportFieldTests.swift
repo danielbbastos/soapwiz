@@ -49,6 +49,30 @@ struct InventoryImportFieldTests {
         #expect(mapping == [0: .name])
     }
 
+    @Test func detect_StrongerSynonymLater_BeatsWeakerEarlier() {
+        let mapping = InventoryImportField.detect(header: ["Description", "Name"])
+
+        #expect(mapping == [1: .name])
+    }
+
+    @Test func detect_TotalAfterPrice_TotalGetsTotalPrice() {
+        let mapping = InventoryImportField.detect(header: ["Price", "Total"])
+
+        #expect(mapping == [1: .totalPrice])
+    }
+
+    @Test func detect_PurchaseDateAfterDate_PurchaseDateWins() {
+        let mapping = InventoryImportField.detect(header: ["Date", "Purchase Date"])
+
+        #expect(mapping == [1: .purchaseDate])
+    }
+
+    @Test func detect_EqualRankDuplicates_LeftmostWins() {
+        let mapping = InventoryImportField.detect(header: ["Qty", "Shelf", "qty"])
+
+        #expect(mapping == [0: .quantity])
+    }
+
     @Test func detect_NoRecognisedHeader_ReturnsEmpty() {
         #expect(InventoryImportField.detect(header: ["Foo", "Bar"]).isEmpty)
         #expect(InventoryImportField.detect(header: []).isEmpty)
