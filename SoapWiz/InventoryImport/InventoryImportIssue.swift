@@ -1,7 +1,7 @@
 import Foundation
 
 /// How much an issue matters to the row that carries it.
-enum InventoryImportSeverity: Equatable {
+nonisolated enum InventoryImportSeverity: Equatable {
     /// The row can't be imported. It is listed under "Can't import" with the reason.
     case blocking
     /// The row still imports; the reason is shown so the user can check it.
@@ -14,7 +14,7 @@ enum InventoryImportSeverity: Equatable {
 /// later), and each source adds the cases only it can detect — a cell that
 /// isn't a number, say — as new cases here. The matcher adds the ones that
 /// depend on the inventory.
-enum InventoryImportIssue: Equatable {
+nonisolated enum InventoryImportIssue: Equatable {
     case missingName
     /// A quantity that is negative or not a finite number. Zero is not an
     /// issue: it reads as "no quantity" and creates no purchase.
@@ -32,11 +32,25 @@ enum InventoryImportIssue: Equatable {
     /// quantity, so importing it would change nothing. It is skipped, and
     /// counted as skipped, rather than reported as imported.
     case nothingToAdd
+    /// A unit that isn't one SoapWiz recognises, from the unit column or from
+    /// the text after the number in a quantity cell. The associated value is
+    /// the text as written.
+    case unknownUnit(String)
+    /// The quantity cell carries a unit ("500 g") and the unit column names a
+    /// different one, so there is no telling which the user meant. Both are
+    /// the text as written.
+    case conflictingUnits(quantityUnit: String, unitColumn: String)
+    /// A price cell that isn't a readable number. The row imports without
+    /// that price. The associated value is the cell as written.
+    case unreadablePrice(String)
+    /// A date cell that isn't a readable date. The row imports without that
+    /// date. The associated value is the cell as written.
+    case unreadableDate(String)
 
     var severity: InventoryImportSeverity {
         switch self {
-        case .missingName, .invalidQuantity, .unitMismatch, .nothingToAdd: .blocking
-        case .convertedViaDensity: .warning
+        case .missingName, .invalidQuantity, .unitMismatch, .nothingToAdd, .unknownUnit, .conflictingUnits: .blocking
+        case .convertedViaDensity, .unreadablePrice, .unreadableDate: .warning
         }
     }
 
@@ -55,6 +69,14 @@ enum InventoryImportIssue: Equatable {
             String(localized: "Converted between weight and volume using the ingredient's density.")
         case .nothingToAdd:
             String(localized: "Already in your inventory, and no quantity to add.")
+        case let .unknownUnit(text):
+            String(localized: "\(text) isn't a unit SoapWiz recognises.")
+        case let .conflictingUnits(quantityUnit, unitColumn):
+            String(localized: "The quantity says \(quantityUnit) but the unit column says \(unitColumn).")
+        case let .unreadablePrice(text):
+            String(localized: "\(text) isn't a readable price, so the row imports without one.")
+        case let .unreadableDate(text):
+            String(localized: "\(text) isn't a readable date, so the row imports without one.")
         }
     }
 }

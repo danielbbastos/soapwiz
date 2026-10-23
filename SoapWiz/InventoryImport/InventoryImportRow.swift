@@ -6,7 +6,7 @@ import Foundation
 /// Knows nothing about where it came from. A spreadsheet row and a line on an
 /// invoice photo both become one of these, so the matcher, the review screen and
 /// the applier serve every source.
-struct InventoryImportRow: Identifiable, Equatable {
+nonisolated struct InventoryImportRow: Identifiable, Equatable {
     let id: UUID
     /// Where the row sat in its source, for pointing the user at it, when the
     /// source has such a position.

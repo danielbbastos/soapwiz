@@ -10,7 +10,7 @@ nonisolated struct CSVQuantity: Equatable {
 ///
 /// "fl oz" is deliberately unknown. It is a volume, and mapping it to ounces
 /// would silently turn it into a weight.
-enum CSVUnitParser {
+nonisolated enum CSVUnitParser {
     private static let synonyms: [IngredientUnit: [String]] = [
         .grams: ["g", "gr", "grs", "gram", "grams", "gramme", "grammes"],
         .kilograms: ["kg", "kgs", "kilo", "kilos", "kilogram", "kilograms", "kilogramme", "kilogrammes"],

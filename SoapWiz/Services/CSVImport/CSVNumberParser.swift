@@ -15,7 +15,7 @@ import Foundation
 ///
 /// Currency symbols and ISO currency codes on either side of a number are
 /// ignored. Empty, unreadable and negative values are nil.
-enum CSVNumberParser {
+nonisolated enum CSVNumberParser {
     private static let commaDecimalLocale = Locale(identifier: "de_DE")
     private static let pointDecimalLocale = Locale(identifier: "en_US")
     private static let spaceGroupingLocale = Locale(identifier: "fr_FR")

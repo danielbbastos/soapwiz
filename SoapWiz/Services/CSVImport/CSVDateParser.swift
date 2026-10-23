@@ -17,7 +17,7 @@ import Foundation
 /// Values come back at the start of their day in the calendar's time zone. A
 /// date that doesn't exist (31/02/2024) or isn't in a known format is nil. The
 /// calendar is expected to be Gregorian.
-enum CSVDateParser {
+nonisolated enum CSVDateParser {
     private static let excelSerials = 20000...80000
     private static let monthNames = [
         "january", "february", "march", "april", "may", "june",
@@ -125,7 +125,7 @@ enum CSVDateParser {
 }
 
 /// What one CSV cell says about its date before the column decides the order.
-private enum CSVDateReading {
+private nonisolated enum CSVDateReading {
     case fixed(year: Int, month: Int, day: Int)
     case numeric(first: Int, second: Int, year: Int)
     case unreadable
