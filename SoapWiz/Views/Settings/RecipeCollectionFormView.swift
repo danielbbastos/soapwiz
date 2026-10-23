@@ -55,6 +55,7 @@ struct RecipeCollectionFormView: View {
             }
             .interactiveDismissDisabled(model.isDirty)
         }
+        .fitsSheetToContent()
     }
 
     /// Swatches rather than a menu picker: the colour is the thing being chosen,

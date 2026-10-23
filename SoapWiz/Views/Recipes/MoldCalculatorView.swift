@@ -84,6 +84,7 @@ struct MoldCalculatorView: View {
                 useWeightButton
             }
         }
+        .fitsSheetToContent()
     }
 
     private var shapeSection: some View {

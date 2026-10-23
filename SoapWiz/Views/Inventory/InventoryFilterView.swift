@@ -89,6 +89,7 @@ struct InventoryFilterView: View {
                 }
             }
         }
+        .fitsSheetToContent()
     }
 
     @ViewBuilder

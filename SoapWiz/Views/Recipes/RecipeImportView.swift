@@ -76,19 +76,29 @@ struct RecipeImportView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
-                if model.phase == .input, !model.rawText.isEmpty {
-                    ToolbarItem(placement: .destructiveAction) {
-                        Button("Clear", role: .destructive) { replaceText(with: "") }
+                if model.phase == .input {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Read") {
+                            Task {
+                                await model.extract(
+                                    inventory: inventory,
+                                    collections: fileableCollections,
+                                    recipes: recipes,
+                                    context: modelContext
+                                )
+                            }
+                        }
+                        .disabled(!model.canExtract || isReadingPhoto)
                     }
                 }
             }
             .interactiveDismissDisabled(model.hasChanges)
         }
-        // A page-sized sheet on iPad. The default form sheet is shorter than
-        // this screen, which pushed the action button and its note below the
-        // fold with no hint they existed. `.fitted` is not an option: the
-        // content is a Form, which has no finite intrinsic height, so fitting
-        // to it collapses the sheet to almost nothing.
+        // A page-sized sheet on iPad, because the text box fills whatever
+        // height is spare and a bigger sheet gives it room to write in.
+        // `.fitted` is not an option: the content is a Form, which has no
+        // finite intrinsic height, so fitting to it collapses the sheet to
+        // almost nothing.
         .presentationSizing(.page)
         .proUpgradeHost()
         .onReceive(NotificationCenter.default.publisher(for: .duplicatesMerged)) { _ in
@@ -156,7 +166,8 @@ struct RecipeImportView: View {
                     text: $model.rawText,
                     isEnabled: !model.isExtracting,
                     height: textBoxHeight,
-                    revision: textRevision
+                    revision: textRevision,
+                    onClear: { replaceText(with: "") }
                 )
                     .ledgerSheetRow(position: .only)
             } header: {
@@ -174,25 +185,6 @@ struct RecipeImportView: View {
                     .ledgerSheetRow(position: .only)
             }
             .disabled(model.isExtracting || isReadingPhoto)
-
-            Section {
-                HoneyLedgerActionRow(
-                    model.textCarriesExactPayload || model.textIsSoapWizCopy ? "Read Copied Recipe" : "Read Recipe"
-                ) {
-                    Task {
-                        await model.extract(
-                            inventory: inventory,
-                            collections: fileableCollections,
-                            recipes: recipes,
-                            context: modelContext
-                        )
-                    }
-                }
-                .disabled(!model.canExtract || isReadingPhoto)
-                .ledgerSheetRow(position: .only)
-            } footer: {
-                HoneyLedgerFooter(readFooter)
-            }
         }
         .environment(\.defaultMinListRowHeight, 48)
         // The text box takes whatever height the screen has spare, so the
@@ -208,24 +200,7 @@ struct RecipeImportView: View {
         }
     }
 
-    /// Says which path the text in the box will take, since they
-    /// give very different results and the difference is invisible otherwise.
-    private var readFooter: String {
-        if model.textCarriesExactPayload {
-            return "This was copied from SoapWiz, so it comes back exactly — every setting, not just the oils."
-        }
-        if model.textIsSoapWizCopy {
-            return "This was copied from SoapWiz, so it’s read as written. Nothing is saved until you confirm."
-        }
-        guard model.canReadFreeText else {
-            return "Paste a recipe copied from SoapWiz, or open a shared file above. "
-                + "Reading a recipe written by hand needs Apple Intelligence, which this device can’t use."
-        }
-        return "Your recipe is read on this device. Nothing is sent anywhere, and nothing is saved until you confirm."
-    }
-
-    /// One row rather than three. Stacked, these cost enough height to push the
-    /// action button off an iPad form sheet entirely.
+    /// One row rather than three, to save height for the text box.
     private var sourceButtons: some View {
         HStack(spacing: 10) {
             // The system's own paste button: the tap is the authorisation, so
@@ -265,29 +240,37 @@ struct RecipeImportView: View {
         }
     }
 
-    /// Says what will happen to an over-long paste before the user commits to
-    /// it, rather than surprising them with a trimmed result afterwards.
+    /// Says which path the text in the box will take, since they give very
+    /// different results and the difference is invisible otherwise, and what
+    /// will happen to an over-long paste before the user commits to it.
     private var inputFooter: String {
         if isReadingPhoto { return "Reading the text in your photo\u{2026}" }
         if let readingProblem { return readingProblem }
         let count = model.rawText.count
         guard count > 0 else {
             guard model.canReadFreeText else {
-                return "Paste a recipe copied from SoapWiz with Copy Recipe. It’s read as written."
+                return "Paste a recipe copied from SoapWiz with Copy Recipe, or open a shared file above. "
+                    + Self.noFreeTextNote
             }
-            return "Paste a recipe from a website, a forum or your notes. Oils, amounts and lye settings are enough."
+            return "Paste a recipe from a website, a forum or your notes. Oils, amounts and lye settings are enough. "
+                + Self.freeTextNote
         }
         if model.textCarriesExactPayload {
-            return "A SoapWiz recipe — this will come back exactly as it was sent."
+            return "A SoapWiz recipe — this will come back exactly as it was sent, every setting, not just the oils."
         }
         if model.textIsSoapWizCopy {
-            return "A recipe copied from SoapWiz."
+            return "A recipe copied from SoapWiz, so it’s read as written. Nothing is saved until you confirm."
         }
-        guard count > RecipeTextSanitizer.defaultCharacterBudget else {
-            return "\(count) characters."
-        }
-        return "\(count) characters — that's more than fits in one go, so the recipe will be picked out of it."
+        let readNote = model.canReadFreeText ? Self.freeTextNote : Self.noFreeTextNote
+        let lengthNote = count > RecipeTextSanitizer.defaultCharacterBudget
+            ? "\(count) characters — that's more than fits in one go, so the recipe will be picked out of it."
+            : "\(count) characters."
+        return "\(lengthNote) \(readNote)"
     }
+
+    private static let freeTextNote = "It’s read on this device. Nothing is sent anywhere, and nothing is saved until you confirm."
+
+    private static let noFreeTextNote = "Reading a recipe written by hand needs Apple Intelligence, which this device can’t use."
 
     // MARK: - Actions
 

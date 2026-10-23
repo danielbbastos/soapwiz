@@ -81,6 +81,7 @@ struct AddRecipeProductSheet: View {
             }
             .interactiveDismissDisabled(hasChanges)
         }
+        .fitsSheetToContent()
     }
 
     /// A menu rather than a `Picker`: a menu picker draws its value in the

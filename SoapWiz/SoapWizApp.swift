@@ -62,6 +62,7 @@ struct SoapWizApp: App {
             } message: {
                 Text(storeHost?.errorMessage ?? "")
             }
+            .publishesWindowHeight()
             .environment(tourLauncher)
             .environment(proStore)
             // Outside `ContentView`, so the tour's navigation is its own.

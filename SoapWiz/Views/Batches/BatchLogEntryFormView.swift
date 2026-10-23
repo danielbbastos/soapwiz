@@ -73,6 +73,7 @@ struct BatchLogEntryFormView: View {
                 Text("This entry has changes that haven't been saved.")
             }
         }
+        .fitsSheetToContent()
         // Notes and picked photos are slow to redo, so a swipe can't throw
         // them away; Cancel asks first.
         .interactiveDismissDisabled(model.hasChanges)

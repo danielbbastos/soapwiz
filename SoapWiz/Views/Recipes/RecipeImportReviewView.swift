@@ -20,9 +20,18 @@ struct RecipeImportReviewView: View {
             ingredientSection(.oil, title: "Oils")
             ingredientSection(.fragrance, title: "Fragrances")
             ingredientSection(.additive, title: "Additives")
-            confirmSection
+            backSection
         }
         .environment(\.defaultMinListRowHeight, 48)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Continue") {
+                    guard let prepared = model.prepared else { return }
+                    onConfirm(prepared)
+                }
+                .disabled(!model.canConfirm)
+            }
+        }
         .sheet(item: $creatingRow) { row in
             IngredientFormView(
                 defaultCategory: category(named: row.suggestedCategoryName),
@@ -86,16 +95,10 @@ struct RecipeImportReviewView: View {
         }
     }
 
-    private var confirmSection: some View {
+    private var backSection: some View {
         Section {
-            HoneyLedgerActionRow("Continue to Recipe") {
-                guard let prepared = model.prepared else { return }
-                onConfirm(prepared)
-            }
-            .disabled(!model.canConfirm)
-            .ledgerSheetRow(position: .first)
             HoneyLedgerActionRow("Back to Text", isPrimary: false) { model.returnToInput() }
-                .ledgerSheetRow(position: .last)
+                .ledgerSheetRow(position: .only)
         } footer: {
             if let blocker = model.confirmBlocker {
                 HoneyLedgerFieldNote(blocker, tint: .danger)
