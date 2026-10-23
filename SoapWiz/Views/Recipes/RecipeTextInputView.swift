@@ -26,6 +26,10 @@ struct RecipeTextInputView: View {
     /// writes forces a fresh layout without rebuilding on every keystroke.
     var revision: Int = 0
 
+    let onClear: () -> Void
+
+    private static let clearButtonSize: CGFloat = 44
+
     var body: some View {
         ZStack(alignment: .topLeading) {
             if text.isEmpty {
@@ -42,8 +46,22 @@ struct RecipeTextInputView: View {
                 .tint(Color.amber)
                 .disabled(!isEnabled)
                 .accessibilityLabel("Recipe text")
+                .padding(.trailing, text.isEmpty ? 0 : Self.clearButtonSize - 8)
                 .id(revision)
         }
         .frame(height: height)
+        .overlay(alignment: .topTrailing) {
+            if !text.isEmpty {
+                Button(action: onClear) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(Color.inkSoft)
+                        .frame(width: Self.clearButtonSize, height: Self.clearButtonSize)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .disabled(!isEnabled)
+                .accessibilityLabel("Clear Text")
+            }
+        }
     }
 }

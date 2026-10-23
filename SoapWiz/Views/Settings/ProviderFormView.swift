@@ -62,5 +62,6 @@ struct ProviderFormView: View {
             }
             .interactiveDismissDisabled(model.isDirty)
         }
+        .fitsSheetToContent()
     }
 }

@@ -175,6 +175,7 @@ struct CreateBatchSheet: View {
             }
             .interactiveDismissDisabled(model.hasChanges)
         }
+        .fitsSheetToContent()
     }
 
     private func sheetRow<Content: View>(

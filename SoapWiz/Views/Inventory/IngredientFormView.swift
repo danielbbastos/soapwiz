@@ -162,6 +162,7 @@ struct IngredientFormView: View {
                 }
             }
         }
+        .fitsSheetToContent()
     }
 
     private func attemptSave() {

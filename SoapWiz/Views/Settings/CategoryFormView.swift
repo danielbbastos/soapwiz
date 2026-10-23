@@ -48,5 +48,6 @@ struct CategoryFormView: View {
             }
             .interactiveDismissDisabled(model.isDirty)
         }
+        .fitsSheetToContent()
     }
 }

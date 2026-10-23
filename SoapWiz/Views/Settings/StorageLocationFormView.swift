@@ -54,5 +54,6 @@ struct StorageLocationFormView: View {
             }
             .interactiveDismissDisabled(model.isDirty)
         }
+        .fitsSheetToContent()
     }
 }

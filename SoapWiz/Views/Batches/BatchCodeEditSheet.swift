@@ -63,6 +63,7 @@ struct BatchCodeEditSheet: View {
             }
             .interactiveDismissDisabled(code != initialCode)
         }
+        .fitsSheetToContent()
         .presentationDetents([.medium, .large])
     }
 }

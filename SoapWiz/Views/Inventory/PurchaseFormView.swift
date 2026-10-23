@@ -54,5 +54,6 @@ struct PurchaseFormView: View {
                 Text(saveError ?? "")
             }
         }
+        .fitsSheetToContent()
     }
 }
