@@ -114,8 +114,6 @@ struct RecipeImportReviewView: View {
         Nothing is saved until you press Save on the recipe.
         """
 
-    // MARK: - Actions
-
     // MARK: - Helpers
 
     private var draftSummary: RecipeImportDraft {
