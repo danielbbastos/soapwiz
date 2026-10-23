@@ -64,6 +64,17 @@ struct CSVUnitParserTests {
         #expect(result == [CSVQuantity(amount: 1, unit: .grams), CSVQuantity(amount: 2.5, unit: .kilograms)])
     }
 
+    @Test(arguments: [" ", "\u{00A0}", "\u{202F}"])
+    func quantities_SpaceGroupedNumber_ReadsWholeNumber(space: String) {
+        let result = CSVUnitParser.quantities(in: ["1\(space)234 g", "1\(space)234,5 kg"], locale: us)
+        #expect(result == [CSVQuantity(amount: 1234, unit: .grams), CSVQuantity(amount: 1234.5, unit: .kilograms)])
+    }
+
+    @Test func quantities_SpaceGroupedAndCommaDecimalInOneColumn_ReadEach() {
+        let result = CSVUnitParser.quantities(in: ["1 234 g", "2,5 kg"], locale: us)
+        #expect(result == [CSVQuantity(amount: 1234, unit: .grams), CSVQuantity(amount: 2.5, unit: .kilograms)])
+    }
+
     @Test func quantities_OnlyOneCellHasUnit_OthersHaveNone() {
         let result = CSVUnitParser.quantities(in: ["500 g", "250", "1,5"], locale: us)
         #expect(result == [

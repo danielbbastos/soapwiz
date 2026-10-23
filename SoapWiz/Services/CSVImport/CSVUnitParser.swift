@@ -35,15 +35,20 @@ enum CSVUnitParser {
     }
 
     /// The amount and unit in each of `cells`, in the same order: "500 g",
-    /// "1,5kg", "12". The unit is nil when the cell is only a number. A cell is
-    /// nil when its number is unreadable or negative, or when its unit text is
-    /// present but unknown. The numbers are read as one column, so they share
-    /// `CSVNumberParser`'s decimal mark vote.
+    /// "1,5kg", "12". A cell is split at its first letter: the number is
+    /// everything before it, spaces included, so "1 234 g" is 1234 grams, and
+    /// the unit is the rest. The unit is nil when the cell has no letters. A
+    /// cell is nil when its number is unreadable or negative, or when its unit
+    /// text is present but unknown. The numbers are read as one column, so they
+    /// share `CSVNumberParser`'s decimal mark vote.
     static func quantities(in cells: [String], locale: Locale = .autoupdatingCurrent) -> [CSVQuantity?] {
         let parts = cells.map { cell in
             let trimmed = cell.trimmingCharacters(in: .whitespacesAndNewlines)
-            let numberText = trimmed.prefix { $0.isASCII && $0.isNumber || $0 == "." || $0 == "," }
-            return (number: String(numberText), unit: trimmed.dropFirst(numberText.count).trimmingCharacters(in: .whitespacesAndNewlines))
+            let split = trimmed.firstIndex { $0.isLetter } ?? trimmed.endIndex
+            return (
+                number: trimmed[..<split].trimmingCharacters(in: .whitespacesAndNewlines),
+                unit: trimmed[split...].trimmingCharacters(in: .whitespacesAndNewlines)
+            )
         }
         let amounts = CSVNumberParser.numbers(in: parts.map(\.number), locale: locale)
         return zip(parts, amounts).map { part, amount in
