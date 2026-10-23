@@ -63,21 +63,32 @@ enum InventoryImportApplier {
             let lines = entry.lines.filter(\.isIncluded)
             guard !lines.isEmpty else { return }
 
+            var rows = lines.map { (row: $0.row, quantity: $0.quantity) }
             let ingredient: Ingredient
             switch entry.resolution {
             case .existing(let match):
                 // The row may have been merged away since the plan was made.
                 guard let live = LiveIngredient.resolve(match.ingredient, slug: match.slug, in: context) else { return }
                 ingredient = live
+                // The plan converted each quantity into the matched copy's unit.
+                // A survivor can have a different unit or density, so the rows
+                // are placed again on it, and one it can't take is skipped.
+                if live !== match.ingredient {
+                    rows = rows.compactMap { row in
+                        let placement = InventoryImportMatcher.place(row.row, unit: live.unit, density: live.density, isExisting: true)
+                        guard !placement.issues.contains(where: \.isBlocking) else { return nil }
+                        return (row.row, placement.quantity)
+                    }
+                }
             case .newIngredient(let new):
                 ingredient = makeIngredient(new)
                 result.ingredientsCreated += 1
             }
 
-            for line in lines {
+            for row in rows {
                 result.importedRows += 1
-                guard let quantity = line.quantity else { continue }
-                addPurchase(for: line.row, quantity: quantity, to: ingredient)
+                guard let quantity = row.quantity else { continue }
+                addPurchase(for: row.row, quantity: quantity, to: ingredient)
                 result.purchasesAdded += 1
             }
         }

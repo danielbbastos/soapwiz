@@ -323,4 +323,41 @@ struct InventoryImportApplierTests {
         #expect(result.importedRows == 2)
         #expect(result.purchasesAdded == 2)
     }
+
+    @Test func apply_SurvivorWithAnotherUnit_ConvertsIntoTheSurvivorsUnit() throws {
+        let (container, context) = try Support.makeContext()
+        _ = container
+        let loser = Support.insertIngredient("Olive Oil", unit: .grams, slug: "olive-oil", in: context)
+        let survivor = Support.insertIngredient("Olive Oil", unit: .kilograms, slug: "olive-oil", in: context)
+        try context.save()
+        let plan = Support.plan([InventoryImportRow(name: "Olive Oil", unit: .grams, quantity: 500)], inventory: [loser])
+        context.delete(loser)
+        try context.save()
+
+        let result = try InventoryImportApplier.apply(plan, in: context)
+
+        let purchase = try #require(survivor.purchases.first)
+        #expect(purchase.quantity == 0.5)
+        #expect(result == InventoryImportResult(importedRows: 1, skippedRows: 0, ingredientsCreated: 0, purchasesAdded: 1))
+    }
+
+    @Test func apply_SurvivorThatCannotTakeTheRow_SkipsItAndWritesNothingForIt() throws {
+        let (container, context) = try Support.makeContext()
+        _ = container
+        let loser = Support.insertIngredient("Olive Oil", unit: .grams, slug: "olive-oil", in: context)
+        let survivor = Support.insertIngredient("Olive Oil", unit: .units, slug: "olive-oil", in: context)
+        try context.save()
+        let plan = Support.plan(
+            [InventoryImportRow(name: "Olive Oil", unit: .grams, quantity: 500), InventoryImportRow(name: "Zzyzx Butter", quantity: 1)],
+            inventory: [loser]
+        )
+        context.delete(loser)
+        try context.save()
+
+        let result = try InventoryImportApplier.apply(plan, in: context)
+
+        #expect(survivor.purchases.isEmpty)
+        #expect(try context.fetch(FetchDescriptor<IngredientPurchase>()).count == 1)
+        #expect(result == InventoryImportResult(importedRows: 1, skippedRows: 1, ingredientsCreated: 1, purchasesAdded: 1))
+    }
 }
