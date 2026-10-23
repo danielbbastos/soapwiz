@@ -9,9 +9,7 @@ struct FreeTierRestoreTests: RestoreTestCase {
 
     private func makeBackup(
         recipes: Int = 0,
-        custom: Int = 0,
-        library: Int = 0,
-        renamedLibrary: Int = 0
+        custom: Int = 0
     ) throws -> BackupData {
         let (container, ctx) = try makeContext()
         _ = container
@@ -21,81 +19,44 @@ struct FreeTierRestoreTests: RestoreTestCase {
         for index in 0..<custom {
             ctx.insert(Ingredient(name: "Custom \(index)", unit: "g"))
         }
-        let entries = Array(IngredientLibrary.bundled.entries.prefix(library + renamedLibrary))
-        try #require(entries.count == library + renamedLibrary)
-        for (index, entry) in entries.enumerated() {
-            let ingredient = Ingredient(name: index < library ? entry.name : "Mine \(entry.name)", unit: "g")
-            ingredient.librarySlug = entry.slug
-            ctx.insert(ingredient)
-        }
         try ctx.save()
         return try BackupService.makeBackup(from: ctx)
     }
 
     // MARK: restoreFits
 
-    @Test func restoreFits_UnderCaps_ReturnsTrue() {
-        #expect(FreeTierLimits.restoreFits(recipes: 1, customIngredients: 2, isPro: false))
+    @Test func restoreFits_UnderCap_ReturnsTrue() {
+        #expect(FreeTierLimits.restoreFits(recipes: 1, isPro: false))
     }
 
-    @Test func restoreFits_ExactlyAtCaps_ReturnsTrue() {
-        #expect(FreeTierLimits.restoreFits(
-            recipes: FreeTierLimits.recipeCap,
-            customIngredients: FreeTierLimits.customIngredientCap,
-            isPro: false
-        ))
+    @Test func restoreFits_ExactlyAtCap_ReturnsTrue() {
+        #expect(FreeTierLimits.restoreFits(recipes: FreeTierLimits.recipeCap, isPro: false))
     }
 
     @Test func restoreFits_OneRecipeOver_ReturnsFalse() {
-        #expect(!FreeTierLimits.restoreFits(
-            recipes: FreeTierLimits.recipeCap + 1,
-            customIngredients: 0,
-            isPro: false
-        ))
-    }
-
-    @Test func restoreFits_OneCustomIngredientOver_ReturnsFalse() {
-        #expect(!FreeTierLimits.restoreFits(
-            recipes: 0,
-            customIngredients: FreeTierLimits.customIngredientCap + 1,
-            isPro: false
-        ))
+        #expect(!FreeTierLimits.restoreFits(recipes: FreeTierLimits.recipeCap + 1, isPro: false))
     }
 
     @Test func restoreFits_Pro_AlwaysFits() {
-        #expect(FreeTierLimits.restoreFits(recipes: 500, customIngredients: 500, isPro: true))
+        #expect(FreeTierLimits.restoreFits(recipes: 500, isPro: true))
     }
 
     // MARK: Counting a backup
 
-    @Test func customIngredientCount_UnrenamedLibraryRows_AreNotCounted() throws {
-        let backup = try makeBackup(library: 5)
-        #expect(FreeTierLimits.customIngredientCount(in: backup) == 0)
+    @Test func restoreFits_BackupWithManyCustomIngredientsAndRecipesAtCap_ReturnsTrue() throws {
+        let backup = try makeBackup(recipes: FreeTierLimits.recipeCap, custom: 8)
         #expect(FreeTierLimits.restoreFits(backup, isPro: false))
     }
 
-    @Test func customIngredientCount_RenamedLibraryRow_IsCounted() throws {
-        let backup = try makeBackup(library: 2, renamedLibrary: 1)
-        #expect(FreeTierLimits.customIngredientCount(in: backup) == 1)
+    @Test func restoreFits_BackupWithManyCustomIngredientsAndNoRecipes_ReturnsTrue() throws {
+        let backup = try makeBackup(custom: FreeTierLimits.recipeCap + 5)
+        #expect(FreeTierLimits.restoreFits(backup, isPro: false))
     }
 
-    @Test func customIngredientCount_MissingSlug_IsCounted() throws {
-        let backup = try makeBackup(custom: 2)
-        #expect(FreeTierLimits.customIngredientCount(in: backup) == 2)
-    }
-
-    @Test func restoreFits_BackupWithRenamedLibraryRowsOverCap_ReturnsFalse() throws {
-        let backup = try makeBackup(renamedLibrary: FreeTierLimits.customIngredientCap + 1)
+    @Test func restoreFits_BackupOverRecipeCapWithCustomIngredients_ReturnsFalse() throws {
+        let backup = try makeBackup(recipes: FreeTierLimits.recipeCap + 1, custom: 8)
         #expect(!FreeTierLimits.restoreFits(backup, isPro: false))
         #expect(FreeTierLimits.restoreFits(backup, isPro: true))
-    }
-
-    @Test func restoreFits_BackupAtCaps_ReturnsTrue() throws {
-        let backup = try makeBackup(
-            recipes: FreeTierLimits.recipeCap,
-            custom: FreeTierLimits.customIngredientCap
-        )
-        #expect(FreeTierLimits.restoreFits(backup, isPro: false))
     }
 
     // MARK: The restore path
@@ -142,7 +103,7 @@ struct FreeTierRestoreTests: RestoreTestCase {
     }
 
     @Test func restore_OverCapBackupForFreeUser_LeavesTheStoreUnchanged() async throws {
-        let backup = try makeBackup(custom: FreeTierLimits.customIngredientCap + 1)
+        let backup = try makeBackup(recipes: FreeTierLimits.recipeCap + 1)
         let (container, ctx) = try makeContext()
         _ = container
         seedStore(ctx, ingredientName: "Olive Oil")
@@ -153,6 +114,14 @@ struct FreeTierRestoreTests: RestoreTestCase {
         #expect(coordinator.pendingImport == nil)
         #expect(coordinator.generation == 0)
         #expect(try ctx.fetch(FetchDescriptor<Ingredient>()).map(\.name) == ["Olive Oil"])
+    }
+
+    @Test func stage_ManyCustomIngredientsWithinRecipeCapForFreeUser_Stages() throws {
+        let backup = try makeBackup(recipes: FreeTierLimits.recipeCap, custom: 8)
+        let coordinator = makeCoordinator()
+
+        #expect(coordinator.stage(backup, isPro: false))
+        #expect(coordinator.pendingImport != nil)
     }
 
     @Test func perform_OverCapBackupForPro_Restores() async throws {

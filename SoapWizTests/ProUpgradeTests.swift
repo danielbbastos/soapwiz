@@ -193,10 +193,6 @@ struct ProUpgradeCopyTests {
         #expect(ProUpgradeReason.recipeLimit.message.contains("\(FreeTierLimits.recipeCap)"))
     }
 
-    @Test func message_CustomIngredientLimit_IncludesCap() {
-        #expect(ProUpgradeReason.customIngredientLimit.message.contains("\(FreeTierLimits.customIngredientCap)"))
-    }
-
     @Test func message_RecipeImportLimit_IncludesCapAndNamesTheImport() {
         let message = ProUpgradeReason.recipeImportLimit.message
 
@@ -205,17 +201,16 @@ struct ProUpgradeCopyTests {
         #expect(!message.contains("You have"))
     }
 
-    @Test func message_CustomIngredientImportLimit_IncludesCapAndNamesTheImport() {
-        let message = ProUpgradeReason.customIngredientImportLimit.message
+    @Test func message_BackupLimit_NamesOnlyRecipes() {
+        let message = ProUpgradeReason.backupLimit.message
 
-        #expect(message.contains("\(FreeTierLimits.customIngredientCap)"))
-        #expect(message.contains("Importing this file"))
-        #expect(!message.contains("You have"))
+        #expect(message.contains("\(FreeTierLimits.recipeCap)"))
+        #expect(message.contains("recipes"))
+        #expect(!message.contains("ingredients"))
     }
 
     @Test func message_LimitReasons_DoNotClaimTheUserHasTheCap() {
         #expect(!ProUpgradeReason.recipeLimit.message.contains("You have"))
-        #expect(!ProUpgradeReason.customIngredientLimit.message.contains("You have"))
     }
 
     @Test func message_FeatureReasons_NameTheFeature() {

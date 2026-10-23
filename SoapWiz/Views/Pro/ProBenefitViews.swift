@@ -12,10 +12,9 @@ struct ProBenefit: Identifiable {
     static let paid: [ProBenefit] = [
         ProBenefit(
             symbol: "book.closed",
-            title: "Unlimited recipes and ingredients",
-            detail: "Free keeps \(FreeTierLimits.recipeCap) recipes and "
-                + "\(FreeTierLimits.customIngredientCap) custom ingredients. "
-                + "The 230+ library ingredients are always free. "
+            title: "Unlimited recipes",
+            detail: "Free keeps \(FreeTierLimits.recipeCap) recipes. "
+                + "Custom ingredients are always free, and so are the 230+ library ingredients. "
                 + "Restoring a bigger backup needs Pro."
         ),
         ProBenefit(

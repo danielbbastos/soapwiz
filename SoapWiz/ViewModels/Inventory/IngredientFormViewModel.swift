@@ -62,7 +62,6 @@ final class IngredientFormViewModel {
     /// low-stock level, captured in `init` for the same reason as `ingredientSlug`.
     /// `unitChangeKeepsAmounts` is read while the form is being drawn.
     private let capturedUnit: String
-    private let capturedName: String
     private let capturedHasPurchases: Bool
     private let capturedHasThreshold: Bool
 
@@ -110,7 +109,6 @@ final class IngredientFormViewModel {
         self.ingredientSlug = ingredient?.librarySlug ?? ""
         self.capturedUnitIsEmpty = ingredient?.unit.isEmpty ?? false
         self.capturedUnit = ingredient?.unit ?? ""
-        self.capturedName = ingredient?.name ?? ""
         self.capturedHasPurchases = !(ingredient?.purchases.isEmpty ?? true)
         self.capturedHasThreshold = ingredient?.lowStockThreshold != nil
         self.capturedIsLibraryInstalled = ingredient?.isLibraryInstalled ?? false
@@ -304,16 +302,6 @@ final class IngredientFormViewModel {
     private func convertThreshold(from oldUnit: IngredientUnit?, to newUnit: IngredientUnit?) {
         guard oldUnit != newUnit else { return }
         lowStockThreshold = thresholdAnchor.text(for: newUnit, from: oldUnit, current: lowStockThreshold, locale: locale)
-    }
-
-    /// The free-tier limit saving would pass, or `nil` when it may go ahead. A
-    /// new ingredient is always custom; an edit only needs a slot when it
-    /// renames a library row into a custom one.
-    func limitReached(gate: FreeTierGate, in context: ModelContext) -> ProUpgradeReason? {
-        let allowed = isEditing
-            ? gate.allowsRename(librarySlug: ingredientSlug, oldName: capturedName, newName: trimmedName, in: context)
-            : gate.canCreateCustomIngredient(in: context)
-        return allowed ? nil : .customIngredientLimit
     }
 
     @discardableResult

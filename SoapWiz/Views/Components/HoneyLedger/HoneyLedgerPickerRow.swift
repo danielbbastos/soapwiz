@@ -23,15 +23,10 @@ struct HoneyLedgerPickerRow<Label: View>: View {
 
     let state: HoneyLedgerPickerRowState
 
-    /// Off for a picker that takes one row, where an empty circle would
-    /// suggest several can be ticked.
-    var showsMarker = true
-
     private let label: Label
 
-    init(state: HoneyLedgerPickerRowState, showsMarker: Bool = true, @ViewBuilder label: () -> Label) {
+    init(state: HoneyLedgerPickerRowState, @ViewBuilder label: () -> Label) {
         self.state = state
-        self.showsMarker = showsMarker
         self.label = label()
     }
 
@@ -39,13 +34,13 @@ struct HoneyLedgerPickerRow<Label: View>: View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 4) {
-                    if showsMarker { circle }
+                    circle
                     label
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 HStack(spacing: 12) {
-                    if showsMarker { circle }
+                    circle
                     label
                     Spacer()
                 }
@@ -83,8 +78,8 @@ struct HoneyLedgerPickerRow<Label: View>: View {
 
 extension HoneyLedgerPickerRow where Label == Text {
     /// The common row: just a name, faint once it is already taken.
-    init(name: String, state: HoneyLedgerPickerRowState, showsMarker: Bool = true) {
-        self.init(state: state, showsMarker: showsMarker) {
+    init(name: String, state: HoneyLedgerPickerRowState) {
+        self.init(state: state) {
             Text(name).foregroundStyle(state == .added ? Color.inkFaint : Color.ink)
         }
     }

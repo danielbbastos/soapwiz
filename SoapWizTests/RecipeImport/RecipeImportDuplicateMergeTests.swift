@@ -210,13 +210,13 @@ struct RecipeImportDuplicateMergeTests {
         try ctx.save()
         let model = RecipeImportViewModel()
         model.openFile(at: url, inventory: [capturedOil], collections: [capturedGifts], recipes: [])
-        #expect(model.transferPlan?.matchedIngredients.first?.existing === capturedOil)
+        #expect(model.transferPlan?.ingredients.compactMap(\.existing).first === capturedOil)
 
         try DuplicateMerger.mergeAll(in: ctx)
         model.resolveMergedRows(in: ctx)
 
         let plan = try #require(model.transferPlan)
-        #expect(plan.matchedIngredients.compactMap(\.existing) == [keepOil])
+        #expect(plan.ingredients.compactMap(\.existing) == [keepOil])
         #expect(plan.matchedCollections["Gifts"] === keepGifts)
 
         let categories = try ctx.fetch(FetchDescriptor<IngredientCategory>())

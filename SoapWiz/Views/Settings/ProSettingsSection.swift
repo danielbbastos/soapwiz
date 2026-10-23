@@ -10,7 +10,6 @@ struct ProSettingsSection: View {
 
     @State private var restoreModel = ProRestoreModel()
     @State private var recipeCount = 0
-    @State private var customIngredientCount = 0
 
     var body: some View {
         Section {
@@ -24,12 +23,6 @@ struct ProSettingsSection: View {
                     .ledgerSheetRow(position: .first)
                 limitRow("Recipes", count: recipeCount, cap: FreeTierLimits.recipeCap)
                     .ledgerSheetRow(position: .middle)
-                limitRow(
-                    "Custom ingredients",
-                    count: customIngredientCount,
-                    cap: FreeTierLimits.customIngredientCap
-                )
-                .ledgerSheetRow(position: .middle)
                 Button {
                     presenter.present()
                 } label: {
@@ -60,8 +53,8 @@ struct ProSettingsSection: View {
         }
     }
 
-    static let freeFooter = "One payment, no subscription. Pro adds unlimited recipes and custom "
-        + "ingredients, iCloud sync, collections and reminders."
+    static let freeFooter = "One payment, no subscription. Pro adds unlimited recipes, "
+        + "iCloud sync, collections and reminders."
     static let proFooter = "Bought once. Yours on every device signed in to the same Apple Account."
 
     /// Always present, so it alone carries the modifiers that must run once
@@ -114,6 +107,5 @@ struct ProSettingsSection: View {
     private func refreshCounts() {
         guard !proStore.isPro else { return }
         recipeCount = (try? FreeTierLimits.recipeCount(in: modelContext)) ?? 0
-        customIngredientCount = (try? FreeTierLimits.customIngredientCount(in: modelContext)) ?? 0
     }
 }
