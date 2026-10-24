@@ -81,7 +81,7 @@ final class CSVImportFlowViewModel {
         phase = .mapping(mapping)
     }
 
-    func finish(_ result: InventoryImportResult) {
+    func finish() {
         guard case .review(let review) = phase else { return }
         phase = .finished(summary: review.resultSummary ?? "")
     }

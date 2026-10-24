@@ -54,7 +54,7 @@ struct CSVImportFlowView: View {
         case .building:
             progress("Matching rows…")
         case .review(let review):
-            InventoryImportReviewView(model: review, onFinished: model.finish)
+            InventoryImportReviewView(model: review, onFinished: { _ in model.finish() })
         case .finished(let summary):
             finished(summary)
         case .failed(let message):

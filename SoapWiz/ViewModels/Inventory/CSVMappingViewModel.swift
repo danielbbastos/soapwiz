@@ -43,6 +43,7 @@ nonisolated struct CSVRowInput: Sendable {
 @Observable
 final class CSVMappingViewModel {
     private let rows: [[String]]
+    private let columnCount: Int
     private let locale: Locale
     private let calendar: Calendar
     private var mapping: [Int: InventoryImportField]
@@ -65,6 +66,7 @@ final class CSVMappingViewModel {
 
     init(rows: [[String]], locale: Locale = .autoupdatingCurrent, calendar: Calendar = .current) {
         self.rows = rows
+        columnCount = rows.map(\.count).max() ?? 0
         self.locale = locale
         self.calendar = calendar
         let hasHeader = InventoryImportField.isHeader(rows.first ?? [])
@@ -82,20 +84,20 @@ final class CSVMappingViewModel {
     }
 
     var columns: [CSVMappingColumn] {
-        let count = rows.map(\.count).max() ?? 0
         let header = hasHeaderRow ? rows.first ?? [] : []
         let filled = filledDataRows
-        return (0..<count).map { index in
+        return (0..<columnCount).map { index in
             let headerText = header.indices.contains(index)
                 ? header[index].trimmingCharacters(in: .whitespacesAndNewlines)
                 : ""
-            let samples = filled
+            let samples = filled.lazy
                 .compactMap { $0.indices.contains(index) ? $0[index].trimmingCharacters(in: .whitespacesAndNewlines) : nil }
                 .filter { !$0.isEmpty }
+                .prefix(3)
             return CSVMappingColumn(
                 index: index,
                 title: headerText.isEmpty ? String(localized: "Column \(index + 1)") : headerText,
-                samples: Array(samples.prefix(3))
+                samples: Array(samples)
             )
         }
     }

@@ -197,9 +197,8 @@ struct CSVImportFlowViewModelTests {
         _ = try await openMapping(Data(csv.utf8), on: sut)
         await sut.continueToReview(inventory: [])
         guard case .review(let review) = sut.phase else { throw FlowError.notReview }
-        let result = InventoryImportResult(importedRows: 2, skippedRows: 0, ingredientsCreated: 2, purchasesAdded: 2)
 
-        sut.finish(result)
+        sut.finish()
 
         guard case .finished(let summary) = sut.phase else {
             Issue.record("Expected .finished")
@@ -211,7 +210,7 @@ struct CSVImportFlowViewModelTests {
     @Test func finish_OutsideReview_StaysInPhase() {
         let sut = makeSUT()
 
-        sut.finish(InventoryImportResult())
+        sut.finish()
 
         guard case .start = sut.phase else {
             Issue.record("Expected .start")
