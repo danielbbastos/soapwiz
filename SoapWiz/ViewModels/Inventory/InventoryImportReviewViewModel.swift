@@ -7,11 +7,13 @@ struct InventoryImportBlockedLine: Identifiable {
     let line: InventoryImportLine
     /// `nil` for a row with no name, which landed on no ingredient.
     let entry: InventoryImportEntry?
-    /// Set on the first row of a re-pointed ingredient that has no importable
-    /// row, and so is listed nowhere else. Without Change and Undo Change here
-    /// a bad rematch that blocks every row couldn't be undone. An ingredient
-    /// that still has an importable row has them on its own entry row, and is
-    /// offered them once rather than twice.
+    /// Set on the first blocked row of an ingredient that has no importable
+    /// row, and so is listed nowhere else, when another match could help: the
+    /// user re-pointed it, which must stay undoable, or a row is blocked only by
+    /// where it was placed (a unit the ingredient can't take) and not by
+    /// anything in the row itself. An ingredient that still has an importable
+    /// row has these actions on its own entry row, and is offered them once
+    /// rather than twice. Unnamed rows never have them.
     let offersMatchActions: Bool
 
     var id: UUID { line.id }
@@ -53,13 +55,9 @@ final class InventoryImportReviewViewModel {
 
     var blockedLines: [InventoryImportBlockedLine] {
         let fromEntries = plan.entries.flatMap { entry in
-            let isListedElsewhere = hasImportableLine(entry)
+            let offersActions = !hasImportableLine(entry) && (entry.isRematched || entry.lines.contains(where: isBlockedByPlacement))
             return entry.lines.filter { !$0.isImportable }.enumerated().map { index, line in
-                InventoryImportBlockedLine(
-                    line: line,
-                    entry: entry,
-                    offersMatchActions: index == 0 && entry.isRematched && !isListedElsewhere
-                )
+                InventoryImportBlockedLine(line: line, entry: entry, offersMatchActions: index == 0 && offersActions)
             }
         }
         return fromEntries + plan.unnamed.map { InventoryImportBlockedLine(line: $0, entry: nil, offersMatchActions: false) }
@@ -167,6 +165,10 @@ final class InventoryImportReviewViewModel {
     }
 
     // MARK: - Helpers
+
+    private func isBlockedByPlacement(_ line: InventoryImportLine) -> Bool {
+        !line.rowIssues.contains(where: \.isBlocking) && line.placementIssues.contains(where: \.isBlocking)
+    }
 
     private func hasImportableLine(_ entry: InventoryImportEntry) -> Bool {
         entry.lines.contains(where: \.isImportable)
