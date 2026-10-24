@@ -157,13 +157,10 @@ struct HoneyLedgerFieldNote: View {
     }
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Image(systemName: "exclamationmark.triangle")
-            Text(message)
-        }
-        .font(font)
-        .foregroundStyle(tint)
-        .accessibilityElement(children: .combine)
+        Text("\(Image(systemName: "exclamationmark.triangle")) \(message)")
+            .font(font)
+            .foregroundStyle(tint)
+            .accessibilityLabel(message)
     }
 }
 

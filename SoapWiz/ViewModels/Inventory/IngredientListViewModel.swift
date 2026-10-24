@@ -52,6 +52,7 @@ struct IngredientListContent {
 final class IngredientListViewModel {
     var showingAddIngredient: Bool = false
     var showingBulkImport: Bool = false
+    var showingCSVImport: Bool = false
     var showingFilters: Bool = false
     var pendingIngredient: Ingredient?
     var editMode: EditMode = .inactive

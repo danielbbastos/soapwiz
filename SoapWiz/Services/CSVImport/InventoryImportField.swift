@@ -55,11 +55,15 @@ nonisolated enum InventoryImportField: CaseIterable, Hashable {
             ["unit", "unit of measure", "uom", "unidade", "unidad", "unité", "einheit", "units"]
         case .totalPrice:
             ["total price", "total cost", "total", "amount paid",
+             "preço total", "custo total", "valor total", "precio total", "coste total", "costo total",
+             "importe", "prix total", "coût total", "montant", "gesamtpreis", "gesamtkosten", "betrag",
              "price", "cost", "preço", "preco", "custo", "precio", "coste", "costo", "prix", "coût",
              "preis", "kosten", "valor"]
         case .unitPrice:
             ["unit price", "price per unit", "cost per unit", "preço unitário", "precio unitario",
-             "prix unitaire", "stückpreis", "einzelpreis"]
+             "prix unitaire", "stückpreis", "einzelpreis",
+             "preço por unidade", "custo unitário", "precio por unidad", "coste unitario",
+             "prix par unité", "coût unitaire", "preis pro einheit"]
         case .supplier:
             ["supplier", "vendor", "fornecedor", "proveedor", "fournisseur", "lieferant",
              "provider", "store", "shop", "loja", "tienda"]

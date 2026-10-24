@@ -122,10 +122,10 @@ struct CSVMappingViewModelTests {
         #expect(!blank.canContinue)
     }
 
-    @Test func makeRows_EndToEnd_WithHeader() throws {
+    @Test func rowInput_EndToEnd_WithHeader() throws {
         let sut = makeSUT(table)
 
-        let rows = sut.makeRows()
+        let rows = sut.rowInput.rows()
 
         #expect(rows.count == 2)
         #expect(rows[0].name == "Olive oil")
@@ -136,12 +136,42 @@ struct CSVMappingViewModelTests {
         #expect(rows[1].unit == .kilograms)
     }
 
-    @Test func makeRows_Headerless_NumbersFromOne() {
+    @Test func rowInput_BlankRowsInterleaved_KeepsSourceLines() {
+        let sut = makeSUT([
+            ["Ingredient", "Qty"],
+            ["Olive oil", "500 g"],
+            ["", ""],
+            ["Lye", "1 kg"],
+            [" ", ""],
+            ["Shea", "200 g"]
+        ])
+
+        let rows = sut.rowInput.rows()
+
+        #expect(rows.map(\.name) == ["Olive oil", "Lye", "Shea"])
+        #expect(rows.map(\.sourceLine) == [2, 4, 6])
+    }
+
+    @Test func hasHeaderRow_Toggled_RefreshesCachedRows() {
+        let sut = makeSUT([["Name", "Qty"], ["A", "1"], ["", ""], ["B", "2"]])
+        #expect(sut.dataRowCount == 2)
+        #expect(sut.columns[0].samples == ["A", "B"])
+
+        sut.hasHeaderRow = false
+        #expect(sut.dataRowCount == 3)
+        #expect(sut.columns[0].samples == ["Name", "A", "B"])
+
+        sut.hasHeaderRow = true
+        #expect(sut.dataRowCount == 2)
+        #expect(sut.columns[0].samples == ["A", "B"])
+    }
+
+    @Test func rowInput_Headerless_NumbersFromOne() {
         let sut = makeSUT([["Olive oil", "500 g"], ["Lye", "1 kg"]])
         sut.setField(.name, for: 0)
         sut.setField(.quantity, for: 1)
 
-        let rows = sut.makeRows()
+        let rows = sut.rowInput.rows()
 
         #expect(rows.map(\.sourceLine) == [1, 2])
         #expect(rows.map(\.name) == ["Olive oil", "Lye"])
@@ -153,6 +183,6 @@ struct CSVMappingViewModelTests {
         #expect(sut.columns.isEmpty)
         #expect(sut.dataRowCount == 0)
         #expect(!sut.canContinue)
-        #expect(sut.makeRows().isEmpty)
+        #expect(sut.rowInput.rows().isEmpty)
     }
 }

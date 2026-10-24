@@ -98,13 +98,13 @@ struct InventoryImportEntryRow: View {
         VStack(alignment: .leading, spacing: 2) {
             quantityText(line)
                 .foregroundStyle(line.isIncluded ? Color.ink : Color.inkFaint)
+            ForEach(Array(warnings(of: line).enumerated()), id: \.offset) { _, issue in
+                HoneyLedgerFieldNote(issue.reason, tint: .warning)
+            }
             if let detail = detailText(line.row) {
                 Text(detail)
                     .font(.footnote)
                     .foregroundStyle(Color.inkSoft)
-            }
-            ForEach(Array(warnings(of: line).enumerated()), id: \.offset) { _, issue in
-                HoneyLedgerFieldNote(issue.reason, tint: .warning)
             }
         }
     }

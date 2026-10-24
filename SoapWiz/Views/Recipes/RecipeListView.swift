@@ -338,9 +338,11 @@ struct RecipeListView: View {
                 // button in the corner is not part of it.
                 if !model.isSelecting {
                     ExpandableFloatingActionButton(
+                        primaryLabel: "Add recipe",
+                        primarySystemImage: "function",
                         primaryAction: { openForm(.new()) },
                         secondaryActions: [
-                            FABAction(label: "Import Recipe", systemImage: "doc.text.viewfinder") { openImport() }
+                            FABAction(label: "Import recipe", systemImage: "doc.text.viewfinder") { openImport() }
                         ],
                         besideTabBar: navigation.fabBesideTabBar,
                         tourAnchor: .recipeAddButton

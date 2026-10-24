@@ -73,6 +73,23 @@ struct InventoryImportFieldTests {
         #expect(mapping == [0: .quantity])
     }
 
+    @Test(arguments: ["Preço total", "Precio total", "Prix total", "Gesamtpreis", "Valor total", "Montant"])
+    func field_LocalizedTotalPrice_IsTotalPrice(header: String) {
+        #expect(InventoryImportField.field(forHeader: header) == .totalPrice)
+    }
+
+    @Test(arguments: ["Preço por unidade", "Precio por unidad", "Prix par unité", "Preis pro Einheit", "Custo unitário"])
+    func field_LocalizedUnitPrice_IsUnitPrice(header: String) {
+        #expect(InventoryImportField.field(forHeader: header) == .unitPrice)
+    }
+
+    @Test func detect_PortugueseTotalAndUnitPrice_MapsBothColumns() {
+        let mapping = InventoryImportField.detect(header: ["Nome", "Quantidade", "Preço total", "Preço unitário"])
+
+        #expect(mapping[2] == .totalPrice)
+        #expect(mapping[3] == .unitPrice)
+    }
+
     @Test func detect_NoRecognisedHeader_ReturnsEmpty() {
         #expect(InventoryImportField.detect(header: ["Foo", "Bar"]).isEmpty)
         #expect(InventoryImportField.detect(header: []).isEmpty)
