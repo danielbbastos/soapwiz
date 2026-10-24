@@ -14,6 +14,7 @@ struct InventoryImportReviewView: View {
     var onFinished: (InventoryImportResult) -> Void
 
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
     @State private var matchingEntry: InventoryImportEntry?
 
     var body: some View {
@@ -116,7 +117,7 @@ struct InventoryImportReviewView: View {
 
     private func entryRows(_ entries: [InventoryImportEntry]) -> some View {
         ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-            InventoryImportEntryRow(model: model, entry: entry) {
+            InventoryImportEntryRow(model: model, entry: entry, categoryNames: categories.map(\.name)) {
                 matchingEntry = entry
             }
             .ledgerSheetRow(position: .position(index: index, count: entries.count))

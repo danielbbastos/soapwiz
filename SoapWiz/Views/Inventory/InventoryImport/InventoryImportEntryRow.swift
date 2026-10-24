@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 
 /// One ingredient of an inventory import and the rows going onto it. At
 /// accessibility text sizes the stamps and the actions move under the name
@@ -11,10 +10,10 @@ import SwiftData
 struct InventoryImportEntryRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.currencyCode) private var currencyCode
-    @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
 
     let model: InventoryImportReviewViewModel
     let entry: InventoryImportEntry
+    let categoryNames: [String]
     var onChange: () -> Void
 
     private var lines: [InventoryImportLine] {
@@ -182,7 +181,7 @@ struct InventoryImportEntryRow: View {
     }
 
     private var options: [String] {
-        model.categoryOptions(for: entry, existing: categories.map(\.name))
+        model.categoryOptions(for: entry, existing: categoryNames)
     }
 
     /// The option matching the entry's category, which may differ from it in

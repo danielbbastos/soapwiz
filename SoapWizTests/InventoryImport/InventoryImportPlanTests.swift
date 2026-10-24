@@ -283,6 +283,24 @@ struct InventoryImportPlanTests {
         #expect(plan.skippedCount == 1)
     }
 
+    @Test func resetMatch_RowTurnedOffThenBlocked_StaysOffAfterUnblocking() throws {
+        let (container, context) = try Support.makeContext()
+        _ = container
+        let box = Support.insertIngredient("Soap Box", unit: .units, in: context)
+        var plan = Support.plan([InventoryImportRow(name: "Zzyzx Butter", unit: .grams, quantity: 5)], inventory: [])
+        let entryID = try #require(plan.entries.first?.id)
+        let lineID = try #require(plan.entries.first?.lines.first?.id)
+        plan.setIncluded(false, forLine: lineID)
+        plan.rematch(entry: entryID, to: box)
+        #expect(!plan.entries[0].lines[0].isImportable)
+
+        plan.resetMatch(entry: entryID)
+
+        #expect(plan.entries[0].lines[0].isImportable)
+        #expect(!plan.entries[0].lines[0].isIncluded)
+        #expect(plan.importableCount == 0)
+    }
+
     @Test func resetMatch_UnrematchedEntry_ChangesNothing() throws {
         var plan = Support.plan([InventoryImportRow(name: "Zzyzx Butter", quantity: 5)], inventory: [])
         let id = try #require(plan.entries.first?.id)

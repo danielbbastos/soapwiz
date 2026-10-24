@@ -60,8 +60,12 @@ struct InventoryImportLine: Identifiable {
     let rowIssues: [InventoryImportIssue]
     /// What placing the row on its ingredient found, which does.
     private(set) var placementIssues: [InventoryImportIssue]
+    /// Kept apart from `isIncluded`, which is derived, so that a row the user
+    /// turned off stays off through being blocked and unblocked again.
+    private(set) var isTurnedOff = false
+
     /// Always `false` for a blocked row.
-    private(set) var isIncluded: Bool
+    var isIncluded: Bool { isImportable && !isTurnedOff }
 
     var id: UUID { row.id }
 
@@ -74,21 +78,19 @@ struct InventoryImportLine: Identifiable {
         self.rowIssues = rowIssues
         quantity = placement.quantity
         placementIssues = placement.issues
-        isIncluded = !(rowIssues + placement.issues).contains(where: \.isBlocking)
     }
 
     /// Ignored for a blocked row.
     mutating func setIncluded(_ included: Bool) {
-        isIncluded = included && isImportable
+        guard isImportable else { return }
+        isTurnedOff = !included
     }
 
-    /// Places the row again, for a different ingredient. A row the user turned
-    /// off stays off unless it was blocked before and no longer is.
+    /// Places the row again, for a different ingredient. Whether the user
+    /// turned it off is left alone, so it comes back on only if they never did.
     fileprivate mutating func place(_ placement: InventoryImportPlacement) {
-        let wasBlocked = !isImportable
         quantity = placement.quantity
         placementIssues = placement.issues
-        isIncluded = isImportable && (isIncluded || wasBlocked)
     }
 }
 
