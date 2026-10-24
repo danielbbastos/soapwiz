@@ -179,4 +179,117 @@ struct InventoryImportPlanTests {
         #expect(plan.importableCount == 0)
         #expect(plan.skippedCount == 1)
     }
+
+    // MARK: - resetMatch
+
+    @Test func isRematched_ChangesOnlyWithTheIngredient() throws {
+        let (container, context) = try Support.makeContext()
+        _ = container
+        let olive = Support.insertIngredient("Olive Oil", in: context)
+        let butter = Support.insertIngredient("Shea Butter", in: context)
+        var plan = Support.plan([InventoryImportRow(name: "Olive Oil", quantity: 1)], inventory: [olive, butter])
+        let id = try #require(plan.entries.first?.id)
+        #expect(!plan.entries[0].isRematched)
+
+        plan.rematch(entry: id, to: olive)
+        #expect(!plan.entries[0].isRematched)
+
+        plan.rematch(entry: id, to: butter)
+        #expect(plan.entries[0].isRematched)
+        #expect(!plan.entries[0].startedAsNew)
+    }
+
+    @Test func setCategory_DoesNotCountAsRematch() throws {
+        var plan = Support.plan([InventoryImportRow(name: "Zzyzx Butter", quantity: 1)], inventory: [])
+        let id = try #require(plan.entries.first?.id)
+
+        plan.setCategory("Butters", forEntry: id)
+
+        #expect(!plan.entries[0].isRematched)
+        #expect(plan.entries[0].startedAsNew)
+    }
+
+    @Test func resetMatch_NewIngredient_RestoresResolutionAndPlacements() throws {
+        let (container, context) = try Support.makeContext()
+        _ = container
+        let box = Support.insertIngredient("Soap Box", unit: .units, in: context)
+        var plan = Support.plan([InventoryImportRow(name: "Zzyzx Butter", unit: .kilograms, quantity: 2)], inventory: [])
+        let id = try #require(plan.entries.first?.id)
+        plan.rematch(entry: id, to: box)
+        #expect(plan.importableCount == 0)
+
+        plan.resetMatch(entry: id)
+
+        let entry = plan.entries[0]
+        #expect(entry.isNew)
+        #expect(!entry.isRematched)
+        #expect(entry.name == "Zzyzx Butter")
+        #expect(entry.unit == "kg")
+        #expect(entry.lines[0].quantity == 2)
+        #expect(entry.lines[0].issues.isEmpty)
+        #expect(plan.importableCount == 1)
+    }
+
+    @Test func resetMatch_RestoresTheOriginalCategory() throws {
+        let (container, context) = try Support.makeContext()
+        _ = container
+        let butter = Support.insertIngredient("Shea Butter", in: context)
+        var plan = Support.plan([InventoryImportRow(name: "Zzyzx Butter", categoryName: "Butters", quantity: 1)], inventory: [])
+        let id = try #require(plan.entries.first?.id)
+        plan.setCategory("Carriers", forEntry: id)
+        plan.rematch(entry: id, to: butter)
+
+        plan.resetMatch(entry: id)
+
+        guard case .newIngredient(let new) = plan.entries[0].resolution else {
+            Issue.record("Expected a new ingredient")
+            return
+        }
+        #expect(new.categoryName == "Butters")
+    }
+
+    @Test func resetMatch_ExistingMatch_ReturnsToIt() throws {
+        let (container, context) = try Support.makeContext()
+        _ = container
+        let olive = Support.insertIngredient("Olive Oil", unit: .kilograms, in: context)
+        let butter = Support.insertIngredient("Shea Butter", in: context)
+        var plan = Support.plan([InventoryImportRow(name: "Olive Oil", unit: .grams, quantity: 500)], inventory: [olive, butter])
+        let id = try #require(plan.entries.first?.id)
+        plan.rematch(entry: id, to: butter)
+        #expect(plan.entries[0].lines[0].quantity == 500)
+
+        plan.resetMatch(entry: id)
+
+        let entry = plan.entries[0]
+        #expect(entry.name == "Olive Oil")
+        #expect(entry.unit == "kg")
+        #expect(entry.lines[0].quantity == 0.5)
+        #expect(!entry.isRematched)
+    }
+
+    @Test func resetMatch_KeepsARowTheUserTurnedOff() throws {
+        let (container, context) = try Support.makeContext()
+        _ = container
+        let butter = Support.insertIngredient("Shea Butter", in: context)
+        var plan = Support.plan([InventoryImportRow(name: "Zzyzx Butter", quantity: 5)], inventory: [])
+        let entryID = try #require(plan.entries.first?.id)
+        let lineID = try #require(plan.entries.first?.lines.first?.id)
+        plan.rematch(entry: entryID, to: butter)
+        plan.setIncluded(false, forLine: lineID)
+
+        plan.resetMatch(entry: entryID)
+
+        #expect(plan.importableCount == 0)
+        #expect(plan.skippedCount == 1)
+    }
+
+    @Test func resetMatch_UnrematchedEntry_ChangesNothing() throws {
+        var plan = Support.plan([InventoryImportRow(name: "Zzyzx Butter", quantity: 5)], inventory: [])
+        let id = try #require(plan.entries.first?.id)
+
+        plan.resetMatch(entry: id)
+
+        #expect(plan.entries[0].isNew)
+        #expect(plan.importableCount == 1)
+    }
 }

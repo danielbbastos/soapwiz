@@ -95,13 +95,60 @@ struct InventoryImportLine: Identifiable {
 /// Every row that landed on one ingredient, existing or new.
 struct InventoryImportEntry: Identifiable {
     let id: UUID
+    /// What the matcher decided, kept so a change the user made can be undone.
+    let originalResolution: InventoryImportResolution
     fileprivate(set) var resolution: InventoryImportResolution
     fileprivate(set) var lines: [InventoryImportLine]
 
     init(id: UUID = UUID(), resolution: InventoryImportResolution, lines: [InventoryImportLine]) {
         self.id = id
+        originalResolution = resolution
         self.resolution = resolution
         self.lines = lines
+    }
+
+    /// Whether the user pointed the entry at a different ingredient than the
+    /// matcher chose. Editing a new ingredient's category is not a rematch.
+    var isRematched: Bool {
+        switch (originalResolution, resolution) {
+        case let (.existing(original), .existing(current)): original != current
+        case (.newIngredient, .newIngredient): false
+        case (.existing, .newIngredient), (.newIngredient, .existing): true
+        }
+    }
+
+    /// Only an entry the matcher found no ingredient for can go back to being
+    /// new: one it matched to the inventory names an ingredient the file
+    /// already belongs to, and creating a second would duplicate it.
+    var startedAsNew: Bool {
+        if case .newIngredient = originalResolution { return true }
+        return false
+    }
+
+    /// Points the entry at `resolution` and places its rows on that
+    /// ingredient's unit again, since the new unit may convert them
+    /// differently, or not at all.
+    fileprivate mutating func resolve(as resolution: InventoryImportResolution) {
+        self.resolution = resolution
+        let density: Double?
+        let isExisting: Bool
+        switch resolution {
+        case .existing(let match):
+            density = match.density
+            isExisting = true
+        case .newIngredient(let new):
+            density = new.libraryEntry?.density
+            isExisting = false
+        }
+        for lineIndex in lines.indices {
+            let placement = InventoryImportMatcher.place(
+                lines[lineIndex].row,
+                unit: unit,
+                density: density,
+                isExisting: isExisting
+            )
+            lines[lineIndex].place(placement)
+        }
     }
 
     var name: String {
@@ -190,16 +237,13 @@ struct InventoryImportPlan {
     /// them differently, or not at all.
     mutating func rematch(entry id: UUID, to ingredient: Ingredient) {
         guard let entryIndex = entries.firstIndex(where: { $0.id == id }) else { return }
-        let match = InventoryImportMatch(ingredient)
-        entries[entryIndex].resolution = .existing(match)
-        for lineIndex in entries[entryIndex].lines.indices {
-            let placement = InventoryImportMatcher.place(
-                entries[entryIndex].lines[lineIndex].row,
-                unit: match.unit,
-                density: match.density,
-                isExisting: true
-            )
-            entries[entryIndex].lines[lineIndex].place(placement)
-        }
+        entries[entryIndex].resolve(as: .existing(InventoryImportMatch(ingredient)))
+    }
+
+    /// Undoes `rematch`, going back to what the matcher chose, the category of
+    /// a new ingredient included.
+    mutating func resetMatch(entry id: UUID) {
+        guard let entryIndex = entries.firstIndex(where: { $0.id == id }) else { return }
+        entries[entryIndex].resolve(as: entries[entryIndex].originalResolution)
     }
 }
