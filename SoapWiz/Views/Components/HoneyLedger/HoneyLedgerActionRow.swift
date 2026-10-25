@@ -5,8 +5,6 @@ import SwiftUI
 /// It sets no button style, so the row's `ledgerSheetRow` lights it while
 /// pressed.
 struct HoneyLedgerActionRow: View {
-    @Environment(\.isEnabled) private var isEnabled
-
     let title: String
     let systemImage: String?
     let isPrimary: Bool
@@ -19,6 +17,28 @@ struct HoneyLedgerActionRow: View {
         self.action = action
     }
 
+    var body: some View {
+        Button(action: action) {
+            HoneyLedgerActionLabel(title, systemImage: systemImage, isPrimary: isPrimary)
+        }
+    }
+}
+
+/// The label of a `HoneyLedgerActionRow`, for a row whose control is not a
+/// plain `Button`, such as a `ShareLink`, to lay out the same way.
+struct HoneyLedgerActionLabel: View {
+    @Environment(\.isEnabled) private var isEnabled
+
+    let title: String
+    let systemImage: String?
+    let isPrimary: Bool
+
+    init(_ title: String, systemImage: String? = nil, isPrimary: Bool = true) {
+        self.title = title
+        self.systemImage = systemImage
+        self.isPrimary = isPrimary
+    }
+
     /// What a plain button style dims a disabled label to, which this row drew
     /// before it took the row's own style.
     private static let disabledOpacity = 0.5
@@ -29,19 +49,17 @@ struct HoneyLedgerActionRow: View {
     }
 
     var body: some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .accessibilityHidden(true)
-                }
-                Text(title)
+        HStack(spacing: 10) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .accessibilityHidden(true)
             }
-            .fontWeight(isPrimary ? .semibold : .regular)
-            .foregroundStyle(color)
-            .opacity(isEnabled ? 1 : Self.disabledOpacity)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(.rect)
+            Text(title)
         }
+        .fontWeight(isPrimary ? .semibold : .regular)
+        .foregroundStyle(color)
+        .opacity(isEnabled ? 1 : Self.disabledOpacity)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(.rect)
     }
 }

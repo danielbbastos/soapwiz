@@ -157,8 +157,8 @@ struct InventoryImportReviewView: View {
     private var confirmTitle: String {
         switch model.importableCount {
         case 0: String(localized: "Import")
-        case 1: String(localized: "Import 1 Row")
-        case let count: String(localized: "Import \(count) Rows")
+        case 1: String(localized: "Import 1 row")
+        case let count: String(localized: "Import \(count) rows")
         }
     }
 }

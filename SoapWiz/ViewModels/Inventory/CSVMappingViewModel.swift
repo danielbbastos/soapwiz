@@ -13,6 +13,28 @@ struct CSVMappingColumn: Identifiable, Equatable {
     var id: Int { index }
 }
 
+/// Everything needed to build the import rows, detached from the mapping screen
+/// so the work can run off the main actor.
+nonisolated struct CSVRowInput: Sendable {
+    /// The rows below the header, blank ones included: the builder drops them
+    /// itself and counts source lines by position.
+    let dataRows: [[String]]
+    let mapping: [Int: InventoryImportField]
+    let firstSourceLine: Int
+    let locale: Locale
+    let calendar: Calendar
+
+    func rows() -> [InventoryImportRow] {
+        CSVInventoryRowBuilder.rows(
+            from: dataRows,
+            mapping: mapping,
+            firstSourceLine: firstSourceLine,
+            locale: locale,
+            calendar: calendar
+        )
+    }
+}
+
 /// Which spreadsheet column holds which inventory field, before the rows are
 /// built.
 ///
@@ -21,6 +43,7 @@ struct CSVMappingColumn: Identifiable, Equatable {
 @Observable
 final class CSVMappingViewModel {
     private let rows: [[String]]
+    private let columnCount: Int
     private let locale: Locale
     private let calendar: Calendar
     private var mapping: [Int: InventoryImportField]
@@ -33,42 +56,48 @@ final class CSVMappingViewModel {
             if hasHeaderRow, !oldValue, mapping.isEmpty {
                 mapping = InventoryImportField.detect(header: rows.first ?? [])
             }
+            filledDataRows = Self.filledRows(of: rows, hasHeaderRow: hasHeaderRow)
         }
     }
 
+    /// The rows below the header that have text in at least one cell, kept
+    /// because the rows never change and the screen reads them on every draw.
+    private var filledDataRows: [[String]]
+
     init(rows: [[String]], locale: Locale = .autoupdatingCurrent, calendar: Calendar = .current) {
         self.rows = rows
+        columnCount = rows.map(\.count).max() ?? 0
         self.locale = locale
         self.calendar = calendar
         let hasHeader = InventoryImportField.isHeader(rows.first ?? [])
         hasHeaderRow = hasHeader
         mapping = hasHeader ? InventoryImportField.detect(header: rows.first ?? []) : [:]
+        filledDataRows = Self.filledRows(of: rows, hasHeaderRow: hasHeader)
     }
 
-    private var dataRows: [[String]] {
+    private static func filledRows(of rows: [[String]], hasHeaderRow: Bool) -> [[String]] {
+        dataRows(of: rows, hasHeaderRow: hasHeaderRow).filter { !CSVInventoryRowBuilder.isBlank($0) }
+    }
+
+    private static func dataRows(of rows: [[String]], hasHeaderRow: Bool) -> [[String]] {
         hasHeaderRow ? Array(rows.dropFirst()) : rows
     }
 
-    /// The rows below the header that have text in at least one cell.
-    private var filledDataRows: [[String]] {
-        dataRows.filter { !CSVInventoryRowBuilder.isBlank($0) }
-    }
-
     var columns: [CSVMappingColumn] {
-        let count = rows.map(\.count).max() ?? 0
         let header = hasHeaderRow ? rows.first ?? [] : []
         let filled = filledDataRows
-        return (0..<count).map { index in
+        return (0..<columnCount).map { index in
             let headerText = header.indices.contains(index)
                 ? header[index].trimmingCharacters(in: .whitespacesAndNewlines)
                 : ""
-            let samples = filled
+            let samples = filled.lazy
                 .compactMap { $0.indices.contains(index) ? $0[index].trimmingCharacters(in: .whitespacesAndNewlines) : nil }
                 .filter { !$0.isEmpty }
+                .prefix(3)
             return CSVMappingColumn(
                 index: index,
                 title: headerText.isEmpty ? String(localized: "Column \(index + 1)") : headerText,
-                samples: Array(samples.prefix(3))
+                samples: Array(samples)
             )
         }
     }
@@ -92,9 +121,9 @@ final class CSVMappingViewModel {
         mapping[column] = field
     }
 
-    func makeRows() -> [InventoryImportRow] {
-        CSVInventoryRowBuilder.rows(
-            from: dataRows,
+    var rowInput: CSVRowInput {
+        CSVRowInput(
+            dataRows: Self.dataRows(of: rows, hasHeaderRow: hasHeaderRow),
             mapping: mapping,
             firstSourceLine: hasHeaderRow ? 2 : 1,
             locale: locale,

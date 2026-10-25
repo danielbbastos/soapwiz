@@ -1,21 +1,54 @@
 import SwiftUI
 
-/// A secondary action revealed when an `ExpandableFloatingActionButton` is expanded.
+/// An action offered by an `ExpandableFloatingActionButton`, as a labelled pill.
 struct FABAction: Identifiable {
-    /// Stable across parent re-renders so `ForEach` doesn't spuriously re-run the
-    /// reveal transition. Labels are unique within a single FAB's action set.
+    /// The stable id keeps each pill's measured size and animation attached to
+    /// the same action across re-renders. Labels are unique within one button's
+    /// actions.
     var id: String { label }
     let label: String
     let systemImage: String
     let action: () -> Void
 }
 
-/// A floating `+` button that tapping performs the primary action. Long-pressing
-/// grows the *same* element sideways: the secondary action buttons (icon + label)
-/// slide out from underneath the `+` (clipped to a shared capsule), while the `+`
-/// stays anchored on the right as a raised circle. Falls back to acting like
-/// `FloatingActionButton` when no secondary actions are supplied.
+/// What the expanded floating button shows and says, apart from how it is drawn.
+enum FABLayout {
+    /// The pills from the top of the screen down to the circle: the last
+    /// secondary action first, the primary action last, nearest the button.
+    static func pillOrder(primary: FABAction, secondary: [FABAction]) -> [FABAction] {
+        secondary.reversed() + [primary]
+    }
+
+    /// How far the pill at `index` of `heights` (top to bottom) sits above the
+    /// circle's centre: where it starts when it emerges and where it ends when
+    /// it goes back.
+    static func emergenceOffset(heights: [CGFloat], index: Int, spacing: CGFloat, diameter: CGFloat) -> CGFloat {
+        guard heights.indices.contains(index) else { return 0 }
+        let below = heights[(index + 1)...].reduce(0) { $0 + $1 + spacing }
+        return heights[index] / 2 + spacing + below + diameter / 2
+    }
+
+    /// The wait before the pill at `index` of `count` (top to bottom) moves:
+    /// the one nearest the circle first when opening, the top one first when
+    /// closing.
+    static func staggerDelay(index: Int, count: Int, isOpening: Bool, step: Double = 0.03) -> Double {
+        Double(isOpening ? count - 1 - index : index) * step
+    }
+
+    static func circleLabel(hasSecondaryActions: Bool, isExpanded: Bool) -> String {
+        guard hasSecondaryActions else { return String(localized: "Add") }
+        return isExpanded ? String(localized: "Close") : String(localized: "Add, shows more actions")
+    }
+}
+
+/// A floating `+` button. Tapping it performs the primary action, or, when
+/// there are secondary actions, opens a vertical speed dial: a scrim over the
+/// screen and a labelled pill for each action, the primary one nearest the
+/// button. The `+` turns into an × that closes the dial. Long-pressing opens
+/// it too.
 struct ExpandableFloatingActionButton: View {
+    let primaryLabel: String
+    let primarySystemImage: String
     let primaryAction: () -> Void
     let secondaryActions: [FABAction]
     /// Beside the tab bar rather than above it: centred on the tab bar, measured
@@ -24,196 +57,233 @@ struct ExpandableFloatingActionButton: View {
     /// What the onboarding tour calls this button, where it points at it.
     var tourAnchor: TourAnchorID?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     @State private var isExpanded = false
-    /// Natural width of the labelled secondary buttons, measured so the capsule can
-    /// size to whatever the labels need.
-    @State private var secondaryContentWidth: CGFloat = 0
+    /// Each pill's natural size, measured on a hidden copy so the first
+    /// opening already knows how far to grow and slide.
+    @State private var pillSizes: [String: CGSize] = [:]
 
     private let diameter: CGFloat = 56
-    private let spacing: CGFloat = 8
+    private let spacing: CGFloat = 12
+    private let margin: CGFloat = 20
 
-    private var secondaryWidth: CGFloat { max(secondaryContentWidth, diameter) }
-    private var expandedWidth: CGFloat { diameter + spacing + secondaryWidth }
-    private var width: CGFloat { isExpanded ? expandedWidth : diameter }
+    private var pills: [FABAction] {
+        FABLayout.pillOrder(
+            primary: FABAction(label: primaryLabel, systemImage: primarySystemImage, action: primaryAction),
+            secondary: secondaryActions
+        )
+    }
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             if isExpanded {
                 Button(action: collapse) {
-                    Color.black.opacity(0.001)
+                    Color.paper.opacity(0.72)
                         .ignoresSafeArea()
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Dismiss")
+                .transition(.opacity)
             }
 
-            control
-                .tourAnchor(tourAnchor, cornerRadius: diameter / 2 + 6, outset: CGSize(width: 6, height: 6))
-                .padding(.trailing, 20)
-                .padding(.bottom, besideTabBar ? ListDetailLayout.tabBarCentreLine - diameter / 2 : 20)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                .ignoresSafeArea(.container, edges: besideTabBar ? .bottom : [])
+            VStack(alignment: .trailing, spacing: spacing) {
+                pillStack
+                circle
+                    .tourAnchor(tourAnchor, cornerRadius: diameter / 2 + 6, outset: CGSize(width: 6, height: 6))
+            }
+            .padding(.horizontal, margin)
+            .padding(.bottom, besideTabBar ? ListDetailLayout.tabBarCentreLine - diameter / 2 : margin)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+            .ignoresSafeArea(.container, edges: besideTabBar ? .bottom : [])
         }
+        .background(alignment: .bottomTrailing) { sizeProbe }
     }
 
-    private var control: some View {
-        ZStack(alignment: .trailing) {
-            // Shared background, with the element's drop shadow over the list below.
-            background
-                .frame(width: width, height: diameter)
-                .shadow(color: .black.opacity(isExpanded ? 0.14 : 0.12),
-                        radius: isExpanded ? 6 : 4,
-                        y: isExpanded ? 3 : 2)
-
-            // Secondary buttons, clipped to the capsule so they appear to emerge
-            // from under the plus instead of sliding in from off-screen.
-            secondaryGroup
-                .offset(x: isExpanded ? -(diameter + spacing) : 0)
-                .opacity(isExpanded ? 1 : 0)
-                .frame(width: width, height: diameter, alignment: .trailing)
-                .clipShape(.capsule)
-
-            // The plus, raised on top when expanded, casting a soft shadow over the
-            // buttons. Collapsed, it is simply the icon sitting on the background.
-            plusButton
-                .frame(width: diameter, height: diameter)
-                .modifier(RaisedPlus(raised: isExpanded))
-                .shadow(color: .black.opacity(isExpanded ? 0.10 : 0), radius: 3, x: -2, y: 1)
-        }
-        .frame(width: width, height: diameter, alignment: .trailing)
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isExpanded)
-        .onPreferenceChange(FABWidthKey.self) { secondaryContentWidth = $0 }
-    }
-
-    @ViewBuilder private var background: some View {
-        if #available(iOS 26, *) {
-            Color.clear.glassEffect(.floatingActionButton, in: .capsule)
-        } else {
-            Capsule().fill(Color.amber)
-        }
-    }
-
-    private var secondaryGroup: some View {
-        HStack(spacing: spacing) {
-            ForEach(secondaryActions) { item in
-                secondaryButton(item)
+    private var sizeProbe: some View {
+        VStack(alignment: .trailing, spacing: spacing) {
+            ForEach(pills) { item in
+                pillLabel(item)
+                    .onGeometryChange(for: CGSize.self) { $0.size } action: { pillSizes[item.id] = $0 }
             }
         }
-        .fixedSize()
-        .background(
-            GeometryReader { proxy in
-                Color.clear.preference(key: FABWidthKey.self, value: proxy.size.width)
-            }
-        )
+        .padding(.horizontal, margin)
+        .hidden()
+        .accessibilityHidden(true)
+        .allowsHitTesting(false)
     }
 
-    private func secondaryButton(_ item: FABAction) -> some View {
+    private var pillStack: some View {
+        let order = pills
+        let heights = order.map { pillSizes[$0.id]?.height ?? 48 }
+        return VStack(alignment: .trailing, spacing: spacing) {
+            ForEach(Array(order.enumerated()), id: \.element.id) { index, item in
+                pill(item)
+                    .modifier(FABPillEmergence(
+                        progress: isExpanded ? 1 : 0,
+                        width: pillSizes[item.id]?.width,
+                        offset: FABLayout.emergenceOffset(
+                            heights: heights, index: index, spacing: spacing, diameter: diameter
+                        ),
+                        diameter: diameter,
+                        fadesOnly: reduceMotion
+                    ))
+                    .animation(
+                        reduceMotion
+                            ? .easeOut(duration: 0.15)
+                            : reveal.delay(FABLayout.staggerDelay(index: index, count: order.count, isOpening: isExpanded)),
+                        value: isExpanded
+                    )
+                    .allowsHitTesting(isExpanded)
+                    .accessibilityHidden(!isExpanded)
+            }
+        }
+        .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+    }
+
+    private func pillLabel(_ item: FABAction) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: item.systemImage)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.amberText)
+                .accessibilityHidden(true)
+            Text(item.label)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color.ink)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.leading, 16)
+        .padding(.trailing, 20)
+        .frame(minHeight: 48)
+    }
+
+    private func pill(_ item: FABAction) -> some View {
         Button {
             collapse()
             item.action()
         } label: {
-            HStack(spacing: 8) {
-                Image(systemName: item.systemImage)
-                    .font(.title3.weight(.semibold))
-                Text(item.label)
-                    .font(.subheadline.weight(.semibold))
-                    .fixedSize()
-            }
-            .foregroundStyle(Color.onAmber)
-            .padding(.leading, 20)
-            .padding(.trailing, 8)
-            .frame(height: diameter)
+            pillLabel(item)
+                .contentShape(.capsule)
         }
-        .accessibilityLabel(item.label)
+        .buttonStyle(.plain)
+        .modifier(PillSurface(solid: reduceTransparency))
     }
 
-    /// Tapping opens the choices when there are any, and performs the primary
-    /// action once they are open.
-    ///
-    /// It used to take a long press to reveal them, which meant the only way to
-    /// discover a secondary action was to be told about it — the Settings screen
-    /// had a sentence explaining the gesture, which is a sign the affordance had
-    /// failed. Import and bulk import are ordinary actions, not power-user ones.
-    ///
-    /// The cost is honest: creating a recipe or an ingredient is now two taps
-    /// rather than one. Nothing is hidden in exchange.
-    private var plusButton: some View {
-        // The long press is kept as well, so anyone who learned it still gets
-        // the same result. A long press must expand without also firing the tap
-        // on release, so the two gestures are exclusive: the long press wins
-        // when held, the tap fires only when it doesn't. A plain `Button` would
-        // run both.
-        icon("plus")
+    private var circle: some View {
+        Image(systemName: "plus")
+            .font(.title2.weight(.semibold))
+            .foregroundStyle(Color.onAmber)
+            .rotationEffect(.degrees(isExpanded ? 45 : 0))
+            .frame(width: diameter, height: diameter)
+            .modifier(CircleSurface())
+            .shadow(color: .black.opacity(isExpanded ? 0.14 : 0.12),
+                    radius: isExpanded ? 6 : 4,
+                    y: isExpanded ? 3 : 2)
             .contentShape(.circle)
             .gesture(
                 ExclusiveGesture(
                     LongPressGesture(minimumDuration: 0.35).onEnded { _ in
-                        guard !secondaryActions.isEmpty else { return }
+                        guard !secondaryActions.isEmpty, !isExpanded else { return }
                         expand()
                     },
                     TapGesture().onEnded {
-                        guard !secondaryActions.isEmpty, !isExpanded else {
+                        if isExpanded {
+                            collapse()
+                        } else if secondaryActions.isEmpty {
                             primaryAction()
-                            if isExpanded { collapse() }
-                            return
+                        } else {
+                            expand()
                         }
-                        expand()
                     }
                 )
             )
             .accessibilityElement()
-            .accessibilityLabel(accessibilityLabel)
+            .accessibilityLabel(FABLayout.circleLabel(hasSecondaryActions: !secondaryActions.isEmpty, isExpanded: isExpanded))
             .accessibilityAddTraits(.isButton)
     }
 
-    private var accessibilityLabel: String {
-        guard !secondaryActions.isEmpty else { return "Add" }
-        return isExpanded ? "Add" : "Add, shows more actions"
-    }
-
-    private func icon(_ systemImage: String) -> some View {
-        Image(systemName: systemImage)
-            .font(.title2.weight(.semibold))
-            .foregroundStyle(Color.onAmber)
-            .frame(width: diameter, height: diameter)
+    private var reveal: Animation {
+        .spring(response: 0.28, dampingFraction: 0.8)
     }
 
     private func expand() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+        withAnimation(reveal) {
             isExpanded = true
         }
     }
 
     private func collapse() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+        withAnimation(reveal) {
             isExpanded = false
         }
     }
 }
 
-/// Measures the natural width of the labelled secondary buttons.
-private struct FABWidthKey: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
+/// How far a pill is out of the circle, from 0 (on the circle: a capsule as
+/// wide as the circle, hidden under it) to 1 (in its slot at full width). The
+/// pill stays laid out in its slot throughout, so the stack never changes
+/// size; the offset and a capsule mask over the whole pill, its trailing edge
+/// fixed, do the moving and widening, and nothing is stretched. Without
+/// motion it only fades. The pill's shadow is drawn by the stack around it,
+/// so the mask doesn't clip it.
+private struct FABPillEmergence: ViewModifier, Animatable {
+    var progress: CGFloat
+    let width: CGFloat?
+    /// How far above the circle's centre the pill's slot is.
+    let offset: CGFloat
+    let diameter: CGFloat
+    let fadesOnly: Bool
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if !fadesOnly, let width {
+            let narrow = min(diameter, width)
+            content
+                .mask(alignment: .trailing) {
+                    Capsule().frame(width: narrow + (width - narrow) * progress)
+                }
+                .offset(y: (1 - progress) * offset)
+                .opacity(progress > 0.001 ? 1 : 0)
+        } else {
+            content.opacity(progress)
+        }
     }
 }
 
-/// The raised circle behind the `+` while expanded: interactive amber glass on
-/// iOS 26, a solid `amber` circle on earlier versions. Collapsed, the `+` needs no
-/// circle of its own — it sits directly on the shared background.
-private struct RaisedPlus: ViewModifier {
-    let raised: Bool
+/// The pill's capsule: interactive glass on iOS 26 and a raised paper capsule
+/// before it, or the raised paper on both when Reduce Transparency is on.
+private struct PillSurface: ViewModifier {
+    let solid: Bool
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        if raised {
-            if #available(iOS 26, *) {
-                content.glassEffect(.floatingActionButton, in: .circle)
-            } else {
-                content.background(Color.amber, in: .circle)
-            }
+        if !solid, #available(iOS 26, *) {
+            content
+                .glassEffect(.regular.interactive(), in: .capsule)
+                .glassEffectTransition(.identity)
         } else {
             content
+                .background(Color.paperRaised, in: .capsule)
+                .overlay(Capsule().strokeBorder(Color.rule, lineWidth: 1))
+        }
+    }
+}
+
+/// The circle behind the `+`: interactive amber glass on iOS 26, a solid
+/// `amber` circle on earlier versions.
+private struct CircleSurface: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content.glassEffect(.floatingActionButton, in: .circle)
+        } else {
+            content.background(Color.amber, in: .circle)
         }
     }
 }
