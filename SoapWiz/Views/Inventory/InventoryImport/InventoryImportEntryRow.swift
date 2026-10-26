@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// One ingredient of an inventory import and the rows going onto it. At
-/// accessibility text sizes the stamps and the actions move under the name
-/// rather than squeezing beside it.
+/// One ingredient of an inventory import and the rows going onto it: its name
+/// with Change, what the file says on each row with a check at the trailing
+/// edge, and for a new ingredient its category. At accessibility text sizes
+/// the actions stack rather than squeezing together.
 ///
 /// Rows the import can't take aren't listed here; "Can't Import" lists them.
 /// Several buttons share this list row, so the toggles set `.plain` and keep
@@ -20,35 +21,39 @@ struct InventoryImportEntryRow: View {
         entry.lines.filter(\.isImportable)
     }
 
-    private var headerLayout: AnyLayout {
+    private var categoryLayout: AnyLayout {
         dynamicTypeSize.isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
             : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 8))
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            header
+            InventoryImportNameLine(model: model, name: entry.name, entry: entry, onChange: onChange) {
+                stamp
+            }
             if lines.count > 1 {
                 entryToggle
+                    .padding(.top, 4)
             }
             ForEach(lines) { line in
-                lineToggle(line)
+                VStack(alignment: .leading, spacing: 0) {
+                    lineToggle(line)
+                    if line.enteredQuantity != nil {
+                        InventoryImportRowButton("Undo amount", color: .inkSoft, growsUp: false) {
+                            InventoryImportMotion.animate { model.clearEnteredAmount(line: line.id) }
+                        }
+                        .importTransition(.reveal)
+                    }
+                }
+                .padding(.top, lines.count == 1 ? 4 : 0)
             }
-            actions
+            if entry.isNew {
+                categoryRow
+                    .importTransition(.reveal)
+            }
         }
-        .padding(.vertical, 4)
-    }
-
-    // MARK: - Header
-
-    private var header: some View {
-        headerLayout {
-            Text(entry.name)
-                .foregroundStyle(Color.ink)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            stamp
-        }
+        .padding(.bottom, 2)
     }
 
     @ViewBuilder
@@ -69,9 +74,9 @@ struct InventoryImportEntryRow: View {
     private var entryToggle: some View {
         let isIncluded = model.isIncluded(entry)
         return Button {
-            model.setIncluded(!isIncluded, entry: entry.id)
+            InventoryImportMotion.animate { model.setIncluded(!isIncluded, entry: entry.id) }
         } label: {
-            HoneyLedgerPickerRow(state: isIncluded ? .selected : .unselected) {
+            HoneyLedgerPickerRow(state: isIncluded ? .selected : .unselected, glyphEdge: .trailing) {
                 Text("All \(lines.count) rows")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.ink)
@@ -83,19 +88,18 @@ struct InventoryImportEntryRow: View {
 
     private func lineToggle(_ line: InventoryImportLine) -> some View {
         Button {
-            model.setIncluded(!line.isIncluded, line: line.id)
+            InventoryImportMotion.animate { model.setIncluded(!line.isIncluded, line: line.id) }
         } label: {
-            HoneyLedgerPickerRow(state: line.isIncluded ? .selected : .unselected) {
+            HoneyLedgerPickerRow(state: line.isIncluded ? .selected : .unselected, glyphEdge: .trailing) {
                 lineDetails(line)
             }
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(line.isIncluded ? .isSelected : [])
-        .padding(.leading, lines.count > 1 ? 20 : 0)
     }
 
     private func lineDetails(_ line: InventoryImportLine) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             quantityText(line)
                 .foregroundStyle(line.isIncluded ? Color.ink : Color.inkFaint)
             ForEach(Array(warnings(of: line).enumerated()), id: \.offset) { _, issue in
@@ -114,7 +118,7 @@ struct InventoryImportEntryRow: View {
             return Text("No quantity")
         }
         return Text.honeyLedgerFigure(
-            quantity.formatted(.number.precision(.fractionLength(0...3))),
+            quantity.formatted(.number.precision(.fractionLength(0...2))),
             unit: entry.unit,
             numberColor: line.isIncluded ? .ink : .inkFaint
         )
@@ -138,24 +142,22 @@ struct InventoryImportEntryRow: View {
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
-    // MARK: - Actions
+    // MARK: - Category
 
-    private var actions: some View {
-        headerLayout {
-            InventoryImportMatchActions(model: model, entry: entry, onChange: onChange)
-            if entry.isNew {
-                if !dynamicTypeSize.isAccessibilitySize {
-                    Spacer(minLength: 0)
-                }
-                categoryMenu
-            }
+    private var categoryRow: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Rectangle()
+                .fill(Color.rule)
+                .frame(height: 1)
+                .accessibilityHidden(true)
+            categoryMenu
         }
     }
 
     private var categoryMenu: some View {
         let selection = Binding<String?>(
             get: { selectedOption },
-            set: { model.setCategory($0, entry: entry.id) }
+            set: { name in InventoryImportMotion.animate { model.setCategory(name, entry: entry.id) } }
         )
         return Menu {
             Picker("Category", selection: selection) {
@@ -165,14 +167,22 @@ struct InventoryImportEntryRow: View {
                 Text(IngredientCategory.Name.others).tag(String?.none)
             }
         } label: {
-            HStack(spacing: 4) {
-                Text(selectedOption ?? IngredientCategory.Name.others)
-                Image(systemName: "chevron.up.chevron.down")
-                    .imageScale(.small)
-                    .accessibilityHidden(true)
+            categoryLayout {
+                Text("Category")
+                    .foregroundStyle(Color.ink)
+                if !dynamicTypeSize.isAccessibilitySize {
+                    Spacer(minLength: 0)
+                }
+                HStack(spacing: 4) {
+                    Text(selectedOption ?? IngredientCategory.Name.others)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .imageScale(.small)
+                        .accessibilityHidden(true)
+                }
+                .foregroundStyle(Color.amberText)
             }
-            .font(.footnote.weight(.semibold))
-            .foregroundStyle(Color.amberText)
+            .frame(minHeight: 44)
+            .contentShape(.rect)
         }
         .menuStyle(.automatic)
         .buttonStyle(.borderless)

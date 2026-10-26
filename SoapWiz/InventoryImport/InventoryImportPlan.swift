@@ -63,6 +63,11 @@ struct InventoryImportLine: Identifiable {
     /// Kept apart from `isIncluded`, which is derived, so that a row the user
     /// turned off stays off through being blocked and unblocked again.
     private(set) var isTurnedOff = false
+    /// What the user typed, in the ingredient's unit, for a row whose unit the
+    /// ingredient couldn't take. Set only while that amount stands: placing the
+    /// row on an ingredient again drops it, since the unit it was typed in may
+    /// no longer be the ingredient's.
+    private(set) var enteredQuantity: Double?
 
     /// Always `false` for a blocked row.
     var isIncluded: Bool { isImportable && !isTurnedOff }
@@ -72,6 +77,20 @@ struct InventoryImportLine: Identifiable {
     var issues: [InventoryImportIssue] { rowIssues + placementIssues }
 
     var isImportable: Bool { !issues.contains(where: \.isBlocking) }
+
+    /// Whether the user can type the amount: the row is blocked only by a unit
+    /// the ingredient can't take, which they can answer by giving the amount in
+    /// the ingredient's own unit. It stays true once an amount is entered, so
+    /// that it can be changed or undone.
+    var canEnterQuantity: Bool {
+        if enteredQuantity != nil { return true }
+        guard !rowIssues.contains(where: \.isBlocking) else { return false }
+        let blocking = placementIssues.filter(\.isBlocking)
+        return !blocking.isEmpty && blocking.allSatisfy { issue in
+            if case .unitMismatch = issue { return true }
+            return false
+        }
+    }
 
     init(row: InventoryImportRow, rowIssues: [InventoryImportIssue], placement: InventoryImportPlacement) {
         self.row = row
@@ -88,9 +107,28 @@ struct InventoryImportLine: Identifiable {
 
     /// Places the row again, for a different ingredient. Whether the user
     /// turned it off is left alone, so it comes back on only if they never did.
+    /// An amount typed by hand is dropped.
     fileprivate mutating func place(_ placement: InventoryImportPlacement) {
         quantity = placement.quantity
         placementIssues = placement.issues
+        enteredQuantity = nil
+    }
+
+    /// Takes `amount`, in the ingredient's unit, as the row's quantity. Ignored
+    /// unless it is a positive number and the row can have one entered; the
+    /// file's quantity and unit stay on the row, and are named in the note that
+    /// replaces the unit mismatch.
+    fileprivate mutating func enterQuantity(_ amount: Double) {
+        guard amount.isFinite, amount > 0, canEnterQuantity,
+              let fileQuantity = row.quantity, let fileUnit = row.unit else { return }
+        quantity = amount
+        enteredQuantity = amount
+        placementIssues = placementIssues.filter { issue in
+            switch issue {
+            case .unitMismatch, .enteredByHand: false
+            default: true
+            }
+        } + [.enteredByHand(fileQuantity: fileQuantity, fileUnit: fileUnit.rawValue)]
     }
 }
 
@@ -132,6 +170,13 @@ struct InventoryImportEntry: Identifiable {
     /// differently, or not at all.
     fileprivate mutating func resolve(as resolution: InventoryImportResolution) {
         self.resolution = resolution
+        for lineIndex in lines.indices {
+            placeLine(at: lineIndex)
+        }
+    }
+
+    /// Places one row on the entry's current ingredient, as the matcher would.
+    fileprivate mutating func placeLine(at index: Int) {
         let density: Double?
         let isExisting: Bool
         switch resolution {
@@ -142,15 +187,13 @@ struct InventoryImportEntry: Identifiable {
             density = new.libraryEntry?.density
             isExisting = false
         }
-        for lineIndex in lines.indices {
-            let placement = InventoryImportMatcher.place(
-                lines[lineIndex].row,
-                unit: unit,
-                density: density,
-                isExisting: isExisting
-            )
-            lines[lineIndex].place(placement)
-        }
+        let placement = InventoryImportMatcher.place(
+            lines[index].row,
+            unit: unit,
+            density: density,
+            isExisting: isExisting
+        )
+        lines[index].place(placement)
     }
 
     var name: String {
@@ -211,6 +254,28 @@ struct InventoryImportPlan {
         for entryIndex in entries.indices {
             guard let lineIndex = entries[entryIndex].lines.firstIndex(where: { $0.id == id }) else { continue }
             entries[entryIndex].lines[lineIndex].setIncluded(included)
+            return
+        }
+    }
+
+    /// Imports the row with `amount`, in its ingredient's unit, in place of the
+    /// file's quantity, which couldn't be converted. Does nothing for a row that
+    /// isn't blocked only by that, or for an amount that isn't positive.
+    mutating func enterQuantity(_ amount: Double, forLine id: UUID) {
+        for entryIndex in entries.indices {
+            guard let lineIndex = entries[entryIndex].lines.firstIndex(where: { $0.id == id }) else { continue }
+            entries[entryIndex].lines[lineIndex].enterQuantity(amount)
+            return
+        }
+    }
+
+    /// Undoes `enterQuantity`: the row is placed on its ingredient again, which
+    /// brings the unit mismatch back.
+    mutating func clearEnteredQuantity(forLine id: UUID) {
+        for entryIndex in entries.indices {
+            guard let lineIndex = entries[entryIndex].lines.firstIndex(where: { $0.id == id }) else { continue }
+            guard entries[entryIndex].lines[lineIndex].enteredQuantity != nil else { return }
+            entries[entryIndex].placeLine(at: lineIndex)
             return
         }
     }

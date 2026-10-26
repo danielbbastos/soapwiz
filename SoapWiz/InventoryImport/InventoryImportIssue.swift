@@ -46,15 +46,23 @@ nonisolated enum InventoryImportIssue: Equatable {
     /// A date cell that isn't a readable date. The row imports without that
     /// date. The associated value is the cell as written.
     case unreadableDate(String)
+    /// The user typed the amount in the ingredient's unit because the file's
+    /// couldn't be converted: SoapWiz never assumes a density, so the number is
+    /// theirs. The file's quantity and unit are kept to show beside it.
+    case enteredByHand(fileQuantity: Double, fileUnit: String)
 
     var severity: InventoryImportSeverity {
         switch self {
         case .missingName, .invalidQuantity, .unitMismatch, .nothingToAdd, .unknownUnit, .conflictingUnits: .blocking
-        case .convertedViaDensity, .unreadablePrice, .unreadableDate: .warning
+        case .convertedViaDensity, .unreadablePrice, .unreadableDate, .enteredByHand: .warning
         }
     }
 
     var isBlocking: Bool { severity == .blocking }
+
+    static func fileQuantityText(_ quantity: Double) -> String {
+        quantity.formatted(.number.precision(.fractionLength(0...3)))
+    }
 
     /// The explanation shown beside the row.
     var reason: String {
@@ -77,6 +85,8 @@ nonisolated enum InventoryImportIssue: Equatable {
             String(localized: "\(text) isn't a readable price, so the row imports without one.")
         case let .unreadableDate(text):
             String(localized: "\(text) isn't a readable date, so the row imports without one.")
+        case let .enteredByHand(fileQuantity, fileUnit):
+            String(localized: "Entered by hand. The file says \(Self.fileQuantityText(fileQuantity)) \(fileUnit).")
         }
     }
 }

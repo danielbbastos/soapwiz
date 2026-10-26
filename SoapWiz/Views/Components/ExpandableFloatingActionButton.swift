@@ -167,7 +167,7 @@ struct ExpandableFloatingActionButton: View {
             pillLabel(item)
                 .contentShape(.capsule)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(FABPillButtonStyle())
         .modifier(PillSurface(solid: reduceTransparency))
     }
 
@@ -257,8 +257,22 @@ private struct FABPillEmergence: ViewModifier, Animatable {
     }
 }
 
-/// The pill's capsule: interactive glass on iOS 26 and a raised paper capsule
-/// before it, or the raised paper on both when Reduce Transparency is on.
+/// The pill's press feedback: the pressed honey tint fills a capsule over its
+/// surface while the finger is down. The surface itself stays non-interactive.
+private struct FABPillButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background {
+                if configuration.isPressed {
+                    Capsule().fill(Color.honeyPressed)
+                }
+            }
+    }
+}
+
+/// The pill's capsule: glass on iOS 26 and a raised paper capsule before it,
+/// or the raised paper on both when Reduce Transparency is on. The glass isn't
+/// interactive: interactive glass renders white for its first half second.
 private struct PillSurface: ViewModifier {
     let solid: Bool
 
@@ -266,7 +280,7 @@ private struct PillSurface: ViewModifier {
     func body(content: Content) -> some View {
         if !solid, #available(iOS 26, *) {
             content
-                .glassEffect(.regular.interactive(), in: .capsule)
+                .glassEffect(.regular, in: .capsule)
                 .glassEffectTransition(.identity)
         } else {
             content
