@@ -247,7 +247,7 @@ struct InventoryImportEnteredAmountTests {
         let castor = Support.insertIngredient("Castor Oil", in: context)
         let model = InventoryImportReviewViewModel(plan: mismatchPlan(inventory: [castor]))
         let blocked = try #require(model.blockedLines.first)
-        #expect(model.canEnterAmount(blocked.line))
+        #expect(blocked.line.canEnterQuantity)
         #expect(model.matchedEntries.isEmpty)
 
         model.enterAmount("460", line: blocked.line.id)
@@ -303,7 +303,7 @@ struct InventoryImportEnteredAmountTests {
     @Test func viewModel_CanEnterAmount_UnnamedRow_IsFalse() throws {
         let model = InventoryImportReviewViewModel(plan: Support.plan([InventoryImportRow(name: "", quantity: 1)], inventory: []))
 
-        #expect(try !model.canEnterAmount(#require(model.blockedLines.first?.line)))
+        #expect(try !#require(model.blockedLines.first?.line).canEnterQuantity)
     }
 
     // MARK: - Applier

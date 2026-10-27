@@ -250,34 +250,34 @@ struct InventoryImportPlan {
 
     var skippedCount: Int { rowCount - importableCount }
 
-    mutating func setIncluded(_ included: Bool, forLine id: UUID) {
+    private func lineLocation(of id: UUID) -> (entry: Int, line: Int)? {
         for entryIndex in entries.indices {
-            guard let lineIndex = entries[entryIndex].lines.firstIndex(where: { $0.id == id }) else { continue }
-            entries[entryIndex].lines[lineIndex].setIncluded(included)
-            return
+            if let lineIndex = entries[entryIndex].lines.firstIndex(where: { $0.id == id }) {
+                return (entryIndex, lineIndex)
+            }
         }
+        return nil
+    }
+
+    mutating func setIncluded(_ included: Bool, forLine id: UUID) {
+        guard let location = lineLocation(of: id) else { return }
+        entries[location.entry].lines[location.line].setIncluded(included)
     }
 
     /// Imports the row with `amount`, in its ingredient's unit, in place of the
     /// file's quantity, which couldn't be converted. Does nothing for a row that
     /// isn't blocked only by that, or for an amount that isn't positive.
     mutating func enterQuantity(_ amount: Double, forLine id: UUID) {
-        for entryIndex in entries.indices {
-            guard let lineIndex = entries[entryIndex].lines.firstIndex(where: { $0.id == id }) else { continue }
-            entries[entryIndex].lines[lineIndex].enterQuantity(amount)
-            return
-        }
+        guard let location = lineLocation(of: id) else { return }
+        entries[location.entry].lines[location.line].enterQuantity(amount)
     }
 
     /// Undoes `enterQuantity`: the row is placed on its ingredient again, which
     /// brings the unit mismatch back.
     mutating func clearEnteredQuantity(forLine id: UUID) {
-        for entryIndex in entries.indices {
-            guard let lineIndex = entries[entryIndex].lines.firstIndex(where: { $0.id == id }) else { continue }
-            guard entries[entryIndex].lines[lineIndex].enteredQuantity != nil else { return }
-            entries[entryIndex].placeLine(at: lineIndex)
-            return
-        }
+        guard let location = lineLocation(of: id),
+              entries[location.entry].lines[location.line].enteredQuantity != nil else { return }
+        entries[location.entry].placeLine(at: location.line)
     }
 
     /// Turns every row of the entry on or off, leaving blocked rows off.

@@ -104,10 +104,6 @@ final class InventoryImportReviewViewModel {
 
     // MARK: - Entered amounts
 
-    func canEnterAmount(_ line: InventoryImportLine) -> Bool {
-        line.canEnterQuantity
-    }
-
     /// The amount `text` holds, or `nil` unless it is a positive number, so the
     /// field's confirm button and `enterAmount` agree on what is acceptable.
     func parsedAmount(_ text: String) -> Double? {

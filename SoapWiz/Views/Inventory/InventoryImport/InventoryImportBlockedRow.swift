@@ -11,7 +11,7 @@ struct InventoryImportBlockedRow: View {
     @State private var isEntering = false
 
     private var amountEntry: InventoryImportEntry? {
-        model.canEnterAmount(item.line) ? item.entry : nil
+        item.line.canEnterQuantity ? item.entry : nil
     }
 
     private var actionEntry: InventoryImportEntry? {

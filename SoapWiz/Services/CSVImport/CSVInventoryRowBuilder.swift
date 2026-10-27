@@ -142,7 +142,7 @@ nonisolated enum CSVInventoryRowBuilder {
     private static func unknownUnitText(in cell: String) -> String? {
         guard let split = cell.firstIndex(where: \.isLetter),
               !cell[..<split].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        let unit = cell[split...].trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let unit = unitSuffix(of: cell) else { return nil }
         return CSVUnitParser.unit(unit) == nil ? unit : nil
     }
 

@@ -7,11 +7,11 @@ import SwiftData
 /// ingredient already in the inventory, create a new ingredient, or nothing,
 /// with the reason. The user can turn rows off and point an ingredient at
 /// another match. Nothing is saved until the confirm button, which saves and
-/// hands the result to `onFinished`; the flow that presents this screen owns
+/// then calls `onFinished`; the flow that presents this screen owns
 /// what is shown next.
 struct InventoryImportReviewView: View {
     let model: InventoryImportReviewViewModel
-    var onFinished: (InventoryImportResult) -> Void
+    var onFinished: () -> Void
 
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
@@ -30,8 +30,8 @@ struct InventoryImportReviewView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button {
                     model.confirm(in: modelContext)
-                    if let result = model.result {
-                        onFinished(result)
+                    if model.result != nil {
+                        onFinished()
                     }
                 } label: {
                     Text(confirmTitle)
@@ -208,7 +208,7 @@ private struct InventoryImportPreviewData {
 
     func screen() -> some View {
         NavigationStack {
-            InventoryImportReviewView(model: InventoryImportReviewViewModel(plan: plan), onFinished: { _ in })
+            InventoryImportReviewView(model: InventoryImportReviewViewModel(plan: plan), onFinished: {})
                 .ledgerBackground()
         }
         .modelContainer(container)
