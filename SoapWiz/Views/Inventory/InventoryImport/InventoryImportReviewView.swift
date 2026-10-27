@@ -25,13 +25,17 @@ struct InventoryImportReviewView: View {
             blockedSection
         }
         .environment(\.defaultMinListRowHeight, 48)
+        .readableWidth()
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button(confirmTitle) {
+                Button {
                     model.confirm(in: modelContext)
                     if let result = model.result {
                         onFinished(result)
                     }
+                } label: {
+                    Text(confirmTitle)
+                        .contentTransition(.numericText(value: Double(model.importableCount)))
                 }
                 .disabled(!model.canConfirm)
             }
@@ -40,8 +44,16 @@ struct InventoryImportReviewView: View {
             InventoryImportMatchPickerView(
                 current: currentMatch(of: entry),
                 canCreateNew: model.canResetToNew(entry),
-                onSelect: { model.rematch(entry: entry.id, to: $0) },
-                onCreateNew: { model.resetMatch(entry: entry.id) }
+                onSelect: { ingredient in
+                    InventoryImportMotion.animate {
+                        model.rematch(entry: entry.id, to: ingredient)
+                    }
+                },
+                onCreateNew: {
+                    InventoryImportMotion.animate {
+                        model.resetMatch(entry: entry.id)
+                    }
+                }
             )
         }
     }
@@ -104,13 +116,16 @@ struct InventoryImportReviewView: View {
         if !blocked.isEmpty {
             Section {
                 ForEach(Array(blocked.enumerated()), id: \.element.id) { index, item in
-                    blockedRow(item)
+                    InventoryImportBlockedRow(model: model, item: item) { matchingEntry = $0 }
                         .ledgerSheetRow(position: .position(index: index, count: blocked.count))
                 }
             } header: {
                 HoneyLedgerSectionLabel("Can’t Import")
             } footer: {
-                HoneyLedgerFooter("These rows are left out. Fix them in the source and import again.")
+                HoneyLedgerFooter(
+                    "These rows are left out. Fix them in the source and import again. "
+                    + "Where a unit can’t be converted, you can enter the amount by hand."
+                )
             }
         }
     }
@@ -122,28 +137,6 @@ struct InventoryImportReviewView: View {
             }
             .ledgerSheetRow(position: .position(index: index, count: entries.count))
         }
-    }
-
-    private func blockedRow(_ item: InventoryImportBlockedLine) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(item.entryName ?? String(localized: "No name"))
-                .foregroundStyle(item.entryName == nil ? Color.inkSoft : Color.ink)
-            if let sourceLine = item.line.row.sourceLine {
-                Text("Line \(sourceLine)")
-                    .font(.footnote)
-                    .foregroundStyle(Color.inkSoft)
-            }
-            ForEach(Array(item.line.issues.filter(\.isBlocking).enumerated()), id: \.offset) { _, issue in
-                HoneyLedgerFieldNote(issue.reason, tint: .danger)
-            }
-            if item.offersMatchActions, let entry = item.entry {
-                InventoryImportMatchActions(model: model, entry: entry) {
-                    matchingEntry = entry
-                }
-                .padding(.top, 4)
-            }
-        }
-        .padding(.vertical, 4)
     }
 
     // MARK: - Helpers
@@ -169,8 +162,9 @@ private struct InventoryImportPreviewData {
     let container: ModelContainer
     var plan: InventoryImportPlan
 
-    /// Olive Oil takes two rows, Shea Butter is hidden, Coconut Oil comes from
-    /// the library, and Soap Box can't take a weight.
+    /// Olive Oil takes two rows, the second turned off, Shea Butter is hidden,
+    /// Coconut Oil comes from the library, Palm Oil was pointed at Palm Kernel
+    /// Oil, and Soap Box can't take a weight.
     static func mixed() -> InventoryImportPreviewData {
         make(rows: [
             InventoryImportRow(
@@ -179,12 +173,22 @@ private struct InventoryImportPreviewData {
             ),
             InventoryImportRow(sourceLine: 3, name: "Olive Oil", unit: .kilograms, quantity: 2, totalPrice: 15),
             InventoryImportRow(sourceLine: 4, name: "Shea Butter", unit: .grams, quantity: 200),
-            InventoryImportRow(sourceLine: 5, name: "Coconut Oil", unit: .kilograms, quantity: 1, totalPrice: 6),
+            InventoryImportRow(sourceLine: 5, name: "Coconut Oil", categoryName: "Oils", unit: .kilograms, quantity: 1, totalPrice: 6),
             InventoryImportRow(sourceLine: 6, name: "Zzyzx Butter", categoryName: "Butters", unit: .grams, quantity: 300),
             InventoryImportRow(sourceLine: 7, name: "Soap Box", unit: .grams, quantity: 5),
             InventoryImportRow(sourceLine: 8, name: "", quantity: 1),
-            InventoryImportRow(sourceLine: 9, name: "Olive Oil", quantity: -1)
-        ])
+            InventoryImportRow(sourceLine: 9, name: "Olive Oil", quantity: -1),
+            InventoryImportRow(sourceLine: 10, name: "Castor Oil", unit: .milliliters, quantity: 500, totalPrice: 9),
+            InventoryImportRow(sourceLine: 11, name: "Palm Oil", unit: .grams, quantity: 300)
+        ]) { plan, inventory in
+            if let line = plan.entries.flatMap(\.lines).first(where: { $0.row.sourceLine == 3 }) {
+                plan.setIncluded(false, forLine: line.id)
+            }
+            if let entry = plan.entries.first(where: { $0.name == "Palm Oil" }),
+               let kernel = inventory.first(where: { $0.name == "Palm Kernel Oil" }) {
+                plan.rematch(entry: entry.id, to: kernel)
+            }
+        }
     }
 
     static func allBlocked() -> InventoryImportPreviewData {
@@ -204,13 +208,16 @@ private struct InventoryImportPreviewData {
 
     func screen() -> some View {
         NavigationStack {
-            InventoryImportReviewView(model: InventoryImportReviewViewModel(plan: plan)) { _ in }
+            InventoryImportReviewView(model: InventoryImportReviewViewModel(plan: plan), onFinished: { _ in })
                 .ledgerBackground()
         }
         .modelContainer(container)
     }
 
-    private static func make(rows: [InventoryImportRow]) -> InventoryImportPreviewData {
+    private static func make(
+        rows: [InventoryImportRow],
+        adjust: (inout InventoryImportPlan, [Ingredient]) -> Void = { _, _ in }
+    ) -> InventoryImportPreviewData {
         let schema = ModelContainerFactory.schema
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         guard let container = try? ModelContainer(for: schema, configurations: [configuration]) else {
@@ -220,17 +227,19 @@ private struct InventoryImportPreviewData {
         let inventory = [
             ("Olive Oil", IngredientUnit.grams, false),
             ("Shea Butter", .grams, true),
-            ("Soap Box", .units, false)
+            ("Castor Oil", .grams, false),
+            ("Soap Box", .units, false),
+            ("Palm Oil", .grams, false),
+            ("Palm Kernel Oil", .grams, false)
         ].map { name, unit, isHidden in
             let ingredient = Ingredient(name: name, unit: unit.rawValue)
             ingredient.isHidden = isHidden
             context.insert(ingredient)
             return ingredient
         }
-        return InventoryImportPreviewData(
-            container: container,
-            plan: InventoryImportMatcher.plan(for: rows, inventory: inventory)
-        )
+        var plan = InventoryImportMatcher.plan(for: rows, inventory: inventory)
+        adjust(&plan, inventory)
+        return InventoryImportPreviewData(container: container, plan: plan)
     }
 }
 

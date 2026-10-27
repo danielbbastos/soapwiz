@@ -10,8 +10,16 @@ enum HoneyLedgerPickerRowState {
     case added
 }
 
+/// Which edge of a picker row holds the state.
+enum HoneyLedgerPickerGlyphEdge {
+    case leading
+    case trailing
+}
+
 /// The label of a picker row: the state at the leading edge, then the label,
-/// which is the name unless the caller supplies a richer view of its own. The
+/// which is the name unless the caller supplies a richer view of its own. With
+/// `glyphEdge` trailing the label comes first and the state, vertically
+/// centred on it, ends the row, at every text size. The
 /// caller keeps the `Button`, `.disabled` for an added row, and
 /// `.ledgerListDetailRow(isSelected:position:)`, so the row's action and its
 /// place in the sheet stay with the screen that owns them.
@@ -22,17 +30,29 @@ struct HoneyLedgerPickerRow<Label: View>: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let state: HoneyLedgerPickerRowState
+    let glyphEdge: HoneyLedgerPickerGlyphEdge
 
     private let label: Label
 
-    init(state: HoneyLedgerPickerRowState, @ViewBuilder label: () -> Label) {
+    init(
+        state: HoneyLedgerPickerRowState,
+        glyphEdge: HoneyLedgerPickerGlyphEdge = .leading,
+        @ViewBuilder label: () -> Label
+    ) {
         self.state = state
+        self.glyphEdge = glyphEdge
         self.label = label()
     }
 
     var body: some View {
         Group {
-            if dynamicTypeSize.isAccessibilitySize {
+            if glyphEdge == .trailing {
+                HStack(spacing: 12) {
+                    label
+                    Spacer()
+                    circle
+                }
+            } else if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 4) {
                     circle
                     label

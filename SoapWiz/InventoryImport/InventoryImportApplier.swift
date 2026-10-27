@@ -63,7 +63,7 @@ enum InventoryImportApplier {
             let lines = entry.lines.filter(\.isIncluded)
             guard !lines.isEmpty else { return }
 
-            var rows = lines.map { (row: $0.row, quantity: $0.quantity) }
+            var rows = lines.map { (row: $0.row, quantity: $0.quantity, isEntered: $0.enteredQuantity != nil) }
             let ingredient: Ingredient
             switch entry.resolution {
             case .existing(let match):
@@ -73,11 +73,20 @@ enum InventoryImportApplier {
                 // The plan converted each quantity into the matched copy's unit.
                 // A survivor can have a different unit or density, so the rows
                 // are placed again on it, and one it can't take is skipped.
+                // An amount the user typed is in the matched copy's unit, not
+                // the file's, so it is converted from that unit instead.
                 if live !== match.ingredient {
                     rows = rows.compactMap { row in
+                        if row.isEntered {
+                            guard let typed = row.quantity,
+                                  let converted = match.unit == live.unit
+                                    ? typed
+                                    : IngredientUnitConverter.convertSameKind(typed, from: match.unit, to: live.unit) else { return nil }
+                            return (row.row, converted, true)
+                        }
                         let placement = InventoryImportMatcher.place(row.row, unit: live.unit, density: live.density, isExisting: true)
                         guard !placement.issues.contains(where: \.isBlocking) else { return nil }
-                        return (row.row, placement.quantity)
+                        return (row.row, placement.quantity, false)
                     }
                 }
             case .newIngredient(let new):

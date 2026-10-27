@@ -102,6 +102,38 @@ final class InventoryImportReviewViewModel {
         plan.setCategory(name, forEntry: id)
     }
 
+    // MARK: - Entered amounts
+
+    func canEnterAmount(_ line: InventoryImportLine) -> Bool {
+        line.canEnterQuantity
+    }
+
+    /// The amount `text` holds, or `nil` unless it is a positive number, so the
+    /// field's confirm button and `enterAmount` agree on what is acceptable.
+    func parsedAmount(_ text: String) -> Double? {
+        guard let amount = LocaleDecimal.parse(text), amount.isFinite, amount > 0 else { return nil }
+        return amount
+    }
+
+    /// What the file said, shown beside the field so the user can work their
+    /// own amount out from it.
+    func fileQuantityNote(_ line: InventoryImportLine) -> String? {
+        guard let quantity = line.row.quantity, let unit = line.row.unit else { return nil }
+        let formatted = InventoryImportIssue.fileQuantityText(quantity)
+        return String(localized: "The file says \(formatted) \(unit.rawValue).")
+    }
+
+    /// Imports the row with the typed amount, in the ingredient's unit. Text
+    /// that isn't a positive number changes nothing.
+    func enterAmount(_ text: String, line id: UUID) {
+        guard let amount = parsedAmount(text) else { return }
+        plan.enterQuantity(amount, forLine: id)
+    }
+
+    func clearEnteredAmount(line id: UUID) {
+        plan.clearEnteredQuantity(forLine: id)
+    }
+
     // MARK: - Category
 
     /// The category a new ingredient will be filed under; `nil` is Others,

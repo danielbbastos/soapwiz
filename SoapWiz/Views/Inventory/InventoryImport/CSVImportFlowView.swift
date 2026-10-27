@@ -10,21 +10,31 @@ struct CSVImportFlowView: View {
     /// Every ingredient, hidden ones included: a row naming a hidden
     /// ingredient adds to it rather than creating a duplicate.
     @Query private var inventory: [Ingredient]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var model = CSVImportFlowViewModel()
     @State private var showingFilePicker = false
 
+    /// Read by the leaving step's transition, so it is set a moment before the
+    /// phase changes.
+    @State private var isGoingBack = false
+
     var body: some View {
         NavigationStack {
-            content
-                .navigationTitle(title)
-                .navigationBarTitleDisplayMode(.inline)
-                .honeyLedgerInlineTitle(title)
-                .ledgerBackground()
-                .toolbar { toolbar }
-                .interactiveDismissDisabled(model.isPastStart)
+            ZStack {
+                content
+                    .id(stepID)
+                    .importTransition(.step(isGoingBack: isGoingBack))
+            }
+            .animation(InventoryImportMotion.animation(reduceMotion: reduceMotion), value: stepID)
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .honeyLedgerInlineTitle(title)
+            .ledgerBackground()
+            .toolbar { toolbar }
+            .interactiveDismissDisabled(model.isPastStart)
         }
-        .fitsSheetToContent()
+        .presentationSizing(.page)
         .fileImporter(
             isPresented: $showingFilePicker,
             allowedContentTypes: [.commaSeparatedText, .tabSeparatedText, .plainText]
@@ -39,6 +49,18 @@ struct CSVImportFlowView: View {
         case .reading, .mapping: String(localized: "Columns")
         case .building, .review: String(localized: "Review")
         case .finished: String(localized: "Imported")
+        }
+    }
+
+    private var stepID: Int {
+        switch model.phase {
+        case .start: 0
+        case .failed: 1
+        case .reading: 2
+        case .mapping: 3
+        case .building: 4
+        case .review: 5
+        case .finished: 6
         }
     }
 
@@ -75,14 +97,24 @@ struct CSVImportFlowView: View {
             cancelItem
             ToolbarItem(placement: .confirmationAction) {
                 Button("Continue") {
+                    isGoingBack = false
                     Task { await model.continueToReview(inventory: inventory) }
                 }
                 .disabled(!mapping.canContinue)
             }
         case .review:
-            cancelItem
             ToolbarItem(placement: .navigation) {
-                Button("Columns") { model.backToMapping() }
+                Button {
+                    isGoingBack = true
+                    Task {
+                        await Task.yield()
+                        model.backToMapping()
+                    }
+                } label: {
+                    Label("Columns", systemImage: "chevron.left")
+                        .labelStyle(.titleAndIcon)
+                }
+                .accessibilityLabel("Back to columns")
             }
         case .start, .reading, .building, .failed:
             cancelItem
@@ -132,6 +164,7 @@ struct CSVImportFlowView: View {
             }
         }
         .environment(\.defaultMinListRowHeight, 48)
+        .readableWidth()
     }
 
     private func progress(_ label: LocalizedStringKey) -> some View {
@@ -159,6 +192,7 @@ struct CSVImportFlowView: View {
             }
         }
         .environment(\.defaultMinListRowHeight, 48)
+        .readableWidth()
     }
 
     private func failed(_ message: String) -> some View {
@@ -168,6 +202,7 @@ struct CSVImportFlowView: View {
             description: "\(message)"
         ) {
             Button("Choose another file") {
+                isGoingBack = false
                 model.restart()
                 showingFilePicker = true
             }

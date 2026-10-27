@@ -29,6 +29,7 @@ struct CSVMappingView: View {
             }
         }
         .environment(\.defaultMinListRowHeight, 48)
+        .readableWidth()
     }
 
     private var footer: some View {
