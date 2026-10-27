@@ -26,7 +26,7 @@ import Foundation
 ///
 /// Pasted recipe text goes through `RecipeTextNumbers` instead — that is
 /// foreign text, not the user's own input.
-enum LocaleDecimal {
+nonisolated enum LocaleDecimal {
     /// Whether a numeric field's text can be saved: empty, or a number. A form
     /// must refuse to save anything else rather than store it as nothing.
     static func isReadable(_ text: String, locale: Locale = .autoupdatingCurrent) -> Bool {
@@ -142,7 +142,7 @@ enum LocaleDecimal {
     }
 }
 
-private extension LocaleDecimal {
+private nonisolated extension LocaleDecimal {
     /// Stands in for a locale's own grouping mark; a private-use character, so
     /// nothing typed can collide with it.
     static let groupingMark: Character = "\u{E000}"
@@ -165,6 +165,6 @@ private extension LocaleDecimal {
     }
 }
 
-private extension Character {
+private nonisolated extension Character {
     var isASCIIDigit: Bool { isASCII && isNumber }
 }

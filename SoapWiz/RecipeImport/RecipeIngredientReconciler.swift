@@ -22,11 +22,10 @@ enum RecipeIngredientReconciler {
         against inventory: [Ingredient],
         sectionsAreStated: Bool = false
     ) -> [RecipeImportRow] {
-        let index = index(of: inventory)
-        let slugIndex = slugIndex(of: inventory)
+        let index = IngredientIndex(inventory)
         return sections(of: draft).flatMap { imported, role in
             imported.compactMap {
-                row(for: $0, role: role, sectionsAreStated: sectionsAreStated, index: index, slugIndex: slugIndex)
+                row(for: $0, role: role, sectionsAreStated: sectionsAreStated, index: index)
             }
         }
     }
@@ -35,11 +34,10 @@ enum RecipeIngredientReconciler {
     /// creates an ingredient. Matched and skipped rows keep their decision —
     /// re-running the whole match would undo a skip the user just made.
     static func resolveUnmatched(in rows: [RecipeImportRow], against inventory: [Ingredient]) -> [RecipeImportRow] {
-        let index = index(of: inventory)
-        let slugIndex = slugIndex(of: inventory)
+        let index = IngredientIndex(inventory)
         return rows.map { row in
             guard case .unmatched = row.resolution else { return row }
-            guard let ingredient = matched(row.imported.name, listedAsOil: false, index: index, slugIndex: slugIndex) else {
+            guard let ingredient = matched(row.imported.name, listedAsOil: false, index: index) else {
                 return row
             }
             var resolved = row
@@ -68,10 +66,9 @@ enum RecipeIngredientReconciler {
         for imported: ImportedIngredient,
         role: RecipeIngredientRole,
         sectionsAreStated: Bool,
-        index: [String: Ingredient],
-        slugIndex: [String: Ingredient]
+        index: IngredientIndex
     ) -> RecipeImportRow? {
-        guard let match = matched(imported.name, listedAsOil: role == .oil, index: index, slugIndex: slugIndex) else {
+        guard let match = matched(imported.name, listedAsOil: role == .oil, index: index) else {
             return RecipeImportRow(
                 imported: imported,
                 role: sectionsAreStated ? role : ImportedIngredientName.evidentRole(of: imported.name) ?? role,
@@ -97,55 +94,15 @@ enum RecipeIngredientReconciler {
     private static func matched(
         _ name: String,
         listedAsOil: Bool,
-        index: [String: Ingredient],
-        slugIndex: [String: Ingredient]
+        index: IngredientIndex
     ) -> Ingredient? {
         for candidate in ImportedIngredientName.lookupCandidates(for: name, listedAsOil: listedAsOil) {
-            if let exact = index[candidate.lookupKey] { return exact }
-            if let entry = IngredientLibrary.entry(matching: candidate), let installed = slugIndex[entry.slug] {
+            if let exact = index.ingredient(named: candidate) { return exact }
+            if let entry = IngredientLibrary.entry(matching: candidate), let installed = index.ingredient(slug: entry.slug) {
                 return installed
             }
         }
         return nil
-    }
-
-    /// Inventory keyed by library slug, with the same tie-break as `index(of:)`.
-    private static func slugIndex(of inventory: [Ingredient]) -> [String: Ingredient] {
-        var index: [String: Ingredient] = [:]
-        for ingredient in inventory {
-            let slug = ingredient.librarySlug
-            guard !slug.isEmpty else { continue }
-            guard let existing = index[slug] else {
-                index[slug] = ingredient
-                continue
-            }
-            if existing.sapValue == nil, ingredient.sapValue != nil {
-                index[slug] = ingredient
-            }
-        }
-        return index
-    }
-
-    /// Ingredients keyed by lookup key.
-    ///
-    /// Two ingredients can share a name while CloudKit is still collapsing a
-    /// duplicate, so the tie is broken on usefulness rather than on arrival
-    /// order: the copy that carries a saponification value is the one a recipe
-    /// can actually be costed and calculated from.
-    private static func index(of inventory: [Ingredient]) -> [String: Ingredient] {
-        var index: [String: Ingredient] = [:]
-        for ingredient in inventory {
-            let key = ingredient.name.lookupKey
-            guard !key.isEmpty else { continue }
-            guard let existing = index[key] else {
-                index[key] = ingredient
-                continue
-            }
-            if existing.sapValue == nil, ingredient.sapValue != nil {
-                index[key] = ingredient
-            }
-        }
-        return index
     }
 
     private static func sections(of draft: RecipeImportDraft) -> [([ImportedIngredient], RecipeIngredientRole)] {

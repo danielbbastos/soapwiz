@@ -113,21 +113,20 @@ struct RecipeTransferPlan {
             libraryRecipesByUUID: libraryRecipesByUUID
         )
 
-        let index = Self.index(of: inventory)
-        let slugIndex = Self.slugIndex(of: inventory)
+        let index = IngredientIndex(inventory)
         let roles = Self.rolesByIngredientIndex(in: payload)
         ingredients = payload.ingredients.enumerated().map { offset, incoming in
             // Slug first: it survives a rename on either device, and two rows
             // carrying one slug are two copies of the same curated entry. The name
             // remains the fallback, and the only path a payload without slugs has.
             let bySlug = incoming.librarySlug.flatMap { slug in
-                slug.isEmpty ? nil : slugIndex[slug]
+                slug.isEmpty ? nil : index.ingredient(slug: slug)
             }
             return RecipeTransferIngredientPlan(
                 id: offset,
                 incoming: incoming,
                 role: roles[offset] ?? .additive,
-                existing: bySlug ?? index[incoming.name.lookupKey],
+                existing: bySlug ?? index.ingredient(named: incoming.name),
                 matchedBySlug: bySlug != nil
             )
         }
@@ -287,45 +286,5 @@ struct RecipeTransferPlan {
             }
         }
         return roles
-    }
-
-    /// Inventory keyed by lookup key, preferring the copy that carries a
-    /// saponification value — the same tie-break `RecipeIngredientReconciler`
-    /// makes, and for the same reason: two rows can share a name while CloudKit
-    /// is still collapsing a duplicate, and the useful one is the one a recipe
-    /// can be calculated from.
-    private static func index(of inventory: [Ingredient]) -> [String: Ingredient] {
-        var index: [String: Ingredient] = [:]
-        for ingredient in inventory {
-            let key = ingredient.name.lookupKey
-            guard !key.isEmpty else { continue }
-            guard let existing = index[key] else {
-                index[key] = ingredient
-                continue
-            }
-            if existing.sapValue == nil, ingredient.sapValue != nil {
-                index[key] = ingredient
-            }
-        }
-        return index
-    }
-
-    /// Inventory keyed by library slug, with the same tie-break as `index(of:)` and
-    /// for the same reason: until the merge collapses them, two rows can carry one
-    /// slug, and the useful one is the one a recipe can be calculated from.
-    private static func slugIndex(of inventory: [Ingredient]) -> [String: Ingredient] {
-        var index: [String: Ingredient] = [:]
-        for ingredient in inventory {
-            let slug = ingredient.librarySlug
-            guard !slug.isEmpty else { continue }
-            guard let existing = index[slug] else {
-                index[slug] = ingredient
-                continue
-            }
-            if existing.sapValue == nil, ingredient.sapValue != nil {
-                index[slug] = ingredient
-            }
-        }
-        return index
     }
 }

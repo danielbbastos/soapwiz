@@ -87,8 +87,12 @@ struct IngredientListView: View {
                         HoneyLedgerEmptyState(
                             "No ingredients yet",
                             systemImage: "flask",
-                            description: "Tap + to add one."
-                        )
+                            description: "Tap + to add one, or bring them in from a spreadsheet."
+                        ) {
+                            Button("Import from spreadsheet") { model.showingCSVImport = true }
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.amberText)
+                        }
                     } else if displayed.isEmpty {
                         if !model.searchText.isEmpty {
                             ContentUnavailableView.search(text: model.searchText)
@@ -197,12 +201,10 @@ struct IngredientListView: View {
 
                 if model.editMode == .inactive {
                     ExpandableFloatingActionButton(
+                        primaryLabel: "Add ingredient",
+                        primarySystemImage: "flask",
                         primaryAction: { model.showingAddIngredient = true },
-                        secondaryActions: ingredients.isEmpty ? [] : [
-                            FABAction(label: "Bulk Import", systemImage: "shippingbox") {
-                                model.showingBulkImport = true
-                            }
-                        ],
+                        secondaryActions: secondaryActions,
                         besideTabBar: navigation.fabBesideTabBar,
                         tourAnchor: .inventoryAddButton
                     )
@@ -275,9 +277,25 @@ struct IngredientListView: View {
         .sheet(isPresented: $model.showingBulkImport) {
             BulkImportView()
         }
+        .sheet(isPresented: $model.showingCSVImport) {
+            CSVImportFlowView()
+        }
         .sheet(isPresented: $model.showingFilters) {
             InventoryFilterView(model: model)
         }
+    }
+
+    private var secondaryActions: [FABAction] {
+        var actions: [FABAction] = []
+        if !rows.ingredients.isEmpty {
+            actions.append(FABAction(label: "Bulk import purchases", systemImage: "shippingbox") {
+                model.showingBulkImport = true
+            })
+        }
+        actions.append(FABAction(label: "Import from spreadsheet", systemImage: "tablecells") {
+            model.showingCSVImport = true
+        })
+        return actions
     }
 
     /// Shown while in select mode, floating above the tab bar (a `.bottomBar`

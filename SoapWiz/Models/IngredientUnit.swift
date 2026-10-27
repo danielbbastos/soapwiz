@@ -1,4 +1,4 @@
-enum IngredientUnit: String, CaseIterable, Codable, Hashable {
+nonisolated enum IngredientUnit: String, CaseIterable, Codable, Hashable {
     case grams = "g"
     case kilograms = "kg"
     case ounces = "oz"
