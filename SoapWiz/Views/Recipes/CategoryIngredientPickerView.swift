@@ -92,7 +92,7 @@ struct CategoryIngredientPickerView: View {
                         ContentUnavailableView.search(text: searchText)
                     }
                 }
-                .searchHeader("Search", text: $searchText, showsList: true)
+                .searchHeader("Search", text: $searchText)
             }
         }
         .readableWidth()

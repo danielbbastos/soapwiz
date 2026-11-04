@@ -63,10 +63,10 @@ extension View {
     }
 
     /// Puts `strip` (a list's search field and filter chips) under the
-    /// navigation bar.
-    /// `showsList` is false while an empty state stands in for the list.
-    func headerStrip<Strip: View>(showsList: Bool, @ViewBuilder _ strip: () -> Strip) -> some View {
-        modifier(HeaderStrip(showsList: showsList, strip: strip()))
+    /// navigation bar. The screen keeps its scrolling list in place even when
+    /// it has nothing to list: the strip tracks that list's scrolling.
+    func headerStrip<Strip: View>(@ViewBuilder _ strip: () -> Strip) -> some View {
+        modifier(HeaderStrip(strip: strip()))
     }
 }
 
@@ -93,11 +93,9 @@ extension View {
 /// point, so neither end can undo the other however slowly a finger drags
 /// across.
 ///
-/// Only the list reports its scrolling. An empty state that replaces it
-/// reports nothing, so the scrolled state is dropped whenever the list comes
-/// or goes: a list that returns starts at the top.
+/// Only the list reports its scrolling, so a screen with nothing to list shows
+/// its empty state as a row of the list rather than in place of it.
 private struct HeaderStrip<Strip: View>: ViewModifier {
-    let showsList: Bool
     let strip: Strip
 
     @State private var isScrolled = false
@@ -111,14 +109,11 @@ private struct HeaderStrip<Strip: View>: ViewModifier {
                 } action: { _, scrolled in
                     isScrolled = scrolled
                 }
-                .onChange(of: showsList) {
-                    isScrolled = false
-                }
                 .safeAreaInset(edge: .top, spacing: 0) {
                     strip
                 }
         } else {
-            content.modifier(LegacyHeaderStripModifier(showsList: showsList, strip: strip))
+            content.modifier(LegacyHeaderStripModifier(strip: strip))
         }
     }
 }
@@ -140,7 +135,6 @@ enum HeaderStripSubtitleCollapse {
 
 /// `HeaderStrip` before iOS 26: the paper band, and the subtitle collapsing.
 private struct LegacyHeaderStripModifier<Strip: View>: ViewModifier {
-    let showsList: Bool
     let strip: Strip
 
     @State private var isScrolled = false
@@ -164,10 +158,6 @@ private struct LegacyHeaderStripModifier<Strip: View>: ViewModifier {
                     offset: offset,
                     subtitleHeight: subtitleHeight
                 )
-            }
-            .onChange(of: showsList) {
-                isScrolled = false
-                isSubtitleCollapsed = false
             }
             .safeAreaInset(edge: .top, spacing: 0) {
                 LegacyHeaderStrip(

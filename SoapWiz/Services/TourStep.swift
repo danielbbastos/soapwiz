@@ -69,7 +69,7 @@ enum TourStep: Int, CaseIterable {
     var body: String {
         switch self {
         case .library:
-            "We’ve already added over 200 oils, butters, lyes and additives, with their SAP values. "
+            "Over 200 oils, butters, lyes and additives are built in, with their SAP values. "
                 + "Search for yours, or tap + to add something new."
         case .purchase:
             "Each time you buy more, add it here with the price. "

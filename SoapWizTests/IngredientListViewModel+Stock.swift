@@ -7,4 +7,8 @@ extension IngredientListViewModel {
     func filtered(_ ingredients: [Ingredient]) -> [Ingredient] {
         filtered(ingredients, stock: StockLevels(ingredients.flatMap(\.purchases)))
     }
+
+    func visibleCategories(_ categories: [IngredientCategory], in ingredients: [Ingredient]) -> [IngredientCategory] {
+        visibleCategories(categories, in: ingredients, stock: StockLevels(ingredients.flatMap(\.purchases)))
+    }
 }

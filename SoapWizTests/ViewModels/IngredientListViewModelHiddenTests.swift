@@ -94,6 +94,7 @@ struct IngredientListViewModelHiddenTests {
     @Test func hideThenUnhide_RestoresTheRowToInventory() {
         let olive = Ingredient.libraryMock(name: "Olive Oil", slug: "olive-oil")
         let model = IngredientListViewModel()
+        model.libraryScope = .all
 
         model.hide(olive)
         #expect(olive.isHidden)
@@ -351,6 +352,7 @@ struct IngredientListViewModelHiddenTests {
         try ctx.save()
 
         let model = IngredientListViewModel()
+        model.libraryScope = .all
 
         #expect(model.visibleCategories([oils], in: [olive, coconut]).map(\.name) == ["Oils"])
     }
