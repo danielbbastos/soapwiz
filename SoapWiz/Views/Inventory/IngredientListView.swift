@@ -6,6 +6,9 @@ struct IngredientListView: View {
     @Environment(AppNavigation.self) private var nav
     @Environment(InventoryRows.self) private var rows
     @Environment(SettingsState.self) private var settings
+    @Environment(\.isTourSandbox) private var isTourSandbox
+    @AppStorage(FirstOwnedCelebration.defaultsKey) private var celebratedFirstOwned = false
+    @State private var celebrationTick = 0
 
     @State private var model = IngredientListViewModel()
     /// The open ingredient's merge key, read when it opens: once a merge has
@@ -151,8 +154,18 @@ struct IngredientListView: View {
         .contentMargins(.top, hasChips ? 0 : nil, for: .scrollContent)
     }
 
-    private func firstIngredientOwned(from old: Int, to new: Int) -> Bool {
-        model.tracksInventory && old == 0 && new == 1
+    /// Records the first owned ingredient and asks for the haptic by bumping
+    /// `celebrationTick`, in one place so the flag can't pre-empt the haptic.
+    /// Never in the tour's sandbox, which must neither buzz nor use up the flag.
+    private func celebrateFirstOwned(from old: Int, to new: Int) {
+        guard FirstOwnedCelebration.shouldPlay(
+            old: old,
+            new: new,
+            tracksInventory: model.tracksInventory,
+            alreadyCelebrated: celebratedFirstOwned || isTourSandbox
+        ) else { return }
+        celebratedFirstOwned = true
+        celebrationTick += 1
     }
 
     private func headerContent(
@@ -246,7 +259,7 @@ struct IngredientListView: View {
                             InventoryFilterButton(model: model)
                         }
                     }
-                    if content.summary.total > 0 || model.editMode == .active {
+                    if listHasItems || model.editMode == .active {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button(model.editMode == .active ? "Done" : "Select") {
                                 withAnimation {
@@ -275,7 +288,8 @@ struct IngredientListView: View {
         // The first ingredient is the one that makes Inventory feel like the
         // user's own. A trigger of -1 while no rows are loaded keeps the rows
         // arriving at launch from reading as a first purchase.
-        .sensoryFeedback(.success, trigger: ownedTrigger, condition: firstIngredientOwned)
+        .sensoryFeedback(.success, trigger: celebrationTick)
+        .onChange(of: ownedTrigger, celebrateFirstOwned)
         // A hidden row has left the list, and its detail staying open beside
         // the list would outlive it.
         .onChange(of: ingredients.filter(\.isHidden)) { _, hidden in
