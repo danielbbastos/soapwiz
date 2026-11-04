@@ -34,6 +34,7 @@ struct InventoryFilterView: View {
     /// when inventory is tracked, and a category menu needs categories.
     private var filterRows: [InventoryFilterRow] {
         var rows: [InventoryFilterRow] = []
+        if model.tracksInventory { rows.append(.scope) }
         if !categories.isEmpty { rows.append(.category) }
         if model.tracksInventory { rows.append(.stockStatus) }
         rows.append(.unit)
@@ -95,10 +96,23 @@ struct InventoryFilterView: View {
     @ViewBuilder
     private func menu(for row: InventoryFilterRow) -> some View {
         switch row {
+        case .scope: scopeMenu
         case .category: categoryMenu
         case .stockStatus: stockStatusMenu
         case .unit: unitMenu
         case .expiry: expiryMenu
+        }
+    }
+
+    private var scopeMenu: some View {
+        filterMenu(title: "Show", value: model.libraryScope.rawValue, isUnfiltered: model.libraryScope == .owned) {
+            ForEach(LibraryScope.allCases) { scope in
+                Button {
+                    model.libraryScope = scope
+                } label: {
+                    MenuSelectionLabel(scope.rawValue, isSelected: model.libraryScope == scope)
+                }
+            }
         }
     }
 
@@ -192,5 +206,5 @@ struct InventoryFilterView: View {
 
 /// One menu in the filter sheet, so each can be told where it sits in the sheet.
 private enum InventoryFilterRow: Hashable {
-    case category, stockStatus, unit, expiry
+    case scope, category, stockStatus, unit, expiry
 }

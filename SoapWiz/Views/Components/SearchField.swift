@@ -74,8 +74,8 @@ struct SearchField: View {
 extension View {
     /// A `SearchField` alone under the navigation bar, for a list with no
     /// filter chips to stack below it.
-    func searchHeader(_ prompt: LocalizedStringKey, text: Binding<String>, showsList: Bool) -> some View {
-        headerStrip(showsList: showsList) {
+    func searchHeader(_ prompt: LocalizedStringKey, text: Binding<String>) -> some View {
+        headerStrip {
             SearchField(prompt, text: text)
                 .padding(.bottom, 12)
         }

@@ -15,6 +15,8 @@ struct RecipeListView: View {
     /// An import confirmed in the import sheet, waiting for that sheet to go
     /// before its form can cover the screen.
     @State private var formRequestAfterImport: RecipeFormRequest?
+    /// The list's height, which sizes the empty-state row.
+    @State private var listHeight: CGFloat = 0
 
     // Favourites and recency can't be part of the `@Query` sort: `SortDescriptor`
     // has no `Bool` overload, and the recent cutoff is relative to now. Both are
@@ -88,6 +90,35 @@ struct RecipeListView: View {
                 HoneyLedgerSectionLabel(title)
             }
         }
+    }
+
+    /// Always a `List`, even with nothing to list: the empty states are a row of
+    /// it, so the large title is never laid out against a scroll view that has
+    /// gone. See `listEmptyStateRow(listHeight:)`.
+    private func recipeList(_ displayed: RecipeSections) -> some View {
+        List {
+            if displayed.isEmpty {
+                RecipeListEmptyState(
+                    hasRecipes: !recipes.isEmpty,
+                    isSearching: model.isSearching,
+                    searchText: model.searchText
+                )
+                .listEmptyStateRow(listHeight: listHeight)
+            } else if displayed.isSectioned {
+                recipeSection(String(localized: "Favourites"), displayed.favorites)
+                recipeSection(String(localized: "Recently Added"), displayed.recent)
+                recipeSection(String(localized: "All Recipes"), displayed.others)
+            } else {
+                // Nothing recent: a flat favourites-then-rest
+                // list with no headers.
+                rows(displayed.favorites + displayed.others)
+            }
+        }
+        .measuringListHeight($listHeight)
+        // The chips already stand off the list on their own;
+        // the scroll view's default top margin on top of that
+        // left the two looking unrelated.
+        .contentMargins(.top, 0, for: .scrollContent)
     }
 
     /// Long-press actions on a row. Filing lives here as well as in the form
@@ -202,39 +233,7 @@ struct RecipeListView: View {
         ) {
             ZStack(alignment: .bottomTrailing) {
                 Group {
-                    if recipes.isEmpty {
-                        HoneyLedgerEmptyState(
-                            "No recipes yet",
-                            systemImage: "function",
-                            description: "Tap + to create one."
-                        )
-                    } else if displayed.isEmpty {
-                        if model.isSearching {
-                            ContentUnavailableView.search(text: model.searchText)
-                        } else {
-                            HoneyLedgerEmptyState(
-                                "No recipes match",
-                                systemImage: "line.3.horizontal.decrease.circle",
-                                description: "No recipes are filed under the selected collections."
-                            )
-                        }
-                    } else {
-                        List {
-                            if displayed.isSectioned {
-                                recipeSection(String(localized: "Favourites"), displayed.favorites)
-                                recipeSection(String(localized: "Recently Added"), displayed.recent)
-                                recipeSection(String(localized: "All Recipes"), displayed.others)
-                            } else {
-                                // Nothing recent: a flat favourites-then-rest
-                                // list with no headers.
-                                rows(displayed.favorites + displayed.others)
-                            }
-                        }
-                        // The chips already stand off the list on their own;
-                        // the scroll view's default top margin on top of that
-                        // left the two looking unrelated.
-                        .contentMargins(.top, 0, for: .scrollContent)
-                    }
+                    recipeList(displayed)
                 }
                 .readableWidth()
                 .navigationTitle(model.navigationTitle)
@@ -271,7 +270,7 @@ struct RecipeListView: View {
                 } message: {
                     Text(model.deleteConfirmationMessage)
                 }
-                .headerStrip(showsList: !displayed.isEmpty) {
+                .headerStrip {
                     VStack(spacing: 0) {
                         if !recipes.isEmpty {
                             SearchField("Search recipes", text: $model.searchText)

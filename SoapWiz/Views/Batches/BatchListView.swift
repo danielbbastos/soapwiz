@@ -14,6 +14,7 @@ struct BatchListView: View {
     @State private var searchText = ""
     @State private var dataTransfer = DataTransferViewModel()
     @State private var showsBackupNudge = false
+    @State private var listHeight: CGFloat = 0
 
     private let nudgeState = BackupNudgeState()
 
@@ -62,6 +63,53 @@ struct BatchListView: View {
         .tourCardAnchor(isTourTarget ? .batchRow : nil)
     }
 
+    /// Always a `List`, even with nothing to list: the empty states are a row of
+    /// it, so the large title is never laid out against a scroll view that has
+    /// gone. See `listEmptyStateRow(listHeight:)`.
+    private func batchList(_ displayed: [BatchMonthSection]) -> some View {
+        List {
+            if displayed.isEmpty {
+                emptyState.listEmptyStateRow(listHeight: listHeight)
+            }
+            if showsBackupNudge {
+                Section {
+                    BackupNudgeCard(
+                        onExport: { dataTransfer.export(from: modelContext) },
+                        onDismiss: dismissBackupNudge
+                    )
+                    .ledgerSheetRow(position: .only)
+                }
+            }
+            ForEach(displayed) { section in
+                Section {
+                    ForEach(Array(section.batches.enumerated()), id: \.element.id) { index, batch in
+                        row(
+                            batch,
+                            position: .position(index: index, count: section.batches.count),
+                            isTourTarget: index == 0 && section.id == displayed.first?.id
+                        )
+                    }
+                } header: {
+                    HoneyLedgerSectionLabel(section.title)
+                }
+            }
+        }
+        .measuringListHeight($listHeight)
+    }
+
+    @ViewBuilder
+    private var emptyState: some View {
+        if batches.isEmpty {
+            HoneyLedgerEmptyState(
+                "No Batches",
+                systemImage: "clock.arrow.circlepath",
+                description: "Batches you produce from a recipe will appear here."
+            )
+        } else {
+            ContentUnavailableView.search(text: searchText)
+        }
+    }
+
     var body: some View {
         // Filtered and grouped once per pass; several places below need it.
         let displayed = displayedSections
@@ -73,40 +121,7 @@ struct BatchListView: View {
             hasItems: !displayed.isEmpty
         ) {
             Group {
-                if batches.isEmpty {
-                    HoneyLedgerEmptyState(
-                        "No Batches",
-                        systemImage: "clock.arrow.circlepath",
-                        description: "Batches you produce from a recipe will appear here."
-                    )
-                } else if displayed.isEmpty {
-                    ContentUnavailableView.search(text: searchText)
-                } else {
-                    List {
-                        if showsBackupNudge {
-                            Section {
-                                BackupNudgeCard(
-                                    onExport: { dataTransfer.export(from: modelContext) },
-                                    onDismiss: dismissBackupNudge
-                                )
-                                .ledgerSheetRow(position: .only)
-                            }
-                        }
-                        ForEach(displayed) { section in
-                            Section {
-                                ForEach(Array(section.batches.enumerated()), id: \.element.id) { index, batch in
-                                    row(
-                                        batch,
-                                        position: .position(index: index, count: section.batches.count),
-                                        isTourTarget: index == 0 && section.id == displayed.first?.id
-                                    )
-                                }
-                            } header: {
-                                HoneyLedgerSectionLabel(section.title)
-                            }
-                        }
-                    }
-                }
+                batchList(displayed)
             }
             .readableWidth()
             .sheet(item: $dataTransfer.exportFile) { file in
@@ -124,7 +139,12 @@ struct BatchListView: View {
             .navigationBarTitleDisplayMode(.large)
             .ledgerLargeTitle(subtitle: BatchCountSummary(counting: batches).line)
             .ledgerBackground(sunken: navigation.history.isWide)
-            .searchHeader("Search batches", text: $searchText, showsList: !displayed.isEmpty)
+            .headerStrip {
+                if !batches.isEmpty {
+                    SearchField("Search batches", text: $searchText)
+                        .padding(.bottom, 12)
+                }
+            }
             .navigationDestination(for: Batch.self) { batch in
                 BatchDetailView(batch: batch)
             }
