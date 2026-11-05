@@ -12,6 +12,7 @@ struct RecipeListView: View {
     @State private var model = RecipeListViewModel()
     private var navigation: ListDetailNavigation<Recipe> { nav.recipes }
     @State private var importRequest: RecipeImportRequest?
+    @State private var showingStarterRecipes = false
     /// An import confirmed in the import sheet, waiting for that sheet to go
     /// before its form can cover the screen.
     @State private var formRequestAfterImport: RecipeFormRequest?
@@ -101,7 +102,8 @@ struct RecipeListView: View {
                 RecipeListEmptyState(
                     hasRecipes: !recipes.isEmpty,
                     isSearching: model.isSearching,
-                    searchText: model.searchText
+                    searchText: model.searchText,
+                    onBrowseStarters: { showingStarterRecipes = true }
                 )
                 .listEmptyStateRow(listHeight: listHeight)
             } else if displayed.isSectioned {
@@ -321,6 +323,9 @@ struct RecipeListView: View {
                         }
                     )
                 }
+                .sheet(isPresented: $showingStarterRecipes) {
+                    StarterRecipeLibraryView()
+                }
                 .sheet(item: $model.filingRecipe) { recipe in
                     RecipeCollectionsPickerSheet(recipe: recipe) { collection in
                         model.toggleMembership(of: recipe, in: collection)
@@ -341,7 +346,8 @@ struct RecipeListView: View {
                         primarySystemImage: "function",
                         primaryAction: { openForm(.new()) },
                         secondaryActions: [
-                            FABAction(label: "Import recipe", systemImage: "doc.text.viewfinder") { openImport() }
+                            FABAction(label: "Import recipe", systemImage: "doc.text.viewfinder") { openImport() },
+                            FABAction(label: "Starter recipes", systemImage: "book.closed") { showingStarterRecipes = true }
                         ],
                         besideTabBar: navigation.fabBesideTabBar,
                         tourAnchor: .recipeAddButton

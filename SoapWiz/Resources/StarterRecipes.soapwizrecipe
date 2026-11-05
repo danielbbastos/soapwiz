@@ -1,0 +1,279 @@
+{
+  "exportedAt": "2026-11-05T00:00:00Z",
+  "ingredients": [
+    {
+      "density": 0.911,
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "linoleic": 10,
+        "linolenic": 1,
+        "myristic": 0,
+        "oleic": 75,
+        "palmitic": 11,
+        "ricinoleic": 0,
+        "stearic": 3
+      },
+      "kohSapValue": 0.19,
+      "librarySlug": "olive-oil",
+      "name": "Olive Oil",
+      "sapValue": 0.135,
+      "unit": "ml"
+    },
+    {
+      "fattyAcidProfile": {
+        "lauric": 47,
+        "linoleic": 2,
+        "linolenic": 0,
+        "myristic": 19,
+        "oleic": 7,
+        "palmitic": 9,
+        "ricinoleic": 0,
+        "stearic": 3
+      },
+      "kohSapValue": 0.256,
+      "librarySlug": "coconut-oil",
+      "name": "Coconut Oil",
+      "sapValue": 0.183,
+      "unit": "g"
+    },
+    {
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "linoleic": 10,
+        "linolenic": 0,
+        "myristic": 1,
+        "oleic": 39,
+        "palmitic": 44,
+        "ricinoleic": 0,
+        "stearic": 5
+      },
+      "kohSapValue": 0.199,
+      "librarySlug": "palm-oil",
+      "name": "Palm Oil",
+      "sapValue": 0.142,
+      "unit": "g"
+    },
+    {
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "linoleic": 6,
+        "linolenic": 0,
+        "myristic": 0,
+        "oleic": 48,
+        "palmitic": 5,
+        "ricinoleic": 0,
+        "stearic": 40
+      },
+      "kohSapValue": 0.179,
+      "librarySlug": "shea-butter",
+      "name": "Shea Butter",
+      "sapValue": 0.128,
+      "unit": "g"
+    },
+    {
+      "fattyAcidProfile": {
+        "lauric": 0,
+        "linoleic": 4,
+        "linolenic": 0,
+        "myristic": 0,
+        "oleic": 4,
+        "palmitic": 0,
+        "ricinoleic": 90,
+        "stearic": 0
+      },
+      "kohSapValue": 0.18,
+      "librarySlug": "castor-oil",
+      "name": "Castor Oil",
+      "sapValue": 0.128,
+      "unit": "g"
+    }
+  ],
+  "recipes": [
+    {
+      "cfmNeutralizer": "boric",
+      "collectionNames": [],
+      "desc": "100% olive oil: gentle and mild, with a slow, creamy lather. Unmolds slowly; cure at least 6 weeks, and longer is better. Based on Soap Queen’s Simple Castile.",
+      "fragrancePercentage": 3,
+      "fragranceUnit": "% of oils",
+      "ingredients": [
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 0,
+          "percentage": 100,
+          "role": "oil"
+        }
+      ],
+      "isCreamSoap": false,
+      "kohPercentage": 90,
+      "kohPurity": 90,
+      "lyePurity": 99,
+      "lyeType": "NaOH",
+      "name": "Classic Castile",
+      "naohPercentage": 10,
+      "naohPurity": 99,
+      "oilWeightUnit": "g",
+      "products": [],
+      "recipeKind": "soap",
+      "superFat": 5,
+      "totalOilWeight": 1000,
+      "useCFM": false,
+      "useHybrid": false,
+      "uuid": "5F3A1C10-0001-4B6E-9A10-5D0A00000001",
+      "waterParts": 2.0,
+      "weightUnit": "%"
+    },
+    {
+      "cfmNeutralizer": "boric",
+      "collectionNames": [],
+      "desc": "A classic balanced bar: hard and cleansing, with a stable lather. Cure 4–6 weeks. Based on Soap Queen’s Back to Basics recipe.",
+      "fragrancePercentage": 3,
+      "fragranceUnit": "% of oils",
+      "ingredients": [
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 0,
+          "percentage": 44,
+          "role": "oil"
+        },
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 2,
+          "percentage": 32,
+          "role": "oil"
+        },
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 1,
+          "percentage": 24,
+          "role": "oil"
+        }
+      ],
+      "isCreamSoap": false,
+      "kohPercentage": 90,
+      "kohPurity": 90,
+      "lyePurity": 99,
+      "lyeType": "NaOH",
+      "name": "Simple Palm Bar",
+      "naohPercentage": 10,
+      "naohPurity": 99,
+      "oilWeightUnit": "g",
+      "products": [],
+      "recipeKind": "soap",
+      "superFat": 5,
+      "totalOilWeight": 1000,
+      "useCFM": false,
+      "useHybrid": false,
+      "uuid": "5F3A1C10-0002-4B6E-9A10-5D0A00000002",
+      "waterParts": 2.3,
+      "weightUnit": "%"
+    },
+    {
+      "cfmNeutralizer": "boric",
+      "collectionNames": [],
+      "desc": "Shea butter gives the hardness palm usually would, and castor boosts the lather. Cure 4–6 weeks. Based on Low Impact’s palm-free recipe.",
+      "fragrancePercentage": 3,
+      "fragranceUnit": "% of oils",
+      "ingredients": [
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 0,
+          "percentage": 40,
+          "role": "oil"
+        },
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 1,
+          "percentage": 32,
+          "role": "oil"
+        },
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 3,
+          "percentage": 20,
+          "role": "oil"
+        },
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 4,
+          "percentage": 8,
+          "role": "oil"
+        }
+      ],
+      "isCreamSoap": false,
+      "kohPercentage": 90,
+      "kohPurity": 90,
+      "lyePurity": 99,
+      "lyeType": "NaOH",
+      "name": "Palm-Free Bar",
+      "naohPercentage": 10,
+      "naohPurity": 99,
+      "oilWeightUnit": "g",
+      "products": [],
+      "recipeKind": "soap",
+      "superFat": 5,
+      "totalOilWeight": 1000,
+      "useCFM": false,
+      "useHybrid": false,
+      "uuid": "5F3A1C10-0003-4B6E-9A10-5D0A00000003",
+      "waterParts": 2.1,
+      "weightUnit": "%"
+    },
+    {
+      "cfmNeutralizer": "boric",
+      "collectionNames": [],
+      "desc": "High coconut at 20% superfat to stay gentle. At light trace, stir in fine non-iodized salt at 50–80% of the oil weight, then pour into single-cavity molds or cut while still warm. Cure 4–6 weeks or longer.",
+      "fragrancePercentage": 3,
+      "fragranceUnit": "% of oils",
+      "ingredients": [
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 1,
+          "percentage": 80,
+          "role": "oil"
+        },
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 0,
+          "percentage": 15,
+          "role": "oil"
+        },
+        {
+          "additiveAmount": 0,
+          "additiveUnit": "g",
+          "ingredientIndex": 4,
+          "percentage": 5,
+          "role": "oil"
+        }
+      ],
+      "isCreamSoap": false,
+      "kohPercentage": 90,
+      "kohPurity": 90,
+      "lyePurity": 99,
+      "lyeType": "NaOH",
+      "name": "Salt Bar",
+      "naohPercentage": 10,
+      "naohPurity": 99,
+      "oilWeightUnit": "g",
+      "products": [],
+      "recipeKind": "soap",
+      "superFat": 20,
+      "totalOilWeight": 1000,
+      "useCFM": false,
+      "useHybrid": false,
+      "uuid": "5F3A1C10-0004-4B6E-9A10-5D0A00000004",
+      "waterParts": 2.0,
+      "weightUnit": "%"
+    }
+  ],
+  "version": 1
+}

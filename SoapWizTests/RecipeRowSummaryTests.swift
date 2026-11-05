@@ -24,6 +24,22 @@ struct RecipeRowSummaryTests: RecipeRowSummaryTestHelpers {
         #expect(summary.topOils.map(\.amount) == [70, 20, 10])
     }
 
+    @Test func topOils_NilLimit_KeepsEveryOilHighestFirst() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe.mock(in: ctx)
+        recipe.addOils([("Castor", 10), ("Olive", 70), ("Palm", 5), ("Coconut", 20)], in: ctx)
+
+        let uncapped = RecipeRowSummary(recipe: recipe, compositionLimit: nil)
+        let capped = RecipeRowSummary(recipe: recipe)
+
+        #expect(uncapped.topOils.map(\.name) == ["Olive", "Coconut", "Castor", "Palm"])
+        let composition = try #require(uncapped.composition)
+        #expect(composition.contains("Palm"))
+        #expect(capped.topOils.count == RecipeRowSummary.compositionLimit)
+        #expect(capped.topOils.map(\.name) == ["Olive", "Coconut", "Castor"])
+    }
+
     @Test func topOils_FewerThanLimit_ReturnsOnlyWhatExists() throws {
         let (container, ctx) = try makeContext()
         _ = container
