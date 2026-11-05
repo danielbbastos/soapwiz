@@ -21,17 +21,8 @@ struct StarterRecipesTests {
     }
 
     private func copy(_ preview: StarterRecipePreview, from library: StarterRecipeLibrary) throws -> Recipe {
-        let inventory = try fixture.context.fetch(FetchDescriptor<Ingredient>())
-        let recipes = try fixture.context.fetch(FetchDescriptor<Recipe>())
-        return try #require(
-            library.copy(
-                preview,
-                inventory: inventory,
-                collections: [],
-                recipes: recipes,
-                categories: [],
-                into: fixture.context
-            )
+        try #require(
+            library.copy(preview, includingCollections: false, into: fixture.context)
         )
     }
 

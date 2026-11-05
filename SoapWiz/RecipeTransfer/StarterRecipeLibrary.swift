@@ -55,12 +55,21 @@ final class StarterRecipeLibrary {
     /// the same starter can be copied again.
     func copy(
         _ preview: StarterRecipePreview,
-        inventory: [Ingredient],
-        collections: [RecipeCollection],
-        recipes: [Recipe],
-        categories: [IngredientCategory],
+        includingCollections: Bool,
         into context: ModelContext
     ) -> Recipe? {
+        let inventory: [Ingredient]
+        let collections: [RecipeCollection]
+        let recipes: [Recipe]
+        let categories: [IngredientCategory]
+        do {
+            inventory = try context.fetch(FetchDescriptor<Ingredient>())
+            collections = includingCollections ? try context.fetch(FetchDescriptor<RecipeCollection>()) : []
+            recipes = try context.fetch(FetchDescriptor<Recipe>())
+            categories = try context.fetch(FetchDescriptor<IngredientCategory>())
+        } catch {
+            return nil
+        }
         let plan = RecipeTransferPlan(
             payload: payload,
             inventory: inventory,

@@ -7,9 +7,6 @@ struct StarterRecipeLibraryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @FreeTierGateEnvironment private var freeTier
-    @Query(sort: \Ingredient.name) private var inventory: [Ingredient]
-    @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
-    @Query(sort: \IngredientCategory.name) private var categories: [IngredientCategory]
     @Query(sort: \Recipe.name) private var recipes: [Recipe]
 
     @State private var library: StarterRecipeLibrary?
@@ -112,13 +109,9 @@ struct StarterRecipeLibraryView: View {
 
     private func copy(_ preview: StarterRecipePreview, from library: StarterRecipeLibrary) {
         freeTier.ifMayCreateRecipe(in: modelContext) {
-            let fileable = freeTier.gate.allows(.collections) ? collections : []
             guard library.copy(
                 preview,
-                inventory: inventory,
-                collections: fileable,
-                recipes: recipes,
-                categories: categories,
+                includingCollections: freeTier.gate.allows(.collections),
                 into: modelContext
             ) != nil else {
                 copyFailed = true
