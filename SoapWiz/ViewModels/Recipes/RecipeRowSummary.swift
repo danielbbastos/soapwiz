@@ -24,7 +24,8 @@ struct RecipeOilShare {
 /// mid-scroll. SW-117 took the ingredient count instead of caching a derived
 /// value on the model.
 struct RecipeRowSummary {
-    /// How many oils the composition line names before it gives up and truncates.
+    /// How many oils the composition line names by default before it gives up
+    /// and truncates. A caller that wants every oil passes `nil` to `init`.
     static let compositionLimit = 3
 
     /// How the lye configuration classifies the soap, or `nil` for a non-soap
@@ -50,7 +51,8 @@ struct RecipeRowSummary {
     /// as a percentage regardless is what made a 700 g oil render as "700%".
     let sharesArePercentages: Bool
 
-    /// Highest share first, capped at `compositionLimit`.
+    /// Highest share first, capped at the `compositionLimit` given to `init`;
+    /// every ranked oil when that limit is `nil`.
     let topOils: [RecipeOilShare]
     let ingredientCount: Int
 
@@ -80,7 +82,7 @@ struct RecipeRowSummary {
         ingredientCount == 1 ? "1 item" : "\(ingredientCount) items"
     }
 
-    init(recipe: Recipe) {
+    init(recipe: Recipe, compositionLimit: Int? = RecipeRowSummary.compositionLimit) {
         soapType = RecipeKind.resolve(recipe.recipeKind) == .soap
             ? SoapType.classify(
                 useHybrid: recipe.useHybrid,
@@ -111,7 +113,7 @@ struct RecipeRowSummary {
         let ranked = shares.sorted {
             RecipeIngredientOrder.precedes(amount: $0.amount, name: $0.name, before: $1.amount, otherName: $1.name)
         }
-        topOils = Array(ranked.prefix(RecipeRowSummary.compositionLimit))
+        topOils = compositionLimit.map { Array(ranked.prefix($0)) } ?? ranked
 
         // In absolute mode nothing writes `totalOilWeight` — the form only
         // offers that field in percentage mode — so the batch size has to be
