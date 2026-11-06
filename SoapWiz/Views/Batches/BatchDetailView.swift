@@ -5,14 +5,16 @@ import SwiftData
 /// what was consumed, which purchases it drew from, and what it cost. Nothing
 /// here recomputes against the live recipe or inventory — including whether
 /// the batch was costed at all, which is the snapshot's `tracksInventory`.
-/// The batch code, the cure length and the log are the exceptions: kept beside
-/// the record, not part of it, and all can be changed from here.
+/// The batch code, the cure length, the products made and the log are the
+/// exceptions: kept beside the record, not part of it, and all can be changed
+/// from here.
 struct BatchDetailView: View {
     @Environment(\.currencyCode) private var currencyCode
     @Query private var batches: [Batch]
     let batch: Batch
 
     @State private var editingCode = false
+    @State private var productEdit: BatchProductEditTarget?
     @State private var codeCopied = false
     @State private var logPresentation = BatchLogPresentation()
 
@@ -34,6 +36,8 @@ struct BatchDetailView: View {
         List {
             summarySection
 
+            BatchProductsSection(batch: batch, editTarget: $productEdit)
+
             if batch.cureDays > 0 {
                 BatchCureSection(batch: batch)
             }
@@ -51,6 +55,9 @@ struct BatchDetailView: View {
         .ledgerBackground()
         .sheet(isPresented: $editingCode) {
             BatchCodeEditSheet(batch: batch)
+        }
+        .sheet(item: $productEdit) { target in
+            BatchProductEditSheet(batch: batch, product: target.product)
         }
         .batchLogPresentations($logPresentation, batch: batch)
         .task(id: codeCopied) {

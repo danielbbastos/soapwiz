@@ -46,6 +46,11 @@ final class Batch {
     /// was made. Kept here rather than read from the recipe, which may since
     /// have changed or gone. Empty for a batch that doesn't cure.
     var cureBand: String = ""
+    /// What the maker says the batch produced, such as 18 bars of 100 g. Not
+    /// part of the immutable record: it is entered when the batch is made or
+    /// afterwards, and can be changed at any time. Stored in the batch itself,
+    /// so it stays as recorded whatever happens to the recipe's sizes.
+    var products: [BatchProduct] = []
 
     /// Optional for CloudKit; read and write through `lineItems`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
@@ -71,6 +76,12 @@ final class Batch {
         set { logEntriesStorage = newValue }
     }
 
+    /// The weight of one batch of the run, in `totalWeightUnit`. Zero when no
+    /// weight was recorded.
+    var oneBatchWeight: Double {
+        totalWeight > 0 && batchCount >= 1 ? totalWeight / Double(batchCount) : 0
+    }
+
     init(
         recipe: Recipe?,
         code: String = "",
@@ -83,7 +94,8 @@ final class Batch {
         tracksInventory: Bool = true,
         cureDays: Int = 0,
         process: String = "",
-        cureBand: String = ""
+        cureBand: String = "",
+        products: [BatchProduct] = []
     ) {
         self.recipe = recipe
         self.code = code
@@ -97,5 +109,6 @@ final class Batch {
         self.cureDays = cureDays
         self.process = process
         self.cureBand = cureBand
+        self.products = products
     }
 }

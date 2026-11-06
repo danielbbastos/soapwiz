@@ -202,7 +202,10 @@ extension BackupService {
             tracksInventory: dto.tracksInventory ?? true,
             cureDays: dto.cureDays ?? 0,
             process: dto.process ?? "",
-            cureBand: dto.cureBand ?? ""
+            cureBand: dto.cureBand ?? "",
+            products: (dto.products ?? []).map {
+                BatchProduct(size: $0.size, unitSymbol: $0.unitSymbol, count: $0.count)
+            }
         )
         context.insert(batch)
 

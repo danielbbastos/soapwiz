@@ -42,7 +42,6 @@ struct StarterRecipePreviewView: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(Color.amberText)
                 }
-                .glassButtonStyleIOS26()
                 .accessibilityLabel("Copy to My Recipes")
             }
         }

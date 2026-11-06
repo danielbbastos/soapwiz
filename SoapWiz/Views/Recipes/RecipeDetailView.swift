@@ -62,7 +62,7 @@ struct RecipeDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .honeyLedgerInlineTitle(recipe.name, overPhoto: photoCoversNavigationBar)
         .ledgerBackground()
-        .safeAreaInset(edge: .bottom) {
+        .safeAreaBarIOS26(edge: .bottom) {
             Button {
                 navigation.detailSheetRequest = .createBatch(recipe)
             } label: {
@@ -70,7 +70,7 @@ struct RecipeDetailView: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(Color.amberText)
             }
-            .glassButtonStyleIOS26()
+            .callToActionGlassButtonStyleIOS26()
             .controlSize(.large)
             .tourAnchor(.createBatchButton, cornerRadius: 26)
             .padding(.bottom, 8)

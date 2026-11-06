@@ -48,17 +48,36 @@ extension View {
         }
     }
 
-    /// Regular Liquid Glass button style on iOS 26 (light/translucent with a
-    /// tinted label), falling back to an opaque raised paper capsule on earlier
-    /// versions, where `.bordered` is a flat grey box the content shows through.
-    /// For call-to-action buttons on the navigation layer that shouldn't
-    /// dominate with a solid fill.
+    /// The glass button for a call to action in a bottom bar. On iOS 26 the
+    /// glass is tinted with `GlassCallToActionTint`: clear in light, and in dark
+    /// a light veil of warm grey, so the content scrolling under the button
+    /// doesn't show through and make its label hard to read. Earlier versions
+    /// fall back to an opaque raised paper capsule, since `.bordered` there is
+    /// a flat grey box the content shows through.
     @ViewBuilder
-    func glassButtonStyleIOS26() -> some View {
+    func callToActionGlassButtonStyleIOS26() -> some View {
         if #available(iOS 26, *) {
-            self.buttonStyle(.glass)
+            self.buttonStyle(.glass(.regular.tint(Color.glassCallToActionTint)))
         } else {
             self.buttonStyle(LedgerRaisedCapsuleButtonStyle())
+        }
+    }
+
+    /// Puts `content` in a bar along `edge`, which on iOS 26 gets the scroll
+    /// edge effect behind it that the system bars have, so what scrolls under
+    /// it blurs out instead of showing through a glass control. A plain
+    /// `safeAreaInset` has no such effect. Earlier versions have neither, and
+    /// use the inset.
+    @ViewBuilder
+    func safeAreaBarIOS26<Content: View>(
+        edge: VerticalEdge,
+        spacing: CGFloat? = nil,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        if #available(iOS 26, *) {
+            self.safeAreaBar(edge: edge, spacing: spacing, content: content)
+        } else {
+            self.safeAreaInset(edge: edge, spacing: spacing, content: content)
         }
     }
 

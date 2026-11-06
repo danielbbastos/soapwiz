@@ -195,6 +195,9 @@ enum BackupService {
             cureDays: batch.cureDays,
             process: batch.process,
             cureBand: batch.cureBand,
+            products: batch.products.map {
+                BackupData.BatchProductDTO(size: $0.size, unitSymbol: $0.unitSymbol, count: $0.count)
+            },
             lineItems: batch.lineItems.map { item in
                 BackupData.BatchLineItemDTO(
                     ingredientIndex: item.ingredient.flatMap { ingredientIndex[$0.persistentModelID] },
