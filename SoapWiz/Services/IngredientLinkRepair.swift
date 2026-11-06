@@ -11,8 +11,9 @@ protocol IngredientLinked: PersistentModel {
 
 extension RecipeIngredient: IngredientLinked {}
 extension IngredientPurchase: IngredientLinked {}
+extension ShoppingListItem: IngredientLinked {}
 
-/// Keeps recipe rows and purchases attached to a library ingredient across the
+/// Keeps recipe rows, purchases and shopping list lines attached to a library ingredient across the
 /// duplicate merge.
 ///
 /// The merge deletes a losing copy on one device and re-points its rows on
@@ -26,7 +27,8 @@ enum IngredientLinkRepair {
     static func stampSlugs(in context: ModelContext) throws -> Bool {
         let recipeRows = try stamp(RecipeIngredient.self, in: context)
         let purchases = try stamp(IngredientPurchase.self, in: context)
-        return recipeRows || purchases
+        let shoppingListItems = try stamp(ShoppingListItem.self, in: context)
+        return recipeRows || purchases || shoppingListItems
     }
 
     /// Re-attaches detached rows to the library row carrying their slug. Runs
@@ -41,7 +43,16 @@ enum IngredientLinkRepair {
         let detachedPurchases = try context.fetch(
             FetchDescriptor<IngredientPurchase>(predicate: #Predicate { $0.ingredient == nil })
         )
-        guard !detachedRecipeRows.isEmpty || !detachedPurchases.isEmpty else { return false }
+        // Manual shopping lines are always unlinked and never carry a slug, so
+        // only slugged ones can be re-attached.
+        let detachedShoppingListItems = try context.fetch(
+            FetchDescriptor<ShoppingListItem>(
+                predicate: #Predicate { $0.ingredient == nil && !$0.ingredientSlug.isEmpty }
+            )
+        )
+        guard !detachedRecipeRows.isEmpty || !detachedPurchases.isEmpty || !detachedShoppingListItems.isEmpty else {
+            return false
+        }
 
         var libraryRows = FetchDescriptor<Ingredient>(predicate: #Predicate { !$0.librarySlug.isEmpty })
         libraryRows.propertiesToFetch = [\.librarySlug, \.uuid]
@@ -53,7 +64,8 @@ enum IngredientLinkRepair {
 
         let recipeRows = reattach(detachedRecipeRows, to: survivors)
         let purchases = reattach(detachedPurchases, to: survivors)
-        return recipeRows || purchases
+        let shoppingListItems = reattach(detachedShoppingListItems, to: survivors)
+        return recipeRows || purchases || shoppingListItems
     }
 
     private static func stamp<T: IngredientLinked>(_ type: T.Type, in context: ModelContext) throws -> Bool {

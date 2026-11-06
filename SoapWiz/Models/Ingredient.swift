@@ -94,6 +94,21 @@ final class Ingredient {
         set { batchLineItemsStorage = newValue }
     }
 
+    /// Shopping list lines for this ingredient. `.nullify`, never `.cascade`: a
+    /// list line is the user's own reminder and survives as a plain name when the
+    /// ingredient goes, and the duplicate merge on another device can delete this
+    /// row before its re-pointing of the lines arrives.
+    ///
+    /// Optional for CloudKit; read and write through `shoppingListItems`. Neither
+    /// name is usable in `#Predicate` — see `ModelContainerFactory.schema`.
+    @Relationship(deleteRule: .nullify, inverse: \ShoppingListItem.ingredient)
+    var shoppingListItemsStorage: [ShoppingListItem]? = []
+
+    var shoppingListItems: [ShoppingListItem] {
+        get { shoppingListItemsStorage ?? [] }
+        set { shoppingListItemsStorage = newValue }
+    }
+
     /// Recipes using this ingredient as their NaOH lye. Deleting the ingredient
     /// nullifies the recipe's link rather than deleting the recipe.
     ///
