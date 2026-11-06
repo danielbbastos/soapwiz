@@ -134,6 +134,59 @@ struct ShoppingListViewModelTests {
         #expect(item.note == "raw")
     }
 
+    @Test func update_ChangingLink_ResetsCreatedAt() throws {
+        let ingredient = Ingredient(name: "Shea Butter", unit: "kg")
+        context.insert(ingredient)
+        sut.addItem(name: "Butter", amount: nil, unit: "", ingredient: nil, note: "")
+        let item = try #require(try allItems().first)
+        item.createdAt = Date(timeIntervalSince1970: 1_000)
+
+        sut.update(item, name: "Butter", amount: nil, unit: "", ingredient: ingredient, note: "")
+        #expect(item.createdAt == now)
+
+        item.createdAt = Date(timeIntervalSince1970: 1_000)
+        sut.update(item, name: "Butter", amount: nil, unit: "", ingredient: nil, note: "")
+        #expect(item.createdAt == now)
+    }
+
+    @Test func update_SameLink_KeepsCreatedAt() throws {
+        let ingredient = Ingredient(name: "Shea Butter", unit: "kg")
+        context.insert(ingredient)
+        sut.addItem(name: "Butter", amount: nil, unit: "", ingredient: ingredient, note: "")
+        let item = try #require(try allItems().first)
+        let original = Date(timeIntervalSince1970: 1_000)
+        item.createdAt = original
+
+        sut.update(item, name: "Butter 2", amount: 3, unit: "kg", ingredient: ingredient, note: "raw")
+
+        #expect(item.createdAt == original)
+    }
+
+    @Test func update_LinkingToIngredientBoughtSinceCreation_IsNotBought() throws {
+        let ingredient = Ingredient(name: "Shea Butter", unit: "kg")
+        context.insert(ingredient)
+        sut.addItem(name: "Butter", amount: nil, unit: "", ingredient: nil, note: "")
+        let item = try #require(try allItems().first)
+        let purchaseDate = try #require(Calendar.current.date(byAdding: .day, value: -3, to: now))
+        item.createdAt = try #require(Calendar.current.date(byAdding: .day, value: -10, to: now))
+        let purchase = IngredientPurchase(
+            provider: nil,
+            dateOfPurchase: purchaseDate,
+            quantity: 100,
+            totalPrice: 10,
+            badge: "",
+            journalCode: "",
+            expiryDate: nil,
+            openingDate: nil
+        )
+        context.insert(purchase)
+        purchase.attach(to: ingredient)
+
+        sut.update(item, name: "Butter", amount: nil, unit: "", ingredient: ingredient, note: "")
+
+        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase]).isEmpty)
+    }
+
     @Test func update_BlankName_LeavesItemUnchanged() throws {
         sut.addItem(name: "Lye", amount: 1, unit: "kg", ingredient: nil, note: "")
         let item = try #require(try allItems().first)

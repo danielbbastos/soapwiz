@@ -120,7 +120,7 @@ struct ShoppingListTextTests {
     @Test func make_LastPurchases_PutsDetailsOnIndentedSubLine() throws {
         let container = try makeContainer()
         let linked = linkedItem("Olive Oil", in: container.mainContext)
-        let details = try #require(purchase.line(unit: "kg", currencyCode: currencyCode))
+        let details = try #require(purchase.line(unit: "kg", currencyCode: currencyCode, locale: locale))
 
         let text = ShoppingListText.make(
             items: [linked.item],
@@ -135,7 +135,7 @@ struct ShoppingListTextTests {
     @Test func make_LastPurchases_KeepsAmountAndNoteOnMainLine() throws {
         let container = try makeContainer()
         let linked = linkedItem("Olive Oil", amount: 1.5, unit: "kg", note: "the big tin", in: container.mainContext)
-        let details = try #require(purchase.line(unit: "kg", currencyCode: currencyCode))
+        let details = try #require(purchase.line(unit: "kg", currencyCode: currencyCode, locale: locale))
 
         let text = ShoppingListText.make(
             items: [linked.item],
@@ -150,7 +150,7 @@ struct ShoppingListTextTests {
     @Test func make_LastPurchases_LeavesUnlinkedItemUnchanged() throws {
         let container = try makeContainer()
         let linked = linkedItem("Olive Oil", in: container.mainContext)
-        let details = try #require(purchase.line(unit: "kg", currencyCode: currencyCode))
+        let details = try #require(purchase.line(unit: "kg", currencyCode: currencyCode, locale: locale))
         let unlinked = item("Moulds", amount: 4, createdAt: Date(timeIntervalSince1970: 2_000))
 
         let text = ShoppingListText.make(
@@ -169,7 +169,7 @@ struct ShoppingListTextTests {
         let withoutData = linkedItem("Shea Butter", in: container.mainContext)
         withoutData.item.createdAt = Date(timeIntervalSince1970: 2_000)
         let empty = LastPurchase(quantity: nil, supplierName: nil, pricePerUnit: nil)
-        let details = try #require(purchase.line(unit: "kg", currencyCode: currencyCode))
+        let details = try #require(purchase.line(unit: "kg", currencyCode: currencyCode, locale: locale))
 
         let text = ShoppingListText.make(
             items: [withData.item, withoutData.item],
@@ -209,6 +209,26 @@ struct ShoppingListTextTests {
         )
 
         #expect(text == "\(title)\n• Shea Butter")
+    }
+
+    @Test func make_NonDefaultLocale_FormatsMainLineAndSubLineQuantity() throws {
+        let container = try makeContainer()
+        let linked = linkedItem("Olive Oil", amount: 1.5, unit: "kg", in: container.mainContext)
+        let german = Locale(identifier: "de_DE")
+        let last = LastPurchase(quantity: 2.5, supplierName: nil, pricePerUnit: nil)
+        let number = 1.5.formatted(.number.precision(.fractionLength(0...2)).locale(german))
+        let subNumber = 2.5.formatted(.number.precision(.fractionLength(0...2)).locale(german))
+
+        let text = ShoppingListText.make(
+            items: [linked.item],
+            lastPurchases: [linked.id: last],
+            currencyCode: currencyCode,
+            locale: german
+        )
+
+        #expect(text.contains("• Olive Oil, \(number) kg"))
+        #expect(text.contains("\(subNumber) kg"))
+        #expect(number != "1.5")
     }
 
     @Test func make_OnlyBoughtItems_ReturnsEmpty() throws {

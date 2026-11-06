@@ -129,6 +129,19 @@ struct LastPurchaseTests {
         #expect(!line.contains("·"))
     }
 
+    @Test func line_NonDefaultLocale_FormatsQuantityWithThatLocale() throws {
+        let german = Locale(identifier: "de_DE")
+        let last = LastPurchase(quantity: 1.5, supplierName: nil, pricePerUnit: 0.1)
+        let number = 1.5.formatted(.number.precision(.fractionLength(0...2)).locale(german))
+        let price = 0.1.unitPriceFormatted(currencyCode: "EUR", locale: german)
+
+        let line = try #require(last.line(unit: "g", currencyCode: "EUR", locale: german))
+
+        #expect(number != "1.5")
+        #expect(line.contains("\(number) g"))
+        #expect(line.contains(price))
+    }
+
     @Test func line_NoQuantity_ShowsSupplierAndPriceAlone() throws {
         let last = LastPurchase(quantity: nil, supplierName: "Shop", pricePerUnit: 0.1)
 

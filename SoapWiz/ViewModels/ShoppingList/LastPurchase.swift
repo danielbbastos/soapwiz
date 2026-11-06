@@ -34,17 +34,18 @@ struct LastPurchase: Equatable {
         return latest.mapValues(LastPurchase.init)
     }
 
-    func line(unit: String, currencyCode: String) -> String? {
+    func line(unit: String, currencyCode: String, locale: Locale = .autoupdatingCurrent) -> String? {
         var parts: [String] = []
         if let quantity {
-            let number = quantity.formatted(.number.precision(.fractionLength(0...2)))
-            parts.append("Last purchase: " + (unit.isEmpty ? number : "\(number) \(unit)"))
+            let number = quantity.formatted(.number.precision(.fractionLength(0...2)).locale(locale))
+            let quantityText = unit.isEmpty ? number : "\(number) \(unit)"
+            parts.append(String(localized: "Last purchase: \(quantityText)"))
         }
         if let supplierName {
             parts.append(supplierName)
         }
         if let pricePerUnit {
-            let formatted = pricePerUnit.unitPriceFormatted(currencyCode: currencyCode)
+            let formatted = pricePerUnit.unitPriceFormatted(currencyCode: currencyCode, locale: locale)
             parts.append(unit.isEmpty ? formatted : "\(formatted) / \(unit)")
         }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")

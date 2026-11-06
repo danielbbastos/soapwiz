@@ -27,7 +27,11 @@ enum ShoppingListText {
     ) -> [String] {
         var lines = [mainLine(for: item, locale: locale)]
         if let ingredient = item.ingredient,
-           let details = lastPurchases[ingredient.persistentModelID]?.line(unit: ingredient.unit, currencyCode: currencyCode) {
+           let details = lastPurchases[ingredient.persistentModelID]?.line(
+               unit: ingredient.unit,
+               currencyCode: currencyCode,
+               locale: locale
+           ) {
             lines.append("    - " + details)
         }
         return lines

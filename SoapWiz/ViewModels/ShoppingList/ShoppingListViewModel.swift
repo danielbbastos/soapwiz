@@ -63,6 +63,10 @@ final class ShoppingListViewModel {
         item.name = trimmedName
         item.amount = amount
         item.unit = unit
+        if item.ingredient?.persistentModelID != ingredient?.persistentModelID {
+            // A linked line counts as bought once a later purchase exists, so a new link starts the line afresh.
+            item.createdAt = now()
+        }
         item.ingredient = ingredient
         item.ingredientSlug = ingredient?.librarySlug ?? ""
         item.note = note.trimmingCharacters(in: .whitespacesAndNewlines)

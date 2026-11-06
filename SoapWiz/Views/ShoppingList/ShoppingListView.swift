@@ -82,7 +82,7 @@ struct ShoppingListView: View {
                 }
             }
             .confirmationDialog("Remove all items to buy?", isPresented: $isConfirmingRemoveAll, titleVisibility: .visible) {
-                Button("Remove \(toBuy.count) items", role: .destructive) {
+                Button("Remove ^[\(toBuy.count) item](inflect: true)", role: .destructive) {
                     model.removeAll(toBuy)
                 }
             }
