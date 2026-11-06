@@ -135,17 +135,23 @@ struct BatchProductionProductsTests: BatchProductionTestHelpers {
         #expect(batch.products.isEmpty)
     }
 
-    @Test func create_PickWithNoEstimate_RecordsNoProducts() throws {
+    @Test func productSuggestions_SizeBiggerThanABatch_IsNotOffered() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let (model, recipe) = makeModel(ctx, sizes: [(100, "g"), (100, "kg")])
+
+        #expect(model.productSuggestions.map(\.unitSymbol) == ["g"])
+        model.batchCount = 5
+        #expect(model.productSuggestions.map(\.unitSymbol) == ["g"])
+        #expect(BatchProductSuggestion.suggestions(from: recipe.products).count == 2)
+    }
+
+    @Test func productSuggestions_OnlyOversizedSizes_AreEmpty() throws {
         let (container, ctx) = try makeContext()
         _ = container
         let (model, _) = makeModel(ctx, sizes: [(100, "kg")])
-        let pick = try #require(model.productSuggestions.first)
-        model.selectedProduct = pick.id
 
-        #expect(model.estimatedCount(for: pick) == nil)
-        let batch = try #require(model.create(context: ctx))
-
-        #expect(batch.products.isEmpty)
+        #expect(model.productSuggestions.isEmpty)
     }
 
     @Test func create_PartsPick_RecordsPartsTimesBatchCount() throws {

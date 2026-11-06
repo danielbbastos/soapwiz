@@ -76,9 +76,12 @@ final class BatchProductionViewModel {
 
     /// The recipe's sizes that could be made as products, smallest first and
     /// parts of a batch last. Whole batch and a single part are the batch
-    /// itself, not a product.
+    /// itself, not a product. Only sizes with an estimate are offered, such as
+    /// not one bigger than the batch, since picking one would record nothing.
+    /// Whether a size has one doesn't depend on `batchCount`.
     var productSuggestions: [BatchProductSuggestion] {
         BatchProductSuggestion.suggestions(from: recipe.products)
+            .filter { estimatedCount(for: $0) != nil }
     }
 
     /// How many of `suggestion` the current `batchCount` makes, or `nil` when

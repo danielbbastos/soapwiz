@@ -10,7 +10,9 @@ struct BatchProductEditSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var size: Double
-    @State private var unit: ProductUnit
+    /// Kept as the symbol, not a `ProductUnit`, so a product stored with a unit
+    /// this version doesn't know keeps it until the maker picks a known one.
+    @State private var unitSymbol: String
     @State private var count: Int?
     /// Set once the count is the maker's own, so a later size or unit change
     /// stops suggesting one over it.
@@ -19,7 +21,7 @@ struct BatchProductEditSheet: View {
     /// The recipe's sizes, while the recipe still exists.
     private let quickPicks: [BatchProductSuggestion]
     private let initialSize: Double
-    private let initialUnit: ProductUnit
+    private let initialUnitSymbol: String
     private let initialCount: Int?
     private static let availableUnits = ProductUnit.allCases.filter { $0 != .wholeBatch }
 
@@ -35,24 +37,26 @@ struct BatchProductEditSheet: View {
             batchCount: batch.batchCount
         )
         let size = product?.size ?? start.size
-        let unit = product.flatMap { ProductUnit(rawValue: $0.unitSymbol) }
-            ?? ProductUnit(rawValue: start.unitSymbol) ?? .grams
+        let unitSymbol = product?.unitSymbol ?? start.unitSymbol
         let count = product == nil ? start.count : product?.count
         initialSize = size
-        initialUnit = unit
+        initialUnitSymbol = unitSymbol
         initialCount = count
         _size = State(initialValue: size)
-        _unit = State(initialValue: unit)
+        _unitSymbol = State(initialValue: unitSymbol)
         _count = State(initialValue: count)
         _countIsTyped = State(initialValue: product != nil)
     }
 
+    /// `nil` for a symbol this version doesn't know, which is not valid to save.
+    private var unit: ProductUnit? { ProductUnit(rawValue: unitSymbol) }
+
     private var isValid: Bool {
-        BatchProduct.isValid(size: size, unitSymbol: unit.rawValue, count: count ?? 0)
+        BatchProduct.isValid(size: size, unitSymbol: unitSymbol, count: count ?? 0)
     }
 
     private var hasChanges: Bool {
-        size != initialSize || unit != initialUnit || count != initialCount
+        size != initialSize || unitSymbol != initialUnitSymbol || count != initialCount
     }
 
     /// What this size makes at the weight the batch was recorded with. Nothing
@@ -60,7 +64,7 @@ struct BatchProductEditSheet: View {
     private var estimatedCount: Int? {
         BatchProduct.estimatedCount(
             size: size,
-            unitSymbol: unit.rawValue,
+            unitSymbol: unitSymbol,
             oneBatchWeight: batch.oneBatchWeight,
             weightUnit: batch.totalWeightUnit,
             batchCount: batch.batchCount
@@ -125,7 +129,7 @@ struct BatchProductEditSheet: View {
                 }
             }
             .onChange(of: size) { suggestCount() }
-            .onChange(of: unit) { suggestCount() }
+            .onChange(of: unitSymbol) { suggestCount() }
             .interactiveDismissDisabled(hasChanges)
         }
         .fitsSheetToContent()
@@ -162,11 +166,11 @@ struct BatchProductEditSheet: View {
             ForEach(picks) { pick in
                 Button {
                     size = pick.size
-                    unit = ProductUnit(rawValue: pick.unitSymbol) ?? .grams
+                    unitSymbol = pick.unitSymbol
                 } label: {
                     MenuSelectionLabel(
                         pick.label,
-                        isSelected: size == pick.size && unit.rawValue == pick.unitSymbol
+                        isSelected: size == pick.size && unitSymbol == pick.unitSymbol
                     )
                 }
             }
@@ -186,13 +190,13 @@ struct BatchProductEditSheet: View {
                 }
             }
         } label: {
-            PickerMenuRowLabel(title: "Unit", value: unit.label)
+            PickerMenuRowLabel(title: "Unit", value: unit?.label ?? "Choose", isPlaceholder: unit == nil)
         }
         .tint(.primary)
     }
 
     private func select(_ option: ProductUnit) {
-        unit = option
+        unitSymbol = option.rawValue
         if option == .partsOfBatch,
            !ProductUnit.isSeparateFromBatch(size: size, unitSymbol: option.rawValue) {
             size = 2
@@ -211,7 +215,7 @@ struct BatchProductEditSheet: View {
         let saved = BatchProduct(
             id: product?.id ?? UUID(),
             size: size,
-            unitSymbol: unit.rawValue,
+            unitSymbol: unitSymbol,
             count: count
         )
         var products = batch.products
