@@ -48,25 +48,12 @@ extension View {
         }
     }
 
-    /// Regular Liquid Glass button style on iOS 26 (light/translucent with a
-    /// tinted label), falling back to an opaque raised paper capsule on earlier
-    /// versions, where `.bordered` is a flat grey box the content shows through.
-    /// For call-to-action buttons on the navigation layer that shouldn't
-    /// dominate with a solid fill.
-    @ViewBuilder
-    func glassButtonStyleIOS26() -> some View {
-        if #available(iOS 26, *) {
-            self.buttonStyle(.glass)
-        } else {
-            self.buttonStyle(LedgerRaisedCapsuleButtonStyle())
-        }
-    }
-
     /// The glass button for a call to action in a bottom bar. On iOS 26 the
     /// glass is tinted with `GlassCallToActionTint`: clear in light, and in dark
     /// a light veil of warm grey, so the content scrolling under the button
     /// doesn't show through and make its label hard to read. Earlier versions
-    /// fall back as `glassButtonStyleIOS26()` does.
+    /// fall back to an opaque raised paper capsule, since `.bordered` there is
+    /// a flat grey box the content shows through.
     @ViewBuilder
     func callToActionGlassButtonStyleIOS26() -> some View {
         if #available(iOS 26, *) {
