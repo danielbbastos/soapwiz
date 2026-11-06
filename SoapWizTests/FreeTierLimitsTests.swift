@@ -34,12 +34,12 @@ struct FreeTierLimitsTests {
 
     // MARK: Features
 
-    @Test(arguments: [ProFeature.collections, .reminders])
+    @Test(arguments: [ProFeature.collections, .reminders, .shoppingList])
     func isAvailable_Free_ReturnsFalse(feature: ProFeature) {
         #expect(!FreeTierLimits.isAvailable(feature, isPro: false))
     }
 
-    @Test(arguments: [ProFeature.collections, .reminders])
+    @Test(arguments: [ProFeature.collections, .reminders, .shoppingList])
     func isAvailable_Pro_ReturnsTrue(feature: ProFeature) {
         #expect(FreeTierLimits.isAvailable(feature, isPro: true))
     }

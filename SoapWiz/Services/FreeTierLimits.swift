@@ -21,6 +21,7 @@ struct FreeTierImportFit: Equatable {
 enum ProFeature {
     case collections
     case reminders
+    case shoppingList
 }
 
 /// What the free tier allows.
@@ -38,7 +39,7 @@ enum FreeTierLimits {
 
     static func isAvailable(_ feature: ProFeature, isPro: Bool) -> Bool {
         switch feature {
-        case .collections, .reminders:
+        case .collections, .reminders, .shoppingList:
             return isPro
         }
     }

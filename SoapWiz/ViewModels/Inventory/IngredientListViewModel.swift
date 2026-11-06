@@ -68,6 +68,7 @@ final class IngredientListViewModel {
     var showingBulkImport: Bool = false
     var showingCSVImport: Bool = false
     var showingFilters: Bool = false
+    var showingShoppingList: Bool = false
     var pendingIngredient: Ingredient?
     var editMode: EditMode = .inactive
     var selection: Set<PersistentIdentifier> = []

@@ -148,7 +148,7 @@ struct ProUpgradeView: View {
                 ProReasonBox(message: reason.message)
             }
             if usesGrid {
-                ProBenefitsGrid(benefits: ProBenefit.paid + [ProBenefit.alwaysFree])
+                ProBenefitsGrid(benefits: ProBenefit.paid, footer: ProBenefit.alwaysFree)
             } else {
                 ProBenefitsList(benefits: ProBenefit.paid)
                 Text(ProBenefit.alwaysFreeNote + " stay free.")

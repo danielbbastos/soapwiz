@@ -26,8 +26,7 @@ struct ShoppingSuggestion: Identifiable, Equatable {
     let reasons: [ShoppingSuggestionReason]
     let remaining: Double
     let unit: String
-    let lastSupplierName: String?
-    let lastPricePerUnit: Double?
+    let lastPurchase: LastPurchase
 
     var id: PersistentIdentifier { ingredient.persistentModelID }
 }
@@ -66,17 +65,15 @@ enum ShoppingSuggestions {
             let reasons = reasons(for: ingredient, purchases: owned, remaining: remaining, now: now, calendar: calendar)
             guard !reasons.isEmpty else { continue }
 
-            let latest = owned.max { $0.dateOfPurchase < $1.dateOfPurchase }
-            let supplierName = latest?.provider?.name
-            let pricePerUnit = latest?.pricePerUnit
+            let last = owned.max { $0.dateOfPurchase < $1.dateOfPurchase }.map(LastPurchase.init)
+                ?? LastPurchase(quantity: nil, supplierName: nil, pricePerUnit: nil)
             suggestions.append(
                 ShoppingSuggestion(
                     ingredient: ingredient,
                     reasons: reasons,
                     remaining: remaining,
                     unit: ingredient.unit,
-                    lastSupplierName: supplierName?.isEmpty == false ? supplierName : nil,
-                    lastPricePerUnit: pricePerUnit == 0 ? nil : pricePerUnit
+                    lastPurchase: last
                 )
             )
         }

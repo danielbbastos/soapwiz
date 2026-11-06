@@ -9,6 +9,7 @@ enum ProUpgradeReason: Hashable {
     case sync
     case collections
     case reminders
+    case shoppingList
 
     var message: String {
         switch self {
@@ -24,6 +25,8 @@ enum ProUpgradeReason: Hashable {
             "Collections are part of SoapWiz Pro."
         case .reminders:
             "Reminders are part of SoapWiz Pro."
+        case .shoppingList:
+            "The shopping list is part of SoapWiz Pro."
         }
     }
 }
