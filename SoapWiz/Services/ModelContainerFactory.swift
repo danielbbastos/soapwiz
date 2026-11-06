@@ -87,6 +87,7 @@ enum ModelContainerFactory {
         BatchLineItem.self,
         BatchLogEntry.self,
         BatchLogPhoto.self,
+        ShoppingListItem.self,
         AppSettings.self
     ]
 

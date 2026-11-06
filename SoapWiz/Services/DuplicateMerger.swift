@@ -276,8 +276,8 @@ extension Ingredient: MergeableLookup {
     }
 
     /// Everything that can point at an ingredient. A link missed here is lost
-    /// when the loser is deleted: a purchase, a recipe line or a batch line
-    /// without its ingredient, or a recipe without its lye or neutraliser.
+    /// when the loser is deleted: a purchase, a recipe line, a batch line or a
+    /// shopping list line without its ingredient, or a recipe without its lye or neutraliser.
     private static func repointLinks(from loser: Ingredient, to winner: Ingredient) {
         let purchases = loser.purchases
         for purchase in purchases {
@@ -290,6 +290,10 @@ extension Ingredient: MergeableLookup {
         let lineItems = loser.batchLineItems
         for lineItem in lineItems {
             lineItem.ingredient = winner
+        }
+        let shoppingListItems = loser.shoppingListItems
+        for item in shoppingListItems {
+            item.ingredient = winner
         }
         let lyeRecipes = loser.recipesUsingAsLye
         for recipe in lyeRecipes {

@@ -13,7 +13,8 @@ extension BackupTestHelpers {
             Ingredient.self, IngredientPurchase.self, IngredientCategory.self,
             StorageLocation.self, Provider.self,
             Recipe.self, RecipeIngredient.self, RecipeProduct.self, RecipeCollection.self,
-            Batch.self, BatchLineItem.self, BatchLogEntry.self, BatchLogPhoto.self, AppSettings.self
+            Batch.self, BatchLineItem.self, BatchLogEntry.self, BatchLogPhoto.self,
+            ShoppingListItem.self, AppSettings.self
         ])
         let container = try ModelContainer(
             for: schema,
