@@ -260,6 +260,41 @@ struct DuplicateMergerIngredientTests: DuplicateMergerIngredientHelpers {
         #expect(survivor.lowStockThreshold == 250)
     }
 
+    @Test(arguments: [(1, 2), (2, 1)])
+    func mergeAll_BothDismissedSuggestion_KeepsTheLaterDate(keepDay: Int, dropDay: Int) throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let keep = try installed(olive, 1)
+        keep.shoppingSuggestionDismissedAt = Date(timeIntervalSince1970: Double(keepDay) * 86_400)
+        let drop = try installed(olive, 2)
+        drop.shoppingSuggestionDismissedAt = Date(timeIntervalSince1970: Double(dropDay) * 86_400)
+        ctx.insert(keep)
+        ctx.insert(drop)
+        try ctx.save()
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        let survivor = try #require(try ingredients(ctx).first)
+        #expect(survivor.shoppingSuggestionDismissedAt == Date(timeIntervalSince1970: 2 * 86_400))
+    }
+
+    @Test func mergeAll_OnlyTheLoserDismissed_AdoptsItsDate() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let keep = try installed(olive, 1)
+        let drop = try installed(olive, 2)
+        let dismissed = Date(timeIntervalSince1970: 1_700_000_000)
+        drop.shoppingSuggestionDismissedAt = dismissed
+        ctx.insert(keep)
+        ctx.insert(drop)
+        try ctx.save()
+
+        try DuplicateMerger.mergeAll(in: ctx)
+
+        let survivor = try #require(try ingredients(ctx).first)
+        #expect(survivor.shoppingSuggestionDismissedAt == dismissed)
+    }
+
     /// The thumbnail is derived from the photo, so a winner that already has one
     /// must keep both — mixing them shows a thumbnail of a different bottle.
     @Test func mergeAll_WinnerHasItsOwnPhoto_KeepsBothHalvesOfIt() throws {
