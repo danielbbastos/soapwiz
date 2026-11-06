@@ -132,6 +132,19 @@ struct ShoppingListItemTests: DuplicateMergerIngredientHelpers {
         #expect(item.ingredient == nil)
     }
 
+    @Test func reattachDetachedRows_OnlyManualItem_ReturnsFalseAndStaysUnlinked() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let oil = try installed(coconut, 1)
+        ctx.insert(oil)
+        let item = ShoppingListItem(name: "Candle wicks")
+        ctx.insert(item)
+        try ctx.save()
+
+        #expect(try IngredientLinkRepair.reattachDetachedRows(in: ctx) == false)
+        #expect(item.ingredient == nil)
+    }
+
     // MARK: - Backup
 
     private func seedItems(_ ctx: ModelContext) throws {

@@ -43,8 +43,12 @@ enum IngredientLinkRepair {
         let detachedPurchases = try context.fetch(
             FetchDescriptor<IngredientPurchase>(predicate: #Predicate { $0.ingredient == nil })
         )
+        // Manual shopping lines are always unlinked and never carry a slug, so
+        // only slugged ones can be re-attached.
         let detachedShoppingListItems = try context.fetch(
-            FetchDescriptor<ShoppingListItem>(predicate: #Predicate { $0.ingredient == nil })
+            FetchDescriptor<ShoppingListItem>(
+                predicate: #Predicate { $0.ingredient == nil && !$0.ingredientSlug.isEmpty }
+            )
         )
         guard !detachedRecipeRows.isEmpty || !detachedPurchases.isEmpty || !detachedShoppingListItems.isEmpty else {
             return false

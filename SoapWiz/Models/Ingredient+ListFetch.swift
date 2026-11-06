@@ -17,7 +17,8 @@ extension Ingredient {
             \.batchLineItemsStorage,
             \.recipesUsingAsLyeStorage,
             \.recipesUsingAsKOHLyeStorage,
-            \.recipesUsingAsNeutralizerStorage
+            \.recipesUsingAsNeutralizerStorage,
+            \.shoppingListItemsStorage
         ]
         return descriptor
     }
