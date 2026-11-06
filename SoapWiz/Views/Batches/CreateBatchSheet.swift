@@ -123,6 +123,11 @@ struct CreateBatchSheet: View {
                     }
                 }
 
+                let suggestions = model.productSuggestions
+                if !suggestions.isEmpty {
+                    productSection(suggestions)
+                }
+
                 Section {
                     sheetRow(0, of: 1) {
                         HoneyLedgerField("Batch code") { focus in
@@ -207,6 +212,45 @@ struct CreateBatchSheet: View {
                 .foregroundStyle(Color.inkSoft)
         })
         .accessibilityLabel("\(req.ingredient.name), short \(shortfall), need \(need), have \(have)")
+    }
+
+    /// A menu rather than a `Picker`: a menu picker draws its value in the
+    /// accent colour, and amber is only ever a fill.
+    private func productSection(_ suggestions: [BatchProductSuggestion]) -> some View {
+        let selected = suggestions.first { $0.id == model.selectedProduct }
+        return Section {
+            sheetRow(0, of: 1) {
+                Menu {
+                    Button { model.selectedProduct = nil } label: {
+                        MenuSelectionLabel("Not set", isSelected: selected == nil)
+                    }
+                    ForEach(suggestions) { suggestion in
+                        Button { model.selectedProduct = suggestion.id } label: {
+                            MenuSelectionLabel(
+                                productOptionText(suggestion),
+                                isSelected: suggestion.id == selected?.id
+                            )
+                        }
+                    }
+                } label: {
+                    PickerMenuRowLabel(
+                        title: "What are you making?",
+                        value: selected.map(productOptionText) ?? "Not set",
+                        isPlaceholder: selected == nil
+                    )
+                }
+                .tint(.primary)
+            }
+        } header: {
+            HoneyLedgerSectionLabel("Products")
+        } footer: {
+            HoneyLedgerFooter("The count is estimated from the batch weight. You can change it on the batch afterwards.")
+        }
+    }
+
+    private func productOptionText(_ suggestion: BatchProductSuggestion) -> String {
+        guard let count = model.estimatedCount(for: suggestion) else { return suggestion.label }
+        return BatchProduct.quantityLabel(size: suggestion.size, unitSymbol: suggestion.unitSymbol, count: count)
     }
 
     /// Only for a solid bar: a batch of anything else never mentions a cure.

@@ -231,11 +231,20 @@ extension BackupData {
         var process: String?
         /// Raw `CureBand`; `nil` restores empty, alongside `cureDays`.
         var cureBand: String?
+        /// Optional so a backup written before SW-348 still decodes; `nil`
+        /// restores none.
+        var products: [BatchProductDTO]?
         var lineItems: [BatchLineItemDTO]
         /// Oldest first, the order the log displays. Optional so a backup
         /// written before SW-192 still decodes; `nil` restores the batch
         /// without a log, as it was exported.
         var logEntries: [BatchLogEntryDTO]?
+    }
+
+    struct BatchProductDTO: Codable {
+        var size: Double
+        var unitSymbol: String
+        var count: Int
     }
 
     struct BatchLogEntryDTO: Codable {

@@ -80,7 +80,7 @@ struct MoldCalculatorView: View {
                 }
             }
             .interactiveDismissDisabled(hasChanges)
-            .safeAreaInset(edge: .bottom) {
+            .safeAreaBarIOS26(edge: .bottom) {
                 useWeightButton
             }
         }
@@ -190,9 +190,10 @@ struct MoldCalculatorView: View {
         } label: {
             Text("Use this weight")
                 .fontWeight(.semibold)
+                .foregroundStyle(recommendedWeight == nil ? Color.inkFaint : Color.amberText)
                 .frame(maxWidth: .infinity)
         }
-        .glassButtonStyleIOS26()
+        .callToActionGlassButtonStyleIOS26()
         .controlSize(.large)
         .disabled(recommendedWeight == nil)
         .padding(.horizontal)

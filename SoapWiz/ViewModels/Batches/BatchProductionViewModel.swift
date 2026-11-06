@@ -71,11 +71,41 @@ final class BatchProductionViewModel {
 
     private var chosenCureDays: Int?
 
+    /// The size picked as what the batch will make, or `nil` for not set.
+    var selectedProduct: PersistentIdentifier?
+
+    /// The recipe's sizes that could be made as products, smallest first and
+    /// parts of a batch last. Whole batch and a single part are the batch
+    /// itself, not a product.
+    var productSuggestions: [BatchProductSuggestion] {
+        BatchProductSuggestion.suggestions(from: recipe.products)
+    }
+
+    /// How many of `suggestion` the current `batchCount` makes, or `nil` when
+    /// it can't be worked out.
+    func estimatedCount(for suggestion: BatchProductSuggestion) -> Int? {
+        BatchProduct.estimatedCount(
+            size: suggestion.size,
+            unitSymbol: suggestion.unitSymbol,
+            oneBatchWeight: engine.batchTotalWeight,
+            weightUnit: batchWeightUnit,
+            batchCount: max(1, batchCount)
+        )
+    }
+
     /// Whether the user changed anything from what the sheet opened with, which
     /// stops a swipe from closing it.
     var hasChanges: Bool {
         batchCount != 1 || code != suggestedCode || process != .cold
-            || cureDays != (cureEstimate?.defaultDays ?? 0)
+            || cureDays != (cureEstimate?.defaultDays ?? 0) || selectedProduct != nil
+    }
+
+    /// The product the batch is recorded with: the picked size at its
+    /// estimate. Nothing when none is picked or no count can be estimated.
+    private var madeProducts: [BatchProduct] {
+        guard let suggestion = productSuggestions.first(where: { $0.id == selectedProduct }),
+              let count = estimatedCount(for: suggestion) else { return [] }
+        return [BatchProduct(size: suggestion.size, unitSymbol: suggestion.unitSymbol, count: count)]
     }
 
     private func estimate(for process: SoapProcess) -> CureEstimate? {
@@ -92,6 +122,10 @@ final class BatchProductionViewModel {
     /// code the field shows — it must not be mistaken for a clash, nor prompt
     /// a fresh suggestion.
     private var createdBatch: Batch?
+
+    /// The requirements and cost as they stood before `createdBatch` drew on
+    /// stock, which the sheet keeps showing while it closes.
+    private var createdSnapshot: (requirements: [BatchRequirement], cost: Double)?
 
     private let recipe: Recipe
     private let engine: RecipeFormViewModel
@@ -128,7 +162,15 @@ final class BatchProductionViewModel {
 
     /// Per-ingredient requirements for the current `batchCount`, in each
     /// ingredient's inventory unit.
+    ///
+    /// Once the batch is created they stay as they were just before it drew on
+    /// stock: the sheet is still on screen while it closes, and recomputing
+    /// against the reduced stock would flash a shortage for the batch just made.
     var requirements: [BatchRequirement] {
+        createdSnapshot?.requirements ?? liveRequirements
+    }
+
+    private var liveRequirements: [BatchRequirement] {
         let breakdown = engine.wholeBatchBreakdown
         let rows = breakdown.oils + breakdown.additives + breakdown.fragrances + breakdown.lye
 
@@ -197,6 +239,10 @@ final class BatchProductionViewModel {
     /// plan `create(context:)` applies — the preview always matches the charge.
     /// Inventory is not touched.
     var estimatedCost: Double {
+        createdSnapshot?.cost ?? liveEstimatedCost(for: liveRequirements)
+    }
+
+    private func liveEstimatedCost(for requirements: [BatchRequirement]) -> Double {
         guard tracksInventory else { return 0 }
         return requirements.reduce(0) { total, req in
             total + plannedDraws(for: req).reduce(0) { $0 + $1.drawn * $1.purchase.pricePerUnit }
@@ -233,8 +279,9 @@ final class BatchProductionViewModel {
     /// be read to check — all before any purchase is touched.
     @discardableResult
     func create(context: ModelContext, date: Date = .now) -> Batch? {
-        let reqs = requirements
+        let reqs = liveRequirements
         guard !reqs.isEmpty, shortages(in: reqs).isEmpty else { return nil }
+        let costBeforeDeducting = liveEstimatedCost(for: reqs)
 
         // Read before the batch is inserted, so these are only the batches its
         // code could clash with — including one this model made earlier. A
@@ -260,7 +307,8 @@ final class BatchProductionViewModel {
             tracksInventory: tracksInventory,
             cureDays: cureDays,
             process: cureEstimate == nil ? "" : process.rawValue,
-            cureBand: cureEstimate?.band.rawValue ?? ""
+            cureBand: cureEstimate?.band.rawValue ?? "",
+            products: madeProducts
         )
         context.insert(batch)
 
@@ -272,6 +320,7 @@ final class BatchProductionViewModel {
         batch.totalCost = total
         context.saveLoggingFailure()
         createdBatch = batch
+        createdSnapshot = (reqs, costBeforeDeducting)
         return batch
     }
 

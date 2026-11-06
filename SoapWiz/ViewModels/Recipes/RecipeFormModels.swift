@@ -74,11 +74,7 @@ struct RecipeProductDraft: Identifiable, Equatable {
     /// listed and counted. Parts of a batch are a whole number of them, two or
     /// more; anything else is not a size and is never stored.
     var isSeparateFromBatch: Bool {
-        switch ProductUnit(rawValue: unitSymbol) {
-        case .wholeBatch: false
-        case .partsOfBatch: size > 1 && size == size.rounded()
-        default: true
-        }
+        ProductUnit.isSeparateFromBatch(size: size, unitSymbol: unitSymbol)
     }
 
     /// Applies a unit picked on the card, giving the size a value that fits it.

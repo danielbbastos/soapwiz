@@ -31,6 +31,19 @@ enum ProductUnit: String, CaseIterable, Codable, Hashable {
         }
     }
 
+    /// Whether a size in this unit costs something other than the whole batch.
+    /// A whole batch, or a batch split into one part, is the batch total again,
+    /// which every cost screen already shows. Parts of a batch are a whole
+    /// number of them, two or more; anything else is not a size. An unknown
+    /// unit symbol is treated like a mass unit, as it always has been.
+    static func isSeparateFromBatch(size: Double, unitSymbol: String) -> Bool {
+        switch ProductUnit(rawValue: unitSymbol) {
+        case .wholeBatch: false
+        case .partsOfBatch: size > 1 && size == size.rounded()
+        case .grams, .kilograms, .ounces, .pounds, nil: true
+        }
+    }
+
     var gramsPerUnit: Double? {
         switch self {
         case .grams: 1
