@@ -80,9 +80,9 @@ private struct FittedFormSheetModifier: ViewModifier {
 
     let fixedAtOpen: Bool
 
-    /// Whether a fixed-at-open sheet already has its height.
+    /// Whether a fixed-at-open sheet already has a usable height.
     private var holdsOpenHeight: Bool {
-        fixedAtOpen && contentHeight != nil
+        fixedAtOpen && (contentHeight ?? 0) > 0
     }
 
     func body(content: Content) -> some View {
