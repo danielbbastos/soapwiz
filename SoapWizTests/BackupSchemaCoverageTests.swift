@@ -26,7 +26,7 @@ struct BackupSchemaCoverageTests {
         "BatchLogPhoto": ["imageData", "position"],
         "Ingredient": [
             "name", "code", "category", "unit", "isFavorite", "uuid", "librarySlug", "hasCustomChemistry",
-            "isHidden", "imageData", "avatarColorName", "lowStockThreshold", "sapValue", "kohSapValue",
+            "isHidden", "imageData", "avatarColorName", "lowStockThreshold", "shoppingSuggestionDismissedAt", "sapValue", "kohSapValue",
             "density", "fattyAcidProfile", "purchasesStorage"
         ],
         "IngredientCategory": ["name"],

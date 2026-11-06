@@ -89,6 +89,7 @@ enum BackupService {
             librarySlug: ingredient.librarySlug,
             hasCustomChemistry: ingredient.hasCustomChemistry,
             isHidden: ingredient.isHidden,
+            suggestionDismissedAt: ingredient.shoppingSuggestionDismissedAt,
             purchases: ingredient.purchases
                 .sorted { $0.dateOfPurchase < $1.dateOfPurchase }
                 .map { purchase in

@@ -47,6 +47,10 @@ final class Ingredient {
     var avatarColorName: String = ""
 
     var lowStockThreshold: Double?
+
+    /// When the user dismissed this ingredient's shopping suggestion. It stays
+    /// hidden until a purchase dated after this arrives.
+    var shoppingSuggestionDismissedAt: Date?
     var sapValue: Double?
     var kohSapValue: Double?
     var density: Double?

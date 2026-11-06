@@ -273,6 +273,12 @@ extension Ingredient: MergeableLookup {
         }
         if winner.code.isEmpty { winner.code = loser.code }
         if winner.lowStockThreshold == nil { winner.lowStockThreshold = loser.lowStockThreshold }
+        // The later dismissal wins: the earlier one could resurface a suggestion
+        // the user already dismissed on the other device.
+        if let loserDismissed = loser.shoppingSuggestionDismissedAt,
+           loserDismissed > (winner.shoppingSuggestionDismissedAt ?? .distantPast) {
+            winner.shoppingSuggestionDismissedAt = loserDismissed
+        }
     }
 
     /// Everything that can point at an ingredient. A link missed here is lost

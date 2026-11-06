@@ -107,6 +107,9 @@ extension BackupData {
         var librarySlug: String?
         var hasCustomChemistry: Bool?
         var isHidden: Bool?
+        /// Optional so a file written before the shopping list existed still
+        /// decodes; those ingredients restore with no dismissal.
+        var suggestionDismissedAt: Date?
         var purchases: [PurchaseDTO]
     }
 

@@ -89,6 +89,7 @@ extension BackupService {
         ingredient.thumbnailData = dto.imageData.flatMap(ImageDownscaler.thumbnail(from:))
         ingredient.category = element(categories, at: dto.categoryIndex)
         ingredient.lowStockThreshold = dto.lowStockThreshold
+        ingredient.shoppingSuggestionDismissedAt = dto.suggestionDismissedAt
         ingredient.sapValue = dto.sapValue
         ingredient.kohSapValue = dto.kohSapValue
         ingredient.density = dto.density
