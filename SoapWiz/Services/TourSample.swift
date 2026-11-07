@@ -105,6 +105,7 @@ enum TourSample {
                 expiryDate: expiry,
                 openingDate: nil
             )
+            purchase.createdAt = now
             context.insert(purchase)
             purchase.attach(to: ingredient)
         }

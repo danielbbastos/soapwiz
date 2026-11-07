@@ -132,6 +132,9 @@ extension BackupData {
         var expiryDate: Date?
         var openingDate: Date?
         var remainingAmount: Double
+        /// Optional so a file written before the field existed still decodes;
+        /// those purchases restore with `nil`.
+        var createdAt: Date?
     }
 
     struct RecipeDTO: Codable {
