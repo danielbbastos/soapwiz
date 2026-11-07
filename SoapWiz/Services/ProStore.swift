@@ -23,15 +23,18 @@ final class ProStore {
 
     private let backend: any ProStoreBackend
     private let hint: ProEntitlementHint
+    private let debugOverride: Bool
     private var listener: Task<Void, Never>?
 
     init(
         backend: any ProStoreBackend = StoreKitProBackend(),
-        hint: ProEntitlementHint = ProEntitlementHint()
+        hint: ProEntitlementHint = ProEntitlementHint(),
+        debugOverride: Bool = ProDebugOverride.isEnabled
     ) {
         self.backend = backend
         self.hint = hint
-        self.isPro = hint.isPro
+        self.debugOverride = debugOverride
+        self.isPro = hint.isPro || debugOverride
     }
 
     /// Reads the entitlement and price, then follows entitlement changes until
@@ -87,7 +90,7 @@ final class ProStore {
     }
 
     private func apply(entitled: Bool) {
-        isPro = entitled
+        isPro = entitled || debugOverride
         hint.isPro = entitled
         if entitled { purchaseState = .idle }
     }

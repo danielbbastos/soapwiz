@@ -22,12 +22,21 @@ enum FittedSheetHeight {
 /// size changes, so the height travels as the root's ideal size and not as a
 /// value held here. `.fitted` can't be used as is: a `Form` has no finite
 /// height of its own, so it would collapse.
+///
+/// With `minimumIsForm`, the sheet is never shorter than the system's form
+/// height, which is what `.form` proposes.
 struct ContentFittedSizing: PresentationSizing {
+    var minimumIsForm = false
+
     func proposedSize(for root: PresentationSizingRoot, context: PresentationSizingContext) -> ProposedViewSize {
         let proposal = FormPresentationSizing.form.proposedSize(for: root, context: context)
         let fitted = root.sizeThatFits(ProposedViewSize(width: proposal.width, height: nil))
         guard fitted.height > 0 else { return proposal }
-        return ProposedViewSize(width: proposal.width, height: fitted.height)
+        var height = fitted.height
+        if minimumIsForm, let formHeight = proposal.height {
+            height = max(height, formHeight)
+        }
+        return ProposedViewSize(width: proposal.width, height: height)
     }
 }
 
@@ -42,8 +51,14 @@ extension View {
     /// `FittedSheetHeight`'s cap. Apply it to the sheet's root (the
     /// `NavigationStack`: a sizing set inside it never reaches the sheet), whose
     /// form's content height must not depend on the sheet's own height.
-    func fitsSheetToContent() -> some View {
-        modifier(FittedFormSheetModifier())
+    ///
+    /// With `fixedAtOpen`, the height is taken from the first usable
+    /// measurement (after the keyboard hides, if it is up then) and never
+    /// updated, and the sheet is at least the system's form height. For a sheet
+    /// whose content changes constantly, such as the shopping list: resizing
+    /// as rows come and go made the sheet jump. The content scrolls inside.
+    func fitsSheetToContent(fixedAtOpen: Bool = false) -> some View {
+        modifier(FittedFormSheetModifier(fixedAtOpen: fixedAtOpen))
     }
 
     /// Publishes the window's height to every sheet below, for `fitsSheetToContent()`.
@@ -63,6 +78,13 @@ private struct FittedFormSheetModifier: ViewModifier {
 
     @State private var isKeyboardShown = false
 
+    let fixedAtOpen: Bool
+
+    /// Whether a fixed-at-open sheet already has a usable height.
+    private var holdsOpenHeight: Bool {
+        fixedAtOpen && (contentHeight ?? 0) > 0
+    }
+
     func body(content: Content) -> some View {
         content
             .onScrollGeometryChange(for: CGFloat.self) { geometry in
@@ -74,7 +96,7 @@ private struct FittedFormSheetModifier: ViewModifier {
                 // keyboard is already up at the first measurement (a sheet that
                 // focuses a field as it opens), the sheet keeps the system form
                 // height until the keyboard hides.
-                guard !isKeyboardShown else { return }
+                guard !isKeyboardShown, !holdsOpenHeight else { return }
                 contentHeight = height
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -82,10 +104,11 @@ private struct FittedFormSheetModifier: ViewModifier {
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardDidHideNotification)) { _ in
                 isKeyboardShown = false
+                guard !holdsOpenHeight else { return }
                 contentHeight = measuredHeight
             }
             .frame(idealHeight: FittedSheetHeight.height(content: contentHeight, available: windowHeight) ?? 0)
-            .presentationSizing(ContentFittedSizing())
+            .presentationSizing(ContentFittedSizing(minimumIsForm: fixedAtOpen))
     }
 }
 

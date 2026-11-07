@@ -282,15 +282,23 @@ struct ShoppingSuggestionsTests {
 
         let result = try #require(try suggestions([ingredient]).first)
 
-        #expect(result.lastSupplierName == "New Shop")
-        #expect(result.lastPricePerUnit == 0.1)
+        #expect(result.lastPurchase.supplierName == "New Shop")
+        #expect(result.lastPurchase.pricePerUnit == 0.1)
+        #expect(result.lastPurchase.quantity == 200)
+    }
+
+    @Test func make_ZeroQuantityPurchase_HasNoPurchaseQuantity() throws {
+        let ingredient = makeIngredient()
+        try addPurchase(to: ingredient, remaining: 0, quantity: 0, totalPrice: 10)
+
+        #expect(try suggestions([ingredient]).first?.lastPurchase.quantity == nil)
     }
 
     @Test func make_NoProvider_HasNoSupplierName() throws {
         let ingredient = makeIngredient()
         try addPurchase(to: ingredient, remaining: 0)
 
-        #expect(try suggestions([ingredient]).first?.lastSupplierName == nil)
+        #expect(try suggestions([ingredient]).first?.lastPurchase.supplierName == nil)
     }
 
     @Test func make_EmptyProviderName_HasNoSupplierName() throws {
@@ -299,21 +307,21 @@ struct ShoppingSuggestionsTests {
         context.insert(provider)
         try addPurchase(to: ingredient, remaining: 0, provider: provider)
 
-        #expect(try suggestions([ingredient]).first?.lastSupplierName == nil)
+        #expect(try suggestions([ingredient]).first?.lastPurchase.supplierName == nil)
     }
 
     @Test func make_ZeroQuantityPurchase_HasNoPrice() throws {
         let ingredient = makeIngredient()
         try addPurchase(to: ingredient, remaining: 0, quantity: 0, totalPrice: 10)
 
-        #expect(try suggestions([ingredient]).first?.lastPricePerUnit == nil)
+        #expect(try suggestions([ingredient]).first?.lastPurchase.pricePerUnit == nil)
     }
 
     @Test func make_FreePurchase_HasNoPrice() throws {
         let ingredient = makeIngredient()
         try addPurchase(to: ingredient, remaining: 0, quantity: 100, totalPrice: 0)
 
-        #expect(try suggestions([ingredient]).first?.lastPricePerUnit == nil)
+        #expect(try suggestions([ingredient]).first?.lastPurchase.pricePerUnit == nil)
     }
 
     // MARK: - Ordering

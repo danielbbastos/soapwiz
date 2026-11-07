@@ -35,6 +35,34 @@ struct ProStoreTests {
         #expect(!makeStore().isPro)
     }
 
+    @Test func init_DebugOverrideOff_NotEntitled_IsNotPro() async {
+        let store = ProStore(backend: backend, hint: hint, debugOverride: false)
+        backend.entitled = false
+
+        await store.refreshEntitlement()
+
+        #expect(!store.isPro)
+        #expect(!hint.isPro)
+    }
+
+    @Test func init_DebugOverrideOn_NotEntitled_IsProButHintStaysFalse() {
+        let store = ProStore(backend: backend, hint: hint, debugOverride: true)
+
+        #expect(store.isPro)
+        #expect(!hint.isPro)
+    }
+
+    @Test func entitlementAnswer_DebugOverrideOn_NotEntitled_ReportsFalse() async {
+        let store = ProStore(backend: backend, hint: hint, debugOverride: true)
+        backend.entitled = false
+
+        let answer = await store.entitlementAnswer(within: .seconds(1))
+
+        #expect(answer == false)
+        #expect(store.isPro)
+        #expect(!hint.isPro)
+    }
+
     @Test func refreshEntitlement_Entitled_SetsIsProAndHint() async {
         let store = makeStore()
         backend.entitled = true

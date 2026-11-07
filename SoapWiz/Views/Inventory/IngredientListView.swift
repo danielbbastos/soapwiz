@@ -259,6 +259,11 @@ struct IngredientListView: View {
                             InventoryFilterButton(model: model)
                         }
                     }
+                    if model.editMode == .inactive {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            ShoppingListToolbarButton(isPresented: $model.showingShoppingList)
+                        }
+                    }
                     if listHasItems || model.editMode == .active {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button(model.editMode == .active ? "Done" : "Select") {
@@ -281,7 +286,7 @@ struct IngredientListView: View {
                         tourAnchor: .inventoryAddButton
                     )
                 } else if !model.selection.isEmpty {
-                    createRecipeButton
+                    InventoryCreateRecipeButton(model: model, selected: selectedIngredients)
                 }
             }
         } detail: { IngredientDetailView(ingredient: $0) }
@@ -360,6 +365,12 @@ struct IngredientListView: View {
         .sheet(isPresented: $model.showingFilters) {
             InventoryFilterView(model: model)
         }
+        .shoppingListSheet(
+            isPresented: $model.showingShoppingList,
+            ingredients: rows.ingredients,
+            purchases: rows.purchases,
+            tracksInventory: settings.tracksInventory
+        )
     }
 
     private var secondaryActions: [FABAction] {
@@ -373,28 +384,5 @@ struct IngredientListView: View {
             model.showingCSVImport = true
         })
         return actions
-    }
-
-    /// Shown while in select mode, floating above the tab bar (a `.bottomBar`
-    /// toolbar item would sit behind the TabView's tab bar).
-    private var createRecipeButton: some View {
-        Button {
-            let ingredients = selectedIngredients
-            model.editMode = .inactive
-            model.selection.removeAll()
-            nav.createRecipe(with: ingredients)
-        } label: {
-            Text("Create recipe with… (\(model.selection.count))")
-                .font(.headline)
-                .foregroundStyle(Color.ink)
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .background(Color.paperRaised, in: .capsule)
-                .overlay(Capsule().strokeBorder(Color.ruleStrong, lineWidth: 1))
-                .shadow(color: Color.shadow.opacity(0.18), radius: 10, y: 4)
-        }
-        .buttonStyle(.plain)
-        .padding(.horizontal, 20)
-        .padding(.bottom, 20)
     }
 }
