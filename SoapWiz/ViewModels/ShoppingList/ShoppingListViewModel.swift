@@ -41,6 +41,27 @@ final class ShoppingListViewModel {
         modelContext.saveLoggingFailure()
     }
 
+    func addPlanned(_ lines: [ShoppingListPlannedLine]) {
+        guard !lines.isEmpty else { return }
+        for line in lines {
+            if let target = line.mergeTarget {
+                target.amount = (target.amount ?? 0) + line.amount
+                target.note = line.note
+            } else {
+                modelContext.insert(
+                    ShoppingListItem(
+                        name: line.ingredient.name,
+                        amount: line.amount,
+                        unit: line.unit,
+                        ingredient: line.ingredient,
+                        note: line.note
+                    )
+                )
+            }
+        }
+        modelContext.saveLoggingFailure()
+    }
+
     func addItem(name: String, amount: Double?, unit: String, ingredient: Ingredient?, note: String) {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedName.isEmpty else { return }

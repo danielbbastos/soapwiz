@@ -144,6 +144,9 @@ struct ShoppingListView: View {
                 .font(.subheadline)
                 .foregroundStyle(Color.inkSoft)
                 .tint(Color.amber)
+                .disabled(!toBuy.contains { item in
+                    item.ingredient.flatMap { lastPurchases[$0.persistentModelID] } != nil
+                })
                 .ledgerSheetRow(position: .position(index: 0, count: toBuy.count + 1))
             itemRows(toBuy, offset: 1, lastPurchases: lastPurchases, boughtDates: [:])
         } header: {

@@ -122,7 +122,8 @@ enum BackupService {
                         journalCode: purchase.journalCode,
                         expiryDate: purchase.expiryDate,
                         openingDate: purchase.openingDate,
-                        remainingAmount: purchase.remainingAmount
+                        remainingAmount: purchase.remainingAmount,
+                        createdAt: purchase.createdAt
                     )
                 }
         )

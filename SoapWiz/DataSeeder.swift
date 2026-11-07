@@ -291,6 +291,7 @@ extension DataSeeder {
                 storageLocation: lookups.storage[purchaseSeed.storageLocation]
             )
             purchase.remainingAmount = purchaseSeed.remainingAmount
+            purchase.createdAt = .now
             context.insert(purchase)
             purchase.attach(to: ingredient)
         }

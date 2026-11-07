@@ -9,24 +9,16 @@ struct ShoppingListBoughtTests {
 
     private let container: ModelContainer
     private let context: ModelContext
-    private let calendar: Calendar
     private let created = Date(timeIntervalSince1970: 1_800_000_000)
 
     init() throws {
         let schema = ModelContainerFactory.schema
         container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
         context = container.mainContext
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = try #require(TimeZone(identifier: "UTC"))
-        self.calendar = calendar
     }
 
-    private func day(_ offset: Int) throws -> Date {
-        try #require(calendar.date(byAdding: .day, value: offset, to: created))
-    }
-
-    private func startOfCreationDay() -> Date {
-        calendar.startOfDay(for: created)
+    private func offset(_ seconds: TimeInterval) -> Date {
+        created.addingTimeInterval(seconds)
     }
 
     private func makeIngredient(_ name: String = "Olive Oil") -> Ingredient {
@@ -42,7 +34,7 @@ struct ShoppingListBoughtTests {
         return item
     }
 
-    private func makePurchase(of ingredient: Ingredient, on date: Date) -> IngredientPurchase {
+    private func makePurchase(of ingredient: Ingredient, on date: Date, savedAt: Date?) -> IngredientPurchase {
         let purchase = IngredientPurchase(
             provider: nil,
             dateOfPurchase: date,
@@ -53,119 +45,133 @@ struct ShoppingListBoughtTests {
             expiryDate: nil,
             openingDate: nil
         )
+        purchase.createdAt = savedAt
         context.insert(purchase)
         purchase.attach(to: ingredient)
         return purchase
     }
 
-    @Test func dates_PurchaseAfterCreation_IsBoughtWithThatDate() throws {
+    @Test func dates_PurchaseSavedBeforeItemSameDay_IsNotBought() {
         let ingredient = makeIngredient()
         let item = makeItem(ingredient: ingredient)
-        let purchaseDate = try day(2)
-        let purchase = makePurchase(of: ingredient, on: purchaseDate)
+        let purchase = makePurchase(of: ingredient, on: offset(-60), savedAt: offset(-60))
 
-        let result = ShoppingListBought.dates(items: [item], purchases: [purchase], calendar: calendar)
+        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase]).isEmpty)
+    }
+
+    @Test func dates_PurchaseSavedBeforeItemWithLaterDate_IsNotBought() {
+        let ingredient = makeIngredient()
+        let item = makeItem(ingredient: ingredient)
+        let purchase = makePurchase(of: ingredient, on: offset(86_400), savedAt: offset(-60))
+
+        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase]).isEmpty)
+    }
+
+    @Test func dates_PurchaseSavedAfterItem_IsBoughtWithItsPurchaseDate() {
+        let ingredient = makeIngredient()
+        let item = makeItem(ingredient: ingredient)
+        let purchaseDate = offset(-3 * 86_400)
+        let purchase = makePurchase(of: ingredient, on: purchaseDate, savedAt: offset(60))
+
+        let result = ShoppingListBought.dates(items: [item], purchases: [purchase])
 
         #expect(result[item.persistentModelID] == purchaseDate)
     }
 
-    @Test func dates_PurchaseBeforeCreation_IsNotBought() throws {
+    @Test func dates_PurchaseSavedAtItemInstant_IsNotBought() {
         let ingredient = makeIngredient()
         let item = makeItem(ingredient: ingredient)
-        let purchase = makePurchase(of: ingredient, on: try day(-2))
+        let purchase = makePurchase(of: ingredient, on: created, savedAt: created)
 
-        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase], calendar: calendar).isEmpty)
+        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase]).isEmpty)
     }
 
-    @Test func dates_PurchaseAtMidnightOfCreationDay_IsBought() {
+    @Test func dates_EditedExistingPurchase_IsNotBought() {
         let ingredient = makeIngredient()
         let item = makeItem(ingredient: ingredient)
-        let midnight = startOfCreationDay()
-        let purchase = makePurchase(of: ingredient, on: midnight)
+        let purchase = makePurchase(of: ingredient, on: offset(-86_400), savedAt: offset(-86_400))
 
-        let result = ShoppingListBought.dates(items: [item], purchases: [purchase], calendar: calendar)
+        purchase.dateOfPurchase = offset(3_600)
+        purchase.quantity = 250
 
-        #expect(result[item.persistentModelID] == midnight)
+        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase]).isEmpty)
     }
 
-    @Test func dates_PurchaseEarlierSameDay_IsBought() throws {
+    @Test func dates_NilCreatedAtDatedAfterItem_IsBought() {
         let ingredient = makeIngredient()
         let item = makeItem(ingredient: ingredient)
-        let earlier = try #require(calendar.date(byAdding: .hour, value: 3, to: startOfCreationDay()))
-        #expect(earlier < created)
-        let purchase = makePurchase(of: ingredient, on: earlier)
+        let purchaseDate = offset(60)
+        let purchase = makePurchase(of: ingredient, on: purchaseDate, savedAt: nil)
 
-        let result = ShoppingListBought.dates(items: [item], purchases: [purchase], calendar: calendar)
+        let result = ShoppingListBought.dates(items: [item], purchases: [purchase])
 
-        #expect(result[item.persistentModelID] == earlier)
+        #expect(result[item.persistentModelID] == purchaseDate)
     }
 
-    @Test func dates_PurchaseAtCreationInstant_IsBought() {
+    @Test func dates_NilCreatedAtDatedAtItemInstant_IsBought() {
         let ingredient = makeIngredient()
         let item = makeItem(ingredient: ingredient)
-        let purchase = makePurchase(of: ingredient, on: created)
+        let purchase = makePurchase(of: ingredient, on: created, savedAt: nil)
 
-        let result = ShoppingListBought.dates(items: [item], purchases: [purchase], calendar: calendar)
-
-        #expect(result[item.persistentModelID] == created)
+        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase])[item.persistentModelID] == created)
     }
 
-    @Test func dates_PurchaseLastMomentOfPreviousDay_IsNotBought() throws {
+    @Test func dates_NilCreatedAtDatedBeforeItem_IsNotBought() {
         let ingredient = makeIngredient()
         let item = makeItem(ingredient: ingredient)
-        let justBefore = try #require(calendar.date(byAdding: .second, value: -1, to: startOfCreationDay()))
-        let purchase = makePurchase(of: ingredient, on: justBefore)
+        let purchase = makePurchase(of: ingredient, on: offset(-1), savedAt: nil)
 
-        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase], calendar: calendar).isEmpty)
+        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase]).isEmpty)
     }
 
-    @Test func dates_UnlinkedItem_IsNeverBought() throws {
+    @Test func dates_UnlinkedItem_IsNeverBought() {
         let ingredient = makeIngredient()
         let item = makeItem(ingredient: nil)
-        let purchase = makePurchase(of: ingredient, on: try day(2))
+        let purchase = makePurchase(of: ingredient, on: offset(60), savedAt: offset(60))
 
-        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase], calendar: calendar).isEmpty)
+        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase]).isEmpty)
     }
 
-    @Test func dates_SeveralQualifyingPurchases_PicksTheEarliest() throws {
+    @Test func dates_SeveralQualifyingPurchases_PicksTheEarliestDate() {
         let ingredient = makeIngredient()
         let item = makeItem(ingredient: ingredient)
+        let earliestDate = offset(-5 * 86_400)
         let purchases = [
-            makePurchase(of: ingredient, on: try day(5)),
-            makePurchase(of: ingredient, on: try day(-3)),
-            makePurchase(of: ingredient, on: try day(1)),
-            makePurchase(of: ingredient, on: try day(9))
+            makePurchase(of: ingredient, on: offset(5 * 86_400), savedAt: offset(60)),
+            makePurchase(of: ingredient, on: earliestDate, savedAt: offset(120)),
+            makePurchase(of: ingredient, on: offset(-9 * 86_400), savedAt: offset(-60)),
+            makePurchase(of: ingredient, on: offset(86_400), savedAt: nil)
         ]
 
-        let result = ShoppingListBought.dates(items: [item], purchases: purchases, calendar: calendar)
+        let result = ShoppingListBought.dates(items: [item], purchases: purchases)
 
-        #expect(result[item.persistentModelID] == (try day(1)))
+        #expect(result[item.persistentModelID] == earliestDate)
     }
 
-    @Test func dates_PurchasesOfOtherIngredients_AreIgnored() throws {
+    @Test func dates_PurchasesOfOtherIngredients_AreIgnored() {
         let ingredient = makeIngredient()
         let other = makeIngredient("Shea Butter")
         let item = makeItem(ingredient: ingredient)
-        let purchase = makePurchase(of: other, on: try day(2))
+        let purchase = makePurchase(of: other, on: offset(60), savedAt: offset(60))
 
-        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase], calendar: calendar).isEmpty)
+        #expect(ShoppingListBought.dates(items: [item], purchases: [purchase]).isEmpty)
     }
 
     @Test func dates_NoPurchasesOrItems_ReturnsEmpty() {
         let item = makeItem(ingredient: makeIngredient())
 
-        #expect(ShoppingListBought.dates(items: [item], purchases: [], calendar: calendar).isEmpty)
-        #expect(ShoppingListBought.dates(items: [], purchases: [], calendar: calendar).isEmpty)
+        #expect(ShoppingListBought.dates(items: [item], purchases: []).isEmpty)
+        #expect(ShoppingListBought.dates(items: [], purchases: []).isEmpty)
     }
 
-    @Test func dates_EachItemUsesItsOwnCreationDate() throws {
+    @Test func dates_EachItemUsesItsOwnCreationInstant() {
         let ingredient = makeIngredient()
         let early = makeItem("Early", ingredient: ingredient)
         let late = makeItem("Late", ingredient: ingredient)
-        late.createdAt = try day(4)
-        let purchase = makePurchase(of: ingredient, on: try day(2))
+        late.createdAt = offset(4 * 86_400)
+        let purchase = makePurchase(of: ingredient, on: offset(2 * 86_400), savedAt: offset(2 * 86_400))
 
-        let result = ShoppingListBought.dates(items: [early, late], purchases: [purchase], calendar: calendar)
+        let result = ShoppingListBought.dates(items: [early, late], purchases: [purchase])
 
         #expect(result[early.persistentModelID] != nil)
         #expect(result[late.persistentModelID] == nil)

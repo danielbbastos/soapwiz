@@ -191,6 +191,7 @@ final class PurchaseFormViewModel {
                 openingDate: hasOpeningDate ? openingDate : nil,
                 storageLocation: selectedLocation
             )
+            newPurchase.createdAt = .now
             context.insert(newPurchase)
             newPurchase.attach(to: live)
         }

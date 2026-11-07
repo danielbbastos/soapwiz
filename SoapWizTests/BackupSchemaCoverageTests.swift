@@ -32,7 +32,7 @@ struct BackupSchemaCoverageTests {
         "IngredientCategory": ["name"],
         "IngredientPurchase": [
             "uuid", "provider", "dateOfPurchase", "quantity", "totalPrice", "badge", "journalCode",
-            "expiryDate", "openingDate", "remainingAmount", "storageLocation"
+            "expiryDate", "openingDate", "remainingAmount", "storageLocation", "createdAt"
         ],
         "Provider": ["name", "website", "notes"],
         "Recipe": [

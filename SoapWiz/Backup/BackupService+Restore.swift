@@ -117,6 +117,7 @@ extension BackupService {
             )
             purchase.uuid = purchaseDTO.uuid
             purchase.remainingAmount = purchaseDTO.remainingAmount
+            purchase.createdAt = purchaseDTO.createdAt
             context.insert(purchase)
             purchase.attach(to: ingredient)
         }
