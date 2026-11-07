@@ -163,6 +163,56 @@ struct ShoppingListBatchPlanTests: BatchProductionTestHelpers {
         #expect(line.note == "For Castile \u{00D7}2")
     }
 
+    @Test func lines_MergeIntoNoteAlreadyContainingLabel_KeepsNoteAndAddsAmount() throws {
+        let oil = makeIngredient()
+        let item = makeItem(oil, amount: 50, note: "For Castile \u{00D7}2")
+
+        let lines = plan([requirement(oil)], items: [item])
+        let line = try #require(lines.first)
+        sut.addPlanned(lines)
+
+        #expect(line.note == "For Castile \u{00D7}2")
+        #expect(line.amount == 100)
+        #expect(item.note == "For Castile \u{00D7}2")
+        #expect(abs((item.amount ?? 0) - 150) < 1e-6)
+    }
+
+    @Test func lines_NoteHasLongerCountWithSamePrefix_AppendsLabel() throws {
+        let oil = makeIngredient()
+        let item = makeItem(oil, note: "For Castile \u{00D7}20")
+
+        let line = try #require(plan([requirement(oil)], items: [item]).first)
+
+        #expect(line.note == "For Castile \u{00D7}20, Castile \u{00D7}2")
+    }
+
+    @Test func lines_NoteHasRecipeWithLongerName_AppendsLabel() throws {
+        let oil = makeIngredient()
+        let item = makeItem(oil, note: "For Lavender Castile \u{00D7}2")
+
+        let line = try #require(plan([requirement(oil)], items: [item]).first)
+
+        #expect(line.note == "For Lavender Castile \u{00D7}2, Castile \u{00D7}2")
+    }
+
+    @Test func lines_NoteHasFreeTextThenLabel_KeepsNote() throws {
+        let oil = makeIngredient()
+        let item = makeItem(oil, note: "Buy organic \u{00B7} For Castile \u{00D7}2")
+
+        let line = try #require(plan([requirement(oil)], items: [item]).first)
+
+        #expect(line.note == "Buy organic \u{00B7} For Castile \u{00D7}2")
+    }
+
+    @Test func lines_NoteHasLabelAmongSeveral_KeepsNote() throws {
+        let oil = makeIngredient()
+        let item = makeItem(oil, note: "For Olive \u{00D7}1, Castile \u{00D7}2")
+
+        let line = try #require(plan([requirement(oil)], items: [item]).first)
+
+        #expect(line.note == "For Olive \u{00D7}1, Castile \u{00D7}2")
+    }
+
     @Test func lines_SeveralMatches_PicksOldest() throws {
         let oil = makeIngredient()
         let newer = makeItem(oil, createdAt: .now)

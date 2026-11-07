@@ -65,7 +65,14 @@ enum ShoppingListBatchPlan {
 
     private static func mergedNote(existing: String, label: String) -> String {
         if existing.isEmpty { return newNote(label) }
+        if plannedLabels(in: existing).contains(label) { return existing }
         if existing.hasPrefix("For ") { return "\(existing), \(label)" }
         return "\(existing) \u{00B7} \(newNote(label))"
+    }
+
+    private static func plannedLabels(in note: String) -> [String] {
+        let tail = note.components(separatedBy: " \u{00B7} ").last ?? note
+        let entries = tail.hasPrefix("For ") ? String(tail.dropFirst(4)) : tail
+        return entries.components(separatedBy: ", ")
     }
 }
