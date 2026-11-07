@@ -259,7 +259,7 @@ struct IngredientListView: View {
                             InventoryFilterButton(model: model)
                         }
                     }
-                    if model.editMode == .inactive {
+                    if model.editMode == .inactive && model.tracksInventory {
                         ToolbarItem(placement: .topBarTrailing) {
                             ShoppingListToolbarButton(isPresented: $model.showingShoppingList)
                         }
