@@ -183,10 +183,18 @@ final class RecipeCoverage {
             )
         }
         let batches = requirements
-            .map { Int(min(1e9, (($0.available + 1e-9) / $0.required).rounded(.down))) }
+            .map { max(0, Int(min(1e9, (($0.available + 1e-9) / $0.required).rounded(.down)))) }
             .min() ?? 0
         let shortages = requirements.filter(\.isShort)
         return Coverage(batches: batches, shortages: shortages)
+    }
+
+    /// Drops cached requirements for recipes that are no longer in `recipes`, so
+    /// deleted recipes and the ingredients they hold are released. The caller
+    /// passes its current recipe list, e.g. on each refresh.
+    func prune(keeping recipes: [Recipe]) {
+        let kept = Set(recipes.map(\.persistentModelID))
+        cache = cache.filter { kept.contains($0.key) }
     }
 
     private func requirementLines(
