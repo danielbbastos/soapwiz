@@ -5,11 +5,13 @@ import SwiftData
 private enum ShoppingListFormTarget: Identifiable {
     case new
     case edit(ShoppingListItem)
+    case addPurchase(ShoppingListItem)
 
     var id: String {
         switch self {
         case .new: "new"
         case .edit(let item): "edit-\(item.uuid.uuidString)"
+        case .addPurchase(let item): "purchase-\(item.uuid.uuidString)"
         }
     }
 }
@@ -113,6 +115,13 @@ struct ShoppingListView: View {
                     ShoppingListItemForm(ingredients: ingredients)
                 case .edit(let item):
                     ShoppingListItemForm(item: item, ingredients: ingredients)
+                case .addPurchase(let item):
+                    if let ingredient = item.ingredient {
+                        PurchaseFormView(
+                            ingredient: ingredient,
+                            prefill: model.purchasePrefill(for: item, purchases: purchases)
+                        )
+                    }
                 }
             }
         }
@@ -183,7 +192,10 @@ struct ShoppingListView: View {
                     toggleCount += 1
                     model.toggle(item)
                 },
-                onEdit: { formTarget = .edit(item) }
+                onEdit: { formTarget = .edit(item) },
+                onAddPurchase: model.offersAddPurchase(item, boughtDate: boughtDates[item.persistentModelID])
+                    ? { formTarget = .addPurchase(item) }
+                    : nil
             )
             .ledgerSheetRow(position: .position(index: index + offset, count: rows.count + offset))
             .swipeActions(edge: .trailing) {

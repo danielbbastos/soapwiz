@@ -25,13 +25,17 @@ struct LastPurchase: Equatable {
 
     /// The newest purchase of each ingredient, from one pass over `purchases`.
     static func newest(in purchases: [IngredientPurchase]) -> [PersistentIdentifier: LastPurchase] {
+        newestPurchases(in: purchases).mapValues(LastPurchase.init)
+    }
+
+    static func newestPurchases(in purchases: [IngredientPurchase]) -> [PersistentIdentifier: IngredientPurchase] {
         var latest: [PersistentIdentifier: IngredientPurchase] = [:]
         for purchase in purchases {
             guard let id = purchase.ingredient?.persistentModelID else { continue }
             if let current = latest[id], current.dateOfPurchase >= purchase.dateOfPurchase { continue }
             latest[id] = purchase
         }
-        return latest.mapValues(LastPurchase.init)
+        return latest
     }
 
     func line(unit: String, currencyCode: String, locale: Locale = .autoupdatingCurrent) -> String? {

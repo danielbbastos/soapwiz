@@ -94,6 +94,18 @@ final class ShoppingListViewModel {
         modelContext.saveLoggingFailure()
     }
 
+    /// Only a ticked line tied to an ingredient and not yet bought can take a purchase from the list.
+    func offersAddPurchase(_ item: ShoppingListItem, boughtDate: Date?) -> Bool {
+        item.isChecked && boughtDate == nil && item.ingredient != nil
+    }
+
+    func purchasePrefill(for item: ShoppingListItem, purchases: [IngredientPurchase]) -> PurchasePrefill? {
+        guard let ingredient = item.ingredient else { return nil }
+        let provider = LastPurchase.newestPurchases(in: purchases)[ingredient.persistentModelID]?.provider
+        let quantity = item.amount.flatMap { $0 > 0 && item.unit == ingredient.unit ? $0 : nil }
+        return PurchasePrefill(provider: provider, quantity: quantity)
+    }
+
     func toggle(_ item: ShoppingListItem) {
         item.isChecked.toggle()
         item.checkedAt = item.isChecked ? now() : nil
