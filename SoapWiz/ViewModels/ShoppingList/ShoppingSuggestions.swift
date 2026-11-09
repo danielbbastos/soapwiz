@@ -8,7 +8,7 @@ enum ShoppingSuggestionReason: Equatable {
     case low
     case expiring(days: Int)
 
-    fileprivate var rank: Int {
+    var rank: Int {
         switch self {
         case .out: 0
         case .expired: 1
@@ -89,7 +89,7 @@ enum ShoppingSuggestions {
 
     /// Only stock still on the shelf can expire, so a used-up purchase's date is
     /// ignored.
-    private static func reasons(
+    static func reasons(
         for ingredient: Ingredient,
         purchases: [IngredientPurchase],
         remaining: Double,
@@ -122,13 +122,27 @@ enum ShoppingSuggestions {
     }
 
     private static func isOrderedBefore(_ lhs: ShoppingSuggestion, _ rhs: ShoppingSuggestion) -> Bool {
-        guard let left = lhs.reasons.first, let right = rhs.reasons.first else { return false }
+        isOrderedBefore(
+            reasons: lhs.reasons,
+            name: lhs.ingredient.name,
+            otherReasons: rhs.reasons,
+            otherName: rhs.ingredient.name
+        )
+    }
+
+    static func isOrderedBefore(
+        reasons: [ShoppingSuggestionReason],
+        name: String,
+        otherReasons: [ShoppingSuggestionReason],
+        otherName: String
+    ) -> Bool {
+        guard let left = reasons.first, let right = otherReasons.first else { return false }
         if left.rank != right.rank {
             return left.rank < right.rank
         }
         if case .expiring(let leftDays) = left, case .expiring(let rightDays) = right, leftDays != rightDays {
             return leftDays < rightDays
         }
-        return lhs.ingredient.name.localizedStandardCompare(rhs.ingredient.name) == .orderedAscending
+        return name.localizedStandardCompare(otherName) == .orderedAscending
     }
 }
