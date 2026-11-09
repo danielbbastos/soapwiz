@@ -29,6 +29,7 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         try ctx.save()
 
         let navigation = AppNavigation()
+        navigation.homePath.append("pushed")
         navigation.history.show(batch)
         navigation.inventory.show(ingredient)
         navigation.recipes.show(recipe)
@@ -40,6 +41,7 @@ struct RestoreCoordinatorTests: RestoreTestCase {
         coordinator.stage(try BackupService.makeBackup(from: ctx), isPro: true)
         coordinator.begin(navigation: navigation)
 
+        #expect(navigation.homePath.isEmpty)
         #expect(navigation.history.path.isEmpty)
         #expect(navigation.history.selection == nil)
         #expect(navigation.inventory.path.isEmpty)
