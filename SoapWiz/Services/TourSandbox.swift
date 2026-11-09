@@ -96,6 +96,7 @@ final class TourSandbox {
         )
         settings = SettingsState(context: context)
         navigation = AppNavigation()
+        navigation.selectedTab = TourScreen().tab
         syncHealth = SyncHealthMonitor(
             activeStore: .offlineByChoice,
             store: SyncStatusStore(defaults: defaults)

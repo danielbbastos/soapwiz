@@ -8,7 +8,7 @@ import SwiftData
 struct AppNavigationTests {
 
     private func makeContext() throws -> (ModelContainer, ModelContext) {
-        let schema = Schema([Batch.self, BatchLineItem.self, Recipe.self])
+        let schema = Schema([Batch.self, BatchLineItem.self, Recipe.self, Ingredient.self])
         let container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
         return (container, container.mainContext)
     }
@@ -19,12 +19,67 @@ struct AppNavigationTests {
         return batch
     }
 
-    @Test func initialState_InventoryTabAndEmptyHistoryPath() {
+    @Test func initialState_HomeTabAndEmptyPaths() {
         let sut = AppNavigation()
 
-        #expect(sut.selectedTab == .inventory)
+        #expect(sut.selectedTab == .home)
+        #expect(sut.homePath.isEmpty)
         #expect(sut.history.path.isEmpty)
         #expect(sut.history.selection == nil)
+    }
+
+    @Test func resetHome_ClearsThePath() {
+        let sut = AppNavigation()
+        sut.homePath.append("pushed")
+
+        sut.resetHome()
+
+        #expect(sut.homePath.isEmpty)
+    }
+
+    @Test func showIngredient_SelectsItInInventoryAndSwitchesTab() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let ingredient = Ingredient(name: "Olive Oil")
+        ctx.insert(ingredient)
+        let sut = AppNavigation()
+
+        sut.showIngredient(ingredient)
+
+        #expect(sut.selectedTab == .inventory)
+        #expect(sut.inventory.selection == ingredient)
+        #expect(sut.inventory.path.count == 1)
+    }
+
+    @Test func showRecipe_SelectsItInRecipesAndSwitchesTab() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Castile")
+        ctx.insert(recipe)
+        let sut = AppNavigation()
+
+        sut.showRecipe(recipe)
+
+        #expect(sut.selectedTab == .recipes)
+        #expect(sut.recipes.selection == recipe)
+        #expect(sut.recipes.path.count == 1)
+    }
+
+    @Test func createBatchFor_RequestsTheSheetWithoutLeavingTheTab() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = Recipe(name: "Castile")
+        ctx.insert(recipe)
+        let sut = AppNavigation()
+
+        sut.createBatch(for: recipe)
+
+        guard case .createBatch(let target) = try #require(sut.detailSheetRequest).kind else {
+            Issue.record("Expected a createBatch request")
+            return
+        }
+        #expect(target == recipe)
+        #expect(sut.selectedTab == .home)
     }
 
     @Test func showBatch_SelectsHistoryTab() throws {

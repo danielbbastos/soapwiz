@@ -67,11 +67,11 @@ struct ContentView: View {
             navigation.selectedTab = .settings
         }
         // The tour ran over a sandbox, so the real app is still wherever the
-        // user left it; Inventory is where the first-launch story ends. A
-        // replay or debug showing leaves the app where it was.
+        // user left it; Home is where the first-launch story ends. A replay
+        // or debug showing leaves the app where it was.
         .onChange(of: tourLauncher.launchTourEnded) {
             guard !isTourSandbox else { return }
-            navigation.selectedTab = .inventory
+            navigation.selectedTab = .home
         }
         .alert("Replace all data?", isPresented: presenting(\.pendingImport)) {
             Button("Replace", role: .destructive) {
@@ -119,6 +119,11 @@ struct ContentView: View {
     private var tabs: some View {
         let _: Void = HoneyLedgerTabBarAppearance.applied
         return TabView(selection: $navigation.selectedTab) {
+            Tab(value: AppTab.home) {
+                HomeView().tint(nil)
+            } label: {
+                tabLabel("Home", systemImage: "house")
+            }
             Tab(value: AppTab.inventory) {
                 IngredientListView().tint(nil)
             } label: {

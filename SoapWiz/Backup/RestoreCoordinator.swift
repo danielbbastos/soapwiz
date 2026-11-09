@@ -96,6 +96,7 @@ final class RestoreCoordinator {
         pendingImport = nil
         stagedBackup = backup
 
+        navigation.resetHome()
         navigation.inventory.reset()
         navigation.recipes.reset()
         navigation.history.reset()

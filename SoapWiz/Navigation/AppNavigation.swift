@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum AppTab: Hashable {
+    case home
     case inventory
     case recipes
     case history
@@ -30,13 +31,17 @@ struct RecipeFileImport: Hashable {
 }
 
 /// Cross-tab navigation state: which tab is selected and the navigation of the
-/// Inventory, Recipes and History tabs. Lets flows that end in another tab
-/// (creating a batch from a recipe) land the user there directly, and lets the
-/// onboarding tour drive each tab from outside.
+/// Home, Inventory, Recipes and History tabs. Lets flows that end in another
+/// tab (creating a batch from a recipe) land the user there directly, and lets
+/// the onboarding tour drive each tab from outside.
 @Observable
 @MainActor
 final class AppNavigation {
-    var selectedTab: AppTab = .inventory
+    var selectedTab: AppTab = .home
+
+    /// What Home has pushed. Home opens items in the tab that owns them, so
+    /// this holds only screens that belong to Home itself.
+    var homePath = NavigationPath()
     let inventory = ListDetailNavigation<Ingredient>()
     let recipes = ListDetailNavigation<Recipe>()
     let history = ListDetailNavigation<Batch>()
@@ -129,6 +134,27 @@ final class AppNavigation {
               let request = pendingRecipeFileImport else { return nil }
         pendingRecipeFileImport = nil
         return request
+    }
+
+    func resetHome() {
+        homePath = NavigationPath()
+    }
+
+    /// Switches to the Inventory tab showing `ingredient`'s detail screen.
+    func showIngredient(_ ingredient: Ingredient) {
+        inventory.show(ingredient)
+        selectedTab = .inventory
+    }
+
+    /// Switches to the Recipes tab showing `recipe`'s detail screen.
+    func showRecipe(_ recipe: Recipe) {
+        recipes.show(recipe)
+        selectedTab = .recipes
+    }
+
+    /// Opens Create batch for `recipe` over the tab the user is on.
+    func createBatch(for recipe: Recipe) {
+        detailSheetRequest = .createBatch(recipe)
     }
 
     /// Switches to the History tab showing `batch`'s detail screen: beside the
