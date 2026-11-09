@@ -179,7 +179,7 @@ final class ModelRows<Model: PersistentModel> {
             // The old rows stay, and the history cursor has already moved past
             // whatever asked for this reload, so the next check retries.
             needsReload = true
-            log.error("\(String(describing: Model.self)) fetch failed: \(error)")
+            log.error("\(String(describing: Model.self), privacy: .public) fetch failed: \(error)")
             return
         }
         needsReload = false
