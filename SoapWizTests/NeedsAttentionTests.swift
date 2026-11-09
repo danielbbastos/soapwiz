@@ -166,6 +166,31 @@ struct NeedsAttentionTests {
         #expect(result.moreCount == 2)
     }
 
+    // MARK: - Time
+
+    @Test func make_LaterNow_TurnsExpiringIntoExpired() throws {
+        let oil = makeIngredient()
+        try addPurchase(to: oil, remaining: 500, expiry: try date(daysFromNow: 1))
+        let purchases = try context.fetch(FetchDescriptor<IngredientPurchase>())
+
+        let before = try #require(
+            NeedsAttention.make(ingredients: [oil], purchases: purchases, tracksInventory: true, now: now, calendar: calendar)
+        )
+        #expect(before.rows.first?.stamp == .expiresIn(days: 1))
+
+        let after = try #require(
+            NeedsAttention.make(
+                ingredients: [oil],
+                purchases: purchases,
+                tracksInventory: true,
+                now: try date(daysFromNow: 2),
+                calendar: calendar
+            )
+        )
+        #expect(after.rows.first?.stamp == .expired)
+        #expect(abs(after.valueAtRisk - 10) < 0.0001)
+    }
+
     // MARK: - Nil
 
     @Test func make_TrackingOff_ReturnsNil() throws {

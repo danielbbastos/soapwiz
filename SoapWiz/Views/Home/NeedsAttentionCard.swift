@@ -8,43 +8,62 @@ struct NeedsAttentionCard: View {
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.currencyCode) private var currencyCode
 
+    /// The card always computes with the current time; this tick only forces a
+    /// redraw when the day changes or the app becomes active while the card is
+    /// on screen. A hidden card picks up the current time on its next redraw
+    /// (any inventory change).
+    @State private var clockTick = Date.now
+
     var body: some View {
+        // swiftlint:disable:next redundant_discardable_let
+        let _ = clockTick
         if let attention = NeedsAttention.make(
             ingredients: inventory.ingredients,
             purchases: inventory.purchases,
-            tracksInventory: settings.tracksInventory
+            tracksInventory: settings.tracksInventory,
+            now: .now
         ) {
-            HomeCard("Needs attention") {
-                if attention.valueAtRisk > 0 {
-                    header(attention.valueAtRisk)
+            card(attention)
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+                    clockTick = .now
                 }
-                ForEach(Array(attention.rows.enumerated()), id: \.element.id) { index, row in
-                    let isLast = attention.moreCount == 0 && index == attention.rows.count - 1
-                    if index > 0 || attention.valueAtRisk > 0 {
-                        divider
-                    }
-                    Button {
-                        navigation.showIngredient(row.ingredient)
-                    } label: {
-                        rowLabel(row)
-                    }
-                    .buttonStyle(HomeRowButtonStyle(isLast: isLast))
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                    clockTick = .now
                 }
-                if attention.moreCount > 0 {
+        }
+    }
+
+    private func card(_ attention: NeedsAttention) -> some View {
+        HomeCard("Needs attention") {
+            if attention.valueAtRisk > 0 {
+                header(attention.valueAtRisk)
+            }
+            ForEach(Array(attention.rows.enumerated()), id: \.element.id) { index, row in
+                let isLast = attention.moreCount == 0 && index == attention.rows.count - 1
+                if index > 0 || attention.valueAtRisk > 0 {
                     divider
-                    Button {
-                        navigation.selectedTab = .inventory
-                    } label: {
-                        Text("\(attention.moreCount) more in Inventory")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.amberText)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(HomeRowButtonStyle(isLast: true))
                 }
+                Button {
+                    navigation.showIngredient(row.ingredient)
+                } label: {
+                    rowLabel(row)
+                }
+                .buttonStyle(HomeRowButtonStyle(isLast: isLast))
+            }
+            if attention.moreCount > 0 {
+                divider
+                Button {
+                    navigation.selectedTab = .inventory
+                } label: {
+                    Text("\(attention.moreCount) more in Inventory")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Color.amberText)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(HomeRowButtonStyle(isLast: true))
             }
         }
     }
