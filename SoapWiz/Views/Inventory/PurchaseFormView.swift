@@ -8,8 +8,8 @@ struct PurchaseFormView: View {
     @State private var model: PurchaseFormViewModel
     @State private var saveError: String?
 
-    init(ingredient: Ingredient, purchase: IngredientPurchase? = nil) {
-        _model = State(initialValue: PurchaseFormViewModel(ingredient: ingredient, purchase: purchase))
+    init(ingredient: Ingredient, purchase: IngredientPurchase? = nil, prefill: PurchasePrefill? = nil) {
+        _model = State(initialValue: PurchaseFormViewModel(ingredient: ingredient, purchase: purchase, prefill: prefill))
     }
 
     var body: some View {

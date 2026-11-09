@@ -51,6 +51,7 @@ extension BackupService {
             for dto in backup.batches {
                 restoreBatch(dto, recipes: recipes, ingredients: ingredients, into: context)
             }
+            restoreShoppingList(backup.shoppingList ?? [], ingredients: ingredients, into: context)
 
             let settings = AppSettings.resolve(in: context)
             settings.pvpFactor = backup.settings.pvpFactor
@@ -89,6 +90,7 @@ extension BackupService {
         ingredient.thumbnailData = dto.imageData.flatMap(ImageDownscaler.thumbnail(from:))
         ingredient.category = element(categories, at: dto.categoryIndex)
         ingredient.lowStockThreshold = dto.lowStockThreshold
+        ingredient.shoppingSuggestionDismissedAt = dto.suggestionDismissedAt
         ingredient.sapValue = dto.sapValue
         ingredient.kohSapValue = dto.kohSapValue
         ingredient.density = dto.density
@@ -115,6 +117,7 @@ extension BackupService {
             )
             purchase.uuid = purchaseDTO.uuid
             purchase.remainingAmount = purchaseDTO.remainingAmount
+            purchase.createdAt = purchaseDTO.createdAt
             context.insert(purchase)
             purchase.attach(to: ingredient)
         }
@@ -234,6 +237,26 @@ extension BackupService {
         }
     }
 
+    private static func restoreShoppingList(
+        _ dtos: [BackupData.ShoppingListItemDTO],
+        ingredients: [Ingredient],
+        into context: ModelContext
+    ) {
+        for dto in dtos {
+            let item = ShoppingListItem(
+                name: dto.name,
+                amount: dto.amount,
+                unit: dto.unit,
+                ingredient: element(ingredients, at: dto.ingredientIndex),
+                note: dto.note
+            )
+            item.isChecked = dto.isChecked
+            item.checkedAt = dto.checkedAt
+            item.createdAt = dto.createdAt
+            context.insert(item)
+        }
+    }
+
     // MARK: - Helpers
     /// Safe index lookup: returns `nil` for a `nil` or out-of-range index.
     private static func element<T>(_ array: [T], at index: Int?) -> T? {
@@ -257,11 +280,15 @@ extension BackupService {
     /// cascade reaches a row that has lost its parent, so a restore that
     /// promises to replace everything would otherwise keep it.
     ///
+    /// Shopping list lines are deleted explicitly too: they hang off an
+    /// ingredient with `.nullify`, so no cascade reaches them.
+    ///
     /// Also the first step of `AppReset`, which promises the same.
     static func wipe(_ context: ModelContext) throws {
         try deleteAll(Batch.self, in: context)
         try deleteAll(BatchLogEntry.self, in: context)
         try deleteAll(BatchLogPhoto.self, in: context)
+        try deleteAll(ShoppingListItem.self, in: context)
         try deleteAll(Recipe.self, in: context)
         try deleteAll(RecipeCollection.self, in: context)
         try deleteAll(IngredientPurchase.self, in: context)

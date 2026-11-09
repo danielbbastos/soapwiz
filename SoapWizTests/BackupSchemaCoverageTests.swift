@@ -26,13 +26,13 @@ struct BackupSchemaCoverageTests {
         "BatchLogPhoto": ["imageData", "position"],
         "Ingredient": [
             "name", "code", "category", "unit", "isFavorite", "uuid", "librarySlug", "hasCustomChemistry",
-            "isHidden", "imageData", "avatarColorName", "lowStockThreshold", "sapValue", "kohSapValue",
+            "isHidden", "imageData", "avatarColorName", "lowStockThreshold", "shoppingSuggestionDismissedAt", "sapValue", "kohSapValue",
             "density", "fattyAcidProfile", "purchasesStorage"
         ],
         "IngredientCategory": ["name"],
         "IngredientPurchase": [
             "uuid", "provider", "dateOfPurchase", "quantity", "totalPrice", "badge", "journalCode",
-            "expiryDate", "openingDate", "remainingAmount", "storageLocation"
+            "expiryDate", "openingDate", "remainingAmount", "storageLocation", "createdAt"
         ],
         "Provider": ["name", "website", "notes"],
         "Recipe": [
@@ -46,6 +46,9 @@ struct BackupSchemaCoverageTests {
         "RecipeCollection": ["name", "colorName"],
         "RecipeIngredient": ["ingredient", "percentage", "role", "additiveAmount", "additiveUnit"],
         "RecipeProduct": ["size", "unitSymbol"],
+        "ShoppingListItem": [
+            "name", "amount", "unit", "ingredient", "note", "isChecked", "checkedAt", "createdAt"
+        ],
         "StorageLocation": ["name", "locationDescription"]
     ]
 
@@ -63,6 +66,7 @@ struct BackupSchemaCoverageTests {
             "thumbnailData": "rebuilt from imageData on restore",
             "recipeIngredientsStorage": "inverse, rebuilt from the recipe side",
             "batchLineItemsStorage": "inverse, rebuilt from the batch side",
+            "shoppingListItemsStorage": "inverse of ShoppingListItem.ingredient",
             "recipesUsingAsLyeStorage": "inverse of Recipe.lyeIngredient",
             "recipesUsingAsKOHLyeStorage": "inverse of Recipe.kohLyeIngredient",
             "recipesUsingAsNeutralizerStorage": "inverse of Recipe.neutralizerIngredient"
@@ -92,6 +96,10 @@ struct BackupSchemaCoverageTests {
             "ingredientSlug": "set from the restored ingredient by attach(to:) / RecipeIngredient.init"
         ],
         "RecipeProduct": ["recipe": "the inverse of nesting under the recipe"],
+        "ShoppingListItem": [
+            "uuid": "restore mints a fresh identity",
+            "ingredientSlug": "set from the restored ingredient by ShoppingListItem.init"
+        ],
         "StorageLocation": [
             "uuid": "restore mints a fresh identity",
             "purchasesStorage": "inverse, rebuilt from the purchase side"

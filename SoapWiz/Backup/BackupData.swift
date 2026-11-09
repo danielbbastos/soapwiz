@@ -26,6 +26,9 @@ struct BackupData: Codable {
     /// Optional so a version-1 file, written before collections existed, still
     /// decodes — it restores with none.
     var collections: [RecipeCollectionDTO]?
+    /// Optional so a file written before the shopping list existed still
+    /// decodes; it restores with no items.
+    var shoppingList: [ShoppingListItemDTO]?
 
     /// True when the snapshot holds nothing worth restoring. `settings` is excluded
     /// deliberately — it always exists, and a default pricing factor is not data the
@@ -33,7 +36,7 @@ struct BackupData: Codable {
     var isEmpty: Bool {
         categories.isEmpty && providers.isEmpty && storageLocations.isEmpty
             && ingredients.isEmpty && recipes.isEmpty && batches.isEmpty
-            && (collections ?? []).isEmpty
+            && (collections ?? []).isEmpty && (shoppingList ?? []).isEmpty
     }
 }
 
@@ -107,6 +110,9 @@ extension BackupData {
         var librarySlug: String?
         var hasCustomChemistry: Bool?
         var isHidden: Bool?
+        /// Optional so a file written before the shopping list existed still
+        /// decodes; those ingredients restore with no dismissal.
+        var suggestionDismissedAt: Date?
         var purchases: [PurchaseDTO]
     }
 
@@ -126,6 +132,9 @@ extension BackupData {
         var expiryDate: Date?
         var openingDate: Date?
         var remainingAmount: Double
+        /// Optional so a file written before the field existed still decodes;
+        /// those purchases restore with `nil`.
+        var createdAt: Date?
     }
 
     struct RecipeDTO: Codable {
@@ -254,6 +263,19 @@ extension BackupData {
         /// order. Empty when the file was exported without photos. Thumbnails
         /// are derived on restore, as for recipes and ingredients.
         var photos: [Data]
+    }
+
+    struct ShoppingListItemDTO: Codable {
+        /// Index into `BackupData.ingredients`, or `nil` when the line isn't
+        /// linked to an ingredient.
+        var ingredientIndex: Int?
+        var name: String
+        var amount: Double?
+        var unit: String
+        var note: String
+        var isChecked: Bool
+        var checkedAt: Date?
+        var createdAt: Date
     }
 
     struct BatchLineItemDTO: Codable {

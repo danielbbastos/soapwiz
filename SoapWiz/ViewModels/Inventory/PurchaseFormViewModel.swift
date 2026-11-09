@@ -1,6 +1,12 @@
 import Foundation
 import SwiftData
 
+/// Starting values for a new purchase form.
+struct PurchasePrefill {
+    var provider: Provider?
+    var quantity: Double?
+}
+
 @MainActor
 @Observable
 final class PurchaseFormViewModel {
@@ -43,12 +49,18 @@ final class PurchaseFormViewModel {
 
     private let initialSnapshot: Snapshot
 
-    init(ingredient: Ingredient, purchase: IngredientPurchase? = nil, locale: Locale = .autoupdatingCurrent) {
+    init(
+        ingredient: Ingredient,
+        purchase: IngredientPurchase? = nil,
+        prefill: PurchasePrefill? = nil,
+        locale: Locale = .autoupdatingCurrent
+    ) {
         self.ingredient = ingredient
         self.ingredientSlug = ingredient.librarySlug
         self.purchase = purchase
         self.locale = locale
-        let snapshot = purchase.map { Self.snapshot(of: $0, locale: locale) } ?? Self.newPurchaseSnapshot(for: ingredient)
+        let snapshot = purchase.map { Self.snapshot(of: $0, locale: locale) }
+            ?? Self.newPurchaseSnapshot(for: ingredient, prefill: prefill, locale: locale)
         initialSnapshot = snapshot
 
         selectedProvider = snapshot.provider
@@ -64,10 +76,14 @@ final class PurchaseFormViewModel {
         selectedLocation = snapshot.location
     }
 
-    private static func snapshot(of purchase: IngredientPurchase, locale: Locale) -> Snapshot {
-        let fieldFormat = FloatingPointFormatStyle<Double>(locale: locale)
+    private static func fieldFormat(locale: Locale) -> FloatingPointFormatStyle<Double> {
+        FloatingPointFormatStyle<Double>(locale: locale)
             .precision(.fractionLength(0...2))
             .grouping(.never)
+    }
+
+    private static func snapshot(of purchase: IngredientPurchase, locale: Locale) -> Snapshot {
+        let fieldFormat = fieldFormat(locale: locale)
         return Snapshot(
             provider: purchase.provider,
             dateOfPurchase: purchase.dateOfPurchase,
@@ -85,12 +101,16 @@ final class PurchaseFormViewModel {
 
     /// A new purchase's starting values, so it only counts as changed once the
     /// user has entered something, and a swipe can still close it until then.
-    private static func newPurchaseSnapshot(for ingredient: Ingredient) -> Snapshot {
+    private static func newPurchaseSnapshot(
+        for ingredient: Ingredient,
+        prefill: PurchasePrefill?,
+        locale: Locale
+    ) -> Snapshot {
         let now = Date()
         return Snapshot(
-            provider: nil,
+            provider: prefill?.provider,
             dateOfPurchase: now,
-            quantityText: "",
+            quantityText: prefill?.quantity.map { $0.formatted(fieldFormat(locale: locale)) } ?? "",
             totalPriceText: "",
             badge: "",
             journalCode: suggestedJournalCode(for: ingredient),
@@ -158,7 +178,7 @@ final class PurchaseFormViewModel {
             || selectedLocation !== snap.location
     }
 
-    var isValid: Bool { quantity > 0 && LocaleDecimal.isReadable(totalPriceText, locale: locale) && isDirty }
+    var isValid: Bool { quantity > 0 && LocaleDecimal.isReadable(totalPriceText, locale: locale) && (purchase == nil || isDirty) }
 
     /// Throws when the ingredient this sheet was opened for has been merged away
     /// and no surviving row carries its slug. Appending to the detached reference
@@ -191,6 +211,7 @@ final class PurchaseFormViewModel {
                 openingDate: hasOpeningDate ? openingDate : nil,
                 storageLocation: selectedLocation
             )
+            newPurchase.createdAt = .now
             context.insert(newPurchase)
             newPurchase.attach(to: live)
         }

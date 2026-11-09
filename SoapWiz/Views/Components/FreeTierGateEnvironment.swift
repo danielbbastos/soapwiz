@@ -6,6 +6,7 @@ extension ProFeature {
         switch self {
         case .collections: .collections
         case .reminders: .reminders
+        case .shoppingList: .shoppingList
         }
     }
 }

@@ -3,7 +3,8 @@ import SwiftData
 
 /// Prompts for how many batches to make and creates one. Insufficient stock is
 /// surfaced inline — the affected ingredients and shortfalls are listed and
-/// creation is blocked until the count is reduced or stock is replenished.
+/// creation is blocked until the count is reduced or stock is replenished; the
+/// batch can be planned instead, which adds the shortfalls to the shopping list.
 /// With inventory tracking off there is no stock check and no cost estimate.
 struct CreateBatchSheet: View {
     @Environment(\.currencyCode) private var currencyCode
@@ -17,6 +18,8 @@ struct CreateBatchSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Query private var batches: [Batch]
     @State private var model: BatchProductionViewModel
+    @State private var showingPlan = false
+    @FreeTierGateEnvironment private var freeTier
 
     init(
         recipe: Recipe,
@@ -48,10 +51,10 @@ struct CreateBatchSheet: View {
     var body: some View {
         let existingCodes = batches.map(\.code)
         let codeIsTaken = model.codeIsTaken(among: batches)
+        let requirements = model.requirements
+        let shortages = model.shortages(in: requirements)
         NavigationStack {
             Form {
-                let requirements = model.requirements
-                let shortages = model.shortages(in: requirements)
                 let estimatedCost = model.estimatedCost
                 let totalBatchWeight = model.totalBatchWeight
 
@@ -166,17 +169,31 @@ struct CreateBatchSheet: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
-                        if let batch = model.create(context: context) {
-                            dismiss()
-                            onCreated(batch)
-                            if batch.cureDays > 0 {
-                                Task { await NotificationService.syncIfEnabled(modelContext: context) }
+                    if shortages.isEmpty {
+                        Button("Create") {
+                            if let batch = model.create(context: context) {
+                                dismiss()
+                                onCreated(batch)
+                                if batch.cureDays > 0 {
+                                    Task { await NotificationService.syncIfEnabled(modelContext: context) }
+                                }
                             }
                         }
+                        .disabled(!model.canCreate || codeIsTaken)
+                    } else {
+                        Button("Plan batch") {
+                            freeTier.ifAvailable(.shoppingList) { showingPlan = true }
+                        }
                     }
-                    .disabled(!model.canCreate || codeIsTaken)
                 }
+            }
+            .navigationDestination(isPresented: $showingPlan) {
+                PlanBatchConfirmationView(
+                    shortages: shortages,
+                    recipeName: recipe.name,
+                    batchCount: model.batchCount,
+                    onAdded: { dismiss() }
+                )
             }
             .interactiveDismissDisabled(model.hasChanges)
         }
@@ -193,7 +210,10 @@ struct CreateBatchSheet: View {
 
     private func shortageMessage(count: Int) -> String {
         let text = AttributedString(
-            localized: "Not enough stock for ^[\(count) ingredient](inflect: true). Reduce the batch count or restock."
+            localized: """
+                Not enough stock for ^[\(count) ingredient](inflect: true). \
+                Plan the batch to add what's missing to your shopping list, or reduce the batch count.
+                """
         )
         return String(text.characters)
     }

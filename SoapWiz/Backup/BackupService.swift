@@ -25,6 +25,7 @@ enum BackupService {
         let recipes = try context.fetch(FetchDescriptor<Recipe>())
         let batches = try context.fetch(FetchDescriptor<Batch>())
         let collections = try context.fetch(FetchDescriptor<RecipeCollection>())
+        let shoppingList = try context.fetch(FetchDescriptor<ShoppingListItem>(sortBy: [SortDescriptor(\.createdAt)]))
 
         let categoryIndex = indexMap(categories)
         let providerIndex = indexMap(providers)
@@ -61,7 +62,24 @@ enum BackupService {
             },
             collections: collections.map {
                 BackupData.RecipeCollectionDTO(name: $0.name, colorName: $0.colorName)
-            }
+            },
+            shoppingList: shoppingList.map { shoppingListItemDTO($0, ingredientIndex: ingredientIndex) }
+        )
+    }
+
+    private static func shoppingListItemDTO(
+        _ item: ShoppingListItem,
+        ingredientIndex: [PersistentIdentifier: Int]
+    ) -> BackupData.ShoppingListItemDTO {
+        BackupData.ShoppingListItemDTO(
+            ingredientIndex: item.ingredient.flatMap { ingredientIndex[$0.persistentModelID] },
+            name: item.name,
+            amount: item.amount,
+            unit: item.unit,
+            note: item.note,
+            isChecked: item.isChecked,
+            checkedAt: item.checkedAt,
+            createdAt: item.createdAt
         )
     }
 
@@ -89,6 +107,7 @@ enum BackupService {
             librarySlug: ingredient.librarySlug,
             hasCustomChemistry: ingredient.hasCustomChemistry,
             isHidden: ingredient.isHidden,
+            suggestionDismissedAt: ingredient.shoppingSuggestionDismissedAt,
             purchases: ingredient.purchases
                 .sorted { $0.dateOfPurchase < $1.dateOfPurchase }
                 .map { purchase in
@@ -103,7 +122,8 @@ enum BackupService {
                         journalCode: purchase.journalCode,
                         expiryDate: purchase.expiryDate,
                         openingDate: purchase.openingDate,
-                        remainingAmount: purchase.remainingAmount
+                        remainingAmount: purchase.remainingAmount,
+                        createdAt: purchase.createdAt
                     )
                 }
         )

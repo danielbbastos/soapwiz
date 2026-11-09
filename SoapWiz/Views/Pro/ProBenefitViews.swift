@@ -33,6 +33,11 @@ struct ProBenefit: Identifiable {
             detail: "Before an ingredient expires, and when a batch has cured."
         ),
         ProBenefit(
+            symbol: "cart",
+            title: "Shopping list",
+            detail: "What’s low, out or expiring, and what a batch needs."
+        ),
+        ProBenefit(
             symbol: "gift",
             title: "Future Pro features",
             detail: "Pro features added in later updates are included."
@@ -99,9 +104,10 @@ struct ProBenefitsList: View {
     }
 }
 
-/// Regular width: a card per benefit, two to a row.
+/// Regular width: a card per benefit, two to a row, and a full-width card below.
 struct ProBenefitsGrid: View {
     let benefits: [ProBenefit]
+    let footer: ProBenefit
 
     var body: some View {
         Grid(horizontalSpacing: 12, verticalSpacing: 12) {
@@ -111,6 +117,10 @@ struct ProBenefitsGrid: View {
                         ProBenefitCard(benefit: benefit)
                     }
                 }
+            }
+            GridRow {
+                ProBenefitCard(benefit: footer)
+                    .gridCellColumns(2)
             }
         }
     }

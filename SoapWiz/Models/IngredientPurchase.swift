@@ -20,6 +20,12 @@ final class IngredientPurchase {
     var openingDate: Date?
     var remainingAmount: Double = 0
     var storageLocation: StorageLocation?
+    /// When this record was first saved. Never shown and never changed by an
+    /// edit. `dateOfPurchase` is the user's own date, often back-dated when
+    /// purchases are logged in bulk, so it can't say when a purchase was
+    /// recorded; this can. `nil` for purchases made before it existed, and for
+    /// backup files that lack it.
+    var createdAt: Date?
 
     /// Links the purchase to `ingredient` and records its slug in the same write.
     /// Always link through this: a purchase whose slug is only stamped by a later

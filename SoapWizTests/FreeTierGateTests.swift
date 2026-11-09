@@ -34,17 +34,17 @@ struct FreeTierGateTests {
 
     // MARK: Pro features
 
-    @Test(arguments: [ProFeature.collections, .reminders])
+    @Test(arguments: [ProFeature.collections, .reminders, .shoppingList])
     func allows_FreeUser_ReturnsFalse(feature: ProFeature) {
         #expect(!free.allows(feature))
     }
 
-    @Test(arguments: [ProFeature.collections, .reminders])
+    @Test(arguments: [ProFeature.collections, .reminders, .shoppingList])
     func allows_ProUser_ReturnsTrue(feature: ProFeature) {
         #expect(FreeTierGate(isPro: true).allows(feature))
     }
 
-    @Test(arguments: [ProFeature.collections, .reminders])
+    @Test(arguments: [ProFeature.collections, .reminders, .shoppingList])
     func allows_TourSandbox_ReturnsTrue(feature: ProFeature) {
         #expect(FreeTierGate(isPro: false, isTourSandbox: true).allows(feature))
     }
