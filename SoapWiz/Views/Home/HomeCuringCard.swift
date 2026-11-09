@@ -1,4 +1,3 @@
-import Combine
 import SwiftData
 import SwiftUI
 
@@ -8,7 +7,7 @@ struct HomeCuringCard: View {
     @Environment(BatchRows.self) private var batchRows
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @State private var now = Date.now
+    @Environment(\.homeNow) private var now
 
     private var curing: HomeCuring {
         HomeCuring(batches: batchRows.batches, now: now)
@@ -25,12 +24,6 @@ struct HomeCuringCard: View {
                         .frame(height: 1)
                     row(item, isLast: index == curing.count - 1)
                 }
-            }
-            .onReceive(
-                NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)
-                    .merge(with: NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification))
-            ) { _ in
-                now = .now
             }
         }
     }

@@ -1,17 +1,20 @@
+import Combine
 import SwiftUI
 
 struct HomeView: View {
     @Environment(AppNavigation.self) private var navigation
     @State private var isWide = false
+    @State private var now = Date.now
 
     private var dateLine: String {
-        Date.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
+        now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
     }
 
     var body: some View {
         @Bindable var navigation = navigation
         NavigationStack(path: $navigation.homePath) {
             content
+            .environment(\.homeNow, now)
             .onGeometryChange(for: Bool.self) { proxy in
                 ListDetailLayout.isWide(width: proxy.size.width)
             } action: { isWide = $0 }
@@ -19,6 +22,13 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.large)
             .ledgerLargeTitle(subtitle: dateLine)
             .ledgerBackground()
+        }
+        .onAppear { now = .now }
+        .onReceive(
+            NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)
+                .merge(with: NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification))
+        ) { _ in
+            now = .now
         }
     }
 
