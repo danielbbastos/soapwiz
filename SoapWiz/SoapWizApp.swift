@@ -140,6 +140,7 @@ struct SoapWizApp: App {
                 .environment(storeHost)
                 .environment(storeHost.syncHealth)
                 .environment(storeHost.inventoryRows)
+                .environment(storeHost.batchRows)
                 .environment(storeHost.settings)
                 .modelContainer(storeHost.container)
                 .environment(upgradePresenter)
