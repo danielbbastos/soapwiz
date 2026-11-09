@@ -46,6 +46,7 @@ struct HomeView: View {
     private var scroll: some View {
         ScrollView {
             HomeGrid(isWide: isWide) {
+                NeedsAttentionCard()
                 HomeCuringCard()
                 placeholder
             }
