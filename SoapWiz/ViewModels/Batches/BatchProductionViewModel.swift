@@ -145,10 +145,11 @@ final class BatchProductionViewModel {
     ) {
         self.recipe = recipe
         self.tracksInventory = tracksInventory
-        let engine = RecipeFormViewModel()
-        engine.load(from: recipe)
-        engine.resolveDefaultLyeIngredient(from: lyeCandidates)
-        engine.resolveDefaultNeutralizerIngredient(from: neutralizerCandidates)
+        let engine = RecipeRequirementLine.makeEngine(
+            for: recipe,
+            lyeCandidates: lyeCandidates,
+            neutralizerCandidates: neutralizerCandidates
+        )
         self.engine = engine
         self.fattyAcidProfile = RecipeStats(oilDrafts: engine.oilDrafts, makesSoap: engine.makesSoap).fattyAcidProfile
     }
@@ -174,39 +175,15 @@ final class BatchProductionViewModel {
     }
 
     private var liveRequirements: [BatchRequirement] {
-        let breakdown = engine.wholeBatchBreakdown
-        let rows = breakdown.oils + breakdown.additives + breakdown.fragrances + breakdown.lye
-
-        // An ingredient can appear in more than one category (e.g. an oil also
-        // used as an additive); sum its display-unit amounts before converting.
-        var displayAmounts: [PersistentIdentifier: (ingredient: Ingredient, amount: Double)] = [:]
-        for row in rows where row.ingredientAmount > 0 {
-            let id = row.ingredient.persistentModelID
-            displayAmounts[id, default: (row.ingredient, 0)].amount += row.ingredientAmount
-        }
-
-        let count = Double(max(1, batchCount))
-        let displayUnit = engine.displayWeightUnit
-
-        return displayAmounts.values.compactMap { entry in
-            let ingredient = entry.ingredient
-            let neededInDisplayUnit = entry.amount * count
-            // Convert the recipe-unit amount into the ingredient's inventory unit.
-            // Mass↔mass and volume↔mass (density) both flow through the shared
-            // converter; if the units aren't convertible, take the amount as-is.
-            let required = IngredientUnitConverter
-                .convert(neededInDisplayUnit, from: displayUnit, to: ingredient.unit, density: ingredient.density)?
-                .value ?? neededInDisplayUnit
-            guard required > 0 else { return nil }
-            return BatchRequirement(
-                id: ingredient.persistentModelID,
-                ingredient: ingredient,
-                required: required,
-                available: ingredient.totalRemaining,
-                unit: ingredient.unit
+        RecipeRequirementLine.lines(for: engine, batchCount: batchCount).map {
+            BatchRequirement(
+                id: $0.id,
+                ingredient: $0.ingredient,
+                required: $0.required,
+                available: $0.ingredient.totalRemaining,
+                unit: $0.unit
             )
         }
-        .sorted { $0.ingredient.name < $1.ingredient.name }
     }
 
     /// Requirements that can't be fully satisfied from stock. Always empty when
