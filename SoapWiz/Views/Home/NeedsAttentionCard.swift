@@ -134,33 +134,3 @@ struct NeedsAttentionCard: View {
         }
     }
 }
-
-// Replaced by the shared HomeRowButtonStyle (SW-362).
-private struct HomeRowButtonStyle: ButtonStyle {
-    var isHighlighted = false
-    let isLast: Bool
-
-    private static let sheetRadius: CGFloat = 18
-
-    func makeBody(configuration: Configuration) -> some View {
-        let shape = UnevenRoundedRectangle(
-            topLeadingRadius: 0,
-            bottomLeadingRadius: isLast ? Self.sheetRadius : 0,
-            bottomTrailingRadius: isLast ? Self.sheetRadius : 0,
-            topTrailingRadius: 0,
-            style: .continuous
-        )
-        configuration.label
-            .background(fill(pressed: configuration.isPressed), in: shape)
-    }
-
-    private func fill(pressed: Bool) -> Color {
-        if pressed {
-            Color.honeyPressed
-        } else if isHighlighted {
-            Color.honey
-        } else {
-            Color.clear
-        }
-    }
-}

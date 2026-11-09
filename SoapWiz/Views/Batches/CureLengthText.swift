@@ -19,4 +19,13 @@ enum CureLengthText {
         case .weeks(let weeks): Text("^[\(weeks) week](inflect: true) left")
         }
     }
+
+    /// "12 days" or "26 weeks", for places where the context already says it's
+    /// the time left (Home's Curing card).
+    static func remainingShort(_ remaining: CureRemaining) -> Text {
+        switch remaining {
+        case .days(let days): Text("^[\(days) day](inflect: true)")
+        case .weeks(let weeks): Text("^[\(weeks) week](inflect: true)")
+        }
+    }
 }
