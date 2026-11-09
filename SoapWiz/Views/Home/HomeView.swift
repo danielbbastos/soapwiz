@@ -48,6 +48,7 @@ struct HomeView: View {
             HomeGrid(isWide: isWide) {
                 NeedsAttentionCard()
                 HomeCuringCard()
+                YouCanMakeCard()
                 placeholder
             }
             .padding(.horizontal, 16)

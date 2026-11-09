@@ -40,14 +40,6 @@ struct CreateBatchSheet: View {
         ))
     }
 
-    private func numberText(_ amount: Double) -> String {
-        amount.formatted(.number.precision(.fractionLength(0...2)))
-    }
-
-    private func amountText(_ amount: Double, unit: String) -> String {
-        "\(numberText(amount)) \(unit)"
-    }
-
     var body: some View {
         let existingCodes = batches.map(\.code)
         let codeIsTaken = model.codeIsTaken(among: batches)
@@ -80,7 +72,7 @@ struct CreateBatchSheet: View {
                         sheetRow(1, of: summaryCount) {
                             HoneyLedgerLabeledRow("Total weight") {
                                 Text.honeyLedgerFigure(
-                                    numberText(totalBatchWeight),
+                                    BatchAmountFormat.number(totalBatchWeight),
                                     unit: model.batchWeightUnit
                                 )
                             }
@@ -219,9 +211,9 @@ struct CreateBatchSheet: View {
     }
 
     private func shortageRow(_ req: BatchRequirement) -> some View {
-        let need = amountText(req.required, unit: req.unit)
-        let have = amountText(req.available, unit: req.unit)
-        let shortfall = amountText(req.shortfall, unit: req.unit)
+        let need = BatchAmountFormat.amount(req.required, unit: req.unit)
+        let have = BatchAmountFormat.amount(req.available, unit: req.unit)
+        let shortfall = BatchAmountFormat.amount(req.shortfall, unit: req.unit)
         return HoneyLedgerLabeledRow(req.ingredient.name, value: {
             // U+2212, which VoiceOver would read as "minus"; the row's label
             // says "short" instead.

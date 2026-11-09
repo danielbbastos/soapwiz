@@ -55,6 +55,9 @@ final class StoreHost {
     /// Every batch, shared like the inventory's rows.
     let batchRows: BatchRows
 
+    /// Every recipe, shared like the inventory's rows.
+    let recipeRows: RecipeRows
+
     /// The settings the root views read, shared like the rows.
     let settings: SettingsState
 
@@ -85,15 +88,19 @@ final class StoreHost {
         let rows = InventoryRows(context: container.mainContext)
         let settingsState = SettingsState(context: container.mainContext)
         let batchRows = BatchRows(context: container.mainContext)
+        let recipeRows = RecipeRows(context: container.mainContext)
         inventoryRows = rows
         self.batchRows = batchRows
+        self.recipeRows = recipeRows
         settings = settingsState
         // Each merge saves two or three times; this makes the rows refetch once
         // at the end instead of after every save. The rows also wait for this
         // merge after an import, so it checks for what the import wrote. The
         // merge backfills and dedupes batch codes too, so it saves batches.
         coordinator.mergeScope = { body in
-            rows.settlingMerge { batchRows.settlingMerge { settingsState.deferringRefreshes(body) } }
+            rows.settlingMerge {
+                batchRows.settlingMerge { recipeRows.settlingMerge { settingsState.deferringRefreshes(body) } }
+            }
         }
         self.container = container
         // After `makeProduction()`, which records which store it opened.
@@ -115,6 +122,7 @@ final class StoreHost {
         // covers a reset that failed part-way and rolled back instead.
         inventoryRows.refresh()
         batchRows.refresh()
+        recipeRows.refresh()
         settings.refresh()
         generation += 1
         phase = .ready
