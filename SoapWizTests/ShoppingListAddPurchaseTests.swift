@@ -31,10 +31,11 @@ struct ShoppingListAddPurchaseTests {
     }
 
     @discardableResult
-    private func addPurchase(to ingredient: Ingredient, provider: Provider?, daysAgo: Double) -> IngredientPurchase {
+    private func addPurchase(to ingredient: Ingredient, provider: Provider?, daysAgo: Int) throws -> IngredientPurchase {
+        let purchaseDate = try #require(Calendar.current.date(byAdding: .day, value: -daysAgo, to: now))
         let purchase = IngredientPurchase(
             provider: provider,
-            dateOfPurchase: now.addingTimeInterval(-daysAgo * 86_400),
+            dateOfPurchase: purchaseDate,
             quantity: 100,
             totalPrice: 5,
             badge: "",
@@ -67,8 +68,8 @@ struct ShoppingListAddPurchaseTests {
         let newer = Provider(name: "Newer")
         context.insert(older)
         context.insert(newer)
-        let oldPurchase = addPurchase(to: ingredient, provider: older, daysAgo: 30)
-        let newPurchase = addPurchase(to: ingredient, provider: newer, daysAgo: 2)
+        let oldPurchase = try addPurchase(to: ingredient, provider: older, daysAgo: 30)
+        let newPurchase = try addPurchase(to: ingredient, provider: newer, daysAgo: 2)
         let item = makeItem(ingredient: ingredient, amount: 500)
 
         let prefill = try #require(sut.purchasePrefill(for: item, purchases: [oldPurchase, newPurchase]))
@@ -127,7 +128,7 @@ struct ShoppingListAddPurchaseTests {
         context.insert(other)
         let provider = Provider(name: "Elsewhere")
         context.insert(provider)
-        let purchase = addPurchase(to: other, provider: provider, daysAgo: 1)
+        let purchase = try addPurchase(to: other, provider: provider, daysAgo: 1)
         let item = makeItem(ingredient: ingredient, amount: 500)
 
         let prefill = try #require(sut.purchasePrefill(for: item, purchases: [purchase]))
@@ -216,9 +217,9 @@ struct ShoppingListAddPurchaseTests {
         #expect(!form.isValid)
     }
 
-    @Test func form_EditingUnchangedPurchase_IsInvalid() {
+    @Test func form_EditingUnchangedPurchase_IsInvalid() throws {
         let ingredient = makeIngredient()
-        let existing = addPurchase(to: ingredient, provider: nil, daysAgo: 1)
+        let existing = try addPurchase(to: ingredient, provider: nil, daysAgo: 1)
         let form = PurchaseFormViewModel(ingredient: ingredient, purchase: existing, locale: locale)
 
         #expect(!form.isValid)
@@ -237,9 +238,9 @@ struct ShoppingListAddPurchaseTests {
         #expect(form.isDirty)
     }
 
-    @Test func form_PrefillWhileEditing_IsIgnored() {
+    @Test func form_PrefillWhileEditing_IsIgnored() throws {
         let ingredient = makeIngredient()
-        let existing = addPurchase(to: ingredient, provider: nil, daysAgo: 1)
+        let existing = try addPurchase(to: ingredient, provider: nil, daysAgo: 1)
         let provider = Provider(name: "Shop")
         context.insert(provider)
 
