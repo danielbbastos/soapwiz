@@ -10,6 +10,7 @@ struct ShoppingListItemRow: View {
     let boughtDate: Date?
     let onToggle: () -> Void
     let onEdit: () -> Void
+    var onAddPurchase: (() -> Void)?
 
     private var lastPurchaseLine: String? {
         guard let ingredient = item.ingredient else { return nil }
@@ -29,38 +30,52 @@ struct ShoppingListItemRow: View {
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             tickButton
-            Button(action: onEdit) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.name)
-                        .font(.headline)
-                        .foregroundStyle(Color.ink)
-                        .strikethrough(isDone)
-                    if let boughtDate {
-                        Text("Bought \(boughtDate.formatted(date: .abbreviated, time: .omitted))")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.amberText)
-                    }
-                    if let amountText {
-                        Text(amountText)
-                            .font(.subheadline.monospacedDigit())
-                            .foregroundStyle(Color.inkSoft)
-                    }
-                    if let lastPurchaseLine {
-                        Text(lastPurchaseLine)
-                            .font(.subheadline)
-                            .foregroundStyle(Color.inkSoft)
-                    }
-                    if !item.note.isEmpty {
-                        Text(item.note)
-                            .font(.subheadline)
-                            .foregroundStyle(Color.inkSoft)
-                    }
+                .opacity(isDone ? 0.55 : 1)
+            VStack(alignment: .leading, spacing: 4) {
+                editButton
+                    .opacity(isDone ? 0.55 : 1)
+                if let onAddPurchase {
+                    Button("Add purchase", action: onAddPurchase)
+                        .buttonStyle(.borderless)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.amberText)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(.rect)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .opacity(isDone ? 0.55 : 1)
+    }
+
+    private var editButton: some View {
+        Button(action: onEdit) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.name)
+                    .font(.headline)
+                    .foregroundStyle(Color.ink)
+                    .strikethrough(isDone)
+                if let boughtDate {
+                    Text("Bought \(boughtDate.formatted(date: .abbreviated, time: .omitted))")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.amberText)
+                }
+                if let amountText {
+                    Text(amountText)
+                        .font(.subheadline.monospacedDigit())
+                        .foregroundStyle(Color.inkSoft)
+                }
+                if let lastPurchaseLine {
+                    Text(lastPurchaseLine)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.inkSoft)
+                }
+                if !item.note.isEmpty {
+                    Text(item.note)
+                        .font(.subheadline)
+                        .foregroundStyle(Color.inkSoft)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(.rect)
+        }
     }
 
     private var tickButton: some View {
