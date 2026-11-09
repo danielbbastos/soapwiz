@@ -36,6 +36,7 @@ struct HomeView: View {
     private var scroll: some View {
         ScrollView {
             HomeGrid(isWide: isWide) {
+                HomeCuringCard()
                 placeholder
             }
             .padding(.horizontal, 16)
