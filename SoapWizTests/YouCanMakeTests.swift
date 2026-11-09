@@ -163,7 +163,8 @@ struct YouCanMakeTests: BatchProductionTestHelpers {
 
         let row = try #require(try rows(makeModel(), ctx).first)
 
-        #expect(row.detail == "Short on Castile Oil, \(BatchAmountFormat.amount(12.5, unit: "g"))")    }
+        #expect(row.detail == "Short on Castile Oil, \(BatchAmountFormat.amount(12.5, unit: "g"))")
+    }
 
     @Test func shortText_SeveralShortages_FirstByNameAndCountOfOthers() throws {
         let (container, ctx) = try makeContext()
