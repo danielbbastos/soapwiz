@@ -7,12 +7,14 @@ struct NeedsAttentionCard: View {
     @Environment(SettingsState.self) private var settings
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.currencyCode) private var currencyCode
+    @Environment(\.homeNow) private var now
 
     var body: some View {
         if let attention = NeedsAttention.make(
             ingredients: inventory.ingredients,
             purchases: inventory.purchases,
-            tracksInventory: settings.tracksInventory
+            tracksInventory: settings.tracksInventory,
+            now: now
         ) {
             HomeCard("Needs attention") {
                 if attention.valueAtRisk > 0 {
