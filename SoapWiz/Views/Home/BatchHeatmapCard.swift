@@ -229,7 +229,22 @@ struct BatchHeatmapPreviewData {
     let batchRows: BatchRows
     let navigation = AppNavigation()
 
-    init(batchCount: Int = 60) {
+    private struct Sample {
+        let name: String
+        let cost: Double
+        let weightInGrams: Double
+    }
+
+    private static let recipes = [
+        Sample(name: "Simple Palm Bar", cost: 9.5, weightInGrams: 1_000),
+        Sample(name: "Lavender Oat Bar", cost: 14.2, weightInGrams: 1_100),
+        Sample(name: "Castile Olive Bar", cost: 21.8, weightInGrams: 1_200),
+        Sample(name: "Shea Butter Bar", cost: 17.4, weightInGrams: 1_000),
+        Sample(name: "Coconut Salt Bar", cost: 11.1, weightInGrams: 1_300),
+        Sample(name: "Honey Goat Milk Bar", cost: 19.9, weightInGrams: 900)
+    ]
+
+    init(batchCount: Int = 60, weighted: Bool = true) {
         let schema = ModelContainerFactory.schema
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         guard let container = try? ModelContainer(for: schema, configurations: [configuration]) else {
@@ -240,12 +255,16 @@ struct BatchHeatmapPreviewData {
         for index in 0..<batchCount {
             let daysAgo = (index * 37) % 360
             let created = calendar.date(byAdding: .day, value: -daysAgo, to: .now) ?? .now
+            let recipe = Self.recipes[index % Self.recipes.count]
             context.insert(Batch(
                 recipe: nil,
                 code: "SPB-\(index)",
-                recipeName: "Simple Palm Bar",
+                recipeName: recipe.name,
                 dateCreated: created,
                 batchCount: 1,
+                totalCost: weighted ? recipe.cost : 0,
+                totalWeight: weighted ? recipe.weightInGrams : 0,
+                totalWeightUnit: weighted ? "g" : "",
                 cureDays: 42
             ))
         }

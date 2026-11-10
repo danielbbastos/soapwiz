@@ -52,6 +52,14 @@ struct BatchHeatmapTests {
         #expect(result.weeks.last?.start == (try date(2026, 11, 9)))
     }
 
+    @Test func window_Always_RunsFromFirstWeekToTheWeekAfterTheLast() throws {
+        let now = try date(2026, 11, 10, 15)
+        let window = BatchHeatmap.window(now: now, calendar: calendar)
+        let result = heatmap(now: now)
+        #expect(window.start == result.weeks.first?.start)
+        #expect(window.end == (try date(2026, 11, 16)))
+    }
+
     // MARK: Counting
 
     @Test func count_MondayStartAndSundayEnd_LandInTheWeek() throws {

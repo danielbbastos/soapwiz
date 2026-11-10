@@ -80,19 +80,15 @@ struct BatchHeatmap {
     let rowCount: Int
 
     init(dates: [Date], now: Date = .now, calendar: Calendar = .current) {
-        var iso = Calendar(identifier: .iso8601)
-        iso.timeZone = calendar.timeZone
-        iso.locale = calendar.locale
+        let iso = Self.isoCalendar(for: calendar)
         let formatter = HeatmapRangeFormatter(calendar: Self.displayCalendar(for: calendar), now: now)
 
         let starts = Self.weekStarts(now: now, calendar: iso)
         var counts = [Int](repeating: 0, count: starts.count)
-        if let first = starts.first, let last = starts.last,
-           let windowEnd = iso.date(byAdding: .weekOfYear, value: 1, to: last) {
-            for date in dates where date >= first && date < windowEnd {
-                if let index = starts.lastIndex(where: { $0 <= date }) {
-                    counts[index] += 1
-                }
+        let window = Self.window(starts: starts, now: now, iso: iso)
+        for date in dates where date >= window.start && date < window.end {
+            if let index = starts.lastIndex(where: { $0 <= date }) {
+                counts[index] += 1
             }
         }
 
@@ -148,6 +144,27 @@ struct BatchHeatmap {
             }
         }
         return months
+    }
+
+    /// From the first week's start to the start of the week after the last: the
+    /// span the heatmap counts batches in. Half-open, so `end` is outside it.
+    static func window(now: Date, calendar: Calendar = .current) -> DateInterval {
+        let iso = isoCalendar(for: calendar)
+        return window(starts: weekStarts(now: now, calendar: iso), now: now, iso: iso)
+    }
+
+    private static func window(starts: [Date], now: Date, iso: Calendar) -> DateInterval {
+        guard let first = starts.first, let last = starts.last,
+              let end = iso.date(byAdding: .weekOfYear, value: 1, to: last)
+        else { return DateInterval(start: now, duration: 0) }
+        return DateInterval(start: first, end: end)
+    }
+
+    private static func isoCalendar(for calendar: Calendar) -> Calendar {
+        var iso = Calendar(identifier: .iso8601)
+        iso.timeZone = calendar.timeZone
+        iso.locale = calendar.locale
+        return iso
     }
 
     private static func displayCalendar(for calendar: Calendar) -> Calendar {

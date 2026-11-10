@@ -29,10 +29,12 @@ struct InsightsSection: View {
         if isWide {
             InsightsWideRow {
                 BatchHeatmapCard(isWide: true)
+                CostPerWeightCard()
             }
         } else {
             VStack(spacing: HomeLayout.spacing) {
                 BatchHeatmapCard(isWide: false)
+                CostPerWeightCard()
             }
         }
     }
