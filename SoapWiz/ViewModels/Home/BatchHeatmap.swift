@@ -9,8 +9,52 @@ struct HeatmapWeek: Identifiable, Equatable {
     let count: Int
     /// The row of the phone grid: the Monday's ordinal in its month, from 0.
     let row: Int
+    /// "Nov 10–16" or "Nov 24 – Dec 7". The year is added when either end is
+    /// not in the current year: "Dec 29, 2025 – Jan 4, 2026".
+    let rangeText: String
 
     var id: Date { start }
+}
+
+/// Formats a week's range. Its styles are built once for the whole heatmap.
+private struct HeatmapRangeFormatter {
+    private let calendar: Calendar
+    private let nowYear: Int
+    private let monthDay: Date.FormatStyle
+    private let dayOnly: Date.FormatStyle
+    private let yearOnly: Date.FormatStyle
+    private let monthDayYear: Date.FormatStyle
+
+    init(calendar: Calendar, now: Date) {
+        self.calendar = calendar
+        nowYear = calendar.component(.year, from: now)
+        let locale = calendar.locale ?? .current
+        let base = Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone)
+        monthDay = base.month(.abbreviated).day()
+        dayOnly = base.day()
+        yearOnly = base.year()
+        monthDayYear = Date.FormatStyle(
+            date: .abbreviated,
+            time: .omitted,
+            locale: locale,
+            calendar: calendar,
+            timeZone: calendar.timeZone
+        )
+    }
+
+    func text(start: Date, end: Date) -> String {
+        let startYear = calendar.component(.year, from: start)
+        let endYear = calendar.component(.year, from: end)
+        let showsYear = startYear != nowYear || endYear != nowYear
+        let sameMonth = calendar.isDate(start, equalTo: end, toGranularity: .month)
+            && startYear == endYear
+        if sameMonth {
+            let range = "\(start.formatted(monthDay))–\(end.formatted(dayOnly))"
+            return showsYear ? "\(range), \(start.formatted(yearOnly))" : range
+        }
+        let format = showsYear ? monthDayYear : monthDay
+        return "\(start.formatted(format)) – \(end.formatted(format))"
+    }
 }
 
 /// A month's column of the phone grid: the weeks whose Monday falls in it,
@@ -35,22 +79,11 @@ struct BatchHeatmap {
     let total: Int
     let rowCount: Int
 
-    private let displayCalendar: Calendar
-    private let now: Date
-
     init(dates: [Date], now: Date = .now, calendar: Calendar = .current) {
         var iso = Calendar(identifier: .iso8601)
         iso.timeZone = calendar.timeZone
         iso.locale = calendar.locale
-        if calendar.identifier == .iso8601 {
-            var gregorian = Calendar(identifier: .gregorian)
-            gregorian.timeZone = calendar.timeZone
-            gregorian.locale = calendar.locale
-            displayCalendar = gregorian
-        } else {
-            displayCalendar = calendar
-        }
-        self.now = now
+        let formatter = HeatmapRangeFormatter(calendar: Self.displayCalendar(for: calendar), now: now)
 
         let starts = Self.weekStarts(now: now, calendar: iso)
         var counts = [Int](repeating: 0, count: starts.count)
@@ -64,11 +97,13 @@ struct BatchHeatmap {
         }
 
         let weeks = starts.enumerated().map { index, start in
-            HeatmapWeek(
+            let end = iso.date(byAdding: .day, value: 6, to: start) ?? start
+            return HeatmapWeek(
                 start: start,
-                end: iso.date(byAdding: .day, value: 6, to: start) ?? start,
+                end: end,
                 count: counts[index],
-                row: max(iso.component(.weekdayOrdinal, from: start) - 1, 0)
+                row: max(iso.component(.weekdayOrdinal, from: start) - 1, 0),
+                rangeText: formatter.text(start: start, end: end)
             )
         }
         self.weeks = weeks
@@ -88,39 +123,6 @@ struct BatchHeatmap {
     /// 0 for none, 1 and 2 as they are, 3 for three or more.
     static func level(for count: Int) -> Int {
         min(max(count, 0), 3)
-    }
-
-    /// "Nov 10–16" or "Nov 24 – Dec 7". The year is added when either end is
-    /// not in `now`'s year: "Dec 29, 2025 – Jan 4, 2026".
-    func rangeText(for week: HeatmapWeek) -> String {
-        let calendar = displayCalendar
-        let locale = calendar.locale ?? .current
-        func style() -> Date.FormatStyle {
-            Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone)
-        }
-        let nowYear = calendar.component(.year, from: now)
-        let startYear = calendar.component(.year, from: week.start)
-        let endYear = calendar.component(.year, from: week.end)
-        let showsYear = startYear != nowYear || endYear != nowYear
-        let sameMonth = calendar.isDate(week.start, equalTo: week.end, toGranularity: .month)
-            && startYear == endYear
-
-        let monthDay = style().month(.abbreviated).day()
-        let monthDayYear = Date.FormatStyle(
-            date: .abbreviated,
-            time: .omitted,
-            locale: locale,
-            calendar: calendar,
-            timeZone: calendar.timeZone
-        )
-        if sameMonth {
-            let first = week.start.formatted(monthDay)
-            let last = week.end.formatted(style().day())
-            let range = "\(first)–\(last)"
-            return showsYear ? "\(range), \(week.start.formatted(style().year()))" : range
-        }
-        let format = showsYear ? monthDayYear : monthDay
-        return "\(week.start.formatted(format)) – \(week.end.formatted(format))"
     }
 
     private static func months(of weeks: [HeatmapWeek], calendar: Calendar) -> [HeatmapMonth] {
@@ -146,6 +148,14 @@ struct BatchHeatmap {
             }
         }
         return months
+    }
+
+    private static func displayCalendar(for calendar: Calendar) -> Calendar {
+        guard calendar.identifier == .iso8601 else { return calendar }
+        var gregorian = Calendar(identifier: .gregorian)
+        gregorian.timeZone = calendar.timeZone
+        gregorian.locale = calendar.locale
+        return gregorian
     }
 
     private static func weekStarts(now: Date, calendar: Calendar) -> [Date] {

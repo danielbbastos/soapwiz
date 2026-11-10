@@ -214,31 +214,31 @@ struct BatchHeatmapTests {
 
     @Test func rangeText_SameMonthInCurrentYear_OmitsYear() throws {
         let result = heatmap(now: try date(2026, 11, 10))
-        #expect(result.rangeText(for: try #require(result.weeks.last)) == "Nov 9–15")
+        #expect(try #require(result.weeks.last).rangeText == "Nov 9–15")
     }
 
     @Test func rangeText_AcrossMonths_ShowsBothMonths() throws {
         let result = heatmap(now: try date(2026, 11, 10))
         let week = try #require(result.weeks.first { $0.start == (try? date(2026, 10, 26)) })
-        #expect(result.rangeText(for: week) == "Oct 26 – Nov 1")
+        #expect(week.rangeText == "Oct 26 – Nov 1")
     }
 
     @Test func rangeText_AcrossTheYear_ShowsYears() throws {
         let result = heatmap(now: try date(2027, 3, 1))
         let week = try #require(result.weeks.first { $0.start == (try? date(2026, 12, 28)) })
-        #expect(result.rangeText(for: week) == "Dec 28, 2026 – Jan 3, 2027")
+        #expect(week.rangeText == "Dec 28, 2026 – Jan 3, 2027")
     }
 
     @Test func rangeText_SameMonthInEarlierYear_ShowsYear() throws {
         let result = heatmap(now: try date(2026, 11, 10))
         let week = try #require(result.weeks.first)
-        #expect(result.rangeText(for: week) == "Nov 17–23, 2025")
+        #expect(week.rangeText == "Nov 17–23, 2025")
     }
 
     @Test func rangeText_AcrossMonthsInEarlierYear_ShowsYearOnBothEnds() throws {
         let result = heatmap(now: try date(2026, 11, 10))
         let week = try #require(result.weeks.first { $0.start == (try? date(2025, 12, 29)) })
-        #expect(result.rangeText(for: week) == "Dec 29, 2025 – Jan 4, 2026")
+        #expect(week.rangeText == "Dec 29, 2025 – Jan 4, 2026")
     }
 
     // MARK: Gate

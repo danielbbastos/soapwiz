@@ -7,45 +7,52 @@ import SwiftUI
 struct BatchHeatmapCard: View {
     @Environment(BatchRows.self) private var batchRows
     @Environment(\.homeNow) private var now
-    @State private var selectedID: Date?
 
     let isWide: Bool
 
-    private var heatmap: BatchHeatmap {
-        BatchHeatmap(batches: batchRows.batches, now: now)
+    var body: some View {
+        BatchHeatmapContent(heatmap: BatchHeatmap(batches: batchRows.batches, now: now), isWide: isWide)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .ledgerSheet()
     }
+}
+
+/// The card's content. It owns the selection, so a tap redraws only this and
+/// reads the heatmap already built.
+private struct BatchHeatmapContent: View {
+    @State private var selectedID: Date?
+
+    let heatmap: BatchHeatmap
+    let isWide: Bool
 
     var body: some View {
-        let heatmap = heatmap
         let selected = heatmap.weeks.first { $0.id == selectedID }
         VStack(alignment: .leading, spacing: 12) {
-            header(heatmap)
+            header
             if isWide {
                 BatchHeatmapStrip(heatmap: heatmap, selectedID: $selectedID)
             } else {
                 BatchHeatmapMonthGrid(heatmap: heatmap, selectedID: $selectedID)
             }
-            detail(heatmap, selected: selected)
+            detail(selected: selected)
             legend
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .ledgerSheet()
         .onChange(of: heatmap.weeks.first?.id) { _, _ in
             selectedID = nil
         }
     }
 
-    private func header(_ heatmap: BatchHeatmap) -> some View {
+    private var header: some View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .firstTextBaseline) {
                 title
                 Spacer(minLength: 8)
-                total(heatmap)
+                total
             }
             VStack(alignment: .leading, spacing: 2) {
                 title
-                total(heatmap)
+                total
             }
         }
         .accessibilityElement(children: .combine)
@@ -59,17 +66,17 @@ struct BatchHeatmapCard: View {
             .foregroundStyle(Color.ink)
     }
 
-    private func total(_ heatmap: BatchHeatmap) -> some View {
+    private var total: some View {
         Text("^[\(heatmap.total) batch](inflect: true)")
             .font(.body.weight(.medium))
             .monospacedDigit()
             .foregroundStyle(Color.ink)
     }
 
-    private func detail(_ heatmap: BatchHeatmap, selected: HeatmapWeek?) -> some View {
+    private func detail(selected: HeatmapWeek?) -> some View {
         Group {
             if let selected {
-                let range = Text(heatmap.rangeText(for: selected))
+                let range = Text(selected.rangeText)
                 let count = Text("^[\(selected.count) batch](inflect: true)")
                     .monospacedDigit()
                 ViewThatFits(in: .horizontal) {
@@ -131,7 +138,6 @@ struct BatchHeatmapCard: View {
 /// One week's square.
 private struct HeatmapCell: View {
     let week: HeatmapWeek
-    let heatmap: BatchHeatmap
     let height: CGFloat
     @Binding var selectedID: Date?
 
@@ -155,7 +161,7 @@ private struct HeatmapCell: View {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("\(heatmap.rangeText(for: week)), ^[\(week.count) batch](inflect: true)"))
+        .accessibilityLabel(Text("\(week.rangeText), ^[\(week.count) batch](inflect: true)"))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
@@ -187,7 +193,7 @@ private struct BatchHeatmapMonthGrid: View {
                         .accessibilityHidden(true)
                     ForEach(heatmap.months) { month in
                         if let week = month.weeks.first(where: { $0.row == row }) {
-                            HeatmapCell(week: week, heatmap: heatmap, height: cellHeight, selectedID: $selectedID)
+                            HeatmapCell(week: week, height: cellHeight, selectedID: $selectedID)
                         } else {
                             Color.clear
                                 .frame(height: cellHeight)
@@ -208,7 +214,7 @@ private struct BatchHeatmapStrip: View {
             ForEach(Array(heatmap.strip.enumerated()), id: \.offset) { _, row in
                 GridRow {
                     ForEach(row) { week in
-                        HeatmapCell(week: week, heatmap: heatmap, height: 22, selectedID: $selectedID)
+                        HeatmapCell(week: week, height: 22, selectedID: $selectedID)
                     }
                 }
             }

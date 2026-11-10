@@ -86,7 +86,7 @@ private struct InsightsLockedPreview: View {
                 .fontDesign(.serif)
                 .foregroundStyle(Color.ink)
                 .multilineTextAlignment(.center)
-            Text("Your batch rhythm over the year, cost per kg by recipe, and where your money goes.")
+            Text("Your batch rhythm over the year, and cost per kg by recipe.")
                 .font(.subheadline)
                 .foregroundStyle(Color.inkSoft)
                 .multilineTextAlignment(.center)
