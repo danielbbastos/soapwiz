@@ -7,6 +7,7 @@ extension ProFeature {
         case .collections: .collections
         case .reminders: .reminders
         case .shoppingList: .shoppingList
+        case .insights: .insights
         }
     }
 }

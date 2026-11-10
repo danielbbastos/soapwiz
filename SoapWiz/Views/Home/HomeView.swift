@@ -45,11 +45,21 @@ struct HomeView: View {
 
     private var scroll: some View {
         ScrollView {
-            HomeGrid(isWide: isWide) {
-                NeedsAttentionCard()
-                HomeCuringCard()
-                YouCanMakeCard()
-                placeholder
+            VStack(spacing: HomeLayout.spacing) {
+                HomeGrid(isWide: isWide) {
+                    NeedsAttentionCard()
+                    HomeCuringCard()
+                    YouCanMakeCard()
+                    placeholder
+                    if !isWide {
+                        InsightsSection(isWide: false)
+                    }
+                }
+                if isWide {
+                    InsightsSection(isWide: true)
+                        .frame(maxWidth: HomeLayout.maximumWidth)
+                        .frame(maxWidth: .infinity)
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)

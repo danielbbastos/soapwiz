@@ -38,6 +38,11 @@ struct ProBenefit: Identifiable {
             detail: "What’s low, out or expiring, and what a batch needs."
         ),
         ProBenefit(
+            symbol: "chart.bar.xaxis",
+            title: "Insights",
+            detail: "Your batch rhythm over the past year, and cost per kg by recipe."
+        ),
+        ProBenefit(
             symbol: "gift",
             title: "Future Pro features",
             detail: "Pro features added in later updates are included."
