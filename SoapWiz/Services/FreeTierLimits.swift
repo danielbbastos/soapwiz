@@ -22,6 +22,7 @@ enum ProFeature {
     case collections
     case reminders
     case shoppingList
+    case insights
 }
 
 /// What the free tier allows.
@@ -39,7 +40,7 @@ enum FreeTierLimits {
 
     static func isAvailable(_ feature: ProFeature, isPro: Bool) -> Bool {
         switch feature {
-        case .collections, .reminders, .shoppingList:
+        case .collections, .reminders, .shoppingList, .insights:
             return isPro
         }
     }

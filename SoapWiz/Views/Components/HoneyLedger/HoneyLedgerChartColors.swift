@@ -9,4 +9,14 @@ extension Color {
     static let chartConditioning = Color.pigmentVerdigris
     static let chartBubbly = Color.pigmentMadder
     static let chartLongevity = Color.pigmentOlive
+
+    /// The batch heatmap's cell shade for a level from 0 (none) to 3 (3+).
+    static func heatmapLevel(_ level: Int) -> Color {
+        switch level {
+        case ..<1: .heatmapLevel0
+        case 1: .heatmapLevel1
+        case 2: .heatmapLevel2
+        default: .heatmapLevel3
+        }
+    }
 }
