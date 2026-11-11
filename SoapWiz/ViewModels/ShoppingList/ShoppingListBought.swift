@@ -31,6 +31,24 @@ enum ShoppingListBought {
         return result
     }
 
+    /// The lines still to buy (not ticked, not bought since they were added) and
+    /// the rest, each in the order given.
+    static func split(
+        items: [ShoppingListItem],
+        boughtDates: [PersistentIdentifier: Date]
+    ) -> (toBuy: [ShoppingListItem], checked: [ShoppingListItem]) {
+        var toBuy: [ShoppingListItem] = []
+        var checked: [ShoppingListItem] = []
+        for item in items {
+            if !item.isChecked && boughtDates[item.persistentModelID] == nil {
+                toBuy.append(item)
+            } else {
+                checked.append(item)
+            }
+        }
+        return (toBuy, checked)
+    }
+
     private static func isBought(after itemCreatedAt: Date, purchase: IngredientPurchase) -> Bool {
         if let savedAt = purchase.createdAt { return savedAt > itemCreatedAt }
         return purchase.dateOfPurchase >= itemCreatedAt

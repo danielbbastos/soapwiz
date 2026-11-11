@@ -37,6 +37,7 @@ struct TourCover: View {
                     .environment(session.sandbox.inventoryRows)
                     .environment(session.sandbox.batchRows)
                     .environment(session.sandbox.recipeRows)
+                    .environment(session.sandbox.shoppingListRows)
                     .environment(session.sandbox.settings)
                     .environment(session.sandbox.syncHealth)
                     .environment(\.isTourSandbox, true)

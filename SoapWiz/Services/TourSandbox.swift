@@ -42,6 +42,7 @@ final class TourSandbox {
     let inventoryRows: InventoryRows
     let batchRows: BatchRows
     let recipeRows: RecipeRows
+    let shoppingListRows: ShoppingListRows
     let settings: SettingsState
     let navigation: AppNavigation
     let syncHealth: SyncHealthMonitor
@@ -98,6 +99,7 @@ final class TourSandbox {
         )
         batchRows = BatchRows(context: context)
         recipeRows = RecipeRows(context: context)
+        shoppingListRows = ShoppingListRows(context: context)
         settings = SettingsState(context: context)
         navigation = AppNavigation()
         navigation.selectedTab = TourScreen().tab

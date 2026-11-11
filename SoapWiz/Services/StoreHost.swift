@@ -58,6 +58,9 @@ final class StoreHost {
     /// Every recipe, shared like the inventory's rows.
     let recipeRows: RecipeRows
 
+    /// Every shopping list line, shared like the inventory's rows.
+    let shoppingListRows: ShoppingListRows
+
     /// The settings the root views read, shared like the rows.
     let settings: SettingsState
 
@@ -89,9 +92,11 @@ final class StoreHost {
         let settingsState = SettingsState(context: container.mainContext)
         let batchRows = BatchRows(context: container.mainContext)
         let recipeRows = RecipeRows(context: container.mainContext)
+        let shoppingListRows = ShoppingListRows(context: container.mainContext)
         inventoryRows = rows
         self.batchRows = batchRows
         self.recipeRows = recipeRows
+        self.shoppingListRows = shoppingListRows
         settings = settingsState
         // Each merge saves two or three times; this makes the rows refetch once
         // at the end instead of after every save. The rows also wait for this
@@ -99,7 +104,11 @@ final class StoreHost {
         // merge backfills and dedupes batch codes too, so it saves batches.
         coordinator.mergeScope = { body in
             rows.settlingMerge {
-                batchRows.settlingMerge { recipeRows.settlingMerge { settingsState.deferringRefreshes(body) } }
+                batchRows.settlingMerge {
+                    recipeRows.settlingMerge {
+                        shoppingListRows.settlingMerge { settingsState.deferringRefreshes(body) }
+                    }
+                }
             }
         }
         self.container = container
@@ -123,6 +132,7 @@ final class StoreHost {
         inventoryRows.refresh()
         batchRows.refresh()
         recipeRows.refresh()
+        shoppingListRows.refresh()
         settings.refresh()
         generation += 1
         phase = .ready
