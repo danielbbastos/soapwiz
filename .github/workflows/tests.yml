@@ -1,13 +1,11 @@
 name: Tests
 
+# Manual only (Actions tab → Tests → Run workflow). The repository is private,
+# and private repositories bill macOS runner minutes at 10×: one run is about
+# 125 of the free plan's 2,000 monthly minutes. The full suite runs locally
+# before every commit and PR instead.
 on:
-  pull_request:
-    paths:
-      - '**/*.swift'
-      - 'SoapWiz.xcodeproj/**'
-      - '.github/workflows/tests.yml'
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: tests-${{ github.ref }}
