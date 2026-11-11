@@ -26,7 +26,7 @@ struct HomeView: View {
             } action: { isWide = $0 }
             .navigationTitle("Home")
             .navigationBarTitleDisplayMode(.large)
-            .ledgerLargeTitle(subtitle: dateLine)
+            .ledgerLargeTitle(subtitle: dateLine, margin: titleMargin)
             .ledgerBackground()
         }
         .onAppear { now = .now }
@@ -47,6 +47,11 @@ struct HomeView: View {
         } else {
             scroll.readableWidth(inset: 16)
         }
+    }
+
+    private var titleMargin: (CGFloat) -> CGFloat? {
+        let isFirstRun = isFirstRun
+        return { HomeLayout.titleMargin(width: $0, isFirstRun: isFirstRun) }
     }
 
     /// Not in the tour sandbox, where restoring a backup must never be reachable.
@@ -93,7 +98,7 @@ struct HomeView: View {
                     }
                 }
             }
-            .padding(16)
+            .padding(HomeLayout.contentPadding)
         }
     }
 
