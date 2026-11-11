@@ -222,6 +222,17 @@ struct RecipeListView: View {
         importRequest = .file(request)
     }
 
+    /// Opens what Home's first-run screen asked for, under the same guard as a
+    /// file import: not over the recipe form, a detail sheet or the tour cover.
+    private func startPendingLaunch() {
+        guard let request = nav.takePendingRecipesLaunch(tourCoverOnScreen: tourLauncher.isCoverOnScreen) else { return }
+        model.endSelecting()
+        switch request.kind {
+        case .importRecipe: openImport()
+        case .starterLibrary: showingStarterRecipes = true
+        }
+    }
+
     var body: some View {
         // Filtered once per pass: the branch below and the list itself both need
         // it, and the filter walks every recipe's collections.
@@ -374,9 +385,21 @@ struct RecipeListView: View {
         .onChange(of: nav.pendingRecipeFileImport, initial: true) {
             startPendingFileImport()
         }
-        .onChange(of: nav.recipeFormClosings) { startPendingFileImport() }
-        .onChange(of: nav.detailSheetClosings) { startPendingFileImport() }
-        .onChange(of: tourLauncher.isCoverOnScreen) { startPendingFileImport() }
+        .onChange(of: nav.pendingRecipesLaunch, initial: true) {
+            startPendingLaunch()
+        }
+        .onChange(of: nav.recipeFormClosings) {
+            startPendingFileImport()
+            startPendingLaunch()
+        }
+        .onChange(of: nav.detailSheetClosings) {
+            startPendingFileImport()
+            startPendingLaunch()
+        }
+        .onChange(of: tourLauncher.isCoverOnScreen) {
+            startPendingFileImport()
+            startPendingLaunch()
+        }
         // A collection deleted here or merged away by `DuplicateMerger` would
         // otherwise leave a selection matching nothing, and an empty list with
         // no visible chip to explain it.

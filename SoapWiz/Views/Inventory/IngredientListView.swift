@@ -7,6 +7,7 @@ struct IngredientListView: View {
     @Environment(InventoryRows.self) private var rows
     @Environment(SettingsState.self) private var settings
     @Environment(\.isTourSandbox) private var isTourSandbox
+    @Environment(TourLauncher.self) private var tourLauncher
     @AppStorage(FirstOwnedCelebration.defaultsKey) private var celebratedFirstOwned = false
     @State private var celebrationTick = 0
 
@@ -295,6 +296,11 @@ struct IngredientListView: View {
         // arriving at launch from reading as a first purchase.
         .sensoryFeedback(.success, trigger: celebrationTick)
         .onChange(of: ownedTrigger, celebrateFirstOwned)
+        // Home's first-run screen asking for the spreadsheet import. `initial`
+        // covers this tab being built after the request is set.
+        .onChange(of: nav.pendingInventoryImport, initial: true) { startPendingImport() }
+        .onChange(of: nav.detailSheetClosings) { startPendingImport() }
+        .onChange(of: tourLauncher.isCoverOnScreen) { startPendingImport() }
         // A hidden row has left the list, and its detail staying open beside
         // the list would outlive it.
         .onChange(of: ingredients.filter(\.isHidden)) { _, hidden in
@@ -371,6 +377,11 @@ struct IngredientListView: View {
             purchases: rows.purchases,
             tracksInventory: settings.tracksInventory
         )
+    }
+
+    private func startPendingImport() {
+        guard nav.takePendingInventoryImport(tourCoverOnScreen: tourLauncher.isCoverOnScreen) != nil else { return }
+        model.showingCSVImport = true
     }
 
     private var secondaryActions: [FABAction] {

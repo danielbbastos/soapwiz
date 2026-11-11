@@ -3,8 +3,14 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(AppNavigation.self) private var navigation
+    @Environment(\.isTourSandbox) private var isTourSandbox
+    @Environment(RecipeRows.self) private var recipeRows
+    @Environment(BatchRows.self) private var batchRows
+    @Environment(InventoryRows.self) private var inventoryRows
+    @Environment(ShoppingListRows.self) private var shoppingList
     @State private var isWide = false
     @State private var now = Date.now
+    @State private var hasCards = true
 
     private var dateLine: String {
         now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
@@ -43,27 +49,51 @@ struct HomeView: View {
         }
     }
 
+    /// Not in the tour sandbox, where restoring a backup must never be reachable.
+    private var isFirstRun: Bool {
+        !isTourSandbox && HomeFirstRun.isEmpty(
+            recipes: recipeRows.recipes,
+            batches: batchRows.batches,
+            shoppingItems: shoppingList.items,
+            ingredients: inventoryRows.ingredients,
+            purchases: inventoryRows.purchases
+        )
+    }
+
     private var scroll: some View {
         ScrollView {
-            VStack(spacing: HomeLayout.spacing) {
-                HomeGrid(isWide: isWide) {
-                    NeedsAttentionCard()
-                    HomeCuringCard()
-                    YouCanMakeCard()
-                    ShoppingListCard()
-                    placeholder
-                    if !isWide {
-                        InsightsSection(isWide: false)
+            Group {
+                if isFirstRun {
+                    HomeFirstRunView()
+                } else {
+                    VStack(spacing: HomeLayout.spacing) {
+                        VStack(spacing: 0) {
+                            HomeGrid(isWide: isWide) {
+                                NeedsAttentionCard()
+                                HomeCuringCard()
+                                YouCanMakeCard()
+                                ShoppingListCard()
+                            }
+                            .transformPreference(HomeCardShownKey.self) { $0 = $0 ?? false }
+                            .onPreferenceChange(HomeCardShownKey.self) { shown in
+                                let anyShown = shown ?? true
+                                MainActor.assumeIsolated { hasCards = anyShown }
+                            }
+                            if !hasCards {
+                                placeholder
+                            }
+                        }
+                        if isWide {
+                            InsightsSection(isWide: true)
+                                .frame(maxWidth: HomeLayout.maximumWidth)
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            InsightsSection(isWide: false)
+                        }
                     }
                 }
-                if isWide {
-                    InsightsSection(isWide: true)
-                        .frame(maxWidth: HomeLayout.maximumWidth)
-                        .frame(maxWidth: .infinity)
-                }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
+            .padding(16)
         }
     }
 
