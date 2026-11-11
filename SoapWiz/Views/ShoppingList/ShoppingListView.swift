@@ -48,8 +48,7 @@ struct ShoppingListView: View {
             tracksInventory: tracksInventory
         )
         let boughtDates = ShoppingListBought.dates(items: items, purchases: purchases)
-        let toBuy = items.filter { !$0.isChecked && boughtDates[$0.persistentModelID] == nil }
-        let checked = items.filter { $0.isChecked || boughtDates[$0.persistentModelID] != nil }
+        let (toBuy, checked) = ShoppingListBought.split(items: items, boughtDates: boughtDates)
         let lastPurchases = LastPurchase.newest(in: purchases)
         let shareText = ShoppingListText.make(
             items: items,

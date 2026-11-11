@@ -142,6 +142,7 @@ struct SoapWizApp: App {
                 .environment(storeHost.inventoryRows)
                 .environment(storeHost.batchRows)
                 .environment(storeHost.recipeRows)
+                .environment(storeHost.shoppingListRows)
                 .environment(storeHost.settings)
                 .modelContainer(storeHost.container)
                 .environment(upgradePresenter)

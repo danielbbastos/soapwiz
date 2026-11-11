@@ -50,6 +50,7 @@ struct HomeView: View {
                     NeedsAttentionCard()
                     HomeCuringCard()
                     YouCanMakeCard()
+                    ShoppingListCard()
                     placeholder
                     if !isWide {
                         InsightsSection(isWide: false)
