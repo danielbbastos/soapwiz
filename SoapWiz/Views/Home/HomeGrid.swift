@@ -6,6 +6,18 @@ enum HomeLayout {
     static let maximumWidth: CGFloat = 1_120
     static let spacing: CGFloat = 24
     static let wideColumnCount = 3
+    static let contentPadding: CGFloat = 16
+
+    /// How far in from the screen's edge the large title starts in `width`, so it
+    /// lines up with the content below it. Wide, that's the cards (or the
+    /// first-run column), capped and centred inside the screen's padding; narrower,
+    /// the readable column, as on other screens. Nil is the system margin, which
+    /// the readable width also falls back to below 740 pt.
+    static func titleMargin(width: CGFloat, isFirstRun: Bool) -> CGFloat? {
+        guard ListDetailLayout.isWide(width: width) else { return ReadableWidth.margin(for: width) }
+        let cap = isFirstRun ? HomeFirstRunView.maximumWidth : maximumWidth
+        return contentPadding + max(0, (width - 2 * contentPadding - cap) / 2)
+    }
 }
 
 struct HomeGrid<Content: View>: View {

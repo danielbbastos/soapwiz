@@ -22,8 +22,13 @@ extension View {
     /// Where the screen's content is capped and centred (`readableWidth()`),
     /// the title block moves in to the content's leading edge, and the
     /// subtitle's hairline ends at its trailing edge.
-    func ledgerLargeTitle(subtitle: String? = nil) -> some View {
-        modifier(LedgerLargeTitleModifier(subtitle: subtitle))
+    ///
+    /// `margin` overrides where that leading edge is, for a screen whose
+    /// content isn't capped at the readable width: it takes the container's
+    /// width and returns the content's distance from the edge of the screen,
+    /// or nil for the system margin. Left out, the readable width decides.
+    func ledgerLargeTitle(subtitle: String? = nil, margin: ((CGFloat) -> CGFloat?)? = nil) -> some View {
+        modifier(LedgerLargeTitleModifier(subtitle: subtitle, marginForWidth: margin))
     }
 
     func ledgerSheet() -> some View {
@@ -66,9 +71,16 @@ extension View {
 
 private struct LedgerLargeTitleModifier: ViewModifier {
     let subtitle: String?
-    @State private var margin: CGFloat?
+    let marginForWidth: ((CGFloat) -> CGFloat?)?
+    @State private var width: CGFloat?
     @State private var titleLeading: CGFloat?
     @Environment(\.ledgerHasHeaderStrip) private var hasHeaderStrip
+
+    private var margin: CGFloat? {
+        guard let width else { return nil }
+        if let marginForWidth { return marginForWidth(width) }
+        return ReadableWidth.margin(for: width)
+    }
 
     @ViewBuilder
     func body(content: Content) -> some View {
@@ -82,10 +94,10 @@ private struct LedgerLargeTitleModifier: ViewModifier {
                 )
                 .frame(width: 0, height: 0)
             )
-            .onGeometryChange(for: CGFloat?.self) { proxy in
-                ReadableWidth.margin(for: proxy.size.width)
-            } action: { newMargin in
-                margin = newMargin
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.width
+            } action: { newWidth in
+                width = newWidth
             }
         if #available(iOS 26, *) {
             configured
