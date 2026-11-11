@@ -114,10 +114,7 @@ final class IngredientListViewModel {
     /// What puts a row in My Ingredients: the user made it, bought it (a used-up
     /// purchase still counts), changed its chemistry, or starred it.
     func isOwned(_ ingredient: Ingredient, stock: StockLevels) -> Bool {
-        !ingredient.isLibraryInstalled ||
-            stock.hasPurchases(ingredient) ||
-            ingredient.hasCustomChemistry ||
-            ingredient.isFavorite
+        IngredientOwnership.isOwned(ingredient, stock: stock)
     }
 
     private func isInScope(_ ingredient: Ingredient, stock: StockLevels) -> Bool {

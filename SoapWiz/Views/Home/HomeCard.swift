@@ -20,6 +20,16 @@ struct HomeCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .ledgerSheet()
         }
+        .preference(key: HomeCardShownKey.self, value: true)
+    }
+}
+
+struct HomeCardShownKey: PreferenceKey {
+    static let defaultValue: Bool? = nil
+
+    static func reduce(value: inout Bool?, nextValue: () -> Bool?) {
+        guard let next = nextValue() else { return }
+        value = (value ?? false) || next
     }
 }
 

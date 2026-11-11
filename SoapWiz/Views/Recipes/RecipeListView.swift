@@ -3,16 +3,16 @@ import SwiftData
 
 struct RecipeListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(AppNavigation.self) private var nav
-    @Environment(TourLauncher.self) private var tourLauncher
+    @Environment(AppNavigation.self) var nav
+    @Environment(TourLauncher.self) var tourLauncher
     @FreeTierGateEnvironment private var freeTier
     @Query(sort: \Recipe.name) private var recipes: [Recipe]
     @Query(sort: \RecipeCollection.name) private var collections: [RecipeCollection]
 
-    @State private var model = RecipeListViewModel()
+    @State var model = RecipeListViewModel()
     private var navigation: ListDetailNavigation<Recipe> { nav.recipes }
-    @State private var importRequest: RecipeImportRequest?
-    @State private var showingStarterRecipes = false
+    @State var importRequest: RecipeImportRequest?
+    @State var showingStarterRecipes = false
     /// An import confirmed in the import sheet, waiting for that sheet to go
     /// before its form can cover the screen.
     @State private var formRequestAfterImport: RecipeFormRequest?
@@ -199,7 +199,7 @@ struct RecipeListView: View {
 
     /// Opens the paste-and-import sheet, unless the free tier's recipes are
     /// used up and nothing could come of it.
-    private func openImport() {
+    func openImport() {
         freeTier.ifMayCreateRecipe(in: modelContext) { importRequest = .manual }
     }
 
@@ -207,19 +207,6 @@ struct RecipeListView: View {
         guard let request = formRequestAfterImport else { return }
         formRequestAfterImport = nil
         openForm(request)
-    }
-
-    /// Opens the import review for a file handed in from another app. A sheet
-    /// can't go up over the full-screen form, a detail sheet or the tour cover,
-    /// so while one is open the file stays pending and this runs again once it
-    /// has closed; either way its unsaved edits are left alone. Transient
-    /// sheets are cleared first so the import isn't blocked by one already up.
-    private func startPendingFileImport() {
-        guard let request = nav.takePendingRecipeFileImport(tourCoverOnScreen: tourLauncher.isCoverOnScreen) else { return }
-        model.endSelecting()
-        model.filingRecipe = nil
-        model.exportFile = nil
-        importRequest = .file(request)
     }
 
     var body: some View {
@@ -374,9 +361,21 @@ struct RecipeListView: View {
         .onChange(of: nav.pendingRecipeFileImport, initial: true) {
             startPendingFileImport()
         }
-        .onChange(of: nav.recipeFormClosings) { startPendingFileImport() }
-        .onChange(of: nav.detailSheetClosings) { startPendingFileImport() }
-        .onChange(of: tourLauncher.isCoverOnScreen) { startPendingFileImport() }
+        .onChange(of: nav.pendingRecipesLaunch, initial: true) {
+            startPendingLaunch()
+        }
+        .onChange(of: nav.recipeFormClosings) {
+            startPendingFileImport()
+            startPendingLaunch()
+        }
+        .onChange(of: nav.detailSheetClosings) {
+            startPendingFileImport()
+            startPendingLaunch()
+        }
+        .onChange(of: tourLauncher.isCoverOnScreen) {
+            startPendingFileImport()
+            startPendingLaunch()
+        }
         // A collection deleted here or merged away by `DuplicateMerger` would
         // otherwise leave a selection matching nothing, and an empty list with
         // no visible chip to explain it.

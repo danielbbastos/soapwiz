@@ -30,6 +30,25 @@ struct RecipeFileImport: Hashable {
     let url: URL
 }
 
+/// A request from Home's first-run screen to open the spreadsheet import in the
+/// Inventory tab. The `id` makes each request distinct.
+struct InventoryImportRequest: Hashable {
+    let id = UUID()
+}
+
+/// What Home's first-run screen can ask the Recipes tab to open.
+enum RecipesLaunchKind: Hashable {
+    case importRecipe
+    case starterLibrary
+}
+
+/// A request from Home's first-run screen to open a sheet in the Recipes tab.
+/// The `id` makes a repeated request of the same kind distinct.
+struct RecipesLaunchRequest: Hashable {
+    let id = UUID()
+    let kind: RecipesLaunchKind
+}
+
 /// Cross-tab navigation state: which tab is selected and the navigation of the
 /// Home, Inventory, Recipes and History tabs. Lets flows that end in another
 /// tab (creating a batch from a recipe) land the user there directly, and lets
@@ -53,6 +72,14 @@ final class AppNavigation {
     /// Set when another app opens a recipe file in SoapWiz; the Recipes tab
     /// observes it, opens the import review for the file, then clears it.
     var pendingRecipeFileImport: RecipeFileImport?
+
+    /// Set by Home's first-run screen; the Inventory tab observes it, opens the
+    /// spreadsheet import, then clears it.
+    var pendingInventoryImport: InventoryImportRequest?
+
+    /// Set by Home's first-run screen; the Recipes tab observes it, opens the
+    /// requested sheet, then clears it.
+    var pendingRecipesLaunch: RecipesLaunchRequest?
 
     /// The recipe form open full screen, on iPad. Held here rather than by the
     /// screen that opened it so no tab switch or layout change can close it, and
@@ -124,15 +151,38 @@ final class AppNavigation {
         isRecipeFormOnScreen = false
     }
 
-    /// Hands out the recipe file waiting to open, once: nil while the recipe
-    /// form, a detail sheet or the tour cover is on screen, closing included,
-    /// since the import review can't go up over any of them, and nil again
-    /// after the file has been taken. The caller says whether the tour cover is
-    /// up, as this doesn't know the launcher.
+    /// Whether a sheet can go up now: not while the recipe form, a detail sheet
+    /// or the tour cover is on screen, closing included, since the import
+    /// review can't go up over any of them. The caller says whether the tour
+    /// cover is up, as this doesn't know the launcher.
+    private func mayPresentSheet(tourCoverOnScreen: Bool) -> Bool {
+        !tourCoverOnScreen && !isRecipeFormOnScreen && !isDetailSheetOnScreen
+    }
+
+    /// Hands out the recipe file waiting to open, once: nil while a sheet
+    /// can't go up, and nil again after the file has been taken.
     func takePendingRecipeFileImport(tourCoverOnScreen: Bool) -> RecipeFileImport? {
-        guard !tourCoverOnScreen, !isRecipeFormOnScreen, !isDetailSheetOnScreen,
+        guard mayPresentSheet(tourCoverOnScreen: tourCoverOnScreen),
               let request = pendingRecipeFileImport else { return nil }
         pendingRecipeFileImport = nil
+        return request
+    }
+
+    /// Hands out the Inventory import request, once, under the same guard as
+    /// `takePendingRecipeFileImport`.
+    func takePendingInventoryImport(tourCoverOnScreen: Bool) -> InventoryImportRequest? {
+        guard mayPresentSheet(tourCoverOnScreen: tourCoverOnScreen),
+              let request = pendingInventoryImport else { return nil }
+        pendingInventoryImport = nil
+        return request
+    }
+
+    /// Hands out the Recipes request, once, under the same guard as
+    /// `takePendingRecipeFileImport`.
+    func takePendingRecipesLaunch(tourCoverOnScreen: Bool) -> RecipesLaunchRequest? {
+        guard mayPresentSheet(tourCoverOnScreen: tourCoverOnScreen),
+              let request = pendingRecipesLaunch else { return nil }
+        pendingRecipesLaunch = nil
         return request
     }
 
@@ -169,6 +219,24 @@ final class AppNavigation {
     /// pre-filled with `ingredients`.
     func createRecipe(with ingredients: [Ingredient]) {
         pendingRecipeSeed = RecipeSeed(ingredients: ingredients)
+        selectedTab = .recipes
+    }
+
+    /// Switches to the Inventory tab and asks it to open the spreadsheet import.
+    func openInventoryImport() {
+        pendingInventoryImport = InventoryImportRequest()
+        selectedTab = .inventory
+    }
+
+    /// Switches to the Recipes tab and asks it to open the recipe import sheet.
+    func openRecipeImport() {
+        pendingRecipesLaunch = RecipesLaunchRequest(kind: .importRecipe)
+        selectedTab = .recipes
+    }
+
+    /// Switches to the Recipes tab and asks it to open the starter recipes.
+    func openStarterRecipes() {
+        pendingRecipesLaunch = RecipesLaunchRequest(kind: .starterLibrary)
         selectedTab = .recipes
     }
 
