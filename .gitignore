@@ -19,3 +19,10 @@ build/
 
 # Scratch output from Claude sessions
 Claude outputs/
+
+# Claude Code local state (project tooling in .claude/ stays tracked)
+.claude/settings.local.json
+.claude/worktrees/
+.claude/logs/
+.claude/scheduled_tasks.lock
+CLAUDE.local.md
