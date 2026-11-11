@@ -300,6 +300,7 @@ struct IngredientListView: View {
         // covers this tab being built after the request is set.
         .onChange(of: nav.pendingInventoryImport, initial: true) { startPendingImport() }
         .onChange(of: nav.detailSheetClosings) { startPendingImport() }
+        .onChange(of: nav.recipeFormClosings) { startPendingImport() }
         .onChange(of: tourLauncher.isCoverOnScreen) { startPendingImport() }
         // A hidden row has left the list, and its detail staying open beside
         // the list would outlive it.
