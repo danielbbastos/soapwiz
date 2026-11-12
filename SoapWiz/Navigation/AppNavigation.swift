@@ -77,6 +77,10 @@ final class AppNavigation {
     /// spreadsheet import, then clears it.
     var pendingInventoryImport: InventoryImportRequest?
 
+    /// Set by Home's Needs attention card; the Inventory tab observes it,
+    /// applies the filter, then clears it.
+    var pendingInventoryFilter: InventoryAttentionFilter?
+
     /// Set by Home's first-run screen; the Recipes tab observes it, opens the
     /// requested sheet, then clears it.
     var pendingRecipesLaunch: RecipesLaunchRequest?
@@ -177,6 +181,13 @@ final class AppNavigation {
         return request
     }
 
+    /// Hands out the Inventory filter request, once. Not a sheet, so it needs
+    /// no guard.
+    func takePendingInventoryFilter() -> InventoryAttentionFilter? {
+        defer { pendingInventoryFilter = nil }
+        return pendingInventoryFilter
+    }
+
     /// Hands out the Recipes request, once, under the same guard as
     /// `takePendingRecipeFileImport`.
     func takePendingRecipesLaunch(tourCoverOnScreen: Bool) -> RecipesLaunchRequest? {
@@ -239,6 +250,12 @@ final class AppNavigation {
     /// Switches to the Inventory tab and asks it to open the spreadsheet import.
     func openInventoryImport() {
         pendingInventoryImport = InventoryImportRequest()
+        selectedTab = .inventory
+    }
+
+    /// Switches to the Inventory tab and asks it to list only `filter`'s stock.
+    func openInventory(filter: InventoryAttentionFilter) {
+        pendingInventoryFilter = filter
         selectedTab = .inventory
     }
 

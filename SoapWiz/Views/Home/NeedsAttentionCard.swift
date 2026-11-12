@@ -18,7 +18,12 @@ struct NeedsAttentionCard: View {
         ) {
             HomeCard("Needs attention") {
                 if attention.valueAtRisk > 0 {
-                    header(attention.valueAtRisk)
+                    Button {
+                        navigation.openInventory(filter: .expiringThisMonth)
+                    } label: {
+                        header(attention.valueAtRisk)
+                    }
+                    .buttonStyle(HomeRowButtonStyle(isLast: attention.rows.isEmpty && attention.moreCount == 0))
                 }
                 ForEach(Array(attention.rows.enumerated()), id: \.element.id) { index, row in
                     let isLast = attention.moreCount == 0 && index == attention.rows.count - 1
@@ -35,7 +40,7 @@ struct NeedsAttentionCard: View {
                 if attention.moreCount > 0 {
                     divider
                     Button {
-                        navigation.selectedTab = .inventory
+                        navigation.openInventory(filter: .needsAttention)
                     } label: {
                         Text("\(attention.moreCount) more in Inventory")
                             .font(.subheadline.weight(.semibold))
@@ -59,21 +64,29 @@ struct NeedsAttentionCard: View {
 
     private func header(_ value: Double) -> some View {
         let figure = value.formatted(.currency(code: currencyCode))
-        return VStack(alignment: .leading, spacing: 2) {
-            Text(figure)
-                .font(.system(.title, design: .serif, weight: .semibold))
-                .monospacedDigit()
-                .foregroundStyle(Color.warning)
-            Text("of stock expires this month")
-                .font(.subheadline)
-                .foregroundStyle(Color.inkSoft)
+        return HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(figure)
+                    .font(.system(.title, design: .serif, weight: .semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(Color.warning)
+                Text("of stock expires this month")
+                    .font(.subheadline)
+                    .foregroundStyle(Color.inkSoft)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Color.inkFaint)
+                .accessibilityHidden(true)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, 16)
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("\(figure) of stock expires this month"))
+        .accessibilityHint(Text("Shows the expiring stock in Inventory"))
     }
 
     private func rowLabel(_ row: NeedsAttention.Row) -> some View {

@@ -127,7 +127,7 @@ struct IngredientListViewModelFilterTests: IngredientFormTestHelpers {
         #expect(results.first?.name == "A")
     }
 
-    @Test func stockFilterInStockExcludesLowStock() throws {
+    @Test func stockFilterInStockIncludesLowStock() throws {
         let container = try makeContainer()
         let ctx = container.mainContext
         let lowStock = Ingredient(name: "A")
@@ -137,7 +137,7 @@ struct IngredientListViewModelFilterTests: IngredientFormTestHelpers {
 
         let model = IngredientListViewModel()
         model.stockStatus = .inStock
-        #expect(model.filtered([lowStock]).isEmpty)
+        #expect(model.filtered([lowStock]).count == 1)
     }
 
     @Test func stockFilterOutOfStock() throws {
