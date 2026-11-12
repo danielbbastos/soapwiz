@@ -122,7 +122,12 @@ struct NeedsAttentionTests {
 
     // MARK: - Ingredient sets
 
-    @Test func attentionIDs_IgnoreRowLimit() throws {
+    private func sets(_ ingredients: [Ingredient]) throws -> (attention: Set<PersistentIdentifier>, expiring: Set<PersistentIdentifier>) {
+        let purchases = try context.fetch(FetchDescriptor<IngredientPurchase>())
+        return NeedsAttention.ingredientSets(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar)
+    }
+
+    @Test func attentionSet_IgnoresRowLimit() throws {
         let ingredients = try (0..<6).map { index -> Ingredient in
             let ingredient = makeIngredient("Item \(index)")
             try addPurchase(to: ingredient, remaining: 0)
@@ -130,32 +135,29 @@ struct NeedsAttentionTests {
         }
         let result = try #require(try attention(ingredients, rowLimit: 2))
         #expect(result.rows.count == 2)
-        #expect(result.attentionIDs == Set(ingredients.map(\.persistentModelID)))
+        #expect(result.rows.count + result.moreCount == ingredients.count)
+        #expect(try sets(ingredients).attention == Set(ingredients.map(\.persistentModelID)))
     }
 
-    @Test func expiringIDs_AreTheIngredientsWithStockExpiringInTheWindow() throws {
+    @Test func expiringSet_AreTheIngredientsWithStockExpiringInTheWindow() throws {
         let expiring = makeIngredient("Expiring")
         try addPurchase(to: expiring, remaining: 100, expiry: try date(daysFromNow: 5))
         let expired = makeIngredient("Expired")
         try addPurchase(to: expired, remaining: 100, expiry: try date(daysFromNow: -5))
         let usedUp = makeIngredient("Used up")
         try addPurchase(to: usedUp, remaining: 0, expiry: try date(daysFromNow: 5))
-        let result = try #require(try attention([expiring, expired, usedUp]))
-        #expect(result.expiringIDs == [expiring.persistentModelID])
+        #expect(try sets([expiring, expired, usedUp]).expiring == [expiring.persistentModelID])
     }
 
-    @Test func expiringIDs_UnpricedStockExpiringInTheWindow_IsIncludedWithoutValueAtRisk() throws {
+    @Test func expiringSet_UnpricedStockExpiringInTheWindow_IsIncludedWithoutValueAtRisk() throws {
         let free = makeIngredient("Free")
         try addPurchase(to: free, remaining: 100, totalPrice: 0, expiry: try date(daysFromNow: 5))
         let result = try #require(try attention([free]))
-        let purchases = try context.fetch(FetchDescriptor<IngredientPurchase>())
-        let sets = NeedsAttention.ingredientSets(ingredients: [free], purchases: purchases, now: now, calendar: calendar)
         #expect(result.valueAtRisk == 0)
-        #expect(result.expiringIDs == [free.persistentModelID])
-        #expect(sets.expiring == [free.persistentModelID])
+        #expect(try sets([free]).expiring == [free.persistentModelID])
     }
 
-    @Test func ingredientSets_MatchMake() throws {
+    @Test func ingredientSets_MatchMakeWhenEveryRowIsShown() throws {
         let out = makeIngredient("Out")
         try addPurchase(to: out, remaining: 0)
         let soon = makeIngredient("Soon")
@@ -163,13 +165,13 @@ struct NeedsAttentionTests {
         let fine = makeIngredient("Fine")
         try addPurchase(to: fine, remaining: 500)
         let ingredients = [out, soon, fine]
-        let purchases = try context.fetch(FetchDescriptor<IngredientPurchase>())
 
-        let sets = NeedsAttention.ingredientSets(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar)
-        let made = try #require(try attention(ingredients))
-        #expect(sets.attention == made.attentionIDs)
-        #expect(sets.expiring == made.expiringIDs)
-        #expect(!sets.attention.contains(fine.persistentModelID))
+        let result = try sets(ingredients)
+        let made = try #require(try attention(ingredients, rowLimit: .max))
+        #expect(made.moreCount == 0)
+        #expect(result.attention == Set(made.rows.map(\.id)))
+        #expect(result.expiring == [soon.persistentModelID])
+        #expect(!result.attention.contains(fine.persistentModelID))
     }
 
     @Test func ingredientSets_HiddenIngredient_Excluded() throws {

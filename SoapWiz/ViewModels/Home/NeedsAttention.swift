@@ -25,15 +25,12 @@ struct NeedsAttention {
     let moreCount: Int
     let valueAtRisk: Double
 
-    /// Every ingredient the card would list, before the row limit caps it.
-    let attentionIDs: Set<PersistentIdentifier>
-
-    /// The ingredients with stock left that expires within the next month,
-    /// priced or not. `valueAtRisk` only counts the priced part of it.
-    let expiringIDs: Set<PersistentIdentifier>
-
     /// The two sets the card is drawn from, without building any rows, so the
     /// Inventory filters can use them and never disagree with the card.
+    /// `attention` is every ingredient the card would list, before the row
+    /// limit caps it. `expiring` is the ingredients with stock left that
+    /// expires within the next month, priced or not; `valueAtRisk` only counts
+    /// the priced part of it.
     static func ingredientSets(
         ingredients: [Ingredient],
         purchases: [IngredientPurchase],
@@ -65,10 +62,8 @@ struct NeedsAttention {
 
         var qualifying: [Row] = []
         var totalAtRisk = 0.0
-        var expiring: Set<PersistentIdentifier> = []
-        evaluate(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar) { ingredient, owned, atRisk, isExpiring in
+        evaluate(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar) { ingredient, owned, atRisk, _ in
             totalAtRisk += atRisk
-            if isExpiring { expiring.insert(ingredient.persistentModelID) }
             if let row = row(for: ingredient, purchases: owned, atRisk: atRisk, now: now, calendar: calendar) {
                 qualifying.append(row)
             }
@@ -88,9 +83,7 @@ struct NeedsAttention {
         return NeedsAttention(
             rows: Array(qualifying.prefix(limit)),
             moreCount: max(qualifying.count - limit, 0),
-            valueAtRisk: totalAtRisk,
-            attentionIDs: Set(qualifying.map(\.id)),
-            expiringIDs: expiring
+            valueAtRisk: totalAtRisk
         )
     }
 
