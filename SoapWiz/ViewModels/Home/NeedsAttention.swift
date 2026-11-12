@@ -28,7 +28,8 @@ struct NeedsAttention {
     /// Every ingredient the card would list, before the row limit caps it.
     let attentionIDs: Set<PersistentIdentifier>
 
-    /// The ingredients whose stock makes up `valueAtRisk`.
+    /// The ingredients with stock left that expires within the next month,
+    /// priced or not. `valueAtRisk` only counts the priced part of it.
     let expiringIDs: Set<PersistentIdentifier>
 
     /// The two sets the card is drawn from, without building any rows, so the
@@ -41,9 +42,9 @@ struct NeedsAttention {
     ) -> (attention: Set<PersistentIdentifier>, expiring: Set<PersistentIdentifier>) {
         var attention: Set<PersistentIdentifier> = []
         var expiring: Set<PersistentIdentifier> = []
-        evaluate(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar) { ingredient, owned, atRisk in
+        evaluate(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar) { ingredient, owned, _, isExpiring in
             let id = ingredient.persistentModelID
-            if atRisk > 0 { expiring.insert(id) }
+            if isExpiring { expiring.insert(id) }
             let remaining = owned.reduce(0) { $0 + $1.remainingAmount }
             if reason(for: ingredient, purchases: owned, remaining: remaining, now: now, calendar: calendar) != nil {
                 attention.insert(id)
@@ -65,9 +66,9 @@ struct NeedsAttention {
         var qualifying: [Row] = []
         var totalAtRisk = 0.0
         var expiring: Set<PersistentIdentifier> = []
-        evaluate(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar) { ingredient, owned, atRisk in
+        evaluate(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar) { ingredient, owned, atRisk, isExpiring in
             totalAtRisk += atRisk
-            if atRisk > 0 { expiring.insert(ingredient.persistentModelID) }
+            if isExpiring { expiring.insert(ingredient.persistentModelID) }
             if let row = row(for: ingredient, purchases: owned, atRisk: atRisk, now: now, calendar: calendar) {
                 qualifying.append(row)
             }
@@ -94,13 +95,13 @@ struct NeedsAttention {
     }
 
     /// Walks the listed ingredients that have purchases, with each one's
-    /// purchases and the value at risk in them.
+    /// purchases, the value at risk in them and whether any is expiring.
     private static func evaluate(
         ingredients: [Ingredient],
         purchases: [IngredientPurchase],
         now: Date,
         calendar: Calendar,
-        visit: (Ingredient, [IngredientPurchase], Double) -> Void
+        visit: (Ingredient, [IngredientPurchase], Double, Bool) -> Void
     ) {
         var purchasesByIngredient: [PersistentIdentifier: [IngredientPurchase]] = [:]
         for purchase in purchases {
@@ -114,7 +115,8 @@ struct NeedsAttention {
                   let owned = purchasesByIngredient[ingredient.persistentModelID]
             else { continue }
             let atRisk = owned.reduce(0) { $0 + valueAtRisk(of: $1, now: now, cutoff: cutoff) }
-            visit(ingredient, owned, atRisk)
+            let isExpiring = owned.contains { isExpiringInWindow($0, now: now, cutoff: cutoff) }
+            visit(ingredient, owned, atRisk, isExpiring)
         }
     }
 
@@ -142,7 +144,13 @@ struct NeedsAttention {
         calendar: Calendar
     ) -> Row? {
         let remaining = purchases.reduce(0) { $0 + $1.remainingAmount }
-        guard let reason = reason(for: ingredient, purchases: purchases, remaining: remaining, now: now, calendar: calendar) else { return nil }
+        guard let reason = reason(
+            for: ingredient,
+            purchases: purchases,
+            remaining: remaining,
+            now: now,
+            calendar: calendar
+        ) else { return nil }
 
         let newest = purchases.max { $0.dateOfPurchase < $1.dateOfPurchase }
         let supplier = newest?.provider?.name
@@ -163,9 +171,13 @@ struct NeedsAttention {
         )
     }
 
+    private static func isExpiringInWindow(_ purchase: IngredientPurchase, now: Date, cutoff: Date?) -> Bool {
+        guard purchase.remainingAmount > 0, let expiry = purchase.expiryDate, let cutoff else { return false }
+        return expiry >= now && expiry <= cutoff
+    }
+
     private static func valueAtRisk(of purchase: IngredientPurchase, now: Date, cutoff: Date?) -> Double {
-        guard purchase.remainingAmount > 0, let expiry = purchase.expiryDate, let cutoff else { return 0 }
-        guard expiry >= now, expiry <= cutoff else { return 0 }
+        guard isExpiringInWindow(purchase, now: now, cutoff: cutoff) else { return 0 }
         return purchase.remainingAmount * purchase.pricePerUnit
     }
 

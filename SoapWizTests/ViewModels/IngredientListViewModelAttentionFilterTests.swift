@@ -26,7 +26,8 @@ struct AttentionFilterTests {
         _ name: String,
         remaining: Double,
         threshold: Double? = nil,
-        expiry: Date? = nil
+        expiry: Date? = nil,
+        totalPrice: Double = 10
     ) -> Ingredient {
         let ingredient = Ingredient(name: name, unit: "g")
         ingredient.lowStockThreshold = threshold
@@ -34,7 +35,7 @@ struct AttentionFilterTests {
         let purchase = IngredientPurchase(
             dateOfPurchase: now,
             quantity: 1000,
-            totalPrice: 10,
+            totalPrice: totalPrice,
             badge: "",
             journalCode: "",
             expiryDate: expiry,
@@ -84,6 +85,14 @@ struct AttentionFilterTests {
         model.attentionFilter = .expiringThisMonth
 
         #expect(try displayedNames(shelf.all) == ["Expiring"])
+    }
+
+    @Test func expiringThisMonth_ListsUnpricedStockExpiringInTheWindow() throws {
+        let free = makeIngredient("Free", remaining: 100, expiry: try day(10), totalPrice: 0)
+        let fine = makeIngredient("Fine", remaining: 500)
+        model.attentionFilter = .expiringThisMonth
+
+        #expect(try displayedNames([free, fine]) == ["Free"])
     }
 
     @Test func attentionFilter_MatchesNeedsAttentionSets() throws {

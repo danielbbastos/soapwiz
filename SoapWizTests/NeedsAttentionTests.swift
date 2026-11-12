@@ -133,7 +133,7 @@ struct NeedsAttentionTests {
         #expect(result.attentionIDs == Set(ingredients.map(\.persistentModelID)))
     }
 
-    @Test func expiringIDs_AreTheIngredientsBehindTheTotal() throws {
+    @Test func expiringIDs_AreTheIngredientsWithStockExpiringInTheWindow() throws {
         let expiring = makeIngredient("Expiring")
         try addPurchase(to: expiring, remaining: 100, expiry: try date(daysFromNow: 5))
         let expired = makeIngredient("Expired")
@@ -142,6 +142,17 @@ struct NeedsAttentionTests {
         try addPurchase(to: usedUp, remaining: 0, expiry: try date(daysFromNow: 5))
         let result = try #require(try attention([expiring, expired, usedUp]))
         #expect(result.expiringIDs == [expiring.persistentModelID])
+    }
+
+    @Test func expiringIDs_UnpricedStockExpiringInTheWindow_IsIncludedWithoutValueAtRisk() throws {
+        let free = makeIngredient("Free")
+        try addPurchase(to: free, remaining: 100, totalPrice: 0, expiry: try date(daysFromNow: 5))
+        let result = try #require(try attention([free]))
+        let purchases = try context.fetch(FetchDescriptor<IngredientPurchase>())
+        let sets = NeedsAttention.ingredientSets(ingredients: [free], purchases: purchases, now: now, calendar: calendar)
+        #expect(result.valueAtRisk == 0)
+        #expect(result.expiringIDs == [free.persistentModelID])
+        #expect(sets.expiring == [free.persistentModelID])
     }
 
     @Test func ingredientSets_MatchMake() throws {
