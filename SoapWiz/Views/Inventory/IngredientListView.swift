@@ -4,14 +4,14 @@ import SwiftData
 struct IngredientListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
-    @Environment(InventoryRows.self) private var rows
+    @Environment(InventoryRows.self) var rows
     @Environment(SettingsState.self) private var settings
     @Environment(\.isTourSandbox) private var isTourSandbox
     @Environment(TourLauncher.self) private var tourLauncher
     @AppStorage(FirstOwnedCelebration.defaultsKey) private var celebratedFirstOwned = false
     @State private var celebrationTick = 0
 
-    @State private var model = IngredientListViewModel()
+    @State var model = IngredientListViewModel()
     /// The open ingredient's merge key, read when it opens: once a merge has
     /// deleted the row it can't be read off it. See `LiveIngredient`.
     @State private var selectedSlug = ""
@@ -25,13 +25,6 @@ struct IngredientListView: View {
 
     private var selectedIngredients: [Ingredient] {
         rows.ingredients.filter { model.selection.contains($0.persistentModelID) }
-    }
-
-    /// Chips are drawn from the in-scope inventory (what the library scope lets
-    /// through, ignoring the other filters), not the displayed list: narrowing to
-    /// one category must not make every other chip disappear.
-    private func categoryChips(stock: StockLevels) -> [IngredientCategory] {
-        model.visibleCategories(rows.categories, in: rows.ingredients, stock: stock)
     }
 
     private func row(_ ingredient: Ingredient, stockLevels: StockLevels, index: Int, count: Int) -> IngredientListRow {
@@ -167,25 +160,6 @@ struct IngredientListView: View {
         ) else { return }
         celebratedFirstOwned = true
         celebrationTick += 1
-    }
-
-    private func headerContent(
-        showsSearch: Bool,
-        categories: [IngredientCategory],
-        hasChips: Bool,
-        counts: (all: Int, byCategory: [PersistentIdentifier: Int])
-    ) -> some View {
-        VStack(spacing: 0) {
-            // Nothing to search with an empty inventory. The library
-            // counts even when none of it is in scope yet.
-            if showsSearch {
-                SearchField("Search ingredients", text: $model.searchText, tourAnchor: .inventorySearch)
-                    .padding(.bottom, 12)
-            }
-            if hasChips && model.editMode == .inactive {
-                InventoryCategoryFilterBar(categories: categories, model: model, counts: counts)
-            }
-        }
     }
 
     var body: some View {
