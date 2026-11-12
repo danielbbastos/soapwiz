@@ -58,8 +58,8 @@ struct RecipesLaunchRequest: Hashable {
 final class AppNavigation {
     var selectedTab: AppTab = .home
 
-    /// What Home has pushed. Home opens items in the tab that owns them, so
-    /// this holds only screens that belong to Home itself.
+    /// What Home has pushed: the ingredient, batch and recipe screens its cards
+    /// open, on Home's own stack so Back returns to Home. See `pushOnHome(_:)`.
     var homePath = NavigationPath()
     let inventory = ListDetailNavigation<Ingredient>()
     let recipes = ListDetailNavigation<Recipe>()
@@ -188,6 +188,12 @@ final class AppNavigation {
 
     func resetHome() {
         homePath = NavigationPath()
+    }
+
+    /// Pushes `item`'s detail screen (an `Ingredient`, `Batch` or `Recipe`) on
+    /// Home's own stack, without leaving the tab.
+    func pushOnHome<Item: Hashable>(_ item: Item) {
+        homePath.append(item)
     }
 
     /// Switches to the Inventory tab showing `ingredient`'s detail screen.

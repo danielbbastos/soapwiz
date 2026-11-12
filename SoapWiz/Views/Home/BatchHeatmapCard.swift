@@ -169,10 +169,28 @@ private struct HeatmapCell: View {
 private struct BatchHeatmapMonthGrid: View {
     let heatmap: BatchHeatmap
     @Binding var selectedID: Date?
-    @ScaledMetric(relativeTo: .caption) private var cellHeight: CGFloat = 18
+    @ScaledMetric(relativeTo: .caption) private var minimumCellHeight: CGFloat = 18
+    @State private var gridWidth: CGFloat = 0
+
+    private static let spacing: CGFloat = 4
+    private static let markerWidth: CGFloat = 24
+
+    /// Cells keep their height on a phone, where they are near square, and grow
+    /// with their width on a wide card so they never stretch past
+    /// `HeatmapCellShape.maximumAspectRatio`.
+    private var cellHeight: CGFloat {
+        let columns = CGFloat(max(heatmap.months.count, 1))
+        let cellWidth = (gridWidth - Self.markerWidth - Self.spacing * columns) / columns
+        return HeatmapCellShape.height(forWidth: cellWidth, minimum: minimumCellHeight)
+    }
 
     var body: some View {
-        Grid(horizontalSpacing: 4, verticalSpacing: 4) {
+        grid
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { gridWidth = $0 }
+    }
+
+    private var grid: some View {
+        Grid(horizontalSpacing: Self.spacing, verticalSpacing: Self.spacing) {
             GridRow {
                 Color.clear
                     .gridCellUnsizedAxes([.horizontal, .vertical])
@@ -211,8 +229,26 @@ private struct BatchHeatmapStrip: View {
 
     var body: some View {
         Grid(horizontalSpacing: 5, verticalSpacing: 5) {
-            ForEach(Array(heatmap.strip.enumerated()), id: \.offset) { _, row in
+            ForEach(Array(heatmap.strip.enumerated()), id: \.offset) { index, row in
                 GridRow {
+                    Color.clear
+                        .gridCellUnsizedAxes([.horizontal, .vertical])
+                        .frame(width: 0, height: 0)
+                    ForEach(Array(row.enumerated()), id: \.offset) { column, _ in
+                        Text(heatmap.stripMonthLabels[index][column] ?? "")
+                            .font(.caption2)
+                            .foregroundStyle(Color.inkSoft)
+                            .frame(maxWidth: .infinity)
+                            .accessibilityHidden(true)
+                    }
+                }
+                .padding(.top, index > 0 ? 6 : 0)
+                GridRow {
+                    Text(heatmap.stripMarkers[index])
+                        .font(.caption2)
+                        .foregroundStyle(Color.inkSoft)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .accessibilityHidden(true)
                     ForEach(row) { week in
                         HeatmapCell(week: week, height: 22, selectedID: $selectedID)
                     }

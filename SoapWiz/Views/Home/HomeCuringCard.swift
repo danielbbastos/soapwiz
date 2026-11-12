@@ -8,6 +8,7 @@ struct HomeCuringCard: View {
     @Environment(AppNavigation.self) private var navigation
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.homeNow) private var now
+    @State private var isExpanded = false
 
     private var curing: HomeCuring {
         HomeCuring(batches: batchRows.batches, now: now)
@@ -18,14 +19,52 @@ struct HomeCuringCard: View {
         if curing.count > 0 {
             HomeCard("Curing") {
                 header(curing)
-                ForEach(Array(curing.items.enumerated()), id: \.element.batch.id) { index, item in
-                    Rectangle()
-                        .fill(Color.rule)
-                        .frame(height: 1)
-                    row(item, isLast: index == curing.count - 1)
+                let visible = curing.visibleItems(isExpanded: isExpanded)
+                let historyCount = curing.historyCount(isExpanded: isExpanded)
+                ForEach(Array(visible.enumerated()), id: \.element.batch.id) { index, item in
+                    divider
+                    row(item, isLast: !curing.canExpand && index == visible.count - 1)
+                }
+                if curing.canExpand {
+                    divider
+                    footerButton(
+                        isExpanded ? "Show less" : "Show more",
+                        isLast: historyCount == 0
+                    ) {
+                        withAnimation { isExpanded.toggle() }
+                    }
+                }
+                if historyCount > 0 {
+                    divider
+                    footerButton("\(historyCount) more in History", isLast: true) {
+                        navigation.selectedTab = .history
+                    }
                 }
             }
         }
+    }
+
+    private var divider: some View {
+        Rectangle()
+            .fill(Color.rule)
+            .frame(height: 1)
+    }
+
+    private func footerButton(
+        _ title: LocalizedStringKey,
+        isLast: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.amberText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(HomeRowButtonStyle(isLast: isLast))
     }
 
     private var isAccessibilitySize: Bool { dynamicTypeSize.isAccessibilitySize }
@@ -67,7 +106,7 @@ struct HomeCuringCard: View {
 
     private func row(_ item: HomeCuringItem, isLast: Bool) -> some View {
         Button {
-            navigation.showBatch(item.batch)
+            navigation.pushOnHome(item.batch)
         } label: {
             rowLayout {
                 if !isAccessibilitySize {

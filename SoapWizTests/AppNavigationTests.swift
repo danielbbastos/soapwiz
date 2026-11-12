@@ -250,4 +250,32 @@ struct AppNavigationTests {
 
         #expect(sut.recipeFormClosings == 2)
     }
+
+    @Test func pushOnHome_AppendsToHomePathWithoutSwitchingTab() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        let ingredient = Ingredient(name: "Olive Oil")
+        ctx.insert(ingredient)
+        let batch = makeBatch(ctx)
+
+        sut.pushOnHome(ingredient)
+        sut.pushOnHome(batch)
+
+        #expect(sut.homePath.count == 2)
+        #expect(sut.selectedTab == .home)
+        #expect(sut.inventory.selection == nil)
+        #expect(sut.history.selection == nil)
+    }
+
+    @Test func resetHome_AfterPushes_ClearsThePath() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.pushOnHome(makeBatch(ctx))
+
+        sut.resetHome()
+
+        #expect(sut.homePath.isEmpty)
+    }
 }

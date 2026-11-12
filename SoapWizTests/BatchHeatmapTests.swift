@@ -249,6 +249,56 @@ struct BatchHeatmapTests {
         #expect(week.rangeText == "Dec 29, 2025 – Jan 4, 2026")
     }
 
+    // MARK: Strip labels
+
+    @Test func stripMonthLabels_FirstRow_LabelsEachMonthWhereItBegins() throws {
+        let result = heatmap(now: try date(2026, 11, 10))
+        let labels = try #require(result.stripMonthLabels.first)
+        #expect(labels.count == 26)
+        #expect(labels[0] == "N")
+        #expect(labels[1] == nil)
+        #expect(labels[2] == "D")
+        #expect(labels.compactMap { $0 } == ["N", "D", "J", "F", "M", "A", "M"])
+    }
+
+    @Test func stripMonthLabels_SecondRow_StartsWithItsOwnMonth() throws {
+        let result = heatmap(now: try date(2026, 11, 10))
+        let labels = try #require(result.stripMonthLabels.last)
+        #expect(labels[0] == "M")
+        #expect(labels.compactMap { $0 } == ["M", "J", "J", "A", "S", "O", "N"])
+    }
+
+    @Test func stripMonthLabels_Always_MatchTheStripShape() throws {
+        let result = heatmap(now: try date(2026, 11, 10))
+        #expect(result.stripMonthLabels.map(\.count) == result.strip.map(\.count))
+    }
+
+    @Test func stripMarkers_OnePerRow_NameTheRowsFirstMonthAndYear() throws {
+        let result = heatmap(now: try date(2026, 11, 10))
+        #expect(result.stripMarkers.count == 2)
+        #expect(result.stripMarkers[0].contains("Nov") && result.stripMarkers[0].contains("25"))
+        #expect(result.stripMarkers[1].contains("May") && result.stripMarkers[1].contains("26"))
+    }
+
+    // MARK: Cell shape
+
+    @Test func cellHeight_NarrowCell_KeepsTheMinimum() {
+        #expect(HeatmapCellShape.height(forWidth: 19, minimum: 18) == 18)
+        #expect(HeatmapCellShape.height(forWidth: 27, minimum: 18) == 18)
+    }
+
+    @Test func cellHeight_WideCell_KeepsTheAspectRatioAtOrUnderOnePointFive() {
+        let height = HeatmapCellShape.height(forWidth: 45, minimum: 18)
+        #expect(height == 30)
+        #expect(45 / height <= HeatmapCellShape.maximumAspectRatio)
+    }
+
+    @Test func cellHeight_UnmeasuredWidth_FallsBackToTheMinimum() {
+        #expect(HeatmapCellShape.height(forWidth: 0, minimum: 18) == 18)
+        #expect(HeatmapCellShape.height(forWidth: -12, minimum: 18) == 18)
+        #expect(HeatmapCellShape.height(forWidth: .nan, minimum: 18) == 18)
+    }
+
     // MARK: Gate
 
     @Test func isAvailable_Insights_IsProOnly() {

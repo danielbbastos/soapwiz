@@ -80,6 +80,24 @@ struct RecipeCostPerWeightTests {
         #expect(CostWeightUnit.kilogram.symbol == "kg")
     }
 
+    // MARK: Recipe link
+
+    @Test func row_WithRecipe_CarriesItToOpen() throws {
+        let schema = ModelContainerFactory.schema
+        let container = try ModelContainer(for: schema, configurations: [ModelConfiguration.inMemory(schema)])
+        let recipe = Recipe(name: "Castile")
+        container.mainContext.insert(recipe)
+        var linked = entry("A")
+        linked.recipe = recipe
+        let row = try #require(result([linked, entry("A")]).rows.first)
+        #expect(row.recipe === recipe)
+    }
+
+    @Test func row_DeletedRecipeGroupedByName_HasNoRecipe() throws {
+        let row = try #require(result([entry("Old soap")]).rows.first)
+        #expect(row.recipe == nil)
+    }
+
     // MARK: Exclusions
 
     @Test func exclusion_BeforeWindowStart_IsLeftOut() throws {

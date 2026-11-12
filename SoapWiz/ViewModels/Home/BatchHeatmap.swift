@@ -76,6 +76,12 @@ struct BatchHeatmap {
     let weeks: [HeatmapWeek]
     let months: [HeatmapMonth]
     let strip: [[HeatmapWeek]]
+    /// Per strip row and column: the month's initial where a month begins in
+    /// that row (its first column included), nil elsewhere.
+    let stripMonthLabels: [[String?]]
+    /// Per strip row: the month and year its first week falls in, to tell the
+    /// rows apart.
+    let stripMarkers: [String]
     let total: Int
     let rowCount: Int
 
@@ -108,7 +114,10 @@ struct BatchHeatmap {
             Array(weeks[$0..<min($0 + Self.stripRowLength, weeks.count)])
         }
 
-        months = Self.months(of: weeks, calendar: iso)
+        let months = Self.months(of: weeks, calendar: iso)
+        self.months = months
+        stripMonthLabels = Self.monthLabels(of: strip, months: months)
+        stripMarkers = Self.markers(of: strip, calendar: Self.displayCalendar(for: calendar))
         rowCount = (weeks.map(\.row).max() ?? -1) + 1
     }
 
@@ -119,6 +128,36 @@ struct BatchHeatmap {
     /// 0 for none, 1 and 2 as they are, 3 for three or more.
     static func level(for count: Int) -> Int {
         min(max(count, 0), 3)
+    }
+
+    private static func monthLabels(of strip: [[HeatmapWeek]], months: [HeatmapMonth]) -> [[String?]] {
+        var monthByWeek: [Date: HeatmapMonth] = [:]
+        for month in months {
+            for week in month.weeks {
+                monthByWeek[week.id] = month
+            }
+        }
+        return strip.map { row in
+            var previous: Date?
+            return row.map { week -> String? in
+                let month = monthByWeek[week.id]
+                defer { previous = month?.id }
+                return month?.id == previous ? nil : month?.initial
+            }
+        }
+    }
+
+    private static func markers(of strip: [[HeatmapWeek]], calendar: Calendar) -> [String] {
+        let style = Date.FormatStyle(
+            locale: calendar.locale ?? .current,
+            calendar: calendar,
+            timeZone: calendar.timeZone
+        )
+        .month(.abbreviated)
+        .year(.twoDigits)
+        return strip.map { row in
+            row.first.map { $0.start.formatted(style) } ?? ""
+        }
     }
 
     private static func months(of weeks: [HeatmapWeek], calendar: Calendar) -> [HeatmapMonth] {

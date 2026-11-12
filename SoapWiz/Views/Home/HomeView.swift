@@ -28,6 +28,7 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.large)
             .ledgerLargeTitle(subtitle: dateLine, margin: titleMargin)
             .ledgerBackground()
+            .homeNavigationDestinations()
         }
         .onAppear { now = .now }
         .onReceive(

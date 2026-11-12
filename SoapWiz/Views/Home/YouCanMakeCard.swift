@@ -34,13 +34,38 @@ struct YouCanMakeCard: View {
                         YouCanMakeRow(row: row)
                     }
                     .buttonStyle(HomeRowButtonStyle(isLast: index == rows.count - 1))
+                    .overlay(alignment: .leading) {
+                        recipeButton(row.recipe)
+                    }
                 }
             }
         }
     }
+
+    /// Over the row's leading edge rather than inside its button, so the two
+    /// taps stay separate: the icon opens the recipe, the rest of the row
+    /// opens Create Batch.
+    private func recipeButton(_ recipe: Recipe) -> some View {
+        Button {
+            navigation.pushOnHome(recipe)
+        } label: {
+            Image(systemName: "book.closed")
+                .font(.body)
+                .foregroundStyle(Color.amberText)
+                .frame(width: YouCanMakeRow.iconWidth, height: YouCanMakeRow.iconWidth)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, YouCanMakeRow.iconInset)
+        .accessibilityLabel(Text("Open \(recipe.name)"))
+    }
 }
 
 private struct YouCanMakeRow: View {
+    static let iconWidth: CGFloat = 44
+    static let iconInset: CGFloat = 8
+    private static let textInset = iconInset + iconWidth + 4
+
     let row: MakeableRecipeRow
 
     private var accessibilityText: String {
@@ -52,7 +77,7 @@ private struct YouCanMakeRow: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(row.recipe.name)
-                    .font(.body)
+                    .font(.body.weight(.semibold))
                     .foregroundStyle(Color.ink)
                 if let detail = row.detail {
                     Text(detail)
@@ -71,7 +96,8 @@ private struct YouCanMakeRow: View {
                 .foregroundStyle(Color.inkFaint)
                 .accessibilityHidden(true)
         }
-        .padding(.horizontal, 16)
+        .padding(.leading, Self.textInset)
+        .padding(.trailing, 16)
         .padding(.vertical, 12)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
