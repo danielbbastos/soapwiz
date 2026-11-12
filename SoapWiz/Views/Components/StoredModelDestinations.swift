@@ -1,22 +1,11 @@
 import SwiftData
 import SwiftUI
 
-extension View {
-    /// Routes the ingredient, batch and recipe screens Home's cards push onto
-    /// Home's own stack. A batch's recipe link and an ingredient's purchases
-    /// push from inside those screens, so the stack answers for them too.
-    func homeNavigationDestinations() -> some View {
-        navigationDestination(for: Ingredient.self) { HomeIngredientDestination(ingredient: $0) }
-            .navigationDestination(for: Batch.self) { HomeBatchDestination(batch: $0) }
-            .navigationDestination(for: Recipe.self) { HomeRecipeDestination(recipe: $0) }
-    }
-}
-
 /// Shows `content` while the pushed model is still stored, and pops itself the
-/// moment it is not. A screen pushed on Home can outlive its model (deleted in
-/// another tab, or merged away by sync), and drawing a deleted model traps, so
-/// the content is dropped before it can be read.
-private struct HomeStoredGate<Content: View>: View {
+/// moment it is not. A screen pushed on a stack can outlive its model (deleted
+/// in another tab, or merged away by sync), and drawing a deleted model traps,
+/// so the content is dropped before it can be read.
+struct PushedModelGate<Content: View>: View {
     @Environment(\.dismiss) private var dismiss
 
     let isStored: Bool
@@ -33,7 +22,7 @@ private struct HomeStoredGate<Content: View>: View {
     }
 }
 
-private struct HomeIngredientDestination: View {
+struct StoredIngredientDestination: View {
     @Environment(InventoryRows.self) private var rows
 
     let ingredient: Ingredient
@@ -45,13 +34,13 @@ private struct HomeIngredientDestination: View {
     }
 
     var body: some View {
-        HomeStoredGate(isStored: rows.ingredients.contains { $0.persistentModelID == id }) {
+        PushedModelGate(isStored: rows.ingredients.contains { $0.persistentModelID == id }) {
             IngredientDetailView(ingredient: ingredient)
         }
     }
 }
 
-private struct HomeBatchDestination: View {
+struct StoredBatchDestination: View {
     @Environment(BatchRows.self) private var rows
 
     let batch: Batch
@@ -63,13 +52,13 @@ private struct HomeBatchDestination: View {
     }
 
     var body: some View {
-        HomeStoredGate(isStored: rows.batches.contains { $0.persistentModelID == id }) {
+        PushedModelGate(isStored: rows.batches.contains { $0.persistentModelID == id }) {
             BatchDetailView(batch: batch)
         }
     }
 }
 
-private struct HomeRecipeDestination: View {
+struct StoredRecipeDestination: View {
     @Environment(RecipeRows.self) private var rows
 
     let recipe: Recipe
@@ -81,7 +70,7 @@ private struct HomeRecipeDestination: View {
     }
 
     var body: some View {
-        HomeStoredGate(isStored: rows.recipes.contains { $0.persistentModelID == id }) {
+        PushedModelGate(isStored: rows.recipes.contains { $0.persistentModelID == id }) {
             RecipeDetailView(recipe: recipe)
         }
     }

@@ -27,7 +27,7 @@ struct CostPerWeightCard: View {
                         } label: {
                             CostRowView(row: row, unit: unit, currencyCode: currencyCode)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(HomeRowButtonStyle(isLast: false))
                     } else {
                         CostRowView(row: row, unit: unit, currencyCode: currencyCode)
                     }
@@ -45,12 +45,12 @@ struct CostPerWeightCard: View {
     private func header(_ unit: CostWeightUnit) -> some View {
         let title = Text("Cost per \(unit.symbol)")
             .font(.title3.weight(.semibold))
+            .fontDesign(.serif)
             .foregroundStyle(Color.ink)
         let period = Text(" · past year")
             .font(.subheadline)
             .foregroundStyle(Color.inkSoft)
         return (title + period)
-            .fontDesign(.serif)
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityAddTraits(.isHeader)
     }
