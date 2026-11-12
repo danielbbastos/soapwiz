@@ -1,11 +1,11 @@
 import SwiftUI
 
 /// One usage-history row on the ingredient or purchase detail screen. Tapping
-/// it jumps to the batch that made the deduction, on the History tab.
+/// it pushes the batch that made the deduction onto the stack the row is in, so
+/// Back returns here. The hosting `sheetRow` passes `navigates: true`.
 struct UsageEntryRow: View {
     let entry: UsageEntry
 
-    @Environment(AppNavigation.self) private var navigation
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var shortDate: String {
@@ -22,9 +22,7 @@ struct UsageEntryRow: View {
     }
 
     var body: some View {
-        Button {
-            navigation.showBatch(entry.batch)
-        } label: {
+        NavigationLink(value: entry.batch) {
             VStack(alignment: .leading, spacing: 4) {
                 // One column at the accessibility sizes: beside the amount, the
                 // recipe name would be squeezed until it broke mid-word.

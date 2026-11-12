@@ -250,4 +250,69 @@ struct AppNavigationTests {
 
         #expect(sut.recipeFormClosings == 2)
     }
+
+    @Test func pushOnHome_AppendsToHomePathWithoutSwitchingTab() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        let ingredient = Ingredient(name: "Olive Oil")
+        ctx.insert(ingredient)
+        let batch = makeBatch(ctx)
+
+        sut.pushOnHome(ingredient)
+        sut.pushOnHome(batch)
+
+        #expect(sut.homePath.count == 2)
+        #expect(sut.selectedTab == .home)
+        #expect(sut.inventory.selection == nil)
+        #expect(sut.history.selection == nil)
+    }
+
+    @Test func selectTab_Home_ResetsHomePathFromAnotherTab() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.pushOnHome(makeBatch(ctx))
+        sut.selectTab(.inventory)
+        #expect(sut.homePath.count == 1)
+
+        sut.selectTab(.home)
+
+        #expect(sut.selectedTab == .home)
+        #expect(sut.homePath.isEmpty)
+    }
+
+    @Test func selectTab_HomeWhileOnHome_ResetsHomePath() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.pushOnHome(makeBatch(ctx))
+
+        sut.selectTab(.home)
+
+        #expect(sut.homePath.isEmpty)
+    }
+
+    @Test func selectTab_OtherTab_KeepsHomePath() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.pushOnHome(makeBatch(ctx))
+
+        sut.selectTab(.history)
+
+        #expect(sut.selectedTab == .history)
+        #expect(sut.homePath.count == 1)
+    }
+
+    @Test func resetHome_AfterPushes_ClearsThePath() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.pushOnHome(makeBatch(ctx))
+
+        sut.resetHome()
+
+        #expect(sut.homePath.isEmpty)
+    }
 }

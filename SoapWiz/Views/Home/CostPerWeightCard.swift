@@ -5,6 +5,7 @@ import SwiftUI
 /// past year, dearest first, as a figure and a bar against the dearest.
 struct CostPerWeightCard: View {
     @Environment(BatchRows.self) private var batchRows
+    @Environment(AppNavigation.self) private var navigation
     @Environment(\.homeNow) private var now
     @Environment(\.locale) private var locale
     @Environment(\.currencyCode) private var currencyCode
@@ -20,7 +21,16 @@ struct CostPerWeightCard: View {
                     .foregroundStyle(Color.inkSoft)
             } else {
                 ForEach(costs.rows) { row in
-                    CostRowView(row: row, unit: unit, currencyCode: currencyCode)
+                    if let recipe = row.recipe {
+                        Button {
+                            navigation.pushOnHome(recipe)
+                        } label: {
+                            CostRowView(row: row, unit: unit, currencyCode: currencyCode)
+                        }
+                        .buttonStyle(HomeRowButtonStyle(isLast: false))
+                    } else {
+                        CostRowView(row: row, unit: unit, currencyCode: currencyCode)
+                    }
                 }
                 Text("Batch cost divided by its recorded weight. Batches without a weight are left out.")
                     .font(.footnote)
@@ -37,22 +47,12 @@ struct CostPerWeightCard: View {
             .font(.title3.weight(.semibold))
             .fontDesign(.serif)
             .foregroundStyle(Color.ink)
-        let period = Text("past year")
+        let period = Text(" · past year")
             .font(.subheadline)
             .foregroundStyle(Color.inkSoft)
-        return ViewThatFits(in: .horizontal) {
-            HStack(alignment: .firstTextBaseline) {
-                title
-                Spacer(minLength: 8)
-                period
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                title
-                period
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isHeader)
+        return (title + period)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 

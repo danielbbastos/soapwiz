@@ -231,7 +231,7 @@ struct IngredientListView: View {
                 .navigationBarTitleDisplayMode(.large)
                 .ledgerLargeTitle(subtitle: model.editMode == .inactive ? content.summary.line : nil)
                 .ledgerBackground(sunken: navigation.isWide)
-                .navigationDestination(for: Ingredient.self) { IngredientDetailView(ingredient: $0) }
+                .inventoryDestinations()
                 // The chips are hidden while selecting: they would compete with
                 // the selection the toolbar is there to act on.
                 .headerStrip {
@@ -290,7 +290,7 @@ struct IngredientListView: View {
                     InventoryCreateRecipeButton(model: model, selected: selectedIngredients)
                 }
             }
-        } detail: { IngredientDetailView(ingredient: $0) }
+        } detail: { IngredientDetailView(ingredient: $0).batchAndRecipeDestinations() }
         // The first ingredient is the one that makes Inventory feel like the
         // user's own. A trigger of -1 while no rows are loaded keeps the rows
         // arriving at launch from reading as a first purchase.

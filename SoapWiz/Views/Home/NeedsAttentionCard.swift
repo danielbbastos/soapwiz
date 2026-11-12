@@ -26,7 +26,7 @@ struct NeedsAttentionCard: View {
                         divider
                     }
                     Button {
-                        navigation.showIngredient(row.ingredient)
+                        navigation.pushOnHome(row.ingredient)
                     } label: {
                         rowLabel(row)
                     }

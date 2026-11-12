@@ -139,7 +139,7 @@ struct IngredientDetailView: View {
                             }
                         } else {
                             ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                                sheetRow(index, of: entries.count) { UsageEntryRow(entry: entry) }
+                                sheetRow(index, of: entries.count, navigates: true) { UsageEntryRow(entry: entry) }
                             }
                         }
                     }

@@ -73,6 +73,11 @@ struct ContentView: View {
             guard !isTourSandbox else { return }
             navigation.selectedTab = .home
         }
+        // Selections made in code (the tour ending, a request that lands on
+        // Home) skip the tab bar's binding, so they reset Home here.
+        .onChange(of: navigation.selectedTab) { _, tab in
+            if tab == .home { navigation.resetHome() }
+        }
         .alert("Replace all data?", isPresented: presenting(\.pendingImport)) {
             Button("Replace", role: .destructive) {
                 // Without this the teardown animates, which keeps the outgoing
@@ -118,7 +123,11 @@ struct ContentView: View {
     /// and rebuilds it, and the alerts above have to outlive that.
     private var tabs: some View {
         let _: Void = HoneyLedgerTabBarAppearance.applied
-        return TabView(selection: $navigation.selectedTab) {
+        let selection = Binding(
+            get: { navigation.selectedTab },
+            set: { navigation.selectTab($0) }
+        )
+        return TabView(selection: selection) {
             Tab(value: AppTab.home) {
                 HomeView().tint(nil)
             } label: {

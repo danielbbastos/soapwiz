@@ -25,6 +25,8 @@ struct RecipeCostRow: Identifiable {
     let costPerUnit: Double
     /// The cost as a share of the dearest row's.
     let fraction: Double
+    /// The recipe the row opens; nil for a deleted recipe's batches, grouped by name.
+    var recipe: Recipe?
 }
 
 /// What each recipe cost per kilogram or pound over the heatmap's window: the
@@ -43,6 +45,7 @@ struct RecipeCostPerWeight {
         let weight: Double
         let weightUnit: String
         let tracksInventory: Bool
+        var recipe: Recipe?
     }
 
     let rows: [RecipeCostRow]
@@ -52,6 +55,7 @@ struct RecipeCostPerWeight {
     init(entries: [Entry], window: DateInterval, unit: CostWeightUnit) {
         struct Total {
             var name: String
+            var recipe: Recipe?
             var cost = 0.0
             var weight = 0.0
         }
@@ -67,7 +71,7 @@ struct RecipeCostPerWeight {
             else { continue }
             if totals[entry.groupKey] == nil {
                 order.append(entry.groupKey)
-                totals[entry.groupKey] = Total(name: entry.name)
+                totals[entry.groupKey] = Total(name: entry.name, recipe: entry.recipe)
             }
             totals[entry.groupKey]?.cost += entry.cost
             totals[entry.groupKey]?.weight += weight
@@ -76,12 +80,13 @@ struct RecipeCostPerWeight {
         struct Ranked {
             let key: AnyHashable
             let name: String
+            let recipe: Recipe?
             let value: Double
         }
 
         let ranked = order.compactMap { key -> Ranked? in
             guard let total = totals[key] else { return nil }
-            return Ranked(key: key, name: total.name, value: total.cost / total.weight)
+            return Ranked(key: key, name: total.name, recipe: total.recipe, value: total.cost / total.weight)
         }
         .sorted { lhs, rhs in
             lhs.value != rhs.value ? lhs.value > rhs.value : lhs.name < rhs.name
@@ -92,7 +97,8 @@ struct RecipeCostPerWeight {
                 id: $0.key,
                 name: $0.name,
                 costPerUnit: $0.value,
-                fraction: highest > 0 ? $0.value / highest : 0
+                fraction: highest > 0 ? $0.value / highest : 0,
+                recipe: $0.recipe
             )
         }
     }
@@ -107,7 +113,8 @@ struct RecipeCostPerWeight {
                 cost: batch.totalCost,
                 weight: batch.totalWeight,
                 weightUnit: batch.totalWeightUnit,
-                tracksInventory: batch.tracksInventory
+                tracksInventory: batch.tracksInventory,
+                recipe: batch.recipe
             )
         }
         self.init(

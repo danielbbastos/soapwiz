@@ -108,6 +108,50 @@ struct HomeCuringTests {
         #expect(item.readyDate == expected)
     }
 
+    private func manyBatches(_ count: Int, in context: ModelContext) throws -> [Batch] {
+        try (1...count).map { try batch("B\($0)", daysLeft: $0, in: context) }
+    }
+
+    @Test func visibleItems_FourOrFewer_ShowsAllAndCannotExpand() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let result = curing(try manyBatches(4, in: context))
+        #expect(!result.canExpand)
+        #expect(result.visibleItems(isExpanded: false).count == 4)
+        #expect(result.visibleItems(isExpanded: true).count == 4)
+        #expect(result.historyCount(isExpanded: true) == 0)
+    }
+
+    @Test func visibleItems_FiveToTen_CollapsedShowsFourSoonestAndExpandsToAll() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let result = curing(Array(try manyBatches(7, in: context).reversed()))
+        #expect(result.canExpand)
+        #expect(result.visibleItems(isExpanded: false).map(\.batch.recipeName) == ["B1", "B2", "B3", "B4"])
+        #expect(result.visibleItems(isExpanded: true).count == 7)
+        #expect(result.historyCount(isExpanded: true) == 0)
+    }
+
+    @Test func visibleItems_ExactlyTen_ExpandsToAllWithNoOverflow() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let result = curing(try manyBatches(10, in: context))
+        #expect(result.visibleItems(isExpanded: true).count == 10)
+        #expect(result.historyCount(isExpanded: true) == 0)
+    }
+
+    @Test func visibleItems_MoreThanTen_CapsExpandedAtTenAndCountsTheRest() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let result = curing(try manyBatches(13, in: context))
+        let expanded = result.visibleItems(isExpanded: true)
+        #expect(expanded.count == 10)
+        #expect(expanded.last?.batch.recipeName == "B10")
+        #expect(result.historyCount(isExpanded: true) == 3)
+        #expect(result.visibleItems(isExpanded: false).count == 4)
+        #expect(result.historyCount(isExpanded: false) == 0)
+    }
+
     @Test func items_NoBatches_IsEmpty() {
         let result = curing([])
         #expect(result.items.isEmpty)
