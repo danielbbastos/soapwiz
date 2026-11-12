@@ -268,6 +268,43 @@ struct AppNavigationTests {
         #expect(sut.history.selection == nil)
     }
 
+    @Test func selectTab_Home_ResetsHomePathFromAnotherTab() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.pushOnHome(makeBatch(ctx))
+        sut.selectTab(.inventory)
+        #expect(sut.homePath.count == 1)
+
+        sut.selectTab(.home)
+
+        #expect(sut.selectedTab == .home)
+        #expect(sut.homePath.isEmpty)
+    }
+
+    @Test func selectTab_HomeWhileOnHome_ResetsHomePath() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.pushOnHome(makeBatch(ctx))
+
+        sut.selectTab(.home)
+
+        #expect(sut.homePath.isEmpty)
+    }
+
+    @Test func selectTab_OtherTab_KeepsHomePath() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let sut = AppNavigation()
+        sut.pushOnHome(makeBatch(ctx))
+
+        sut.selectTab(.history)
+
+        #expect(sut.selectedTab == .history)
+        #expect(sut.homePath.count == 1)
+    }
+
     @Test func resetHome_AfterPushes_ClearsThePath() throws {
         let (container, ctx) = try makeContext()
         _ = container

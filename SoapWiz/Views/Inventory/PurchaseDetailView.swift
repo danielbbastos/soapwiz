@@ -19,9 +19,10 @@ struct PurchaseDetailView: View {
     private func sheetRow<Content: View>(
         _ index: Int,
         of count: Int,
+        navigates: Bool = false,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        content().ledgerSheetRow(position: .position(index: index, count: count))
+        content().ledgerSheetRow(position: .position(index: index, count: count), navigates: navigates)
     }
 
     /// The value in `ink`, or a dash in `inkSoft` when there is none.
@@ -103,7 +104,7 @@ struct PurchaseDetailView: View {
                     }
                 } else {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                        sheetRow(index, of: entries.count) { UsageEntryRow(entry: entry) }
+                        sheetRow(index, of: entries.count, navigates: true) { UsageEntryRow(entry: entry) }
                     }
                 }
             } header: {

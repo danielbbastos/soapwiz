@@ -190,6 +190,14 @@ final class AppNavigation {
         homePath = NavigationPath()
     }
 
+    /// A tap on a tab in the tab bar. Selecting Home, from another tab or
+    /// again while on it, always shows Home's root rather than the last screen
+    /// pushed there.
+    func selectTab(_ tab: AppTab) {
+        if tab == .home { resetHome() }
+        selectedTab = tab
+    }
+
     /// Pushes `item`'s detail screen (an `Ingredient`, `Batch` or `Recipe`) on
     /// Home's own stack, without leaving the tab.
     func pushOnHome<Item: Hashable>(_ item: Item) {

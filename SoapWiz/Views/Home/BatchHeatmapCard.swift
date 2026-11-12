@@ -170,23 +170,20 @@ private struct BatchHeatmapMonthGrid: View {
     let heatmap: BatchHeatmap
     @Binding var selectedID: Date?
     @ScaledMetric(relativeTo: .caption) private var minimumCellHeight: CGFloat = 18
-    @State private var gridWidth: CGFloat = 0
+    @State private var cellWidth: CGFloat = 0
 
     private static let spacing: CGFloat = 4
-    private static let markerWidth: CGFloat = 24
 
     /// Cells keep their height on a phone, where they are near square, and grow
     /// with their width on a wide card so they never stretch past
-    /// `HeatmapCellShape.maximumAspectRatio`.
+    /// `HeatmapCellShape.maximumAspectRatio`. The width is read off a month
+    /// header, which spans exactly one column whatever width the labels take.
     private var cellHeight: CGFloat {
-        let columns = CGFloat(max(heatmap.months.count, 1))
-        let cellWidth = (gridWidth - Self.markerWidth - Self.spacing * columns) / columns
-        return HeatmapCellShape.height(forWidth: cellWidth, minimum: minimumCellHeight)
+        HeatmapCellShape.height(forWidth: cellWidth, minimum: minimumCellHeight)
     }
 
     var body: some View {
         grid
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { gridWidth = $0 }
     }
 
     private var grid: some View {
@@ -200,6 +197,9 @@ private struct BatchHeatmapMonthGrid: View {
                         .font(.caption2)
                         .foregroundStyle(Color.inkSoft)
                         .frame(maxWidth: .infinity)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+                            if month.id == heatmap.months.first?.id { cellWidth = width }
+                        }
                         .accessibilityHidden(true)
                 }
             }
