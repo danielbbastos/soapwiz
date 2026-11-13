@@ -5,6 +5,7 @@ import SwiftUI
 /// batch has been made; Pro sees the cards, the free tier a locked preview.
 struct InsightsSection: View {
     @Environment(BatchRows.self) private var batchRows
+    @Environment(SettingsState.self) private var settings
     @FreeTierGateEnvironment private var freeTier
 
     let isWide: Bool
@@ -16,7 +17,7 @@ struct InsightsSection: View {
                 if freeTier.gate.allows(.insights) {
                     cards
                 } else {
-                    InsightsLockedPreview {
+                    InsightsLockedPreview(showsCost: settings.tracksInventory) {
                         freeTier.presentUpgrade(for: .insights)
                     }
                 }
@@ -29,7 +30,9 @@ struct InsightsSection: View {
     private var cards: some View {
         InsightsColumnsLayout(isWide: isWide) {
             BatchHeatmapCard(isWide: isWide)
-            CostPerWeightCard()
+            if settings.tracksInventory {
+                CostPerWeightCard()
+            }
         }
     }
 }
@@ -37,12 +40,12 @@ struct InsightsSection: View {
 /// Lays out Insights' cards in one layout for both shapes, so they keep their
 /// identity when the window rotates. Wide, on Home's three-column grid, the
 /// first card spans two columns and a second, when there is one, takes the
-/// third; narrow, they stack.
+/// third; a lone card spans all three. Narrow, they stack.
 struct InsightsColumnsLayout: Layout {
     let isWide: Bool
 
     static func widths(count: Int, width: CGFloat, isWide: Bool) -> [CGFloat] {
-        guard isWide else { return Array(repeating: width, count: count) }
+        guard isWide, count > 1 else { return Array(repeating: width, count: count) }
         let columns = CGFloat(HomeLayout.wideColumnCount)
         let column = (width - HomeLayout.spacing * (columns - 1)) / columns
         return (0..<count).map { $0 == 0 ? column * 2 + HomeLayout.spacing : column }
@@ -94,6 +97,7 @@ struct InsightsColumnsLayout: Layout {
 /// What the free tier sees instead of the cards: a blurred sketch of them
 /// under the pitch and the way to upgrade.
 private struct InsightsLockedPreview: View {
+    let showsCost: Bool
     let onUnlock: () -> Void
 
     var body: some View {
@@ -103,7 +107,9 @@ private struct InsightsLockedPreview: View {
                 .fontDesign(.serif)
                 .foregroundStyle(Color.ink)
                 .multilineTextAlignment(.center)
-            Text("Your batch rhythm over the year, and cost per kg by recipe.")
+            Text(showsCost
+                 ? "Your batch rhythm over the year, and cost per kg by recipe."
+                 : "Your batch rhythm over the year.")
                 .font(.subheadline)
                 .foregroundStyle(Color.inkSoft)
                 .multilineTextAlignment(.center)
@@ -114,7 +120,7 @@ private struct InsightsLockedPreview: View {
         .padding(24)
         .frame(maxWidth: .infinity, minHeight: 240)
         .background {
-            InsightsSketch()
+            InsightsSketch(showsBars: showsCost)
                 .blur(radius: 5)
                 .opacity(0.55)
                 .accessibilityHidden(true)
@@ -126,6 +132,8 @@ private struct InsightsLockedPreview: View {
 
 /// Static stand-in shapes for a heatmap and three bars.
 private struct InsightsSketch: View {
+    let showsBars: Bool
+
     private let barFractions: [CGFloat] = [0.85, 0.6, 0.4]
 
     var body: some View {
@@ -141,14 +149,16 @@ private struct InsightsSketch: View {
                     }
                 }
             }
-            ForEach(barFractions, id: \.self) { fraction in
-                Spacer(minLength: 12)
-                GeometryReader { proxy in
-                    Capsule()
-                        .fill(Color.heatmapLevel(2))
-                        .frame(width: proxy.size.width * fraction)
+            if showsBars {
+                ForEach(barFractions, id: \.self) { fraction in
+                    Spacer(minLength: 12)
+                    GeometryReader { proxy in
+                        Capsule()
+                            .fill(Color.heatmapLevel(2))
+                            .frame(width: proxy.size.width * fraction)
+                    }
+                    .frame(height: 10)
                 }
-                .frame(height: 10)
             }
         }
         .padding(16)
@@ -165,6 +175,7 @@ private struct InsightsSketch: View {
         .environment(\.isTourSandbox, true)
         .environment(data.batchRows)
         .environment(data.navigation)
+        .environment(SettingsState(context: data.container.mainContext))
         .modelContainer(data.container)
 }
 
@@ -175,6 +186,7 @@ private struct InsightsSketch: View {
         .ledgerBackground()
         .environment(data.batchRows)
         .environment(data.navigation)
+        .environment(SettingsState(context: data.container.mainContext))
         .modelContainer(data.container)
 }
 
@@ -186,6 +198,7 @@ private struct InsightsSketch: View {
         .environment(\.isTourSandbox, true)
         .environment(data.batchRows)
         .environment(data.navigation)
+        .environment(SettingsState(context: data.container.mainContext))
         .modelContainer(data.container)
 }
 #endif

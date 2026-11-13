@@ -110,11 +110,10 @@ struct InsightsColumnsLayoutTests {
         #expect(frames[1].maxX == width)
     }
 
-    @Test func frames_Wide_SingleCardSpansTwoColumns() {
+    @Test func frames_Wide_SingleCardSpansAllThreeColumns() {
         let width: CGFloat = 1_000
-        let column = (width - 2 * spacing) / 3
         let frames = InsightsColumnsLayout.frames(heights: [300], width: width, isWide: true)
-        #expect(frames.map(\.width) == [2 * column + spacing])
+        #expect(frames == [CGRect(x: 0, y: 0, width: width, height: 300)])
     }
 
     @Test func frames_Stacked_FullWidthWithSpacing() {
