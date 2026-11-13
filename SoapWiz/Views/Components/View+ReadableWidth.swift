@@ -40,18 +40,23 @@ extension View {
     /// recipe's cost breakdown) keeps its own margins on iPadOS 26. Apply it
     /// directly to the `List`, `Form` or `ScrollView` all the same, before any
     /// `.sheet`, so that doesn't have to hold.
-    func readableWidth(inset: CGFloat = 0) -> some View {
-        modifier(ReadableWidthModifier(inset: inset))
+    ///
+    /// Pass `isEnabled: false` to leave the margin off without changing what
+    /// is modified, for a screen that caps its own content only some of the
+    /// time and must keep its scroll view's identity.
+    func readableWidth(inset: CGFloat = 0, isEnabled: Bool = true) -> some View {
+        modifier(ReadableWidthModifier(inset: inset, isEnabled: isEnabled))
     }
 }
 
 private struct ReadableWidthModifier: ViewModifier {
     let inset: CGFloat
+    let isEnabled: Bool
     @State private var margin: CGFloat?
 
     func body(content: Content) -> some View {
         content
-            .contentMargins(.horizontal, margin, for: .scrollContent)
+            .contentMargins(.horizontal, isEnabled ? margin : nil, for: .scrollContent)
             .onGeometryChange(for: CGFloat?.self) { proxy in
                 ReadableWidth.margin(for: proxy.size.width, inset: inset)
             } action: { newMargin in

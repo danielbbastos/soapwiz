@@ -8,9 +8,15 @@ struct HomeView: View {
     @Environment(BatchRows.self) private var batchRows
     @Environment(InventoryRows.self) private var inventoryRows
     @Environment(ShoppingListRows.self) private var shoppingList
-    @State private var isWide = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @State private var isWideWidth = false
+    @State private var hasMeasuredWidth = false
     @State private var now = Date.now
     @State private var hasCards = true
+
+    private var isWide: Bool {
+        HomeLayout.isWide(widthIsWide: isWideWidth, dynamicTypeSize: dynamicTypeSize)
+    }
 
     private var dateLine: String {
         now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
@@ -19,11 +25,19 @@ struct HomeView: View {
     var body: some View {
         @Bindable var navigation = navigation
         NavigationStack(path: $navigation.homePath) {
-            content
+            scroll
+            .readableWidth(inset: 16, isEnabled: !isWide)
             .environment(\.homeNow, now)
             .onGeometryChange(for: Bool.self) { proxy in
                 ListDetailLayout.isWide(width: proxy.size.width)
-            } action: { isWide = $0 }
+            } action: { newValue in
+                if hasMeasuredWidth {
+                    withAnimation { isWideWidth = newValue }
+                } else {
+                    isWideWidth = newValue
+                    hasMeasuredWidth = true
+                }
+            }
             .navigationTitle("Home")
             .navigationBarTitleDisplayMode(.large)
             .ledgerLargeTitle(subtitle: dateLine, margin: titleMargin)
@@ -39,20 +53,12 @@ struct HomeView: View {
         }
     }
 
-    /// The wide grid caps itself at `HomeLayout.maximumWidth`, so the narrow
-    /// column's readable width must not narrow it first.
-    @ViewBuilder
-    private var content: some View {
-        if isWide {
-            scroll
-        } else {
-            scroll.readableWidth(inset: 16)
-        }
-    }
-
     private var titleMargin: (CGFloat) -> CGFloat? {
         let isFirstRun = isFirstRun
-        return { HomeLayout.titleMargin(width: $0, isFirstRun: isFirstRun) }
+        let dynamicTypeSize = dynamicTypeSize
+        return {
+            HomeLayout.titleMargin(width: $0, isFirstRun: isFirstRun, dynamicTypeSize: dynamicTypeSize)
+        }
     }
 
     /// Not in the tour sandbox, where restoring a backup must never be reachable.
@@ -89,13 +95,7 @@ struct HomeView: View {
                                 placeholder
                             }
                         }
-                        if isWide {
-                            InsightsSection(isWide: true)
-                                .frame(maxWidth: HomeLayout.maximumWidth)
-                                .frame(maxWidth: .infinity)
-                        } else {
-                            InsightsSection(isWide: false)
-                        }
+                        InsightsSection(isWide: isWide)
                     }
                 }
             }

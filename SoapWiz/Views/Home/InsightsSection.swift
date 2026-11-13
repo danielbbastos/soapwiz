@@ -21,57 +21,72 @@ struct InsightsSection: View {
                     }
                 }
             }
+            .frame(maxWidth: isWide ? HomeLayout.maximumWidth : .infinity)
+            .frame(maxWidth: .infinity)
         }
     }
 
-    @ViewBuilder
     private var cards: some View {
-        if isWide {
-            InsightsWideRow {
-                BatchHeatmapCard(isWide: true)
-                CostPerWeightCard()
-            }
-        } else {
-            VStack(spacing: HomeLayout.spacing) {
-                BatchHeatmapCard(isWide: false)
-                CostPerWeightCard()
-            }
+        InsightsColumnsLayout(isWide: isWide) {
+            BatchHeatmapCard(isWide: isWide)
+            CostPerWeightCard()
         }
     }
 }
 
-/// Lays out a wide row on Home's three-column grid: the first card spans two
-/// columns, and a second, when there is one, takes the third.
-private struct InsightsWideRow: Layout {
-    private let columnCount: CGFloat = CGFloat(HomeLayout.wideColumnCount)
+/// Lays out Insights' cards in one layout for both shapes, so they keep their
+/// identity when the window rotates. Wide, on Home's three-column grid, the
+/// first card spans two columns and a second, when there is one, takes the
+/// third; narrow, they stack.
+struct InsightsColumnsLayout: Layout {
+    let isWide: Bool
 
-    private func columnWidth(_ proposal: ProposedViewSize) -> CGFloat {
-        let total = proposal.width ?? 600
-        return (total - HomeLayout.spacing * (columnCount - 1)) / columnCount
+    static func widths(count: Int, width: CGFloat, isWide: Bool) -> [CGFloat] {
+        guard isWide else { return Array(repeating: width, count: count) }
+        let columns = CGFloat(HomeLayout.wideColumnCount)
+        let column = (width - HomeLayout.spacing * (columns - 1)) / columns
+        return (0..<count).map { $0 == 0 ? column * 2 + HomeLayout.spacing : column }
     }
 
-    private func width(of index: Int, _ proposal: ProposedViewSize) -> CGFloat {
-        let column = columnWidth(proposal)
-        return index == 0 ? column * 2 + HomeLayout.spacing : column
+    /// Each card's frame from its height, with the layout's origin at zero.
+    static func frames(heights: [CGFloat], width: CGFloat, isWide: Bool) -> [CGRect] {
+        let widths = widths(count: heights.count, width: width, isWide: isWide)
+        var frames: [CGRect] = []
+        var originX: CGFloat = 0
+        var originY: CGFloat = 0
+        for (height, cardWidth) in zip(heights, widths) {
+            frames.append(CGRect(x: originX, y: originY, width: cardWidth, height: height))
+            if isWide {
+                originX += cardWidth + HomeLayout.spacing
+            } else {
+                originY += height + HomeLayout.spacing
+            }
+        }
+        return frames
+    }
+
+    private func measuredFrames(width: CGFloat, subviews: Subviews) -> [CGRect] {
+        let widths = Self.widths(count: subviews.count, width: width, isWide: isWide)
+        let heights = zip(subviews, widths).map { subview, cardWidth in
+            subview.sizeThatFits(ProposedViewSize(width: cardWidth, height: nil)).height
+        }
+        return Self.frames(heights: heights, width: width, isWide: isWide)
     }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let height = subviews.enumerated().map { index, subview in
-            subview.sizeThatFits(ProposedViewSize(width: width(of: index, proposal), height: nil)).height
-        }.max() ?? 0
-        return CGSize(width: proposal.width ?? 600, height: height)
+        let width = proposal.width ?? 600
+        let frames = measuredFrames(width: width, subviews: subviews)
+        return CGSize(width: width, height: frames.map(\.maxY).max() ?? 0)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var originX = bounds.minX
-        for (index, subview) in subviews.enumerated() {
-            let cardWidth = width(of: index, ProposedViewSize(width: bounds.width, height: nil))
+        let frames = measuredFrames(width: bounds.width, subviews: subviews)
+        for (subview, frame) in zip(subviews, frames) {
             subview.place(
-                at: CGPoint(x: originX, y: bounds.minY),
+                at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
                 anchor: .topLeading,
-                proposal: ProposedViewSize(width: cardWidth, height: nil)
+                proposal: ProposedViewSize(width: frame.width, height: frame.height)
             )
-            originX += cardWidth + HomeLayout.spacing
         }
     }
 }

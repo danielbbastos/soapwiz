@@ -29,7 +29,11 @@ struct CostPerWeightCard: View {
                         }
                         .buttonStyle(HomeRowButtonStyle(isLast: false))
                     } else {
+                        // No recipe to open, but the row must own its taps or they open the neighbouring row's recipe.
                         CostRowView(row: row, unit: unit, currencyCode: currencyCode)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(.rect)
+                            .onTapGesture {}
                     }
                 }
                 Text("Batch cost divided by its recorded weight. Batches without a weight are left out.")

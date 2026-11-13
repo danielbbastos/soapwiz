@@ -34,10 +34,13 @@ extension View {
     func ledgerSheet() -> some View {
         let shape = RoundedRectangle(cornerRadius: 18, style: .continuous)
         return self
-            .background(Color.paperRaised, in: shape)
+            .background {
+                shape
+                    .fill(Color.paperRaised)
+                    .shadow(color: Color.shadow.opacity(0.10), radius: 12, y: 8)
+                    .shadow(color: Color.shadow.opacity(0.12), radius: 1, y: 1)
+            }
             .overlay(shape.strokeBorder(Color.rule, lineWidth: 1))
-            .shadow(color: Color.shadow.opacity(0.10), radius: 12, y: 8)
-            .shadow(color: Color.shadow.opacity(0.12), radius: 1, y: 1)
     }
 
     /// `fill` in `shape` with a `rule` edge and a soft shadow, for the small
