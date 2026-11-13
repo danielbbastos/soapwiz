@@ -30,6 +30,9 @@ struct CostPerWeightCard: View {
                         .buttonStyle(HomeRowButtonStyle(isLast: false))
                     } else {
                         CostRowView(row: row, unit: unit, currencyCode: currencyCode)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(.rect)
+                            .onTapGesture {}
                     }
                 }
                 Text("Batch cost divided by its recorded weight. Batches without a weight are left out.")
