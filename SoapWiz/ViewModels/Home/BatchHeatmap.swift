@@ -86,15 +86,20 @@ struct BatchHeatmap {
     let rowCount: Int
 
     init(dates: [Date], now: Date = .now, calendar: Calendar = .current) {
+        self.init(runs: dates.map { ($0, 1) }, now: now, calendar: calendar)
+    }
+
+    /// `runs` pair the date of each production run with how many batches it made.
+    init(runs: [(date: Date, count: Int)], now: Date = .now, calendar: Calendar = .current) {
         let iso = Self.isoCalendar(for: calendar)
         let formatter = HeatmapRangeFormatter(calendar: Self.displayCalendar(for: calendar), now: now)
 
         let starts = Self.weekStarts(now: now, calendar: iso)
         var counts = [Int](repeating: 0, count: starts.count)
         let window = Self.window(starts: starts, now: now, iso: iso)
-        for date in dates where date >= window.start && date < window.end {
-            if let index = starts.lastIndex(where: { $0 <= date }) {
-                counts[index] += 1
+        for run in runs where run.date >= window.start && run.date < window.end {
+            if let index = starts.lastIndex(where: { $0 <= run.date }) {
+                counts[index] += max(run.count, 1)
             }
         }
 
@@ -122,7 +127,7 @@ struct BatchHeatmap {
     }
 
     init(batches: [Batch], now: Date = .now, calendar: Calendar = .current) {
-        self.init(dates: batches.map(\.dateCreated), now: now, calendar: calendar)
+        self.init(runs: batches.map { ($0.dateCreated, $0.madeCount) }, now: now, calendar: calendar)
     }
 
     /// 0 for none, 1 and 2 as they are, 3 for three or more.

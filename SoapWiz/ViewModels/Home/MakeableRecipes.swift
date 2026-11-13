@@ -115,7 +115,7 @@ final class YouCanMakeModel {
         for batch in batches where !batch.isDeleted && batch.modelContext != nil {
             guard let recipe = batch.recipe, !recipe.isDeleted, recipe.modelContext != nil else { continue }
             var summary = summaries[recipe.persistentModelID] ?? MadeSummary()
-            summary.count += 1
+            summary.count += batch.madeCount
             summary.last = max(summary.last ?? batch.dateCreated, batch.dateCreated)
             summaries[recipe.persistentModelID] = summary
         }

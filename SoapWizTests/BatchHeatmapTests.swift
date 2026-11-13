@@ -95,6 +95,37 @@ struct BatchHeatmapTests {
         #expect(result.total == result.weeks.map(\.count).reduce(0, +))
     }
 
+    @Test func count_MultipliedRun_CountsItsBatchCountInWeekAndTotal() throws {
+        let now = try date(2026, 11, 10)
+        let result = BatchHeatmap(
+            runs: [(try date(2026, 11, 3), 2), (try date(2026, 11, 4), 1), (try date(2026, 11, 10), 3)],
+            now: now,
+            calendar: calendar
+        )
+        let week = try #require(result.weeks.first { $0.start == (try? date(2026, 11, 2)) })
+        #expect(week.count == 3)
+        #expect(result.weeks.last?.count == 3)
+        #expect(result.total == 6)
+    }
+
+    @Test func count_MissingOrZeroBatchCount_CountsAsOne() throws {
+        let now = try date(2026, 11, 10)
+        let result = BatchHeatmap(
+            runs: [(try date(2026, 11, 3), 0), (try date(2026, 11, 4), -2)],
+            now: now,
+            calendar: calendar
+        )
+        #expect(result.total == 2)
+    }
+
+    @Test func init_Batches_SumsEachBatchCount() throws {
+        let now = try date(2026, 11, 10)
+        let doubled = Batch(recipe: nil, recipeName: "A", dateCreated: try date(2026, 11, 3), batchCount: 2)
+        let unset = Batch(recipe: nil, recipeName: "B", dateCreated: try date(2026, 11, 4), batchCount: 0)
+        let result = BatchHeatmap(batches: [doubled, unset], now: now, calendar: calendar)
+        #expect(result.total == 3)
+    }
+
     @Test func level_Counts_MapToFourShades() {
         #expect(BatchHeatmap.level(for: 0) == 0)
         #expect(BatchHeatmap.level(for: 1) == 1)

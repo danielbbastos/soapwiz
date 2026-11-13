@@ -76,6 +76,10 @@ final class Batch {
         set { logEntriesStorage = newValue }
     }
 
+    /// How many batches the run made, at least one: a record with a missing
+    /// count still made something.
+    var madeCount: Int { max(batchCount, 1) }
+
     /// The weight of one batch of the run, in `totalWeightUnit`. Zero when no
     /// weight was recorded.
     var oneBatchWeight: Double {

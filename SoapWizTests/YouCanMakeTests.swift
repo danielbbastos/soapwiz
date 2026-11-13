@@ -232,6 +232,18 @@ struct YouCanMakeTests: BatchProductionTestHelpers {
         #expect(row.detail == "Made 4 times · last Oct 15")
     }
 
+    @Test func madeText_MultipliedBatch_CountsItsBatchCount() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        let recipe = addRecipe(ctx, name: "Fresh", stocked: 1000)
+        ctx.insert(Batch(recipe: recipe, recipeName: "Fresh", dateCreated: date(2026, 10, 15), batchCount: 2))
+        addBatch(ctx, of: recipe, on: date(2026, 9, 1))
+
+        let row = try #require(try rows(makeModel(), ctx).first)
+
+        #expect(row.detail == "Made 3 times · last Oct 15")
+    }
+
     @Test func madeText_LastBatchInAnotherYear_ShowsTheYear() throws {
         let (container, ctx) = try makeContext()
         _ = container
