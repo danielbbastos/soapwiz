@@ -52,16 +52,70 @@ struct HomeCuringTests {
         #expect(result.items.first?.remaining == .days(10))
     }
 
-    @Test func items_NoCureOrReadyBatches_AreLeftOut() throws {
+    @Test func items_NoCureOrLongReadyBatches_AreLeftOut() throws {
         let (container, context) = try makeContext()
         _ = container
         let noCure = Batch(recipe: nil, recipeName: "No cure", dateCreated: now, batchCount: 1, cureDays: 0)
         context.insert(noCure)
-        let readyToday = try batch("Ready today", daysLeft: 0, in: context)
         let longReady = try batch("Long ready", daysLeft: -20, in: context)
         let cake = try batch("Cake", daysLeft: 3, in: context)
-        let result = curing([noCure, readyToday, longReady, cake])
+        let result = curing([noCure, longReady, cake])
         #expect(result.items.map(\.batch.recipeName) == ["Cake"])
+    }
+
+    @Test func items_ReadyToday_IsListedAsReadyWithFullRing() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let today = try batch("Today", daysLeft: 0, in: context)
+        let item = try #require(curing([today]).items.first)
+        #expect(item.isReady)
+        #expect(item.remaining == nil)
+        #expect(item.progress == 1)
+        #expect(!item.isReadyThisWeek)
+        #expect(item.readyDate == calendar.startOfDay(for: now))
+    }
+
+    @Test func items_ReadyWindow_KeepsTwoDaysAgoAndDropsExactlyThreeDaysAgo() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let twoAgo = try batch("Two ago", daysLeft: -2, in: context)
+        let threeAgo = try batch("Three ago", daysLeft: -3, in: context)
+        let result = curing([twoAgo, threeAgo])
+        #expect(result.items.map(\.batch.recipeName) == ["Two ago"])
+    }
+
+    @Test func items_ReadyComeFirstMostRecentlyReadyFirstThenCuringSoonestFirst() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let result = curing([
+            try batch("Far", daysLeft: 30, in: context),
+            try batch("Old ready", daysLeft: -2, in: context),
+            try batch("Soon", daysLeft: 1, in: context),
+            try batch("New ready", daysLeft: 0, in: context)
+        ])
+        #expect(result.items.map(\.batch.recipeName) == ["New ready", "Old ready", "Soon", "Far"])
+    }
+
+    @Test func counts_SplitCuringAndReady() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let result = curing([
+            try batch("A", daysLeft: 3, in: context),
+            try batch("B", daysLeft: 0, in: context),
+            try batch("C", daysLeft: -1, in: context)
+        ])
+        #expect(result.count == 3)
+        #expect(result.curingCount == 1)
+        #expect(result.readyCount == 2)
+        #expect(result.readyThisWeekCount == 1)
+    }
+
+    @Test func counts_OnlyReady_HasNoCuring() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let result = curing([try batch("A", daysLeft: -1, in: context)])
+        #expect(result.curingCount == 0)
+        #expect(result.readyCount == 1)
     }
 
     @Test func items_AreOrderedSoonestReadyFirst() throws {
