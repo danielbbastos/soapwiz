@@ -75,11 +75,112 @@ struct NeedsAttentionTests {
 
     // MARK: - Value at risk
 
-    @Test func valueAtRisk_ExpiredWithStock_Counts() throws {
+    @Test func valueAtRisk_ExpiredWithStock_Excluded() throws {
         let oil = makeIngredient()
         try addPurchase(to: oil, remaining: 250, expiry: try date(daysFromNow: -5))
         let result = try #require(try attention([oil]))
-        #expect(abs(result.valueAtRisk - 5) < 0.0001)
+        #expect(result.valueAtRisk == 0)
+        #expect(result.rows.map(\.reason) == [.expired])
+    }
+
+    @Test func valueAtRisk_ExpiringExactlyAtCutoff_Counts() throws {
+        let oil = makeIngredient()
+        let cutoff = try #require(calendar.date(byAdding: .month, value: 1, to: now))
+        try addPurchase(to: oil, remaining: 500, expiry: cutoff)
+        let result = try #require(try attention([oil]))
+        #expect(abs(result.valueAtRisk - 10) < 0.0001)
+    }
+
+    @Test func valueAtRisk_ExpiringJustAfterCutoff_Excluded() throws {
+        let oil = makeIngredient()
+        let cutoff = try #require(calendar.date(byAdding: .month, value: 1, to: now))
+        try addPurchase(to: oil, remaining: 500, expiry: cutoff.addingTimeInterval(1))
+        let result = try attention([oil])
+        #expect(result?.valueAtRisk ?? 0 == 0)
+    }
+
+    @Test func valueAtRisk_ExpiringExactlyNow_Counts() throws {
+        let oil = makeIngredient()
+        try addPurchase(to: oil, remaining: 500, expiry: now)
+        let result = try #require(try attention([oil]))
+        #expect(abs(result.valueAtRisk - 10) < 0.0001)
+    }
+
+    @Test func valueAtRisk_ExpiredJustBeforeNow_Excluded() throws {
+        let oil = makeIngredient()
+        try addPurchase(to: oil, remaining: 500, expiry: now.addingTimeInterval(-1))
+        let result = try #require(try attention([oil]))
+        #expect(result.valueAtRisk == 0)
+    }
+
+    @Test func valueAtRisk_TotalIsRemainingTimesPricePerUnit() throws {
+        let oil = makeIngredient()
+        try addPurchase(to: oil, remaining: 400, quantity: 800, totalPrice: 40, expiry: try date(daysFromNow: 10))
+        let result = try #require(try attention([oil]))
+        #expect(abs(result.valueAtRisk - 20) < 0.0001)
+    }
+
+    // MARK: - Ingredient sets
+
+    private func sets(_ ingredients: [Ingredient]) throws -> (attention: Set<PersistentIdentifier>, expiring: Set<PersistentIdentifier>) {
+        let purchases = try context.fetch(FetchDescriptor<IngredientPurchase>())
+        return NeedsAttention.ingredientSets(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar)
+    }
+
+    @Test func attentionSet_IgnoresRowLimit() throws {
+        let ingredients = try (0..<6).map { index -> Ingredient in
+            let ingredient = makeIngredient("Item \(index)")
+            try addPurchase(to: ingredient, remaining: 0)
+            return ingredient
+        }
+        let result = try #require(try attention(ingredients, rowLimit: 2))
+        #expect(result.rows.count == 2)
+        #expect(result.rows.count + result.moreCount == ingredients.count)
+        #expect(try sets(ingredients).attention == Set(ingredients.map(\.persistentModelID)))
+    }
+
+    @Test func expiringSet_AreTheIngredientsWithStockExpiringInTheWindow() throws {
+        let expiring = makeIngredient("Expiring")
+        try addPurchase(to: expiring, remaining: 100, expiry: try date(daysFromNow: 5))
+        let expired = makeIngredient("Expired")
+        try addPurchase(to: expired, remaining: 100, expiry: try date(daysFromNow: -5))
+        let usedUp = makeIngredient("Used up")
+        try addPurchase(to: usedUp, remaining: 0, expiry: try date(daysFromNow: 5))
+        #expect(try sets([expiring, expired, usedUp]).expiring == [expiring.persistentModelID])
+    }
+
+    @Test func expiringSet_UnpricedStockExpiringInTheWindow_IsIncludedWithoutValueAtRisk() throws {
+        let free = makeIngredient("Free")
+        try addPurchase(to: free, remaining: 100, totalPrice: 0, expiry: try date(daysFromNow: 5))
+        let result = try #require(try attention([free]))
+        #expect(result.valueAtRisk == 0)
+        #expect(try sets([free]).expiring == [free.persistentModelID])
+    }
+
+    @Test func ingredientSets_MatchMakeWhenEveryRowIsShown() throws {
+        let out = makeIngredient("Out")
+        try addPurchase(to: out, remaining: 0)
+        let soon = makeIngredient("Soon")
+        try addPurchase(to: soon, remaining: 100, expiry: try date(daysFromNow: 5))
+        let fine = makeIngredient("Fine")
+        try addPurchase(to: fine, remaining: 500)
+        let ingredients = [out, soon, fine]
+
+        let result = try sets(ingredients)
+        let made = try #require(try attention(ingredients, rowLimit: .max))
+        #expect(made.moreCount == 0)
+        #expect(result.attention == Set(made.rows.map(\.id)))
+        #expect(result.expiring == [soon.persistentModelID])
+        #expect(!result.attention.contains(fine.persistentModelID))
+    }
+
+    @Test func ingredientSets_HiddenIngredient_Excluded() throws {
+        let hidden = makeIngredient("Hidden", hidden: true)
+        try addPurchase(to: hidden, remaining: 0, expiry: try date(daysFromNow: 5))
+        let purchases = try context.fetch(FetchDescriptor<IngredientPurchase>())
+        let sets = NeedsAttention.ingredientSets(ingredients: [hidden], purchases: purchases, now: now, calendar: calendar)
+        #expect(sets.attention.isEmpty)
+        #expect(sets.expiring.isEmpty)
     }
 
     @Test func valueAtRisk_ExpiringWithinMonth_Counts() throws {
@@ -198,7 +299,7 @@ struct NeedsAttentionTests {
         let row = try #require(try attention([oil])?.rows.first)
         #expect(row.stamp == .expired)
         #expect(row.earliestExpired == earliest)
-        #expect(abs(row.valueAtRisk - 7) < 0.0001)
+        #expect(row.valueAtRisk == 0)
         #expect(row.remaining == 350)
     }
 

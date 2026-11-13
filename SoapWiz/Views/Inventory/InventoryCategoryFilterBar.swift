@@ -16,6 +16,12 @@ struct InventoryCategoryFilterBar: View {
     var body: some View {
         ScrollView(.horizontal) {
             HStack(spacing: 8) {
+                if let filter = model.effectiveAttentionFilter {
+                    FilterChip(filter.rawValue, isSelected: true, isRemovable: true) {
+                        model.attentionFilter = nil
+                    }
+                    .accessibilityLabel(Text("\(filter.rawValue) filter, remove"))
+                }
                 FilterChip("All", isSelected: model.isShowingAllCategories, count: counts.all) {
                     model.selectAllCategories()
                 }

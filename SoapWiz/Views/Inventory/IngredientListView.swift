@@ -4,14 +4,14 @@ import SwiftData
 struct IngredientListView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppNavigation.self) private var nav
-    @Environment(InventoryRows.self) private var rows
+    @Environment(InventoryRows.self) var rows
     @Environment(SettingsState.self) private var settings
     @Environment(\.isTourSandbox) private var isTourSandbox
     @Environment(TourLauncher.self) private var tourLauncher
     @AppStorage(FirstOwnedCelebration.defaultsKey) private var celebratedFirstOwned = false
     @State private var celebrationTick = 0
 
-    @State private var model = IngredientListViewModel()
+    @State var model = IngredientListViewModel()
     /// The open ingredient's merge key, read when it opens: once a merge has
     /// deleted the row it can't be read off it. See `LiveIngredient`.
     @State private var selectedSlug = ""
@@ -25,13 +25,6 @@ struct IngredientListView: View {
 
     private var selectedIngredients: [Ingredient] {
         rows.ingredients.filter { model.selection.contains($0.persistentModelID) }
-    }
-
-    /// Chips are drawn from the in-scope inventory (what the library scope lets
-    /// through, ignoring the other filters), not the displayed list: narrowing to
-    /// one category must not make every other chip disappear.
-    private func categoryChips(stock: StockLevels) -> [IngredientCategory] {
-        model.visibleCategories(rows.categories, in: rows.ingredients, stock: stock)
     }
 
     private func row(_ ingredient: Ingredient, stockLevels: StockLevels, index: Int, count: Int) -> IngredientListRow {
@@ -169,24 +162,6 @@ struct IngredientListView: View {
         celebrationTick += 1
     }
 
-    private func headerContent(
-        showsSearch: Bool,
-        categories: [IngredientCategory],
-        counts: (all: Int, byCategory: [PersistentIdentifier: Int])
-    ) -> some View {
-        VStack(spacing: 0) {
-            // Nothing to search with an empty inventory. The library
-            // counts even when none of it is in scope yet.
-            if showsSearch {
-                SearchField("Search ingredients", text: $model.searchText, tourAnchor: .inventorySearch)
-                    .padding(.bottom, 12)
-            }
-            if !categories.isEmpty && model.editMode == .inactive {
-                InventoryCategoryFilterBar(categories: categories, model: model, counts: counts)
-            }
-        }
-    }
-
     var body: some View {
         // Worked out once per pass, in one walk over the inventory: it sums each
         // row's stock, and several places below need the result. Favourites can't
@@ -194,11 +169,12 @@ struct IngredientListView: View {
         // so the pinning is applied there, after filtering.
         let ingredients = rows.ingredients
         let stockLevels = StockLevels(rows.purchases)
-        let content = model.content(for: ingredients, stock: stockLevels)
+        let content = model.content(for: ingredients, stock: stockLevels, purchases: rows.purchases)
         let displayed = content.displayed
         let libraryMatches = content.libraryMatches
         let hasListedIngredients = ingredients.contains { !$0.isHidden }
         let visibleCategories = categoryChips(stock: stockLevels)
+        let hasChips = !visibleCategories.isEmpty || model.effectiveAttentionFilter != nil
         let listHasItems = !displayed.isEmpty || !libraryMatches.isEmpty
         let ownedTrigger: Int = hasListedIngredients ? content.ownedCount : -1
         ListDetailContainer(
@@ -217,7 +193,7 @@ struct IngredientListView: View {
                             displayed: displayed,
                             libraryMatches: libraryMatches,
                             stockLevels: stockLevels,
-                            hasChips: !visibleCategories.isEmpty,
+                            hasChips: hasChips,
                             emptyState: listHasItems ? nil : InventoryEmptyState(
                                 model: model,
                                 hasListedIngredients: hasListedIngredients,
@@ -238,6 +214,7 @@ struct IngredientListView: View {
                     headerContent(
                         showsSearch: hasListedIngredients,
                         categories: visibleCategories,
+                        hasChips: hasChips,
                         counts: content.categoryCounts
                     )
                 }
@@ -290,7 +267,7 @@ struct IngredientListView: View {
                     InventoryCreateRecipeButton(model: model, selected: selectedIngredients)
                 }
             }
-        } detail: { IngredientDetailView(ingredient: $0).batchAndRecipeDestinations() }
+        } detail: { IngredientDetailView(ingredient: $0).purchaseDestinations().batchAndRecipeDestinations() }
         // The first ingredient is the one that makes Inventory feel like the
         // user's own. A trigger of -1 while no rows are loaded keeps the rows
         // arriving at launch from reading as a first purchase.
@@ -299,6 +276,8 @@ struct IngredientListView: View {
         // Home's first-run screen asking for the spreadsheet import. `initial`
         // covers this tab being built after the request is set.
         .onChange(of: nav.pendingInventoryImport, initial: true) { startPendingImport() }
+        // Home's Needs attention card asking for a filtered list.
+        .onChange(of: nav.pendingInventoryFilter, initial: true) { startPendingFilter() }
         .onChange(of: nav.detailSheetClosings) { startPendingImport() }
         .onChange(of: nav.recipeFormClosings) { startPendingImport() }
         .onChange(of: tourLauncher.isCoverOnScreen) { startPendingImport() }
@@ -378,6 +357,16 @@ struct IngredientListView: View {
             purchases: rows.purchases,
             tracksInventory: settings.tracksInventory
         )
+    }
+
+    private func startPendingFilter() {
+        guard let filter = nav.takePendingInventoryFilter() else { return }
+        if model.editMode == .active {
+            model.editMode = .inactive
+            model.selection.removeAll()
+        }
+        navigation.reset()
+        model.applyAttentionFilter(filter)
     }
 
     private func startPendingImport() {

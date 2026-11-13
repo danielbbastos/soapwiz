@@ -40,6 +40,24 @@ struct StoredIngredientDestination: View {
     }
 }
 
+struct StoredPurchaseDestination: View {
+    @Environment(InventoryRows.self) private var rows
+
+    let purchase: IngredientPurchase
+    private let id: PersistentIdentifier
+
+    init(purchase: IngredientPurchase) {
+        self.purchase = purchase
+        id = purchase.persistentModelID
+    }
+
+    var body: some View {
+        PushedModelGate(isStored: rows.purchases.contains { $0.persistentModelID == id }) {
+            PurchaseDetailView(purchase: purchase)
+        }
+    }
+}
+
 struct StoredBatchDestination: View {
     @Environment(BatchRows.self) private var rows
 

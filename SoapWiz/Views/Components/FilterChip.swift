@@ -9,6 +9,8 @@ struct FilterChip: View {
     let count: Int?
     /// Drawn before the title when unselected.
     let dot: Color?
+    /// Shows an `xmark` in place of the selected checkmark.
+    let isRemovable: Bool
     let action: () -> Void
 
     init(
@@ -16,12 +18,14 @@ struct FilterChip: View {
         isSelected: Bool,
         count: Int? = nil,
         dot: Color? = nil,
+        isRemovable: Bool = false,
         action: @escaping () -> Void
     ) {
         self.title = title
         self.isSelected = isSelected
         self.count = count
         self.dot = dot
+        self.isRemovable = isRemovable
         self.action = action
     }
 
@@ -42,7 +46,7 @@ struct FilterChip: View {
     /// Drawn about 36pt tall, with the padding that brings the hit area to 44
     /// outside the capsule so the chip doesn't look any bigger.
     private var label: some View {
-        HoneyLedgerChip(title: title, isSelected: isSelected, count: count, dot: dot)
+        HoneyLedgerChip(title: title, isSelected: isSelected, count: count, dot: dot, isRemovable: isRemovable)
             .padding(.vertical, 4)
         .contentShape(Rectangle())
     }

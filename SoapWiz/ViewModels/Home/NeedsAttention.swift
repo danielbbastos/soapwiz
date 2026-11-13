@@ -25,6 +25,31 @@ struct NeedsAttention {
     let moreCount: Int
     let valueAtRisk: Double
 
+    /// The two sets the card is drawn from, without building any rows, so the
+    /// Inventory filters can use them and never disagree with the card.
+    /// `attention` is every ingredient the card would list, before the row
+    /// limit caps it. `expiring` is the ingredients with stock left that
+    /// expires within the next month, priced or not; `valueAtRisk` only counts
+    /// the priced part of it.
+    static func ingredientSets(
+        ingredients: [Ingredient],
+        purchases: [IngredientPurchase],
+        now: Date = .now,
+        calendar: Calendar = .current
+    ) -> (attention: Set<PersistentIdentifier>, expiring: Set<PersistentIdentifier>) {
+        var attention: Set<PersistentIdentifier> = []
+        var expiring: Set<PersistentIdentifier> = []
+        evaluate(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar) { ingredient, owned, _, isExpiring in
+            let id = ingredient.persistentModelID
+            if isExpiring { expiring.insert(id) }
+            let remaining = owned.reduce(0) { $0 + $1.remainingAmount }
+            if reason(for: ingredient, purchases: owned, remaining: remaining, now: now, calendar: calendar) != nil {
+                attention.insert(id)
+            }
+        }
+        return (attention, expiring)
+    }
+
     static func make(
         ingredients: [Ingredient],
         purchases: [IngredientPurchase],
@@ -35,24 +60,10 @@ struct NeedsAttention {
     ) -> NeedsAttention? {
         guard tracksInventory else { return nil }
 
-        var purchasesByIngredient: [PersistentIdentifier: [IngredientPurchase]] = [:]
-        for purchase in purchases {
-            guard let id = purchase.ingredient?.persistentModelID else { continue }
-            purchasesByIngredient[id, default: []].append(purchase)
-        }
-
-        let cutoff = calendar.date(byAdding: .month, value: 1, to: now)
-
         var qualifying: [Row] = []
         var totalAtRisk = 0.0
-        for ingredient in ingredients {
-            guard !ingredient.isHidden,
-                  let owned = purchasesByIngredient[ingredient.persistentModelID]
-            else { continue }
-
-            let atRisk = owned.reduce(0) { $0 + valueAtRisk(of: $1, now: now, cutoff: cutoff) }
+        evaluate(ingredients: ingredients, purchases: purchases, now: now, calendar: calendar) { ingredient, owned, atRisk, _ in
             totalAtRisk += atRisk
-
             if let row = row(for: ingredient, purchases: owned, atRisk: atRisk, now: now, calendar: calendar) {
                 qualifying.append(row)
             }
@@ -76,6 +87,48 @@ struct NeedsAttention {
         )
     }
 
+    /// Walks the listed ingredients that have purchases, with each one's
+    /// purchases, the value at risk in them and whether any is expiring.
+    private static func evaluate(
+        ingredients: [Ingredient],
+        purchases: [IngredientPurchase],
+        now: Date,
+        calendar: Calendar,
+        visit: (Ingredient, [IngredientPurchase], Double, Bool) -> Void
+    ) {
+        var purchasesByIngredient: [PersistentIdentifier: [IngredientPurchase]] = [:]
+        for purchase in purchases {
+            guard let id = purchase.ingredient?.persistentModelID else { continue }
+            purchasesByIngredient[id, default: []].append(purchase)
+        }
+
+        let cutoff = calendar.date(byAdding: .month, value: 1, to: now)
+        for ingredient in ingredients {
+            guard !ingredient.isHidden,
+                  let owned = purchasesByIngredient[ingredient.persistentModelID]
+            else { continue }
+            let atRisk = owned.reduce(0) { $0 + valueAtRisk(of: $1, now: now, cutoff: cutoff) }
+            let isExpiring = owned.contains { isExpiringInWindow($0, now: now, cutoff: cutoff) }
+            visit(ingredient, owned, atRisk, isExpiring)
+        }
+    }
+
+    private static func reason(
+        for ingredient: Ingredient,
+        purchases: [IngredientPurchase],
+        remaining: Double,
+        now: Date,
+        calendar: Calendar
+    ) -> ShoppingSuggestionReason? {
+        return ShoppingSuggestions.reasons(
+            for: ingredient,
+            purchases: purchases,
+            remaining: remaining,
+            now: now,
+            calendar: calendar
+        ).first
+    }
+
     private static func row(
         for ingredient: Ingredient,
         purchases: [IngredientPurchase],
@@ -84,14 +137,13 @@ struct NeedsAttention {
         calendar: Calendar
     ) -> Row? {
         let remaining = purchases.reduce(0) { $0 + $1.remainingAmount }
-        let reasons = ShoppingSuggestions.reasons(
+        guard let reason = reason(
             for: ingredient,
             purchases: purchases,
             remaining: remaining,
             now: now,
             calendar: calendar
-        )
-        guard let reason = reasons.first else { return nil }
+        ) else { return nil }
 
         let newest = purchases.max { $0.dateOfPurchase < $1.dateOfPurchase }
         let supplier = newest?.provider?.name
@@ -112,9 +164,13 @@ struct NeedsAttention {
         )
     }
 
+    private static func isExpiringInWindow(_ purchase: IngredientPurchase, now: Date, cutoff: Date?) -> Bool {
+        guard purchase.remainingAmount > 0, let expiry = purchase.expiryDate, let cutoff else { return false }
+        return expiry >= now && expiry <= cutoff
+    }
+
     private static func valueAtRisk(of purchase: IngredientPurchase, now: Date, cutoff: Date?) -> Double {
-        guard purchase.remainingAmount > 0, let expiry = purchase.expiryDate else { return 0 }
-        guard expiry < now || (cutoff.map { expiry <= $0 } ?? false) else { return 0 }
+        guard isExpiringInWindow(purchase, now: now, cutoff: cutoff) else { return 0 }
         return purchase.remainingAmount * purchase.pricePerUnit
     }
 

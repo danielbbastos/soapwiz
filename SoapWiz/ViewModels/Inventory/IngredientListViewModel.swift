@@ -27,6 +27,15 @@ enum LibraryScope: String, CaseIterable, Identifiable {
     var id: Self { self }
 }
 
+/// A filter Home's Needs attention card opens Inventory with. It is shown as a
+/// removable chip above the list and is not part of the filter sheet.
+enum InventoryAttentionFilter: String, CaseIterable, Identifiable {
+    case needsAttention = "Needs attention"
+    case expiringThisMonth = "Expiring this month"
+
+    var id: Self { self }
+}
+
 /// The "N ingredients · L low · O out" line under the Inventory title.
 struct InventoryCountSummary: Equatable {
     let total: Int
@@ -88,6 +97,9 @@ final class IngredientListViewModel {
     var expiryFilter: ExpiryFilter = .all
     var libraryScope: LibraryScope = .owned
 
+    /// Set from Home. Ignored while stock isn't tracked, like the stock filter.
+    var attentionFilter: InventoryAttentionFilter?
+
     /// Mirrors `AppSettings.tracksInventory`. Off, the stock and expiry filters
     /// are ignored rather than cleared: their menus are hidden, and a filter set
     /// before tracking was switched off must not silently empty the list, yet
@@ -101,8 +113,12 @@ final class IngredientListViewModel {
         (effectiveStockStatus == .all ? 0 : 1) +
         (selectedUnits.isEmpty ? 0 : 1) +
         (effectiveExpiryFilter == .all ? 0 : 1) +
-        (effectiveLibraryScope == .all && tracksInventory ? 1 : 0)
+        (effectiveLibraryScope == .all && tracksInventory ? 1 : 0) +
+        (effectiveAttentionFilter == nil ? 0 : 1)
     }
+
+    /// The attention filter in force: nil when none is set or stock isn't tracked.
+    var effectiveAttentionFilter: InventoryAttentionFilter? { tracksInventory ? attentionFilter : nil }
 
     private var effectiveStockStatus: StockStatusFilter { tracksInventory ? stockStatus : .all }
     private var effectiveExpiryFilter: ExpiryFilter { tracksInventory ? expiryFilter : .all }
@@ -135,6 +151,30 @@ final class IngredientListViewModel {
         selectedUnits = []
         expiryFilter = .all
         libraryScope = .owned
+        attentionFilter = nil
+    }
+
+    /// Opens the list on exactly `filter`: a request from Home means the whole
+    /// set it counted, so nothing else may narrow it.
+    func applyAttentionFilter(_ filter: InventoryAttentionFilter) {
+        searchText = ""
+        clearFilters()
+        attentionFilter = filter
+    }
+
+    /// The ingredients the attention filter lets through, worked out once per
+    /// pass and only while the filter is in force; nil means no restriction.
+    private func attentionAllowList(
+        ingredients: [Ingredient],
+        purchases: [IngredientPurchase],
+        now: Date
+    ) -> Set<PersistentIdentifier>? {
+        guard let filter = effectiveAttentionFilter else { return nil }
+        let sets = NeedsAttention.ingredientSets(ingredients: ingredients, purchases: purchases, now: now)
+        switch filter {
+        case .needsAttention:    return sets.attention
+        case .expiringThisMonth: return sets.expiring
+        }
     }
 
     /// An empty selection already means every category, so this doubles as the
@@ -192,9 +232,16 @@ final class IngredientListViewModel {
         ingredients.filter(\.isHidden)
     }
 
-    func filtered(_ ingredients: [Ingredient], stock: StockLevels) -> [Ingredient] {
-        ingredients.filter {
-            !$0.isHidden && isInScope($0, stock: stock) && matchesFilters($0, stock: stock) && matchesCategory($0)
+    func filtered(
+        _ ingredients: [Ingredient],
+        stock: StockLevels,
+        purchases: [IngredientPurchase] = [],
+        now: Date = .now
+    ) -> [Ingredient] {
+        let attention = attentionAllowList(ingredients: ingredients, purchases: purchases, now: now)
+        return ingredients.filter {
+            !$0.isHidden && isInScope($0, stock: stock)
+                && matchesFilters($0, stock: stock, attention: attention) && matchesCategory($0)
         }
     }
 
@@ -225,7 +272,17 @@ final class IngredientListViewModel {
     /// Stock comes from `stock`, built from one fetch of every purchase, rather
     /// than from each ingredient's `purchases`: after an import the purchases are
     /// faults, and walking them per ingredient fired one SQL fetch each.
-    func content(for ingredients: [Ingredient], stock: StockLevels) -> IngredientListContent {
+    ///
+    /// The attention filter needs the purchases themselves (`purchases`, the
+    /// same fetch `stock` is built from): its sets are worked out once here,
+    /// and only while the filter is set.
+    func content(
+        for ingredients: [Ingredient],
+        stock: StockLevels,
+        purchases: [IngredientPurchase] = [],
+        now: Date = .now
+    ) -> IngredientListContent {
+        let attention = attentionAllowList(ingredients: ingredients, purchases: purchases, now: now)
         var displayed: [Ingredient] = []
         var all = 0
         var byCategory: [PersistentIdentifier: Int] = [:]
@@ -241,7 +298,9 @@ final class IngredientListViewModel {
             if owns { owned += 1 }
 
             guard effectiveLibraryScope == .all || owns else {
-                if offersLibraryMatches, matchesFilters(ingredient, stock: stock), matchesCategory(ingredient) {
+                if offersLibraryMatches,
+                   matchesFilters(ingredient, stock: stock, attention: attention),
+                   matchesCategory(ingredient) {
                     libraryMatches.append(ingredient)
                 }
                 continue
@@ -256,7 +315,7 @@ final class IngredientListViewModel {
                 }
             }
 
-            guard matchesFilters(ingredient, stock: stock) else { continue }
+            guard matchesFilters(ingredient, stock: stock, attention: attention) else { continue }
             all += 1
             if let id = ingredient.category?.persistentModelID {
                 byCategory[id, default: 0] += 1
@@ -281,14 +340,20 @@ final class IngredientListViewModel {
     }
 
     /// Every filter except the category selection, for a row that isn't hidden.
-    private func matchesFilters(_ ingredient: Ingredient, stock: StockLevels) -> Bool {
+    private func matchesFilters(
+        _ ingredient: Ingredient,
+        stock: StockLevels,
+        attention: Set<PersistentIdentifier>?
+    ) -> Bool {
+        if let attention, !attention.contains(ingredient.persistentModelID) { return false }
+
         let matchesSearch = searchText.isEmpty ||
             ingredient.name.localizedCaseInsensitiveContains(searchText)
 
         let matchesStock: Bool
         switch effectiveStockStatus {
         case .all:        matchesStock = true
-        case .inStock:    matchesStock = stock.totalRemaining(ingredient) > 0 && !stock.isLowStock(ingredient)
+        case .inStock:    matchesStock = stock.totalRemaining(ingredient) > 0
         case .lowStock:   matchesStock = stock.isLowStock(ingredient) && stock.totalRemaining(ingredient) > 0
         case .outOfStock: matchesStock = stock.totalRemaining(ingredient) == 0
         }

@@ -13,7 +13,15 @@ extension View {
     /// it a batch and that batch's recipe.
     func inventoryDestinations() -> some View {
         navigationDestination(for: Ingredient.self) { IngredientDetailView(ingredient: $0) }
+            .purchaseDestinations()
             .batchAndRecipeDestinations()
+    }
+
+    /// Routes the purchase screen an ingredient's detail pushes. Pushed by
+    /// value, so it sits in the stack's path and a path reset (selecting
+    /// another ingredient beside the list) closes it.
+    func purchaseDestinations() -> some View {
+        navigationDestination(for: IngredientPurchase.self) { StoredPurchaseDestination(purchase: $0) }
     }
 
     /// Routes the ingredient, batch and recipe screens Home's cards push onto
@@ -21,6 +29,7 @@ extension View {
     /// push from inside those screens, so the stack answers for them too.
     func homeNavigationDestinations() -> some View {
         navigationDestination(for: Ingredient.self) { StoredIngredientDestination(ingredient: $0) }
+            .purchaseDestinations()
             .batchAndRecipeDestinations()
     }
 }

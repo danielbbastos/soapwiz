@@ -148,6 +148,18 @@ struct HomeFirstRunTests {
         #expect(!IngredientOwnership.isOwned(plain, stock: stock))
     }
 
+    @Test func openInventoryFilter_SelectsInventoryAndHandsOutFilterOnce() {
+        let sut = AppNavigation()
+
+        sut.openInventory(filter: .expiringThisMonth)
+        #expect(sut.selectedTab == .inventory)
+        #expect(sut.pendingInventoryFilter == .expiringThisMonth)
+
+        #expect(sut.takePendingInventoryFilter() == .expiringThisMonth)
+        #expect(sut.takePendingInventoryFilter() == nil)
+        #expect(sut.pendingInventoryFilter == nil)
+    }
+
     @Test func navigationRequests_SetRequestAndTab() {
         let sut = AppNavigation()
 

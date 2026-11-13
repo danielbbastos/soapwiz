@@ -196,7 +196,7 @@ struct IngredientDetailView: View {
                     let rowCount = displayed.count + (model.hasMorePurchases ? 1 : 0)
                     ForEach(Array(displayed.enumerated()), id: \.element.id) { index, purchase in
                         sheetRow(index, of: rowCount, navigates: true) {
-                            NavigationLink(destination: PurchaseDetailView(purchase: purchase)) {
+                            NavigationLink(value: purchase) {
                                 PurchaseRowView(purchase: purchase, unit: model.ingredient.unit)
                             }
                             // Only the newest is lit, so the tour has one card to find.

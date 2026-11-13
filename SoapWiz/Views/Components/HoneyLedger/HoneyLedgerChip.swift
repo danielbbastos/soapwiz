@@ -9,10 +9,12 @@ struct HoneyLedgerChip: View {
     var isSelected = false
     var count: Int?
     var dot: Color?
+    /// Draws an `xmark` after the title instead of the selected checkmark.
+    var isRemovable = false
 
     var body: some View {
         HStack(spacing: 4) {
-            if isSelected {
+            if isSelected && !isRemovable {
                 Image(systemName: "checkmark")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(Color.ink)
@@ -32,6 +34,12 @@ struct HoneyLedgerChip: View {
                     .font(.caption)
                     .monospacedDigit()
                     .foregroundStyle(Color.inkFaint)
+            }
+            if isRemovable {
+                Image(systemName: "xmark")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.ink)
+                    .padding(.leading, 2)
             }
         }
         .padding(.horizontal, 14)
