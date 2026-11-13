@@ -320,7 +320,7 @@ final class BatchProductionViewModel {
     /// first: which purchases to draw from and how much. Pure — inventory is
     /// only mutated when `deduct` applies the plan.
     private func plannedDraws(for req: BatchRequirement) -> [(purchase: IngredientPurchase, drawn: Double)] {
-        let purchases = req.ingredient.purchases.sorted { $0.dateOfPurchase < $1.dateOfPurchase }
+        let purchases = req.ingredient.purchases.sorted { IngredientPurchase.isNewer($1, than: $0) }
         var remaining = req.required
         var plan: [(purchase: IngredientPurchase, drawn: Double)] = []
 

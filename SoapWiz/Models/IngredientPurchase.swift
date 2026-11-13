@@ -35,6 +35,18 @@ final class IngredientPurchase {
         ingredientSlug = ingredient.librarySlug
     }
 
+    /// Newest purchase first. Purchases often share a date (bulk entry, the
+    /// date picker's day granularity), and a relationship array comes back in
+    /// no fixed order, so ties fall back to `createdAt`, then to `uuid`: the
+    /// only keys that are stable per row, the second also set on every row.
+    static func isNewer(_ lhs: IngredientPurchase, than rhs: IngredientPurchase) -> Bool {
+        if lhs.dateOfPurchase != rhs.dateOfPurchase { return lhs.dateOfPurchase > rhs.dateOfPurchase }
+        let left = lhs.createdAt ?? .distantPast
+        let right = rhs.createdAt ?? .distantPast
+        if left != right { return left > right }
+        return lhs.uuid.uuidString > rhs.uuid.uuidString
+    }
+
     var pricePerUnit: Double {
         guard quantity > 0 else { return 0 }
         return totalPrice / quantity

@@ -203,7 +203,11 @@ struct IngredientDetailView: View {
                             .tourCardAnchor(index == 0 ? .purchaseCard : nil)
                         }
                     }
-                    .onDelete { model.delete(at: $0, context: modelContext) }
+                    .onDelete { offsets in
+                        withAnimation {
+                            model.delete(at: offsets, from: displayed, context: modelContext)
+                        }
+                    }
 
                     if model.hasMorePurchases {
                         sheetRow(displayed.count, of: rowCount) {

@@ -64,7 +64,7 @@ struct IngredientDetailViewModelTests {
         try ctx.save()
 
         let model = IngredientDetailViewModel(ingredient: ingredient)
-        model.delete(at: IndexSet(integer: 0), context: ctx)
+        model.delete(at: IndexSet(integer: 0), from: model.displayedPurchases(showingAll: true), context: ctx)
         try ctx.save()
 
         let remaining = try ctx.fetch(FetchDescriptor<IngredientPurchase>())
