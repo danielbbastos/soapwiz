@@ -30,11 +30,16 @@ private struct BatchHeatmapContent: View {
         let selected = heatmap.weeks.first { $0.id == selectedID }
         VStack(alignment: .leading, spacing: 12) {
             header
-            if isWide {
-                BatchHeatmapStrip(heatmap: heatmap, selectedID: $selectedID)
-            } else {
-                BatchHeatmapMonthGrid(heatmap: heatmap, selectedID: $selectedID)
+            Group {
+                if isWide {
+                    BatchHeatmapStrip(heatmap: heatmap, selectedID: $selectedID)
+                        .transition(.opacity)
+                } else {
+                    BatchHeatmapMonthGrid(heatmap: heatmap, selectedID: $selectedID)
+                        .transition(.opacity)
+                }
             }
+            .animation(.default, value: isWide)
             detail(selected: selected)
             legend
         }
@@ -144,25 +149,27 @@ private struct HeatmapCell: View {
     private var isSelected: Bool { week.id == selectedID }
 
     var body: some View {
-        Button {
-            selectedID = isSelected ? nil : week.id
-        } label: {
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(Color.heatmapLevel(BatchHeatmap.level(for: week.count)))
-                .frame(maxWidth: .infinity)
-                .frame(height: height)
-                .overlay {
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .strokeBorder(Color.heatmapRing, lineWidth: 2)
-                            .padding(-3)
-                    }
+        RoundedRectangle(cornerRadius: 4, style: .continuous)
+            .fill(Color.heatmapLevel(BatchHeatmap.level(for: week.count)))
+            .frame(maxWidth: .infinity)
+            .frame(height: height)
+            .overlay {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(Color.heatmapRing, lineWidth: 2)
+                        .padding(-3)
                 }
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("\(week.rangeText), ^[\(week.count) batch](inflect: true)"))
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
+            }
+            .contentShape(.rect)
+            .onTapGesture(perform: toggle)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("\(week.rangeText), ^[\(week.count) batch](inflect: true)"))
+            .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAction(.default, toggle)
+    }
+
+    private func toggle() {
+        selectedID = isSelected ? nil : week.id
     }
 }
 
