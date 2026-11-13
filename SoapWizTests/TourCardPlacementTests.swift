@@ -286,6 +286,29 @@ struct TourCardPlacementTests {
         #expect(safe.contains(rect))
     }
 
+    @Test func place_StackedCutouts_CardGoesBelowTheWholeGroup() {
+        let first = CGRect(x: 40, y: 100, width: 310, height: 140)
+        let second = CGRect(x: 40, y: 260, width: 310, height: 140)
+
+        let result = phonePlacement(cutouts: [first, second])
+
+        #expect(result.maxHeight == nil)
+        #expect(result.showsNotch)
+        #expect(result.edge == .below)
+        #expect(result.origin.y >= second.maxY + TourCardPlacement.gap)
+    }
+
+    @Test func place_SideBySideCutoutsOnIPadLandscape_CardFitsBelowWithNotch() {
+        let curing = CGRect(x: 40, y: 200, width: 360, height: 150)
+        let youCanMake = CGRect(x: 424, y: 200, width: 360, height: 150)
+
+        let result = padPlacement(cutouts: [curing, youCanMake], cardHeight: 220)
+
+        #expect(result.maxHeight == nil)
+        #expect(result.showsNotch)
+        #expect(result.origin.y >= curing.maxY + TourCardPlacement.gap)
+    }
+
     @Test func place_NoCutouts_ReturnsCardInsideSafeArea() {
         let result = phonePlacement(cutouts: [])
 

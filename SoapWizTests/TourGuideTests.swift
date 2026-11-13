@@ -159,12 +159,12 @@ struct TourGuideTests: TourGuideTestCase {
         guide.next()
         await guide.settled()
 
-        #expect(guide.phase == .step(.library))
+        #expect(guide.phase == .step(.home))
     }
 
     @Test func back_FromTheFirstStep_ReturnsToWelcome() async throws {
         let sandbox = try makeSandbox()
-        let guide = makeGuide(for: sandbox, isPad: false, phase: .step(.library))
+        let guide = makeGuide(for: sandbox, isPad: false, phase: .step(.home))
 
         guide.back()
         await guide.settled()
@@ -222,7 +222,7 @@ struct TourGuideTests: TourGuideTestCase {
         guide.primaryAction()
         await guide.settled()
 
-        #expect(guide.phase == .step(.library))
+        #expect(guide.phase == .step(.home))
     }
 
     @Test func primaryAction_OnFinish_ClosesAsFinished() async throws {
@@ -265,7 +265,7 @@ struct TourGuideTests: TourGuideTestCase {
         let sandbox = try makeSandbox()
         let guide = makeGuide(for: sandbox, isPad: true, phase: .step(.basics))
 
-        #expect(guide.overlayStep(for: .form)?.index == 4)
+        #expect(guide.overlayStep(for: .form)?.index == 5)
         #expect(guide.overlayStep(for: .tabs) == nil)
         #expect(guide.overlayStep(for: .sheet) == nil)
     }

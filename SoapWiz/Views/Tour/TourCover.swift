@@ -82,7 +82,7 @@ private struct TourSession {
 #if DEBUG
 extension TourPhase {
     /// The phase named by the launch argument `-SoapWizTourStep N`, for
-    /// screenshots: 0 is the welcome card, 1 to 10 the steps, 11 the closing
+    /// screenshots: 0 is the welcome card, 1 to 11 the steps, 12 the closing
     /// card. Nil when the argument is absent or out of range.
     static var launchArgument: TourPhase? {
         guard let text = UserDefaults.standard.string(forKey: "SoapWizTourStep"),

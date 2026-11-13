@@ -84,6 +84,7 @@ nonisolated enum TourCardPlacement {
             width: width,
             safe: safe,
             primary: primary,
+            group: cutouts.dropFirst().reduce(primary) { $0.union($1) },
             obstacles: cutouts.map { $0.insetBy(dx: -cutoutInflation, dy: -cutoutInflation) }
         )
 
@@ -102,6 +103,9 @@ nonisolated enum TourCardPlacement {
         let width: CGFloat
         let safe: CGRect
         let primary: CGRect
+        /// The rectangle holding every spotlight, for when they are stacked
+        /// and the room beside the primary one is taken by the next.
+        let group: CGRect
         let obstacles: [CGRect]
 
         var centredX: CGFloat {
@@ -128,6 +132,10 @@ nonisolated enum TourCardPlacement {
             if allowsSide {
                 let top = clamp(primary.midY - cardHeight / 2, safe.minY, safe.maxY - cardHeight)
                 found.append((CGPoint(x: sideX, y: top), sideEdge))
+            }
+            if group != primary {
+                found.append((CGPoint(x: centredX, y: group.maxY + gap), .below))
+                found.append((CGPoint(x: centredX, y: group.minY - gap - cardHeight), .above))
             }
             return found
         }

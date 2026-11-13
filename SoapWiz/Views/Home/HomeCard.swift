@@ -4,10 +4,12 @@ import SwiftUI
 /// rows.
 struct HomeCard<Content: View>: View {
     let title: String
+    let tourAnchor: TourAnchorID?
     let content: Content
 
-    init(_ title: String, @ViewBuilder content: () -> Content) {
+    init(_ title: String, tourAnchor: TourAnchorID? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
+        self.tourAnchor = tourAnchor
         self.content = content()
     }
 
@@ -20,6 +22,7 @@ struct HomeCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .ledgerSheet()
         }
+        .tourAnchor(tourAnchor, cornerRadius: 30, outset: CGSize(width: 8, height: 8))
         .preference(key: HomeCardShownKey.self, value: true)
     }
 }

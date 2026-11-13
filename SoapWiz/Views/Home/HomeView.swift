@@ -101,6 +101,7 @@ struct HomeView: View {
             }
             .padding(HomeLayout.contentPadding)
         }
+        .scrollsForTour(to: .homeCards)
     }
 
     private var placeholder: some View {
