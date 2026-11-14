@@ -36,7 +36,7 @@ final class IngredientDetailViewModel {
     }
 
     var sortedPurchases: [IngredientPurchase] {
-        ingredient.purchases.sorted { $0.dateOfPurchase > $1.dateOfPurchase }
+        ingredient.purchases.sorted(by: IngredientPurchase.isNewer(_:than:))
     }
 
     /// How many purchases show before the user taps "Show more". The rest stay a
@@ -68,10 +68,11 @@ final class IngredientDetailViewModel {
     /// See `IngredientChemistry.showsChemistry`.
     var showsChemistry: Bool { chemistry.showsChemistry }
 
-    func delete(at offsets: IndexSet, context: ModelContext) {
-        let purchases = sortedPurchases
-        for index in offsets {
-            context.delete(purchases[index])
+    /// Deletes the purchases at `offsets` of `displayed`, the array the list
+    /// rendered, so an offset can't land on a row the user didn't swipe.
+    func delete(at offsets: IndexSet, from displayed: [IngredientPurchase], context: ModelContext) {
+        for index in offsets where displayed.indices.contains(index) {
+            context.delete(displayed[index])
         }
         context.saveLoggingFailure()
     }

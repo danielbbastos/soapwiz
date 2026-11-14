@@ -10,6 +10,8 @@ import SwiftData
 /// from here.
 struct BatchDetailView: View {
     @Environment(\.currencyCode) private var currencyCode
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.isTourSandbox) private var isTourSandbox
     @Query private var batches: [Batch]
     let batch: Batch
 
@@ -60,6 +62,11 @@ struct BatchDetailView: View {
             BatchProductEditSheet(batch: batch, product: target.product)
         }
         .batchLogPresentations($logPresentation, batch: batch)
+        .onAppear {
+            if !isTourSandbox, HomeReady.isUnseenReady(batch) {
+                HomeReady.markSeen([batch], context: modelContext)
+            }
+        }
         .task(id: codeCopied) {
             guard codeCopied else { return }
             try? await Task.sleep(for: .seconds(1.5))

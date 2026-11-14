@@ -102,7 +102,7 @@ final class TourSandbox {
         shoppingListRows = ShoppingListRows(context: context)
         settings = SettingsState(context: context)
         navigation = AppNavigation()
-        navigation.selectedTab = TourScreen().tab
+        navigation.selectedTab = TourStep.home.screen(isPad: false).tab
         syncHealth = SyncHealthMonitor(
             activeStore: .offlineByChoice,
             store: SyncStatusStore(defaults: defaults)

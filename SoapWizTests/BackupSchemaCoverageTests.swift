@@ -19,7 +19,7 @@ struct BackupSchemaCoverageTests {
         ],
         "Batch": [
             "recipe", "code", "recipeName", "dateCreated", "batchCount", "totalCost", "totalWeight", "totalWeightUnit",
-            "tracksInventory", "cureDays", "process", "cureBand", "products", "lineItemsStorage", "logEntriesStorage"
+            "tracksInventory", "cureDays", "process", "cureBand", "products", "readySeenAt", "lineItemsStorage", "logEntriesStorage"
         ],
         "BatchLineItem": ["ingredient", "ingredientName", "amountConsumed", "unit", "cost", "draws"],
         "BatchLogEntry": ["date", "text", "photosStorage"],

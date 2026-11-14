@@ -36,9 +36,10 @@ struct TourScreen: Equatable {
     var createBatchSheet = false
 }
 
-/// The ten steps of the tour, numbered from 1 as the card shows them.
+/// The eleven steps of the tour, numbered from 1 as the card shows them.
 enum TourStep: Int, CaseIterable {
-    case library = 1
+    case home = 1
+    case library
     case purchase
     case recipes
     case basics
@@ -53,6 +54,7 @@ enum TourStep: Int, CaseIterable {
 
     var title: String {
         switch self {
+        case .home: "Your workshop at a glance"
         case .library: "Start with your ingredients"
         case .purchase: "Log what you buy"
         case .recipes: "Your recipes"
@@ -68,6 +70,9 @@ enum TourStep: Int, CaseIterable {
 
     var body: String {
         switch self {
+        case .home:
+            "Home gathers what needs you today: stock running low, batches curing, "
+                + "and what you can make."
         case .library:
             "Over 200 oils, butters, lyes and additives are built in, with their SAP values. "
                 + "Search for yours, or tap + to add something new."
@@ -103,6 +108,7 @@ enum TourStep: Int, CaseIterable {
     /// on screen.
     var targets: [TourAnchorID] {
         switch self {
+        case .home: [.homeCuring, .homeYouCanMake]
         case .library: [.inventorySearch, .inventoryAddButton]
         case .purchase: [.purchaseCard, .addPurchaseButton]
         case .recipes: [.recipeRow, .recipeAddButton]
@@ -123,13 +129,15 @@ enum TourStep: Int, CaseIterable {
         switch self {
         case .basics, .ingredients, .cost, .qualities: isPad ? .form : .tabs
         case .batch: .sheet
-        case .library, .purchase, .recipes, .ready, .record: .tabs
+        case .home, .library, .purchase, .recipes, .ready, .record: .tabs
         }
     }
 
-    func screen(isPad: Bool) -> TourScreen {
+    func screen(isPad: Bool) -> TourScreen { // swiftlint:disable:this cyclomatic_complexity
         let form: TourFormPresentation = isPad ? .cover : .pushed
         switch self {
+        case .home:
+            return TourScreen(tab: .home)
         case .library:
             return TourScreen()
         case .purchase:
@@ -160,8 +168,8 @@ enum TourStep: Int, CaseIterable {
     }
 }
 
-/// Where the tour is: the welcome card, one of the ten steps, or the closing
-/// card. `position` runs 0 for the welcome card to 11 for the closing one.
+/// Where the tour is: the welcome card, one of the eleven steps, or the closing
+/// card. `position` runs 0 for the welcome card to 12 for the closing one.
 enum TourPhase: Equatable {
     case welcome
     case step(TourStep)
@@ -200,7 +208,7 @@ enum TourPhase: Equatable {
     /// the last's behind the closing one.
     func screen(isPad: Bool) -> TourScreen {
         switch self {
-        case .welcome: TourStep.library.screen(isPad: isPad)
+        case .welcome: TourStep.home.screen(isPad: isPad)
         case .step(let step): step.screen(isPad: isPad)
         case .finish: TourStep.record.screen(isPad: isPad)
         }

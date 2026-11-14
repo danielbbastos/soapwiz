@@ -17,17 +17,17 @@ struct HomeCuringCard: View {
     var body: some View {
         let curing = curing
         if curing.count > 0 {
-            HomeCard("Curing") {
+            HomeCard("Curing", tourAnchor: .homeCuring) {
                 header(curing)
                 let visible = curing.visibleItems(isExpanded: isExpanded)
                 let historyCount = curing.historyCount(isExpanded: isExpanded)
                 ForEach(Array(visible.enumerated()), id: \.element.batch.id) { index, item in
-                    divider
+                    HomeCardDivider()
                     row(item, isLast: !curing.canExpand && index == visible.count - 1)
                 }
                 if curing.canExpand {
-                    divider
-                    footerButton(
+                    HomeCardDivider()
+                    HomeCardFooterButton(
                         isExpanded ? "Show less" : "Show more",
                         isLast: historyCount == 0
                     ) {
@@ -35,8 +35,8 @@ struct HomeCuringCard: View {
                     }
                 }
                 if historyCount > 0 {
-                    divider
-                    footerButton("\(historyCount) more in History", isLast: true) {
+                    HomeCardDivider()
+                    HomeCardFooterButton("\(historyCount) more in History", isLast: true) {
                         navigation.selectedTab = .history
                     }
                 }
@@ -44,42 +44,11 @@ struct HomeCuringCard: View {
         }
     }
 
-    private var divider: some View {
-        Rectangle()
-            .fill(Color.rule)
-            .frame(height: 1)
-    }
-
-    private func footerButton(
-        _ title: LocalizedStringKey,
-        isLast: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.amberText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(HomeRowButtonStyle(isLast: isLast))
-    }
-
     private var isAccessibilitySize: Bool { dynamicTypeSize.isAccessibilitySize }
 
-    private var headerLayout: AnyLayout {
-        isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
-            : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
-    }
+    private var headerLayout: AnyLayout { HomeCardLayout.header(isAccessibilitySize: isAccessibilitySize) }
 
-    private var rowLayout: AnyLayout {
-        isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
-            : AnyLayout(HStackLayout(spacing: 12))
-    }
+    private var rowLayout: AnyLayout { HomeCardLayout.row(isAccessibilitySize: isAccessibilitySize) }
 
     private func header(_ curing: HomeCuring) -> some View {
         headerLayout {
@@ -91,7 +60,7 @@ struct HomeCuringCard: View {
                 Spacer(minLength: 8)
             }
             if curing.readyThisWeekCount > 0 {
-                Text("\(curing.readyThisWeekCount) ready this week")
+                Text("\(curing.readyThisWeekCount) due this week")
                     .font(.subheadline)
                     .foregroundStyle(Color.inkSoft)
             }

@@ -106,8 +106,6 @@ struct ShoppingListView: View {
                     Button("Add item", systemImage: "plus") { formTarget = .new }
                 }
             }
-            // Changes save immediately, so a stray tap outside would only be an annoyance; Done closes the sheet.
-            .interactiveDismissDisabled()
             .sheet(item: $formTarget) { target in
                 switch target {
                 case .new:

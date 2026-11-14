@@ -58,9 +58,10 @@ struct HomeCuringTests {
         let noCure = Batch(recipe: nil, recipeName: "No cure", dateCreated: now, batchCount: 1, cureDays: 0)
         context.insert(noCure)
         let readyToday = try batch("Ready today", daysLeft: 0, in: context)
+        let readyRecently = try batch("Ready recently", daysLeft: -1, in: context)
         let longReady = try batch("Long ready", daysLeft: -20, in: context)
         let cake = try batch("Cake", daysLeft: 3, in: context)
-        let result = curing([noCure, readyToday, longReady, cake])
+        let result = curing([noCure, readyToday, readyRecently, longReady, cake])
         #expect(result.items.map(\.batch.recipeName) == ["Cake"])
     }
 

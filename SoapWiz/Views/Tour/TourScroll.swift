@@ -3,6 +3,9 @@ import SwiftUI
 /// Where the tour scrolls a form to, so the card a step points at is in view
 /// rather than running under the tab bar or past the bottom of a sheet.
 enum TourScrollTarget: Hashable {
+    /// Home's cards, for the home step: its last card centred, so a tall Home
+    /// (large text, a stacked iPad) doesn't leave the cards below the fold.
+    case homeCards
     /// The recipe form's Config tab, for the basics step.
     case oilsCard
     /// The Create Batch sheet's Cure section, for the batch step.
@@ -10,6 +13,7 @@ enum TourScrollTarget: Hashable {
 
     var phase: TourPhase {
         switch self {
+        case .homeCards: .step(.home)
         case .oilsCard: .step(.basics)
         case .cureSection: .step(.batch)
         }
@@ -20,7 +24,7 @@ enum TourScrollTarget: Hashable {
     var isPhoneOnly: Bool {
         switch self {
         case .oilsCard: true
-        case .cureSection: false
+        case .homeCards, .cureSection: false
         }
     }
 
@@ -28,6 +32,7 @@ enum TourScrollTarget: Hashable {
     /// picker for the Oils card, with room above it for its header.
     var anchor: UnitPoint {
         switch self {
+        case .homeCards: .center
         case .oilsCard: UnitPoint(x: 0.5, y: 0.08)
         case .cureSection: .top
         }
@@ -38,7 +43,7 @@ enum TourScrollTarget: Hashable {
     /// sheet was asked for, so part of it is gone by the time the form appears.
     var layoutDelay: Duration {
         switch self {
-        case .oilsCard: .milliseconds(250)
+        case .homeCards, .oilsCard: .milliseconds(250)
         case .cureSection: .milliseconds(100)
         }
     }

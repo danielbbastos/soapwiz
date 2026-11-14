@@ -2,6 +2,8 @@ import SwiftUI
 
 /// The controls the onboarding tour can point at.
 enum TourAnchorID: Hashable {
+    case homeCuring
+    case homeYouCanMake
     case inventorySearch
     case inventoryAddButton
     case purchaseCard

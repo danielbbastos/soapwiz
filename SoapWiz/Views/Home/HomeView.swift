@@ -82,6 +82,7 @@ struct HomeView: View {
                         VStack(spacing: 0) {
                             HomeGrid(isWide: isWide) {
                                 NeedsAttentionCard()
+                                HomeReadyCard()
                                 HomeCuringCard()
                                 YouCanMakeCard()
                                 ShoppingListCard()
@@ -101,6 +102,7 @@ struct HomeView: View {
             }
             .padding(HomeLayout.contentPadding)
         }
+        .scrollsForTour(to: .homeCards)
     }
 
     private var placeholder: some View {

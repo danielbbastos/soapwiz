@@ -21,12 +21,10 @@ struct YouCanMakeCard: View {
             now: now
         )
         if !rows.isEmpty {
-            HomeCard("You can make") {
+            HomeCard("You can make", tourAnchor: .homeYouCanMake) {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     if index > 0 {
-                        Rectangle()
-                            .fill(Color.rule)
-                            .frame(height: 1)
+                        HomeCardDivider()
                     }
                     Button {
                         navigation.createBatch(for: row.recipe)
@@ -39,6 +37,7 @@ struct YouCanMakeCard: View {
                     }
                 }
             }
+            .id(TourScrollTarget.homeCards)
         }
     }
 

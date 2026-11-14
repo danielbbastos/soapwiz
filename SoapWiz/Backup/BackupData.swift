@@ -243,6 +243,9 @@ extension BackupData {
         /// Optional so a backup written before SW-348 still decodes; `nil`
         /// restores none.
         var products: [BatchProductDTO]?
+        /// Optional so a backup written before SW-374 still decodes; `nil`
+        /// restores as not yet seen on Home.
+        var readySeenAt: Date?
         var lineItems: [BatchLineItemDTO]
         /// Oldest first, the order the log displays. Optional so a backup
         /// written before SW-192 still decodes; `nil` restores the batch

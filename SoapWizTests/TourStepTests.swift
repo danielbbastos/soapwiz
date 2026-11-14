@@ -10,9 +10,10 @@ struct TourStepTests {
 
     // MARK: - Script
 
-    @Test func steps_AreTenNumberedFromOne() {
-        #expect(TourStep.count == 10)
-        #expect(TourStep.allCases.map(\.rawValue) == Array(1...10))
+    @Test func steps_AreElevenNumberedFromOne() {
+        #expect(TourStep.count == 11)
+        #expect(TourStep.allCases.map(\.rawValue) == Array(1...11))
+        #expect(TourStep.allCases.first == .home)
     }
 
     @Test func copy_EveryStepHasATitleAndABody() {
@@ -20,7 +21,13 @@ struct TourStepTests {
             #expect(!step.title.isEmpty)
             #expect(!step.body.isEmpty)
         }
-        #expect(Set(TourStep.allCases.map(\.title)).count == 10)
+        #expect(Set(TourStep.allCases.map(\.title)).count == 11)
+    }
+
+    @Test func copy_HomeStepIntroducesTheWorkshop() {
+        #expect(TourStep.home.title == "Your workshop at a glance")
+        #expect(TourStep.home.body == "Home gathers what needs you today: stock running low, batches curing, "
+            + "and what you can make.")
     }
 
     @Test func copy_BasicsStepIsTheConfigOverview() {
@@ -32,13 +39,14 @@ struct TourStepTests {
     @Test func overlayStep_CarriesTheStepsNumberCountAndTargets() {
         let overlay = TourStep.cost.overlayStep
 
-        #expect(overlay.index == 6)
-        #expect(overlay.count == 10)
+        #expect(overlay.index == 7)
+        #expect(overlay.count == 11)
         #expect(overlay.title == TourStep.cost.title)
         #expect(overlay.targets == [.costPanel])
     }
 
     @Test func targets_AreTheControlsEachStepNames() {
+        #expect(TourStep.home.targets == [.homeCuring, .homeYouCanMake])
         #expect(TourStep.library.targets == [.inventorySearch, .inventoryAddButton])
         #expect(TourStep.purchase.targets == [.purchaseCard, .addPurchaseButton])
         #expect(TourStep.recipes.targets == [.recipeRow, .recipeAddButton])
@@ -55,7 +63,7 @@ struct TourStepTests {
 
     @Test(arguments: [true, false])
     func layer_InventoryRecipesReadyAndRecordAreAlwaysTheTabs(isPad: Bool) {
-        for step in [TourStep.library, .purchase, .recipes, .ready, .record] {
+        for step in [TourStep.home, .library, .purchase, .recipes, .ready, .record] {
             #expect(step.layer(isPad: isPad) == .tabs)
         }
     }
@@ -78,6 +86,16 @@ struct TourStepTests {
     }
 
     // MARK: - Screens
+
+    @Test(arguments: [true, false])
+    func screen_HomeIsTheHomeTabWithNothingOpen(isPad: Bool) {
+        let screen = TourStep.home.screen(isPad: isPad)
+
+        #expect(screen == TourScreen(tab: .home))
+        #expect(!screen.showsOliveOil)
+        #expect(!screen.showsRecipe)
+        #expect(screen.form == .none)
+    }
 
     @Test(arguments: [true, false])
     func screen_LibraryIsTheInventoryTabWithNothingOpen(isPad: Bool) {
@@ -173,7 +191,7 @@ struct TourStepTests {
 
     @Test(arguments: [true, false])
     func screen_WelcomeShowsTheFirstStepsAndFinishTheLasts(isPad: Bool) {
-        #expect(TourPhase.welcome.screen(isPad: isPad) == TourStep.library.screen(isPad: isPad))
+        #expect(TourPhase.welcome.screen(isPad: isPad) == TourStep.home.screen(isPad: isPad))
         #expect(TourPhase.finish.screen(isPad: isPad) == TourStep.record.screen(isPad: isPad))
     }
 
@@ -181,14 +199,15 @@ struct TourStepTests {
 
     @Test func position_RunsFromWelcomeToFinish() {
         #expect(TourPhase.welcome.position == 0)
-        #expect(TourPhase.step(.library).position == 1)
-        #expect(TourPhase.step(.record).position == 10)
-        #expect(TourPhase.finish.position == 11)
-        #expect(TourPhase.lastPosition == 11)
+        #expect(TourPhase.step(.home).position == 1)
+        #expect(TourPhase.step(.library).position == 2)
+        #expect(TourPhase.step(.record).position == 11)
+        #expect(TourPhase.finish.position == 12)
+        #expect(TourPhase.lastPosition == 12)
     }
 
     @Test func initPosition_RoundTripsAndClampsOutOfRange() {
-        for position in 0...11 {
+        for position in 0...12 {
             #expect(TourPhase(position: position).position == position)
         }
         #expect(TourPhase(position: -3) == .welcome)
@@ -196,7 +215,7 @@ struct TourStepTests {
     }
 
     @Test func neighbour_WelcomeForwardIsTheFirstStep() {
-        #expect(TourPhase.welcome.neighbour(.forward) == .step(.library))
+        #expect(TourPhase.welcome.neighbour(.forward) == .step(.home))
     }
 
     @Test func neighbour_LastStepForwardIsFinish() {
@@ -204,7 +223,7 @@ struct TourStepTests {
     }
 
     @Test func neighbour_FirstStepBackIsWelcome() {
-        #expect(TourPhase.step(.library).neighbour(.backward) == .welcome)
+        #expect(TourPhase.step(.home).neighbour(.backward) == .welcome)
     }
 
     @Test func neighbour_FinishBackIsTheLastStep() {

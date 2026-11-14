@@ -56,6 +56,24 @@ struct TourSandboxTests {
         ])
     }
 
+    @Test func sample_FeedsTheHomeStepsCuringAndYouCanMakeCards() throws {
+        let sandbox = try makeSandbox()
+        let context = sandbox.container.mainContext
+
+        let curing = HomeCuring(batches: try context.fetch(FetchDescriptor<Batch>()), now: now)
+        let rows = YouCanMakeModel().rows(
+            recipes: try context.fetch(FetchDescriptor<Recipe>()),
+            ingredients: try context.fetch(FetchDescriptor<Ingredient>()),
+            purchases: try context.fetch(FetchDescriptor<IngredientPurchase>()),
+            batches: try context.fetch(FetchDescriptor<Batch>()),
+            tracksInventory: true,
+            now: now
+        )
+
+        #expect(curing.count == 1)
+        #expect(rows.map(\.recipe.name) == ["Classic Bastille Bar"])
+    }
+
     @Test func sample_HoldsOneBastilleRecipeWithThreeOilsAndLavender() throws {
         let sandbox = try makeSandbox()
 

@@ -210,6 +210,7 @@ extension BackupService {
                 BatchProduct(size: $0.size, unitSymbol: $0.unitSymbol, count: $0.count)
             }
         )
+        batch.readySeenAt = dto.readySeenAt
         context.insert(batch)
 
         for itemDTO in dto.lineItems {

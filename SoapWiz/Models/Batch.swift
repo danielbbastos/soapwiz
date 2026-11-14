@@ -51,6 +51,9 @@ final class Batch {
     /// afterwards, and can be changed at any time. Stored in the batch itself,
     /// so it stays as recorded whatever happens to the recipe's sizes.
     var products: [BatchProduct] = []
+    /// When the user acknowledged on Home that the batch finished curing; nil
+    /// means not yet seen.
+    var readySeenAt: Date?
 
     /// Optional for CloudKit; read and write through `lineItems`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.
@@ -75,6 +78,10 @@ final class Batch {
         get { logEntriesStorage ?? [] }
         set { logEntriesStorage = newValue }
     }
+
+    /// How many batches the run made, at least one: a record with a missing
+    /// count still made something.
+    var madeCount: Int { max(batchCount, 1) }
 
     /// The weight of one batch of the run, in `totalWeightUnit`. Zero when no
     /// weight was recorded.
