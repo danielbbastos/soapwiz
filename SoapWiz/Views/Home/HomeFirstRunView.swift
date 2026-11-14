@@ -38,7 +38,7 @@ struct HomeFirstRunView: View {
                     isLast: false,
                     action: navigation.openInventoryImport
                 )
-                divider
+                HomeCardDivider()
                 row(
                     "Paste a recipe",
                     subtitle: "From SoapCalc, Soapmaking Friend and others",
@@ -46,7 +46,7 @@ struct HomeFirstRunView: View {
                     isLast: false,
                     action: navigation.openRecipeImport
                 )
-                divider
+                HomeCardDivider()
                 row(
                     "Restore a backup",
                     subtitle: "A SoapWiz backup file",
@@ -99,12 +99,6 @@ struct HomeFirstRunView: View {
                 .foregroundStyle(Color.inkSoft)
         }
         .accessibilityElement(children: .combine)
-    }
-
-    private var divider: some View {
-        Rectangle()
-            .fill(Color.rule)
-            .frame(height: 1)
     }
 
     private func row(

@@ -24,9 +24,7 @@ struct YouCanMakeCard: View {
             HomeCard("You can make", tourAnchor: .homeYouCanMake) {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     if index > 0 {
-                        Rectangle()
-                            .fill(Color.rule)
-                            .frame(height: 1)
+                        HomeCardDivider()
                     }
                     Button {
                         navigation.createBatch(for: row.recipe)

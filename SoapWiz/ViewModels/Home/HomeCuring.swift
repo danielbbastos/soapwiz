@@ -11,34 +11,12 @@ struct HomeCuringItem {
 
 /// The batches still curing, soonest ready first. Computed from the batches,
 /// never stored.
-struct HomeCuring {
+struct HomeCuring: HomeRowPaging {
     /// A batch ready within this many calendar days of today counts as ready
     /// this week.
     static let readySoonDays = 7
 
-    /// Rows the card shows before "Show more".
-    static let collapsedRowLimit = 4
-
-    /// Rows the card shows at most once expanded; the rest are left to History.
-    static let expandedRowLimit = 10
-
     let items: [HomeCuringItem]
-
-    var count: Int { items.count }
-
-    /// Whether there are more batches than the collapsed card shows.
-    var canExpand: Bool { count > Self.collapsedRowLimit }
-
-    /// The batches the card lists: the soonest four, or up to ten once expanded.
-    func visibleItems(isExpanded: Bool) -> [HomeCuringItem] {
-        Array(items.prefix(isExpanded && canExpand ? Self.expandedRowLimit : Self.collapsedRowLimit))
-    }
-
-    /// The batches the expanded card leaves to History: only past ten, and
-    /// none while collapsed, where "Show more" comes first.
-    func historyCount(isExpanded: Bool) -> Int {
-        isExpanded ? max(0, count - Self.expandedRowLimit) : 0
-    }
 
     var readyThisWeekCount: Int {
         items.filter(\.isReadyThisWeek).count

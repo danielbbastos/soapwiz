@@ -1,8 +1,9 @@
 import SwiftData
 import SwiftUI
 
-/// Home's Ready to use card: the batches whose cure finished in the last few
-/// days, most recently ready first. Absent when there are none.
+/// Home's Ready to use card: batches that finished curing within the last 30
+/// days and that the user hasn't marked seen (by opening one, "Got it" or
+/// "Clear all"), most recently ready first. Absent when there are none.
 struct HomeReadyCard: View {
     @Environment(BatchRows.self) private var batchRows
     @Environment(AppNavigation.self) private var navigation
@@ -23,12 +24,12 @@ struct HomeReadyCard: View {
                 let visible = ready.visibleItems(isExpanded: isExpanded)
                 let historyCount = ready.historyCount(isExpanded: isExpanded)
                 ForEach(Array(visible.enumerated()), id: \.element.batch.id) { index, item in
-                    divider
+                    HomeCardDivider()
                     row(item, isLast: !ready.canExpand && index == visible.count - 1)
                 }
                 if ready.canExpand {
-                    divider
-                    footerButton(
+                    HomeCardDivider()
+                    HomeCardFooterButton(
                         isExpanded ? "Show less" : "Show more",
                         isLast: historyCount == 0
                     ) {
@@ -36,8 +37,8 @@ struct HomeReadyCard: View {
                     }
                 }
                 if historyCount > 0 {
-                    divider
-                    footerButton("\(historyCount) more in History", isLast: true) {
+                    HomeCardDivider()
+                    HomeCardFooterButton("\(historyCount) more in History", isLast: true) {
                         navigation.selectedTab = .history
                     }
                 }
@@ -45,42 +46,11 @@ struct HomeReadyCard: View {
         }
     }
 
-    private var divider: some View {
-        Rectangle()
-            .fill(Color.rule)
-            .frame(height: 1)
-    }
-
-    private func footerButton(
-        _ title: LocalizedStringKey,
-        isLast: Bool,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.amberText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(HomeRowButtonStyle(isLast: isLast))
-    }
-
     private var isAccessibilitySize: Bool { dynamicTypeSize.isAccessibilitySize }
 
-    private var headerLayout: AnyLayout {
-        isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
-            : AnyLayout(HStackLayout(alignment: .firstTextBaseline))
-    }
+    private var headerLayout: AnyLayout { HomeCardLayout.header(isAccessibilitySize: isAccessibilitySize) }
 
-    private var rowLayout: AnyLayout {
-        isAccessibilitySize
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
-            : AnyLayout(HStackLayout(spacing: 12))
-    }
+    private var rowLayout: AnyLayout { HomeCardLayout.row(isAccessibilitySize: isAccessibilitySize) }
 
     private func header(_ ready: HomeReady) -> some View {
         headerLayout {

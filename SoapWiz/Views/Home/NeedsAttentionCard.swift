@@ -28,7 +28,7 @@ struct NeedsAttentionCard: View {
                 ForEach(Array(attention.rows.enumerated()), id: \.element.id) { index, row in
                     let isLast = attention.moreCount == 0 && index == attention.rows.count - 1
                     if index > 0 || attention.valueAtRisk > 0 {
-                        divider
+                        HomeCardDivider()
                     }
                     Button {
                         navigation.pushOnHome(row.ingredient)
@@ -38,28 +38,13 @@ struct NeedsAttentionCard: View {
                     .buttonStyle(HomeRowButtonStyle(isLast: isLast))
                 }
                 if attention.moreCount > 0 {
-                    divider
-                    Button {
+                    HomeCardDivider()
+                    HomeCardFooterButton("\(attention.moreCount) more in Inventory", isLast: true) {
                         navigation.openInventory(filter: .needsAttention)
-                    } label: {
-                        Text("\(attention.moreCount) more in Inventory")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.amberText)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14)
-                            .contentShape(Rectangle())
                     }
-                    .buttonStyle(HomeRowButtonStyle(isLast: true))
                 }
             }
         }
-    }
-
-    private var divider: some View {
-        Rectangle()
-            .fill(Color.rule)
-            .frame(height: 1)
     }
 
     private func header(_ value: Double) -> some View {
