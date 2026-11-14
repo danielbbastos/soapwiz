@@ -64,7 +64,7 @@ struct HomeReadyCard: View {
             }
             if ready.count >= 2 {
                 Button("Clear all") {
-                    markSeen(ready.items.map(\.batch), animated: true)
+                    markSeen(ready.items.map(\.batch))
                 }
                 .buttonStyle(.borderless)
                 .font(.subheadline.weight(.semibold))
@@ -78,12 +78,8 @@ struct HomeReadyCard: View {
         .padding(.bottom, 10)
     }
 
-    private func markSeen(_ batches: [Batch], animated: Bool) {
-        if animated {
-            withAnimation { HomeReady.markSeen(batches, context: modelContext) }
-        } else {
-            HomeReady.markSeen(batches, context: modelContext)
-        }
+    private func markSeen(_ batches: [Batch]) {
+        withAnimation { HomeReady.markSeen(batches, context: modelContext) }
     }
 
     private func row(_ item: HomeReadyItem, isLast: Bool) -> some View {
@@ -97,14 +93,14 @@ struct HomeReadyCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .contextMenu {
             Button("Mark as seen", systemImage: "checkmark.circle") {
-                markSeen([item.batch], animated: true)
+                markSeen([item.batch])
             }
         }
     }
 
     private func gotItButton(_ item: HomeReadyItem) -> some View {
         Button {
-            markSeen([item.batch], animated: true)
+            markSeen([item.batch])
         } label: {
             Text("Got it")
                 .font(.subheadline.weight(.semibold))
@@ -123,7 +119,6 @@ struct HomeReadyCard: View {
     private func rowButton(_ item: HomeReadyItem, isLast: Bool) -> some View {
         Button {
             navigation.pushOnHome(item.batch)
-            markSeen([item.batch], animated: false)
         } label: {
             rowLayout {
                 if !isAccessibilitySize {

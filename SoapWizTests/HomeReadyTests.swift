@@ -103,6 +103,28 @@ struct HomeReadyTests {
         #expect(result.count == 0)
     }
 
+    @Test func isUnseenReady_ReadyAndUnseen_IsTrueWhateverTheAge() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let today = try batch("Today", daysAgo: 0, in: context)
+        let old = try batch("Old", daysAgo: 200, in: context)
+        #expect(HomeReady.isUnseenReady(today, now: now, calendar: calendar))
+        #expect(HomeReady.isUnseenReady(old, now: now, calendar: calendar))
+    }
+
+    @Test func isUnseenReady_CuringSeenOrNoCure_IsFalse() throws {
+        let (container, context) = try makeContext()
+        _ = container
+        let curing = try batch("Curing", daysAgo: -1, in: context)
+        let seen = try batch("Seen", daysAgo: 1, in: context)
+        seen.readySeenAt = now
+        let noCure = Batch(recipe: nil, recipeName: "No cure", dateCreated: now, batchCount: 1, cureDays: 0)
+        context.insert(noCure)
+        #expect(!HomeReady.isUnseenReady(curing, now: now, calendar: calendar))
+        #expect(!HomeReady.isUnseenReady(seen, now: now, calendar: calendar))
+        #expect(!HomeReady.isUnseenReady(noCure, now: now, calendar: calendar))
+    }
+
     @Test func markSeen_SetsTheDateAndTheBatchLeavesTheList() throws {
         let (container, context) = try makeContext()
         _ = container

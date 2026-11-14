@@ -37,6 +37,15 @@ struct HomeReady: HomeRowPaging {
         items = ready.sorted { $0.readyDate > $1.readyDate }
     }
 
+    /// Whether `batch` has finished curing and hasn't been marked seen, however
+    /// long ago it became ready.
+    static func isUnseenReady(_ batch: Batch, now: Date = .now, calendar: Calendar = .current) -> Bool {
+        guard !batch.isDeleted, batch.modelContext != nil, batch.readySeenAt == nil else { return false }
+        let status = CureStatus(dateCreated: batch.dateCreated, cureDays: batch.cureDays, now: now, calendar: calendar)
+        guard case .ready = status else { return false }
+        return true
+    }
+
     /// Marks `batches` as seen at `now` and saves. Skips batches already seen
     /// and any deleted meanwhile, which SwiftData must not be asked to read.
     static func markSeen(_ batches: [Batch], now: Date = .now, context: ModelContext) {
