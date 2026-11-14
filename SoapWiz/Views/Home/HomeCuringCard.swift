@@ -1,8 +1,8 @@
 import SwiftData
 import SwiftUI
 
-/// Home's Curing card: every batch still curing, soonest ready first, under
-/// the ones that finished in the last few days. Absent when there are none.
+/// Home's Curing card: every batch still curing, soonest ready first. Absent
+/// when nothing is curing.
 struct HomeCuringCard: View {
     @Environment(BatchRows.self) private var batchRows
     @Environment(AppNavigation.self) private var navigation
@@ -83,7 +83,7 @@ struct HomeCuringCard: View {
 
     private func header(_ curing: HomeCuring) -> some View {
         headerLayout {
-            headerTitle(curing)
+            Text("^[\(curing.count) batch](inflect: true) curing")
                 .font(.title3.weight(.semibold))
                 .fontDesign(.serif)
                 .foregroundStyle(Color.ink)
@@ -91,7 +91,7 @@ struct HomeCuringCard: View {
                 Spacer(minLength: 8)
             }
             if curing.readyThisWeekCount > 0 {
-                Text("\(curing.readyThisWeekCount) ready this week")
+                Text("\(curing.readyThisWeekCount) due this week")
                     .font(.subheadline)
                     .foregroundStyle(Color.inkSoft)
             }
@@ -104,23 +104,13 @@ struct HomeCuringCard: View {
         .accessibilityAddTraits(.isHeader)
     }
 
-    private func headerTitle(_ curing: HomeCuring) -> Text {
-        if curing.readyCount == 0 {
-            Text("^[\(curing.curingCount) batch](inflect: true) curing")
-        } else if curing.curingCount == 0 {
-            Text("\(curing.readyCount) ready")
-        } else {
-            Text("\(curing.curingCount) curing · \(curing.readyCount) ready")
-        }
-    }
-
     private func row(_ item: HomeCuringItem, isLast: Bool) -> some View {
         Button {
             navigation.pushOnHome(item.batch)
         } label: {
             rowLayout {
                 if !isAccessibilitySize {
-                    CureProgressRing(progress: item.progress, isComplete: item.isReady)
+                    CureProgressRing(progress: item.progress)
                 }
                 VStack(alignment: .leading, spacing: 0) {
                     Text(item.batch.recipeName)
@@ -134,28 +124,14 @@ struct HomeCuringCard: View {
                     Spacer(minLength: 8)
                 }
                 VStack(alignment: isAccessibilitySize ? .leading : .trailing, spacing: 0) {
-                    if let remaining = item.remaining {
-                        CureLengthText.remainingShort(remaining)
-                            .font(.body.weight(.medium))
-                            .monospacedDigit()
-                            .foregroundStyle(Color.ink)
-                            .accessibilityLabel(CureLengthText.remaining(remaining))
-                        Text("Ready \(item.readyDate.formatted(.dateTime.month(.abbreviated).day()))")
-                            .font(.subheadline)
-                            .foregroundStyle(Color.inkSoft)
-                    } else {
-                        StatusStamp(
-                            word: String(localized: "Ready"),
-                            tone: .success,
-                            glyph: "checkmark.circle",
-                            isInked: true
-                        )
-                        .fixedSize()
-                        .padding(.vertical, 3)
-                        Text(item.readyDate.formatted(.dateTime.month(.abbreviated).day()))
-                            .font(.subheadline)
-                            .foregroundStyle(Color.inkSoft)
-                    }
+                    CureLengthText.remainingShort(item.remaining)
+                        .font(.body.weight(.medium))
+                        .monospacedDigit()
+                        .foregroundStyle(Color.ink)
+                        .accessibilityLabel(CureLengthText.remaining(item.remaining))
+                    Text("Ready \(item.readyDate.formatted(.dateTime.month(.abbreviated).day()))")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.inkSoft)
                 }
             }
             .padding(.horizontal, 16)
@@ -171,7 +147,6 @@ struct HomeCuringCard: View {
 /// beside it says the same.
 private struct CureProgressRing: View {
     let progress: Double
-    var isComplete = false
 
     var body: some View {
         ZStack {
@@ -179,7 +154,7 @@ private struct CureProgressRing: View {
                 .stroke(Color.chartBand, lineWidth: 4)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(isComplete ? Color.success : Color.amber, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .stroke(Color.amber, style: StrokeStyle(lineWidth: 4, lineCap: .round))
                 .rotationEffect(.degrees(-90))
         }
         .padding(2)
@@ -206,8 +181,7 @@ private struct HomeCuringCardPreviewData {
         let samples = [
             ("Simple Palm Bar", "SPB-261015-01", 42, 39),
             ("Lavender Oat Bar", "LOB-261020-01", 42, 21),
-            ("Castile Olive Bar", "COB-261108-01", 60, 0),
-            ("Oat Milk Bar", "OMB-261001-01", 28, 30)
+            ("Castile Olive Bar", "COB-261108-01", 60, 0)
         ]
         for (name, code, cureDays, daysAgo) in samples {
             let created = calendar.date(byAdding: .day, value: -daysAgo, to: .now) ?? .now

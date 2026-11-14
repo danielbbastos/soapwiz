@@ -51,6 +51,9 @@ final class Batch {
     /// afterwards, and can be changed at any time. Stored in the batch itself,
     /// so it stays as recorded whatever happens to the recipe's sizes.
     var products: [BatchProduct] = []
+    /// When the user acknowledged on Home that the batch finished curing; nil
+    /// means not yet seen.
+    var readySeenAt: Date?
 
     /// Optional for CloudKit; read and write through `lineItems`. Neither name is
     /// usable in `#Predicate` — see `ModelContainerFactory.schema`.

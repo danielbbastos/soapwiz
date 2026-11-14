@@ -82,6 +82,7 @@ struct HomeView: View {
                         VStack(spacing: 0) {
                             HomeGrid(isWide: isWide) {
                                 NeedsAttentionCard()
+                                HomeReadyCard()
                                 HomeCuringCard()
                                 YouCanMakeCard()
                                 ShoppingListCard()

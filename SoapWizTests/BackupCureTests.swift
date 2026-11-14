@@ -40,6 +40,22 @@ struct BackupCureTests: BackupTestHelpers {
         #expect(CureBand.resolve(curing.cureBand) == .typicalHot)
     }
 
+    @Test func roundTrip_PreservesReadySeenAt() throws {
+        let (container, ctx) = try makeContext()
+        _ = container
+        try seedCuring(ctx)
+        let seenAt = Date(timeIntervalSince1970: 1_800_000_000)
+        let batches = try ctx.fetch(FetchDescriptor<Batch>())
+        try #require(batches.first { $0.recipeName == "Curing" }).readySeenAt = seenAt
+        try ctx.save()
+
+        try roundTripInPlace(ctx)
+
+        let restored = try ctx.fetch(FetchDescriptor<Batch>())
+        #expect(try #require(restored.first { $0.recipeName == "Curing" }).readySeenAt == seenAt)
+        #expect(try #require(restored.first { $0.recipeName == "Castile" }).readySeenAt == nil)
+    }
+
     @Test func roundTrip_BatchWithoutCure_StaysWithoutCure() throws {
         let (container, ctx) = try makeContext()
         _ = container

@@ -218,6 +218,7 @@ enum BackupService {
             products: batch.products.map {
                 BackupData.BatchProductDTO(size: $0.size, unitSymbol: $0.unitSymbol, count: $0.count)
             },
+            readySeenAt: batch.readySeenAt,
             lineItems: batch.lineItems.map { item in
                 BackupData.BatchLineItemDTO(
                     ingredientIndex: item.ingredient.flatMap { ingredientIndex[$0.persistentModelID] },
